@@ -3,11 +3,11 @@ language: c
 jobs:
     include:
         - os: linux
-          dist: trusty
+          dist: xenial
           compiler: gcc
 
         - os: linux
-          dist: trusty
+          dist: xenial
           compiler: clang
 
 before_install:
