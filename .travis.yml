@@ -1,14 +1,14 @@
 language: c
 
-compiler:
-    - gcc
-    - clang
-
-matrix:
+jobs:
     include:
         - os: linux
           dist: trusty
-          sudo: required
+          compiler: gcc
+
+        - os: linux
+          dist: trusty
+          compiler: clang
 
 before_install:
     - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo pip install codecov; fi
