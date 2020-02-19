@@ -39,9 +39,9 @@ typedef struct {
  *
  *  @return 0 on success, error otherwise
  */
-int webcfg_http_request(char *webConfigURL, char **configData, int r_count, long *code, char *interface);
+int webcfg_http_request(char *webConfigURL, char **configData, int r_count, long *code, char *interface, char** sub_buff, int *sub_len);
 int writeToFile(char *filename, char *data, int len);
-
+int readFromFile(char *filename, char **data, int *len);
 
 
 #endif

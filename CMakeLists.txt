@@ -40,6 +40,7 @@ file(MAKE_DIRECTORY ${TEST_RESULTS_DIR})
 include_directories(${INCLUDE_DIR}
                     ${INCLUDE_DIR}/cjson
                     ${INCLUDE_DIR}/msgpack
+		    ${INCLUDE_DIR}/trower-base64
 #                    ${INCLUDE_DIR}/curl
                     )
 
@@ -59,24 +60,31 @@ ExternalProject_Add(msgpack
 add_library(libmsgpack STATIC SHARED IMPORTED)
 add_dependencies(libmsgpack msgpack)
 
+# base64 external dependency
+#-------------------------------------------------------------------------------
+ExternalProject_Add(trower-base64
+    PREFIX ${CMAKE_CURRENT_BINARY_DIR}/_prefix/trower-base64
+    GIT_REPOSITORY https://github.com/Comcast/trower-base64.git
+    GIT_TAG "fbb9440ae2bc1118866baefcea7ff814f16613dd"
+    CMAKE_ARGS += -DCMAKE_INSTALL_PREFIX=${INSTALL_DIR} -DBUILD_TESTING=OFF
+)
+add_library(libtrower-base64 STATIC SHARED IMPORTED)
+add_dependencies(libtrower-base64 trower-base64)
+
 # curl external dependency
 #-------------------------------------------------------------------------------
-#ExternalProject_Add(curl
-#    PREFIX ${CMAKE_CURRENT_BINARY_DIR}/_prefix/curl
-#    GIT_REPOSITORY https://github.com/curl/curl.git
-#    GIT_TAG "curl-7_64_1"
-#    CMAKE_ARGS += -DCMAKE_INSTALL_PREFIX=${INSTALL_DIR} -DBUILD_TESTING=OFF
-#)
-#add_library(libcurl STATIC SHARED IMPORTED)
-#add_dependencies(libcurl curl)
-
-
-find_library( LIB_CURL,
-              NAMES curl
-              PATHS /usr/lib64 )
-
+ExternalProject_Add(curl
+    PREFIX ${CMAKE_CURRENT_BINARY_DIR}/_prefix/curl
+    GIT_REPOSITORY https://github.com/curl/curl.git
+    GIT_TAG "curl-7_64_1"
+    CMAKE_ARGS += -DCMAKE_INSTALL_PREFIX=${INSTALL_DIR} -DBUILD_TESTING=OFF
+)
+add_library(libcurl STATIC SHARED IMPORTED)
+add_dependencies(libcurl curl)
+#find_library( LIB_CURL,
+#              NAMES curl
+#              PATHS /usr/lib64 )
 endif ()
-
 link_directories ( ${LIBRARY_DIR} ${COMMON_LIBRARY_DIR} ${LIBRARY_DIR64} )
 
 
