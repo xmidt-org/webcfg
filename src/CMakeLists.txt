@@ -13,8 +13,8 @@
 #   limitations under the License.
 
 set(PROJ_WEBCFG webcfg)
-set(HEADERS webcfgparam.h webcfgdoc.h webcfgpack.h)
-set(SOURCES helpers.c array_helpers.c webcfgparam.c webcfgdoc.c webcfgpack.c)
+set(HEADERS webcfgparam.h webcfgdoc.h webcfgpack.h multipart.h )
+set(SOURCES helpers.c array_helpers.c webcfgparam.c webcfgdoc.c webcfgpack.c multipart.c)
 
 add_library(${PROJ_WEBCFG} STATIC ${HEADERS} ${SOURCES})
 add_library(${PROJ_WEBCFG}.shared SHARED ${HEADERS} ${SOURCES})

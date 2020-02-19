@@ -50,6 +50,14 @@ target_link_libraries (test_webcfgpack -lcunit -lmsgpackc)
 
 target_link_libraries (test_webcfgpack gcov -Wl,--no-as-needed )
 
+#-------------------------------------------------------------------------------
+#   test_multipart
+#-------------------------------------------------------------------------------
+add_test(NAME test_multipart COMMAND ${MEMORY_CHECK} ./test_multipart)
+add_executable(test_multipart test_multipart.c ../src/webcfgdoc.c ../src/webcfgparam.c ../src/multipart.c ../src/helpers.c ../src/array_helpers.c )
+target_link_libraries (test_multipart -lcunit -lmsgpackc -lcurl -luuid)
+
+target_link_libraries (test_multipart gcov -Wl,--no-as-needed )
 
 # Code coverage
 
