@@ -43,6 +43,8 @@ include_directories(${INCLUDE_DIR}
 #                    ${INCLUDE_DIR}/curl
                     )
 
+if (NOT BUILD_YOCTO)
+
 # msgpack-c external dependency
 #-------------------------------------------------------------------------------
 ExternalProject_Add(msgpack
@@ -67,11 +69,16 @@ add_dependencies(libmsgpack msgpack)
 #)
 #add_library(libcurl STATIC SHARED IMPORTED)
 #add_dependencies(libcurl curl)
+
+
 find_library( LIB_CURL,
               NAMES curl
               PATHS /usr/lib64 )
 
+endif ()
+
 link_directories ( ${LIBRARY_DIR} ${COMMON_LIBRARY_DIR} ${LIBRARY_DIR64} )
+
 
 add_subdirectory(src)
 
