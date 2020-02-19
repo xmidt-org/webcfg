@@ -19,13 +19,28 @@
 #include <stdint.h>
 #include <curl/curl.h>
 #define WEBCFG_FREE(__x__) if(__x__ != NULL) { free((void*)(__x__)); __x__ = NULL;} else {printf("Trying to free null pointer\n");}
+
+typedef struct
+{
+    char  *etag; 
+    char  *name_space;       
+    char  *data;    
+} multipartdocs_t;
+
+typedef struct {
+    multipartdocs_t *entries; 
+    size_t   entries_count;      
+} multipart_t;
+
+
 /**
  *  Makes the HTTP request and provides the response.
  *
  *
  *  @return 0 on success, error otherwise
  */
-int webcfg_http_request(char *webConfigURL, char **configData, int r_count, long *code);
+int webcfg_http_request(char *webConfigURL, char **configData, int r_count, long *code, char *interface);
+int writeToFile(char *filename, char *data, int len);
 
 
 

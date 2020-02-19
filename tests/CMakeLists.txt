@@ -24,6 +24,16 @@ endif ()
 link_directories ( ${LIBRARY_DIR} )
 
 #-------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------
+#   test_portmapping
+#-------------------------------------------------------------------------------
+add_test(NAME test_portmapping COMMAND ${MEMORY_CHECK} ./test_portmapping)
+add_executable(test_portmapping test_portmapping.c ../src/portmappingdoc.c ../src/portmappingparam.c ../src/portmappingpack.c ../src/helpers.c ../src/array_helpers.c)
+target_link_libraries (test_portmapping -lcunit -lmsgpackc)
+
+target_link_libraries (test_portmapping gcov -Wl,--no-as-needed )
+
+#-------------------------------------------------------------------------------
 #   test_webcfgparam
 #-------------------------------------------------------------------------------
 add_test(NAME test_webcfgparam COMMAND ${MEMORY_CHECK} ./test_webcfgparam)
@@ -69,10 +79,12 @@ ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/test_webcfgdoc.dir/__/src --output-file t
 COMMAND lcov -q --capture --directory 
 ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/test_webcfgparam.dir/__/src --output-file test_webcfgparam.info
 COMMAND lcov -q --capture --directory
+${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/test_portmapping.dir/__/src --output-file test_portmapping.info 
 
 COMMAND lcov
 -a test_webcfgdoc.info
 -a test_webcfgparam.info
+-a test_portmapping.info
 -a test_webcfgpack.info
 --output-file coverage.info
 

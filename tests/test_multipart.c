@@ -18,24 +18,31 @@
 #include <errno.h>
 #include <stdio.h>
 #include <CUnit/Basic.h>
+#include "../src/webcfgdoc.h"
 #include "../src/webcfgparam.h"
 #include "../src/multipart.h"
+#include "../src/portmappingdoc.h"
+#include "../src/portmappingparam.h"
 #include <msgpack.h>
 #include <curl/curl.h>
 
 char *url = NULL;
+char *interface = NULL;
+
 void test_multipart()
 {
 	int r_count=0;
 	int configRet = -1;
 	char *webConfigData = NULL;
 	long res_code;
+          
+
 	if(url == NULL)
 	{
 		printf("\nProvide config URL as argument\n");
 		return;
 	}
-	configRet = webcfg_http_request(url, &webConfigData, r_count, &res_code);
+	configRet = webcfg_http_request(url, &webConfigData, r_count, &res_code, interface);
 	if(configRet == 0)
 	{
 		printf("config ret success\n");
@@ -66,6 +73,10 @@ int main( int argc, char *argv[] )
     if(argv[1] !=NULL)
     {
     	url = strdup(argv[1]);
+    }
+    if(argv[2] !=NULL)
+    {
+    	interface = strdup(argv[2]);
     }
     if( CUE_SUCCESS == CU_initialize_registry() ) {
         add_suites( &suite );
