@@ -15,6 +15,10 @@
  */
 
 #include "multipart.h"
+#include "webcfgdoc.h"
+#include "webcfgparam.h"
+#include "portmappingdoc.h"
+#include "portmappingparam.h"
 #include <uuid/uuid.h>
 #include <string.h>
 #include <stdlib.h>
@@ -38,9 +42,11 @@ struct token_data {
 /*----------------------------------------------------------------------------*/
 /*                            File Scoped Variables                           */
 /*----------------------------------------------------------------------------*/
-static char g_interface[32]="eth0";
+//static char g_interface[32]={'\0'};
 static char g_ETAG[64]={'\0'};
 char webpa_auth_token[4096]={'\0'};
+#define DATA_SIZE 2321
+int Curr_index ;
 /*----------------------------------------------------------------------------*/
 /*                             Function Prototypes                            */
 /*----------------------------------------------------------------------------*/
@@ -48,6 +54,9 @@ size_t write_callback_fn(void *buffer, size_t size, size_t nmemb, struct token_d
 size_t header_callback(char *buffer, size_t size, size_t nitems);
 void stripSpaces(char *str, char **final_str);
 void createCurlheader( struct curl_slist *list, struct curl_slist **header_list);
+void print_multipart(char *ptr, int no_of_bytes, int part_no);
+void parse_multipart(char *ptr, int no_of_bytes, multipartdocs_t *m);
+void multipart_destroy( multipart_t *m );
 /*----------------------------------------------------------------------------*/
 /*                             External Functions                             */
 /*----------------------------------------------------------------------------*/
@@ -58,18 +67,26 @@ void createCurlheader( struct curl_slist *list, struct curl_slist **header_list)
 * @param[in] r_count Number of curl retries on ipv4 and ipv6 mode during failure
 * @return returns 0 if success, otherwise failed to fetch auth token and will be retried.
 */
-int webcfg_http_request(char *webConfigURL, char **configData, int r_count, long *code)
+int webcfg_http_request(char *webConfigURL, char **configData, int r_count, long *code, char *interface)
 {
 	CURL *curl;
 	CURLcode res;
 	CURLcode time_res;
 	struct curl_slist *list = NULL;
 	struct curl_slist *headers_list = NULL;
-	int rv=1;
+	int rv=1,count =0;
 	double total;
 	long response_code = 0;
-	char *interface = NULL;
+	//char *interface = NULL;
 	char *ct = NULL;
+	char *boundary = NULL;
+	char *str=NULL;
+	char *line_boundary = NULL;
+	char *last_line_boundary = NULL;
+	char *str_body = NULL;
+        multipart_t *mp = NULL;
+        //portmappingdoc_t *rpm;
+      
 	//char *webConfigURL= NULL;
 	int content_res=0;
 	struct token_data data;
@@ -100,7 +117,7 @@ int webcfg_http_request(char *webConfigURL, char **configData, int r_count, long
 			printf("Failed to get webconfig root configURL\n");
 		}
 		curl_easy_setopt(curl, CURLOPT_TIMEOUT, CURL_TIMEOUT_SEC);
-		if(strlen(g_interface) == 0)
+		/**if(strlen(g_interface) == 0)
 		{
 			//get_webCfg_interface(&interface);
 			if(interface !=NULL)
@@ -110,11 +127,11 @@ int webcfg_http_request(char *webConfigURL, char **configData, int r_count, long
 		               WEBCFG_FREE(interface);
 		        }
 		}
-		printf("g_interface fetched is %s\n", g_interface);
-		if(strlen(g_interface) > 0)
+		printf("g_interface fetched is %s\n", g_interface);**/
+		if(strlen(interface) > 0)
 		{
-			printf("setting interface %s\n", g_interface);
-			curl_easy_setopt(curl, CURLOPT_INTERFACE, g_interface);
+			printf("setting interface %s\n", interface);
+			curl_easy_setopt(curl, CURLOPT_INTERFACE, interface);
 		}
 
 		// set callback for writing received data
@@ -173,14 +190,125 @@ int webcfg_http_request(char *webConfigURL, char **configData, int r_count, long
 		{
                         printf("checking content type\n");
 			content_res = curl_easy_getinfo(curl, CURLINFO_CONTENT_TYPE, &ct);
-			printf("ct is %s\n", ct);
-			if(!content_res && ct)
-			{
-                                *configData = strdup(data.data);
-                                //printf("configData received from cloud is %s\n", *configData);
-				printf("configData len is %lu\n", strlen(*configData));
-			}
+			printf("ct is %s, content_res is %d\n", ct, content_res);
+			// fetch boundary
+			str = strtok(ct,";");
+			str = strtok(NULL, ";");			
+			boundary= strtok(str,"=");
+			boundary= strtok(NULL,"=");
+			printf( "boundary %s\n", boundary );
+			int boundary_len= strlen(boundary);
+
+			line_boundary  = (char *)malloc(sizeof(char) * (boundary_len +5));
+			snprintf(line_boundary,boundary_len+5,"--%s\r\n",boundary);
+			printf( "line_boundary %s, len %ld\n", line_boundary, strlen(line_boundary) );
+
+			last_line_boundary  = (char *)malloc(sizeof(char) * (boundary_len + 5));
+			snprintf(last_line_boundary,boundary_len+5,"--%s--",boundary);
+			printf( "last_line_boundary %s, len %ld\n", last_line_boundary, strlen(last_line_boundary) );
+                         
+                       // writeToFile("Input_data.bin",data.data,data.size);
+			// Use --boundary to split
+			str_body = malloc(sizeof(char) * data.size + 1);
+			str_body = memcpy(str_body, data.data, data.size + 1);
+			int num_of_parts = 0;
+			char *ptr_lb=str_body;
+                        char *ptr_lb1=str_body;
+                        //char *temp=str_body;
+                        char *ptr_count = str_body;
+                      
+			int index1=0, index2 =0 ;
+//////////////////////////////////////////////////////////////////For Subdocs count
+
+			   while((ptr_count - str_body) < (int)data.size ){  
+	
+				if(0 == memcmp(ptr_count, last_line_boundary, strlen(last_line_boundary))){
+				     num_of_parts++;
+				    break;
+				}
+				else if(0 == memcmp(ptr_count, line_boundary, strlen(line_boundary))){
+				     num_of_parts++;
+
+			        }
+                              ptr_count++;
+                           }
+                        printf("Size of the docs is :%d\n", (num_of_parts-1));                               
+
+/////////////////////////////////////////////////////////////////////////////////////////////////
+
+                         
+		         mp = (multipart_t *) malloc (sizeof(multipart_t));
+                         mp->entries_count = (size_t)num_of_parts;
+			 mp->entries = (multipartdocs_t *) malloc(sizeof(multipartdocs_t )*(mp->entries_count-1) ); 
+			 memset( mp->entries, 0, sizeof(multipartdocs_t)*(mp->entries_count-1)  );	
+                         //num_of_parts = 1;	       
+                        ///Scanning each lines with \n as delimiter
+			while((ptr_lb - str_body) < (int)data.size){                      
+                           if(0 == memcmp(ptr_lb, last_line_boundary, strlen(last_line_boundary))){
+                             printf("last line boundary \n");
+                             break;
+                           }
+                           if (0 == memcmp(ptr_lb, "-", 1) && 0 == memcmp(ptr_lb, line_boundary, strlen(line_boundary))){
+                              ptr_lb = ptr_lb+(strlen(line_boundary));
+                              //printf("#####################################################\n");
+                              //printf("Found line \n");
+                              //printf("#####################################################\n");
+                              num_of_parts = 1;
+                              while(0 != num_of_parts % 2){    
+			            ptr_lb = memchr(ptr_lb, '\n', data.size - (ptr_lb - str_body));
+                                    // printf("printing newline: %ld\n",ptr_lb-str_body); 
+                                    ptr_lb1 = memchr(ptr_lb+1, '\n', data.size - (ptr_lb - str_body));
+                                    // printf("printing newline2: %ld\n",ptr_lb1-str_body);
+                                   if(0 != memcmp(ptr_lb1-1, "\r",1 )){
+                                      ptr_lb1 = memchr(ptr_lb1+1, '\n', data.size - (ptr_lb - str_body));
+                                   } 
+                                   index2 = ptr_lb1-str_body;
+                                   index1 = ptr_lb-str_body;
+                                   //printf("Index1 : %d\n",index1);
+                                   //printf("Index2 : %d\n",index2);
+                                   //printf("Bytes : %d\n",index2 - index1);
+                                   //printf("Parts : %d\n",num_of_parts);
+                                   //printf("The count is %d\n", count); 
+                                   parse_multipart(str_body+index1+1,index2 - index1 - 2, &mp->entries[count]); 
+                         
+                                   ptr_lb++;
+                                               
+                                   if(0 == memcmp(ptr_lb, last_line_boundary, strlen(last_line_boundary))){
+                                      printf("last line boundary inside \n");
+                                      break;
+                                   }   
+                                   if(0 == memcmp(ptr_lb1+1, "-", 1) && 0 == memcmp(ptr_lb1+1, line_boundary, strlen(line_boundary))){
+                                      printf(" line boundary inside \n");
+                                      num_of_parts++;
+                                      count++;
+                            
+                             
+                                   }
+                              
+                             
+                               }
+                           }
+                          else {
+                              ptr_lb++;
+                          }
+                          
+                        }                       			
+                        printf("Data size is : %d\n",(int)data.size);
+                       
+                        for(size_t m = 0 ; m<(mp->entries_count-1); m++){
+ 
+                            printf("mp->entries[%ld].name_space %s\n", m, mp->entries[m].name_space);
+	                    printf("mp->entries[%ld].etag %s\n" ,m,  mp->entries[m].etag);
+                            printf("mp->entries[%ld].data %s\n" ,m,  mp->entries[m].data);
+                        
+                        }
+
+			//printf("Number of sub docs %d\n",((num_of_parts-2)/6));
+			*configData=str_body;
+
 		}
+                //multipart_destroy(mp);
+                free(mp);
 		WEBCFG_FREE(data.data);
 		curl_easy_cleanup(curl);
 		rv=0;
@@ -279,6 +407,28 @@ void stripSpaces(char *str, char **final_str)
 	*final_str = str;
 }
 
+int readFromFile(char *filename, char **data, int *len)
+{
+	FILE *fp;
+	int ch_count = 0;
+	fp = fopen(filename, "r+");
+	if (fp == NULL)
+	{
+		printf("Failed to open file %s\n", filename);
+		return 0;
+	}
+	fseek(fp, 0, SEEK_END);
+	ch_count = ftell(fp);
+	fseek(fp, 0, SEEK_SET);
+	*data = (char *) malloc(sizeof(char) * (ch_count + 1));
+	fread(*data, 1, ch_count,fp);
+        
+	*len = ch_count;
+	(*data)[ch_count] ='\0';
+	fclose(fp);
+	return 1;
+}
+
 /* @brief Function to create curl header options
  * @param[in] list temp curl header list
  * @param[in] device status value
@@ -287,10 +437,14 @@ void stripSpaces(char *str, char **final_str)
 void createCurlheader( struct curl_slist *list, struct curl_slist **header_list)
 {
 	char *auth_header = NULL;
+	char *token = NULL;
+	int len = 0;
 
 	printf("Start of createCurlheader\n");
-	//add auth token here. for test purpose.
-	strcpy(webpa_auth_token, "");
+
+	// Read token from file
+	readFromFile("webcfg_token", &token, &len );
+	strncpy(webpa_auth_token, token, len);
 	if(strlen(webpa_auth_token)==0)
 	{
 		printf(">>>>>>><token> is NULL.. hardcode token here. for test purpose.\n");
@@ -308,4 +462,129 @@ void createCurlheader( struct curl_slist *list, struct curl_slist **header_list)
 
 	*header_list = list;
 }
+
+void multipart_destroy( multipart_t *m )
+{
+    if( NULL != m ) {
+     /*   size_t i;
+        for( i = 0; i < m->entries_count; i++ ) {
+            if( NULL != m->entries[i].name_space ) {
+                printf("name_space %ld",i);
+                free( m->entries[i].name_space );
+            }
+	    if( NULL != m->entries[i].etag ) {
+                printf("etag %ld",i);
+                free( m->entries[i].etag );
+            }
+             if( NULL != m->entries[i].data ) {
+                printf("data %ld",i);
+                free( m->entries[i].data );
+            }
+        }
+        if( NULL != m->entries ) {
+            printf("entries %ld",i);
+            free( m->entries );
+        }*/
+        free( m );
+    }
+}
+
+
+int writeToFile(char *filename, char *data, int len)
+{
+	FILE *fp;
+	fp = fopen(filename , "w+");
+	if (fp == NULL)
+	{
+		printf("Failed to open file %s\n", filename );
+		return 0;
+	}
+	if(data !=NULL)
+	{
+		fwrite(data, len, 1, fp);
+		fclose(fp);
+		return 1;
+	}
+	else
+	{
+		printf("WriteToFile failed, Data is NULL\n");
+		return 0;
+	}
+}
+
+void print_multipart(char *ptr, int no_of_bytes, int part_no) {
+	
+	printf("########################################\n");
+	int i = 0;
+	char *filename = malloc(sizeof(char)*6);
+	snprintf(filename,6,"%s%d","part",part_no);
+	while(i <= no_of_bytes)
+	{
+		putc(*(ptr+i),stdout);
+		i++;
+	}
+	printf("########################################\n");
+	writeToFile(filename,ptr,no_of_bytes);
+}
+
+void parse_multipart(char *ptr, int no_of_bytes, multipartdocs_t *m) {
+	
+	printf("########################################\n");
+        printf("\n");
+        printf("\n");
+       void * mulsubdoc;
+      // webcfgparam_t *pm;
+      // portmappingdoc_t *rpm;
+       //char* header_value = NULL;
+      
+	
+	printf("*********ptr is %s************\n", ptr);
+
+////////////////////////////////////////////////////////////for storing respective values
+   /*    if(strstr(ptr,"Namespace")){
+          // header_value = strtok(ptr,":");
+           m->name_space = strndup(ptr,no_of_bytes);
+           printf("The Namespace is %s",m->name_space);
+
+          }
+       else if(strstr(ptr,"Etag")){
+           m->etag = strndup(ptr,no_of_bytes);
+           printf("The Etag is %s",m->name_space);
+          }
+        else if(strstr(ptr,"parameters")){
+           m->data = ptr;
+           mulsubdoc = (void *) ptr;
+           printf("The paramters is %s",m->name_space);
+           webcfgparam_convert( mulsubdoc, no_of_bytes );
+           
+                     
+          } */
+          if(0 == strncasecmp(ptr,"Namespace",strlen("Namespace")-1)){
+             m->name_space = strndup(ptr,no_of_bytes);
+             printf("The Namespace is %s",m->name_space);
+          }
+          else if(0 == strncasecmp(ptr,"Etag",strlen("Etag")-1)){
+             m->etag = strndup(ptr,no_of_bytes);
+             printf("The Etag is %s",m->etag);
+          }
+          else if(strstr(ptr,"parameters")){
+             m->data = ptr;
+             mulsubdoc = (void *) ptr;
+             printf("The paramters is %s",m->data);
+             webcfgparam_convert( mulsubdoc, no_of_bytes );
+           
+                     
+          }
+
+
+ 
+
+///////////////////////////////////////////////////////////////
+        
+        printf("\n");
+        printf("\n");
+	printf("########################################\n");
+	
+}
+
 
