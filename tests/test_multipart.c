@@ -22,6 +22,7 @@
 #include "../src/webcfgparam.h"
 #include "../src/multipart.h"
 #include "../src/helpers.h"
+#include "../src/macbindingdoc.h"
 #include "../src/portmappingdoc.h"
 #include "../src/portmappingparam.h"
 #include <msgpack.h>
@@ -145,26 +146,14 @@ void test_multipart()
 		//End of msgpack decoding
 
 		//decode root doc
-		char* final_subdbuff = NULL;
-                printf("subdbuff is %s\n", (char*)subdbuff);
-
-		stripLine(subdbuff, (int)subLen, &final_subdbuff);
 		printf("subLen is %d\n", (int)subLen);
-		//subdbuff = ( void*)subfileData;
-		char *binfileData = NULL;
-		int length=0;
-		//decode root doc
-		int status = writeToFile("buff.bin", (char*)final_subdbuff, subLen-1);
-		printf("status %d\n", status);
-		int readstatus = readFromFile("buff.bin", &binfileData , &length);
-		printf("readstatus %d\n", readstatus);
 		printf("--------------decode root doc-------------\n");
-		pm = webcfgparam_convert( final_subdbuff, length+1 );
+		pm = webcfgparam_convert( subdbuff, subLen+1 );
+		printf("blob_size is %d\n", pm->entries[0].value_size);
                 err = errno;
-		printf( "errno: %s\n", portmapping_strerror(err) );
+		printf( "errno: %s\n", webcfgparam_strerror(err) );
 		CU_ASSERT_FATAL( NULL != pm );
 		CU_ASSERT_FATAL( NULL != pm->entries );
-		//CU_ASSERT_STRING_EQUAL( "Device.NAT.PortMapping.", pm->entries[0].name );
 		for(i = 0; i < (int)pm->entries_count ; i++)
 		{
 			printf("pm->entries[%d].name %s\n", i, pm->entries[i].name);
@@ -173,16 +162,48 @@ void test_multipart()
 		}
 
 		//decode inner blob
-		/*(portmappingdoc_t *rpm;
+		/************ macbinding inner blob decode ****************/
+
+		/*macbindingdoc_t *rpm;
 		printf("--------------decode blob-------------\n");
-		rpm = portmappingdoc_convert( pm->entries[0].value, 2623 );
-		printf("blob len %lu\n", strlen(pm->entries[0].value));
+		rpm = macbindingdoc_convert( pm->entries[0].value, pm->entries[0].value_size );
+		err = errno;
+		printf( "errno: %s\n", macbindingdoc_strerror(err) );
+		CU_ASSERT_FATAL( NULL != rpm );
+		CU_ASSERT_FATAL( NULL != rpm->entries );
+		printf("rpm->entries_count is %ld\n", rpm->entries_count);
+
+		for(i = 0; i < (int)rpm->entries_count ; i++)
+		{
+			printf("rpm->entries[%d].Yiaddr %s\n", i, rpm->entries[i].yiaddr);
+			printf("rpm->entries[%d].Chaddr %s\n" , i, rpm->entries[i].chaddr);
+		}
+
+		macbindingdoc_destroy( rpm );*/
+
+		/************ portmapping inner blob decode ****************/
+
+		portmappingdoc_t *rpm;
+		printf("--------------decode blob-------------\n");
+		rpm = portmappingdoc_convert( pm->entries[0].value, pm->entries[0].value_size );
 		err = errno;
 		printf( "errno: %s\n", portmappingdoc_strerror(err) );
 		CU_ASSERT_FATAL( NULL != rpm );
 		CU_ASSERT_FATAL( NULL != rpm->entries );
+		printf("rpm->entries_count is %ld\n", rpm->entries_count);
 
-		portmappingdoc_destroy( rpm );*/
+		for(i = 0; i < (int)rpm->entries_count ; i++)
+		{
+			printf("rpm->entries[%d].InternalClient %s\n", i, rpm->entries[i].internal_client);
+			printf("rpm->entries[%d].ExternalPortEndRange %s\n" , i, rpm->entries[i].external_port_end_range);
+			printf("rpm->entries[%d].Enable %s\n", i, rpm->entries[i].enable?"true":"false");
+			printf("rpm->entries[%d].Protocol %s\n", i, rpm->entries[i].protocol);
+			printf("rpm->entries[%d].Description %s\n", i, rpm->entries[i].description);
+			printf("rpm->entries[%d].external_port %s\n", i, rpm->entries[i].external_port);
+		}
+
+		portmappingdoc_destroy( rpm );
+
 		webcfgparam_destroy( pm );
 	}	
 	else
@@ -212,7 +233,7 @@ int main( int argc, char *argv[] )
 	}
 	// Read url from file
 	//readFromFile(FILE_URL, &url, &len );
-	if(strlen(url)==0)
+	if(url !=NULL && strlen(url)==0)
 	{
 		printf("<url> is NULL.. add url in /tmp/webcfg_url file\n");
 		return 0;

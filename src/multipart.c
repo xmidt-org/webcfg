@@ -82,7 +82,7 @@ int webcfg_http_request(char *webConfigURL, char **configData, int r_count, long
 	char *line_boundary = NULL;
 	char *last_line_boundary = NULL;
 	char *str_body = NULL;
-    multipart_t *mp = NULL;
+	multipart_t *mp = NULL;
 	int subdocbytes =0;
 
 	//char *webConfigURL= NULL;
@@ -90,7 +90,6 @@ int webcfg_http_request(char *webConfigURL, char **configData, int r_count, long
 	struct token_data data;
 	data.size = 0;
 	void * dataVal = NULL;
-	curl_global_init(CURL_GLOBAL_ALL);
 	curl = curl_easy_init();
 	if(curl)
 	{
