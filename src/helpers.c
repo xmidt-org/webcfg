@@ -66,7 +66,7 @@ void* helper_convert( const void *buf, size_t len,
 
             /* The outermost wrapper MUST be a map. */
             mp_rv = msgpack_unpack_next( &msg, (const char*) buf, len, &offset );
-	    printf("mp_rv is %d MSGPACK_UNPACK_SUCCESS %d offset %lu\n", mp_rv, MSGPACK_UNPACK_SUCCESS, offset);
+	    printf("mp_rv is %d MSGPACK_UNPACK_SUCCESS %d offset %zu\n", mp_rv, MSGPACK_UNPACK_SUCCESS, offset);
 	msgpack_object obj = msg.data;
 	msgpack_object_print(stdout, obj);
             printf("\nMSGPACK_OBJECT_MAP is %d  msg.data.type %d\n", MSGPACK_OBJECT_MAP, msg.data.type);

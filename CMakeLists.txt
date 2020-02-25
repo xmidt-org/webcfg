@@ -41,6 +41,8 @@ include_directories(${INCLUDE_DIR}
                     ${INCLUDE_DIR}/cjson
                     ${INCLUDE_DIR}/msgpack
 		    ${INCLUDE_DIR}/trower-base64
+		    ${INCLUDE_DIR}/wdmp-c
+		    ${INCLUDE_DIR}/cimplog
 #                    ${INCLUDE_DIR}/curl
                     )
 
@@ -70,6 +72,29 @@ ExternalProject_Add(trower-base64
 )
 add_library(libtrower-base64 STATIC SHARED IMPORTED)
 add_dependencies(libtrower-base64 trower-base64)
+
+# wdmp-c external dependency
+#-------------------------------------------------------------------------------
+ExternalProject_Add(wdmp-c
+    PREFIX ${CMAKE_CURRENT_BINARY_DIR}/_prefix/wdmp-c
+    GIT_REPOSITORY https://github.com/Comcast/wdmp-c.git
+    GIT_TAG "c227bfa1e129404f21fa0272f411c7a472a0f237"
+    CMAKE_ARGS += -DCMAKE_INSTALL_PREFIX=${INSTALL_DIR}
+                  -DBUILD_TESTING=OFF
+)
+add_library(libwdmp-c STATIC SHARED IMPORTED)
+add_dependencies(libwdmp-c wdmp-c)
+
+# cimplog external dependency
+#-------------------------------------------------------------------------------
+ExternalProject_Add(cimplog
+    PREFIX ${CMAKE_CURRENT_BINARY_DIR}/_prefix/cimplog
+    GIT_REPOSITORY https://github.com/Comcast/cimplog.git
+    GIT_TAG "1.0.2"
+    CMAKE_ARGS += -DCMAKE_INSTALL_PREFIX=${INSTALL_DIR}
+)
+add_library(libcimplog STATIC SHARED IMPORTED)
+add_dependencies(libcimplog cimplog)
 
 # curl external dependency
 #-------------------------------------------------------------------------------

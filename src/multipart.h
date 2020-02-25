@@ -22,14 +22,14 @@
 
 typedef struct
 {
-    char  *etag; 
-    char  *name_space;       
-    char  *data;    
+    char  *etag;
+    char  *name_space;
+    char  *data;
 } multipartdocs_t;
 
 typedef struct {
-    multipartdocs_t *entries; 
-    size_t   entries_count;      
+    multipartdocs_t *entries;
+    size_t   entries_count;
 } multipart_t;
 
 

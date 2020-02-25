@@ -151,7 +151,7 @@ ssize_t portmap_pack_subdoc(const subdoc_t *subdocData,void **data)
         if( NULL != *data ) 
         {
             memcpy( *data, sbuf.data, sbuf.size );
-	    printf("sbuf.data of subdoc is %s sbuf.size %ld\n", sbuf.data, sbuf.size);
+	    printf("sbuf.data of subdoc is %s sbuf.size %zu\n", sbuf.data, sbuf.size);
             rv = sbuf.size;
         }
     }
@@ -230,7 +230,7 @@ ssize_t portmap_pack_rootdoc( char *blob, const data_t *packData, void **data )
 
         if( NULL != *data ) {
             memcpy( *data, sbuf.data, sbuf.size );
-	    printf("sbuf.data is %s sbuf.size %ld\n", sbuf.data, sbuf.size);
+	    printf("sbuf.data is %s sbuf.size %zu\n", sbuf.data, sbuf.size);
             rv = sbuf.size;
         }
     }

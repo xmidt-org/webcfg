@@ -300,7 +300,7 @@ int process_portmapping( portmapping_t *pm, msgpack_object *obj )
         pm->entries_count = array->size;
         pm->entries = (pm_entry_t *) malloc( sizeof(pm_entry_t) * pm->entries_count );
 
-        printf("pm->entries_count is %ld\n",pm->entries_count);
+        printf("pm->entries_count is %zu\n",pm->entries_count);
         if( NULL == pm->entries ) {
             pm->entries_count = 0;
             return -1;

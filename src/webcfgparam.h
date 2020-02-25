@@ -25,10 +25,10 @@ typedef struct
     char *value;
     int   value_size;
     uint16_t type;
-} param_t;
+} wparam_t;
 
 typedef struct {
-    param_t *entries;       
+    wparam_t *entries;
     size_t      entries_count;
 } webcfgparam_t;
 

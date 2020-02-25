@@ -38,7 +38,7 @@ target_link_libraries (test_portmapping gcov -Wl,--no-as-needed )
 #-------------------------------------------------------------------------------
 add_test(NAME test_webcfgparam COMMAND ${MEMORY_CHECK} ./test_webcfgparam)
 add_executable(test_webcfgparam test_webcfgparam.c ../src/webcfgparam.c ../src/helpers.c)
-target_link_libraries (test_webcfgparam -lcunit -lmsgpackc)
+target_link_libraries (test_webcfgparam -lcunit -lmsgpackc -lcimplog)
 
 target_link_libraries (test_webcfgparam gcov -Wl,--no-as-needed )
 
@@ -47,7 +47,7 @@ target_link_libraries (test_webcfgparam gcov -Wl,--no-as-needed )
 #-------------------------------------------------------------------------------
 add_test(NAME test_webcfgdoc COMMAND ${MEMORY_CHECK} ./test_webcfgdoc)
 add_executable(test_webcfgdoc test_webcfgdoc.c ../src/webcfgdoc.c ../src/webcfgparam.c ../src/helpers.c ../src/array_helpers.c)
-target_link_libraries (test_webcfgdoc -lcunit -lmsgpackc)
+target_link_libraries (test_webcfgdoc -lcunit -lmsgpackc -lcimplog)
 
 target_link_libraries (test_webcfgdoc gcov -Wl,--no-as-needed )
 
@@ -56,7 +56,7 @@ target_link_libraries (test_webcfgdoc gcov -Wl,--no-as-needed )
 #-------------------------------------------------------------------------------
 add_test(NAME test_webcfgpack COMMAND ${MEMORY_CHECK} ./test_webcfgpack)
 add_executable(test_webcfgpack test_webcfgpack.c ../src/webcfgdoc.c ../src/webcfgparam.c ../src/webcfgpack.c ../src/helpers.c ../src/array_helpers.c )
-target_link_libraries (test_webcfgpack -lcunit -lmsgpackc)
+target_link_libraries (test_webcfgpack -lcunit -lmsgpackc -lcimplog)
 
 target_link_libraries (test_webcfgpack gcov -Wl,--no-as-needed )
 
@@ -65,7 +65,7 @@ target_link_libraries (test_webcfgpack gcov -Wl,--no-as-needed )
 #-------------------------------------------------------------------------------
 add_test(NAME test_multipart COMMAND ${MEMORY_CHECK} ./test_multipart)
 add_executable(test_multipart test_multipart.c ../src/webcfgdoc.c ../src/webcfgparam.c ../src/multipart.c ../src/helpers.c ../src/array_helpers.c ../src/helpers.c ../src/portmappingdoc.c ../src/portmappingparam.c ../src/macbindingdoc.c)
-target_link_libraries (test_multipart -lcunit -lmsgpackc -lcurl -luuid -ltrower-base64)
+target_link_libraries (test_multipart -lcunit -lmsgpackc -lcurl -luuid -ltrower-base64 -lwdmp-c -lcimplog)
 
 target_link_libraries (test_multipart gcov -Wl,--no-as-needed )
 

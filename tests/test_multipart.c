@@ -33,24 +33,6 @@
 char *url = NULL;
 char *interface = NULL;
 
-//To strip all spaces , new line & carriage return characters from header output
-void stripLine(char *str, int len, char **final_str)
-{
-	int i=0, j=0;
-
-	for(i=0;i <len;++i)
-	{
-		if(str[i]!='\n')
-		{
-			str[j++]=str[i];
-		}
-	}
-	str[j]='\0';
-	*final_str = str;
-	printf("j is %d\n", j);
-	printf("*final_str is %s\n", *final_str);
-}
-
 void test_multipart()
 {
 	int r_count=0;

@@ -183,7 +183,7 @@ int process_macbindingdoc( macbindingdoc_t *pm, msgpack_object *obj )
         size_t i;
 
         pm->entries_count = array->size;
-       	printf("pm->entries_count is %ld\n", pm->entries_count);
+       	printf("pm->entries_count is %zu\n", pm->entries_count);
         pm->entries = (macdoc_t *) malloc( sizeof(macdoc_t) * pm->entries_count );
         if( NULL == pm->entries ) {
             pm->entries_count = 0;
