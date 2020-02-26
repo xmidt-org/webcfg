@@ -28,6 +28,7 @@
 #include <msgpack.h>
 #include <curl/curl.h>
 #include <base64.h>
+#include "../src/webcfg_generic.h"
 #define FILE_URL "/tmp/webcfg_url"
 
 char *url = NULL;
@@ -61,7 +62,8 @@ void test_multipart()
 		printf("\nProvide config URL as argument\n");
 		return;
 	}
-	configRet = webcfg_http_request(url, &webConfigData, r_count, &res_code, interface, &subfileData, &len);
+	configRet = webcfg_http_request(&webConfigData, r_count, &res_code, &subfileData, &len);
+//	configRet = webcfg_http_request(url, &webConfigData, r_count, &res_code, interface, &subfileData, &len);
 	if(configRet == 0)
 	{
 		printf("config ret success\n");

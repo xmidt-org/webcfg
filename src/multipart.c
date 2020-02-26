@@ -13,11 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "multipart.h"
 #include <string.h>
 #include <stdlib.h>
+#include "multipart.h"
 #include "webcfgparam.h"
 #include "webcfg_log.h"
+#include "webcfg_auth.h"
 /*----------------------------------------------------------------------------*/
 /*                                   Macros                                   */
 /*----------------------------------------------------------------------------*/
@@ -25,8 +26,9 @@
 #define ETAG_HEADER 		       "Etag:"
 #define CURL_TIMEOUT_SEC	   25L
 #define CA_CERT_PATH 		   "/etc/ssl/certs/ca-certificates.crt"
-#define WEBPA_READ_HEADER             "/etc/parodus/parodus_read_file.sh"
-#define WEBPA_CREATE_HEADER           "/etc/parodus/parodus_create_file.sh"
+#define WEBPA_READ_HEADER          "/etc/parodus/parodus_read_file.sh"
+#define WEBPA_CREATE_HEADER        "/etc/parodus/parodus_create_file.sh"
+#define WEBCFG_URL_FILE 	   "/nvram/webcfg_url" //check here.
 /*----------------------------------------------------------------------------*/
 /*                               Data Structures                              */
 /*----------------------------------------------------------------------------*/
@@ -40,6 +42,7 @@ struct token_data {
 /*----------------------------------------------------------------------------*/
 static char g_ETAG[64]={'\0'};
 char webpa_aut_token[4096]={'\0'};
+static char g_interface[32]={'\0'};
 /*----------------------------------------------------------------------------*/
 /*                             Function Prototypes                            */
 /*----------------------------------------------------------------------------*/
@@ -60,7 +63,7 @@ void multipart_destroy( multipart_t *m );
 * @param[in] r_count Number of curl retries on ipv4 and ipv6 mode during failure
 * @return returns 0 if success, otherwise failed to fetch auth token and will be retried.
 */
-int webcfg_http_request(char *webConfigURL, char **configData, int r_count, long *code, char *interface, char** sub_buff, int *sub_len)
+int webcfg_http_request(char **configData, int r_count, long *code, char** sub_buff, int *sub_len)
 {
 	CURL *curl;
 	CURLcode res;
@@ -70,6 +73,7 @@ int webcfg_http_request(char *webConfigURL, char **configData, int r_count, long
 	int rv=1,count =0;
 	double total;
 	long response_code = 0;
+	char *interface = NULL;
 	char *ct = NULL;
 	char *boundary = NULL;
 	char *str=NULL;
@@ -78,6 +82,8 @@ int webcfg_http_request(char *webConfigURL, char **configData, int r_count, long
 	char *str_body = NULL;
 	multipart_t *mp = NULL;
 	int subdocbytes =0;
+	char *webConfigURL = NULL;
+	int len=0;
 
 	int content_res=0;
 	struct token_data data;
@@ -96,6 +102,7 @@ int webcfg_http_request(char *webConfigURL, char **configData, int r_count, long
 		data.data[0] = '\0';
 		createCurlHeader(list, &headers_list);
 
+		readFromFile(WEBCFG_URL_FILE, &webConfigURL, &len );
 		if(webConfigURL !=NULL)
 		{
 			WebConfigLog("webconfig root ConfigURL is %s\n", webConfigURL);
@@ -103,13 +110,27 @@ int webcfg_http_request(char *webConfigURL, char **configData, int r_count, long
 		}
 		else
 		{
-			WebConfigLog("Failed to get webconfig root configURL\n");
+			WebConfigLog("Failed to get webconfig configURL\n");
+			return rv;
 		}
 		curl_easy_setopt(curl, CURLOPT_TIMEOUT, CURL_TIMEOUT_SEC);
-		if((interface !=NULL) && strlen(interface) > 0)
+		WebConfigLog("fetching interface from device.properties\n");
+		if(strlen(g_interface) == 0)
 		{
-			WebConfigLog("setting interface %s\n", interface);
-			curl_easy_setopt(curl, CURLOPT_INTERFACE, interface);
+			//get_webCfg_interface(&interface);
+			interface = strdup("erouter0"); //check here.
+			if(interface !=NULL)
+		        {
+		               strncpy(g_interface, interface, sizeof(g_interface)-1);
+		               WebcfgDebug("g_interface copied is %s\n", g_interface);
+		               WEBCFG_FREE(interface);
+		        }
+		}
+		WebConfigLog("g_interface fetched is %s\n", g_interface);
+		if(strlen(g_interface) > 0)
+		{
+			WebcfgDebug("setting interface %s\n", g_interface);
+			curl_easy_setopt(curl, CURLOPT_INTERFACE, g_interface);
 		}
 
 		// set callback for writing received data
@@ -410,22 +431,26 @@ int readFromFile(char *filename, char **data, int *len)
 void createCurlHeader( struct curl_slist *list, struct curl_slist **header_list)
 {
 	char *auth_header = NULL;
-	char *token = NULL;
-	int len = 0;
+	//char *token = NULL;
+	//int len = 0;
 
 	WebConfigLog("Start of createCurlHeader\n");
 
 	// Read token from file
-	readFromFile("/nvram/webcfg_token", &token, &len );
-	strncpy(webpa_aut_token, token, len);
-	if(strlen(webpa_aut_token)==0)
-	{
+	//readFromFile("/nvram/webcfg_token", &token, &len );
+	//strncpy(webpa_aut_token, token, len);
+	//if(strlen(webpa_aut_token)==0)
+	//{
 		WebConfigLog(">>>>>>><token> is NULL.. add token in /nvram/webcfg_token file\n");
-	}
+	//}
+
+	//Fetch auth JWT token from cloud.
+	getAuthToken();
+	WebConfigLog("get_global_auth_token() is %s\n", get_global_auth_token());
 	auth_header = (char *) malloc(sizeof(char)*MAX_HEADER_LEN);
 	if(auth_header !=NULL)
 	{
-		snprintf(auth_header, MAX_HEADER_LEN, "Authorization:Bearer %s", (0 < strlen(webpa_aut_token) ? webpa_aut_token : NULL));
+		snprintf(auth_header, MAX_HEADER_LEN, "Authorization:Bearer %s", (0 < strlen(get_global_auth_token()) ? get_global_auth_token() : NULL));
 		list = curl_slist_append(list, auth_header);
 		WEBCFG_FREE(auth_header);
 	}

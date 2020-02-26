@@ -13,35 +13,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef REQUEST_H
-#define REQUEST_H
+#ifndef WEBCFGAUTH_H
+#define WEBCFGAUTH_H
 
 #include <stdint.h>
 #include <curl/curl.h>
-#define WEBCFG_FREE(__x__) if(__x__ != NULL) { free((void*)(__x__)); __x__ = NULL;} else {printf("Trying to free null pointer\n");}
+#include "webcfg_log.h"
+#include "webcfg.h"
 
-typedef struct
-{
-    char  *etag;
-    char  *name_space;
-    char  *data;
-} multipartdocs_t;
-
-typedef struct {
-    multipartdocs_t *entries;
-    size_t   entries_count;
-} multipart_t;
+#define WEBPA_READ_HEADER             "/etc/parodus/parodus_read_file.sh"
+#define WEBPA_CREATE_HEADER           "/etc/parodus/parodus_create_file.sh"
 
 
-/**
- *  Makes the HTTP request and provides the response.
- *
- *
- *  @return 0 on success, error otherwise
- */
-int webcfg_http_request(char **configData, int r_count, long *code, char** sub_buff, int *sub_len);
-int writeToFile(char *filename, char *data, int len);
-int readFromFile(char *filename, char **data, int *len);
-
+void getAuthToken();
+void createNewAuthToken(char *newToken, size_t len, char *hw_mac, char* hw_serial_number);
+char* get_global_auth_token();
+char* get_global_serialNum();
 
 #endif

@@ -47,17 +47,16 @@
 /*----------------------------------------------------------------------------*/
 /* return logger file name */
 const char *fetch_generic_file(void);
-void get_webCfg_interface(char **interface);
-int getConfigVersion(int index, char **version);
-bool getConfigURL(int index, char **url);
-bool getRequestTimeStamp(int index,char **RequestTimeStamp);
-int setRequestTimeStamp(int index);
-int setSyncCheckOK(int index, bool status);
-int setConfigVersion(int index, char *version);
-int setSyncCheckOK(int index, bool status);
+void _get_webCfg_interface(char **interface);
+int _getConfigVersion(int index, char **version);
+bool _getConfigURL(int index, char **url);
+bool _getRequestTimeStamp(int index,char **RequestTimeStamp);
+int _setRequestTimeStamp(int index);
+int _setSyncCheckOK(int index, bool status);
+int _setConfigVersion(int index, char *version);
+int _setSyncCheckOK(int index, bool status);
 
 char *get_global_systemReadyTime();
-//void getCurrentTime(struct timespec *timer);
 char * getParameterValue(char *paramName);
 void getDeviceMac();
 char* get_global_deviceMAC();

@@ -43,7 +43,7 @@ extern bool g_shutdown;
  *
  *  @return 
  */
-void webcfg_init();
+void initWebConfigMultipartTask();
 
 void processWebconfigSync(int index);
 
@@ -57,4 +57,7 @@ void processWebconfigSync(int index);
 void webcfgStrncpy(char *destStr, const char *srcStr, size_t destSize);
 char* get_global_auth_token();
 int Get_PeriodicSyncCheckInterval();
+int processMultipartDocument();
+void getCurrent_Time(struct timespec *timer);
+long timeVal_Diff(struct timespec *starttime, struct timespec *finishtime);
 #endif
