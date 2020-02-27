@@ -45,7 +45,7 @@ extern bool g_shutdown;
  */
 void initWebConfigMultipartTask();
 
-void processWebconfigSync(int index);
+void processWebconfgSync(int index);
 
 /**
 * @brief webcfgStrncpy WAL String copy function that copies the content of source string into destination string and null terminates the destination string

@@ -89,6 +89,7 @@ int webcfg_http_request(char **configData, int r_count, long *code, char** sub_b
 	struct token_data data;
 	data.size = 0;
 	void * dataVal = NULL;
+	WebConfigLog("Inside webcfg_http_request\n");
 	curl = curl_easy_init();
 	if(curl)
 	{
@@ -441,7 +442,7 @@ void createCurlHeader( struct curl_slist *list, struct curl_slist **header_list)
 	//strncpy(webpa_aut_token, token, len);
 	//if(strlen(webpa_aut_token)==0)
 	//{
-		WebConfigLog(">>>>>>><token> is NULL.. add token in /nvram/webcfg_token file\n");
+	//	WebConfigLog(">>>>>>><token> is NULL.. add token in /nvram/webcfg_token file\n");
 	//}
 
 	//Fetch auth JWT token from cloud.

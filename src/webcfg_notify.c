@@ -65,7 +65,7 @@ pthread_t get_global_notify_threadid()
 void initWebConfigNotifyTask()
 {
 	int err = 0;
-
+	WebConfigLog("Inside initWebConfigNotifyTask\n");
 	err = pthread_create(&NotificationThreadId, NULL, processWebConfigNotification, NULL);
 	if (err != 0)
 	{
@@ -139,13 +139,13 @@ void* processWebConfigNotification()
 
 	while(1)
 	{
-                WebcfgDebug("processWebConfigNotification Inside while\n");
+                WebConfigLog("processWebConfigNotification Inside while\n");
 		pthread_mutex_lock (&notify_mut);
-		WebcfgDebug("processWebConfigNotification mutex lock\n");
+		WebConfigLog("processWebConfigNotification mutex lock\n");
 		msg = notifyMsg;
 		if(msg !=NULL)
 		{
-                        WebcfgDebug("Processing msg\n");
+                        WebConfigLog("Processing msg\n");
 			if(strlen(get_global_deviceMAC()) == 0)
 			{
 				WebConfigLog("deviceMAC is NULL, failed to send Webconfig Notification\n");
@@ -202,7 +202,7 @@ void* processWebConfigNotification()
 		}
 		else
 		{
-			WebcfgDebug("Before pthread cond wait in notify thread\n");
+			WebConfigLog("Before pthread cond wait in notify thread\n");
 			pthread_cond_wait(&notify_con, &notify_mut);
 			pthread_mutex_unlock (&notify_mut);
 			WebcfgDebug("mutex unlock in notify thread after cond wait\n");

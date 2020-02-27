@@ -84,11 +84,12 @@ void *WebConfigMultipartTask()
 	int wait_flag=0;
 	int forced_sync=0;//, syncIndex = 0;
         int value=0;
+	WebConfigLog("Inside WebConfigMultipartTask\n");
 	value =Get_PeriodicSyncCheckInterval();
 
 	//start webconfig notification thread.
 	initWebConfigNotifyTask();
-
+	WebConfigLog("After initWebConfigNotifyTask\n");
 	while(1)
 	{
 		if(forced_sync)
@@ -104,7 +105,8 @@ void *WebConfigMultipartTask()
 		}
 		else if(!wait_flag)
 		{
-			processWebconfigSync(index);
+			WebConfigLog("B4 processWebconfgSync\n");
+			processWebconfgSync(index);
 		}
 
 		pthread_mutex_lock (&periodicsync_mutex);
@@ -209,7 +211,7 @@ void *WebConfigMultipartTask()
 /*----------------------------------------------------------------------------*/
 /*                             Internal functions                             */
 /*----------------------------------------------------------------------------*/
-void processWebconfigSync(int index)
+void processWebconfgSync(int index)
 {
 	int retry_count=0;
 	//int r_count=0;
@@ -219,7 +221,7 @@ void processWebconfigSync(int index)
 	int rv=0;
 	//char *transaction_uuid =NULL;
 
-	WebcfgDebug("========= Start of processWebconfigSync =============\n");
+	WebConfigLog("========= Start of processWebconfgSync =============\n");
 	while(1)
 	{
 		if(retry_count >3)
@@ -252,7 +254,7 @@ void processWebconfigSync(int index)
 		retry_count++;
 		WebConfigLog("Webconfig retry_count is %d\n", retry_count);
 	}
-	WebcfgDebug("========= End of processWebconfigSync =============\n");
+	WebcfgDebug("========= End of processWebconfgSync =============\n");
 	return;
 }
 
