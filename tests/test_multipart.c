@@ -20,6 +20,7 @@
 #include <CUnit/Basic.h>
 #include "../src/webcfgdoc.h"
 #include "../src/webcfgparam.h"
+#include "../src/webcfg.h"
 #include "../src/multipart.h"
 #include "../src/helpers.h"
 #include "../src/macbindingdoc.h"
@@ -31,47 +32,129 @@
 #include "../src/webcfg_generic.h"
 #define FILE_URL "/tmp/webcfg_url"
 
+#define UNUSED(x) (void )(x)
+
 char *url = NULL;
 char *interface = NULL;
 
+bool _getConfigURL(int index, char **url)
+{
+	UNUSED(index);
+	UNUSED(url);
+	return 0;
+}
+
+int _getConfigVersion(int index, char **version)
+{
+	UNUSED(index);
+	UNUSED(version);
+	return 0;
+}
+int _setRequestTimeStamp(int index)
+{
+	UNUSED(index);
+	return 0;
+}
+bool _getRequestTimeStamp(int index,char **RequestTimeStamp)
+{
+	UNUSED(index);
+	UNUSED(RequestTimeStamp);
+	return 0;
+}
+int _setSyncCheckOK(int index, bool status)
+{
+	UNUSED(index);
+	UNUSED(status);
+	return 0;
+}
+
+char* get_global_deviceMAC()
+{
+	return NULL;
+}
+void setValues(const param_t paramVal[], const unsigned int paramCount, const int setType, char *transactionId, money_trace_spans *timeSpan, WDMP_STATUS *retStatus, int *ccspStatus)
+{
+	UNUSED(paramVal);
+	UNUSED(paramCount);
+	UNUSED(setType);
+	UNUSED(transactionId);
+	UNUSED(timeSpan);
+	UNUSED(retStatus);
+	UNUSED(ccspStatus);
+	return;
+}
+int _setConfigVersion(int index, char *version)
+{
+	UNUSED(index);
+	UNUSED(version);
+	return 0;
+}
+void getDeviceMac()
+{
+	return;
+}
+
+char * getParameterValue(char *paramName)
+{
+	UNUSED(paramName);
+	return NULL;
+}
+
+void sendNotification(char *payload, char *source, char *destination)
+{
+	UNUSED(payload);
+	UNUSED(source);
+	UNUSED(destination);
+	return;
+}
+
+char *get_global_systemReadyTime()
+{
+	return NULL;
+}
+
 void test_multipart()
 {
-	int r_count=0;
-	int configRet = -1;
-        webcfgparam_t *pm;
-	char *webConfigData = NULL;
-	long res_code;
-        int err;
-        int len =0, i=0;
-	void* subdbuff;
-	char *subfileData = NULL;
-	char* b64buffer =  NULL;
-	size_t encodeSize = 0;
-	size_t subLen=0;
+	//int r_count=0;
+	int configRet = 0;
+        //webcfgparam_t *pm;
+	//char *webConfigData = NULL;
+	//long res_code;
+	///char *ct=NULL;
+	//size_t dataSize=0;
+       // int err;
+        //int len =0, i=0;
+	//void* subdbuff;
+	//char *subfileData = NULL;
+	//char* b64buffer =  NULL;
+	//size_t encodeSize = 0;
+	//size_t subLen=0;
+	//int status=0, 
+	int index=0;
+//char *transaction_uuid =NULL;
+	
+	//char * decodeMsg =NULL;
+	//size_t decodeMsgSize =0;
+	//size_t size =0;
 
-	char * decodeMsg =NULL;
-	size_t decodeMsgSize =0;
-	size_t size =0;
-
-	msgpack_zone mempool;
-	msgpack_object deserialized;
-	msgpack_unpack_return unpack_ret;
+	//msgpack_zone mempool;
+	//msgpack_object deserialized;
+	//msgpack_unpack_return unpack_ret;
 
 	if(url == NULL)
 	{
 		printf("\nProvide config URL as argument\n");
 		return;
 	}
-	configRet = webcfg_http_request(&webConfigData, r_count, &res_code, &subfileData, &len);
-//	configRet = webcfg_http_request(url, &webConfigData, r_count, &res_code, interface, &subfileData, &len);
+	//configRet = webcfg_http_request(&webConfigData, r_count, index, status, &res_code, &transaction_uuid, &ct, &dataSize);
+	processWebconfgSync(index);
 	if(configRet == 0)
 	{
 		printf("config ret success\n");
-		subLen = (size_t) len;
+		/*subLen = (size_t) len;
 		subdbuff = ( void*)subfileData;
 		printf("subLen is %ld\n", subLen);
 
-		/*********** base64 encode *****************/
 		printf("-----------Start of Base64 Encode ------------\n");
 		encodeSize = b64_get_encoded_buffer_size( subLen );
 		printf("encodeSize is %ld\n", encodeSize);
@@ -80,11 +163,8 @@ void test_multipart()
 		b64buffer[encodeSize] = '\0' ;
 		printf("---------- End of Base64 Encode -------------\n");
 
-		//printf("Final Encoded data: %s\n",b64buffer);
 		printf("Final Encoded data length: %ld\n",strlen(b64buffer));
-		/*********** base64 encode *****************/
 
-		//Start of b64 decoding
 		printf("----Start of b64 decoding----\n");
 		decodeMsgSize = b64_get_decoded_buffer_size(strlen(b64buffer));
 		printf("expected b64 decoded msg size : %ld bytes\n",decodeMsgSize);
@@ -95,9 +175,7 @@ void test_multipart()
 		printf("base64 decoded data containing %ld bytes is :%s\n",size, decodeMsg);
 
 		printf("----End of b64 decoding----\n");
-		//End of b64 decoding
 
-		//Start of msgpack decoding just to verify
 		printf("----Start of msgpack decoding----\n");
 		msgpack_zone_init(&mempool, 2048);
 		unpack_ret = msgpack_unpack(decodeMsg, size, NULL, &mempool, &deserialized);
@@ -126,11 +204,11 @@ void test_multipart()
 		}
 
 		msgpack_zone_destroy(&mempool);
-		printf("----End of msgpack decoding----\n");
+		printf("----End of msgpack decoding----\n");*/
 		//End of msgpack decoding
 
 		//decode root doc
-		printf("subLen is %d\n", (int)subLen);
+		/*printf("subLen is %d\n", (int)subLen);
 		printf("--------------decode root doc-------------\n");
 		pm = webcfgparam_convert( subdbuff, subLen+1 );
 		printf("blob_size is %d\n", pm->entries[0].value_size);
@@ -143,7 +221,7 @@ void test_multipart()
 			printf("pm->entries[%d].name %s\n", i, pm->entries[i].name);
 			printf("pm->entries[%d].value %s\n" , i, pm->entries[i].value);
 			printf("pm->entries[%d].type %d\n", i, pm->entries[i].type);
-		}
+		}*/
 
 		//decode inner blob
 		/************ macbinding inner blob decode ****************/
@@ -167,7 +245,7 @@ void test_multipart()
 
 		/************ portmapping inner blob decode ****************/
 
-		portmappingdoc_t *rpm;
+		/*portmappingdoc_t *rpm;
 		printf("--------------decode blob-------------\n");
 		rpm = portmappingdoc_convert( pm->entries[0].value, pm->entries[0].value_size );
 		err = errno;
@@ -188,7 +266,7 @@ void test_multipart()
 
 		portmappingdoc_destroy( rpm );
 
-		webcfgparam_destroy( pm );
+		webcfgparam_destroy( pm );*/
 	}	
 	else
 	{

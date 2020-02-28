@@ -50,8 +50,9 @@ void* helper_convert( const void *buf, size_t len,
                       process_fn_t process,
                       destroy_fn_t destroy )
 {
+	printf("B4 malloc\n");
     void *p = malloc( struct_size );
-
+printf("After malloc\n");
     if( NULL == p ) {
         errno = HELPERS_OUT_OF_MEMORY;
     } else {

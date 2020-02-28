@@ -51,7 +51,7 @@ bool g_shutdown  = false;
 /*----------------------------------------------------------------------------*/
 void *WebConfigMultipartTask();
 int processMsgPackDocument(char *jsonData, int *retStatus, char **docVersion);
-int handleHttpResponse(long response_code, char *webConfigData, int retry_count, int index, char* transaction_uuid);
+int handleHttpResponse(long response_code, char *webConfigData, int retry_count, int index, char* transaction_uuid, char* ct, size_t dataSize);
 /*----------------------------------------------------------------------------*/
 /*                             External Functions                             */
 /*----------------------------------------------------------------------------*/
@@ -214,12 +214,15 @@ void *WebConfigMultipartTask()
 void processWebconfgSync(int index)
 {
 	int retry_count=0;
-	//int r_count=0;
+	int r_count=0;
 	int configRet = -1;
-	//char *webConfigData = NULL;
-	//long res_code;
+	char *webConfigData = NULL;
+	long res_code;
 	int rv=0;
-	//char *transaction_uuid =NULL;
+	int status=0;
+	char *transaction_uuid =NULL;
+	char *ct=NULL;
+	size_t dataSize=0;
 
 	WebConfigLog("========= Start of processWebconfgSync =============\n");
 	while(1)
@@ -232,13 +235,16 @@ void processWebconfgSync(int index)
 		}
 		printf("index is %d\n", index);
 		//configRet = webcfg_http_request(&webConfigData, r_count, &res_code, &transaction_uuid);
-		WebConfigLog("processMultipartDocument\n");
-		configRet = processMultipartDocument();
-		WebConfigLog("processMultipartDocument complete\n");
+		configRet = webcfg_http_request(&webConfigData, r_count, index, status, &res_code, &transaction_uuid, &ct, &dataSize);
+		printf("After webcfg_http_request ct is %s\n", ct );
+		//WebConfigLog("processMultipartDocument\n");
+		//configRet = processMultipartDocument();
+		//WebConfigLog("processMultipartDocument complete\n");
 		if(configRet == 0)
 		{
-			//rv = handleHttpResponse(res_code, webConfigData, retry_count, index, transaction_uuid); :TODO
-			rv  = 1;
+			WebConfigLog("B4 handleHttpResponse\n");
+			rv = handleHttpResponse(res_code, webConfigData, retry_count, index, transaction_uuid, ct, dataSize);
+			//rv  = 1;
 			if(rv ==1)
 			{
 				WebConfigLog("No retries are required. Exiting..\n");
@@ -258,7 +264,7 @@ void processWebconfgSync(int index)
 	return;
 }
 
-int handleHttpResponse(long response_code, char *webConfigData, int retry_count, int index, char* transaction_uuid)
+int handleHttpResponse(long response_code, char *webConfigData, int retry_count, int index, char* transaction_uuid, char *ct, size_t dataSize)
 {
 	int first_digit=0;
 	int msgpack_status=0;
@@ -313,19 +319,21 @@ int handleHttpResponse(long response_code, char *webConfigData, int retry_count,
 
 	if(response_code == 304)
 	{
-		WebConfigLog("webConfig is in sync with cloud. response_code:%d\n", response_code);
+		WebConfigLog("webConfig is in sync with cloud. response_code:%ld\n", response_code);
 		_setSyncCheckOK(index, true);
 		addWebConfigNotifyMsg(configURL, response_code, NULL, 0, RequestTimeStamp , configVersion, transaction_uuid);
 		return 1;
 	}
 	else if(response_code == 200)
 	{
-		WebConfigLog("webConfig is not in sync with cloud. response_code:%d\n", response_code);
+		WebConfigLog("webConfig is not in sync with cloud. response_code:%ld\n", response_code);
 
 		if(webConfigData !=NULL)
 		{
 			WebcfgDebug("webConfigData fetched successfully\n");
-			msgpack_status = processMsgPackDocument(webConfigData, &setRet, &newDocVersion);
+			//msgpack_status = processMsgPackDocument(webConfigData, &setRet, &newDocVersion);
+			WebConfigLog("parseMultipartDocument\n");
+			msgpack_status = parseMultipartDocument(webConfigData, ct, dataSize);
 			WebConfigLog("setRet after process msgPack is %d\n", setRet);
 			WebcfgDebug("newDocVersion is %s\n", newDocVersion);
 
@@ -363,7 +371,7 @@ int handleHttpResponse(long response_code, char *webConfigData, int retry_count,
 			}
 			else
 			{
-				WebConfigLog("Failure in processJsonDocument\n");
+				WebConfigLog("Failure in parseMultipartDocument\n");
 				ret = _setSyncCheckOK(index, false);
 				if(ret == 0)
 				{
@@ -387,20 +395,20 @@ int handleHttpResponse(long response_code, char *webConfigData, int retry_count,
 	}
 	else if(response_code == 204)
 	{
-		WebConfigLog("No configuration available for this device. response_code:%d\n", response_code);
+		WebConfigLog("No configuration available for this device. response_code:%ld\n", response_code);
 		addWebConfigNotifyMsg(configURL, response_code, NULL, 0, RequestTimeStamp , configVersion, transaction_uuid);
 		return 1;
 	}
 	else if(response_code == 403)
 	{
-		WebConfigLog("Token is expired, fetch new token. response_code:%d\n", response_code);
+		WebConfigLog("Token is expired, fetch new token. response_code:%ld\n", response_code);
 		createNewAuthToken(get_global_auth_token(), sizeof(get_global_auth_token()), get_global_deviceMAC(), get_global_serialNum() );
 		WebcfgDebug("createNewAuthToken done in 403 case\n");
 		err = 1;
 	}
 	else if(response_code == 429)
 	{
-		WebConfigLog("No action required from client. response_code:%d\n", response_code);
+		WebConfigLog("No action required from client. response_code:%ld\n", response_code);
 		WEBCFG_FREE(configURL);
 		WEBCFG_FREE(configVersion);
 		WEBCFG_FREE(RequestTimeStamp);
@@ -410,13 +418,13 @@ int handleHttpResponse(long response_code, char *webConfigData, int retry_count,
 	first_digit = (int)(response_code / pow(10, (int)log10(response_code)));
 	if((response_code !=403) && (first_digit == 4)) //4xx
 	{
-		WebConfigLog("Action not supported. response_code:%d\n", response_code);
+		WebConfigLog("Action not supported. response_code:%ld\n", response_code);
 		addWebConfigNotifyMsg(configURL, response_code, NULL, 0, RequestTimeStamp , configVersion, transaction_uuid);
 		return 1;
 	}
 	else //5xx & all other errors
 	{
-		WebConfigLog("Error code returned, need to retry. response_code:%d\n", response_code);
+		WebConfigLog("Error code returned, need to retry. response_code:%ld\n", response_code);
 		if(retry_count == 3 && !err)
 		{
 			WebcfgDebug("Sending Notification after 3 retry attempts\n");
@@ -445,7 +453,8 @@ int processMultipartDocument()
         webcfgparam_t *pm;
 	char *webConfigData = NULL;
 	long res_code;
-          
+	int status=0;
+        char *transaction_uuid =NULL;
         int len =0, i=0;
 	void* subdbuff;
 	char *subfileData = NULL;
@@ -455,11 +464,13 @@ int processMultipartDocument()
 	char* b64buffer =  NULL;
 	size_t encodeSize = 0;
 	size_t subLen=0;
+	int index=0;
 	struct timespec start,end,*startPtr,*endPtr;
         startPtr = &start;
         endPtr = &end;
 
-	configRet = webcfg_http_request(&webConfigData, r_count, &res_code, &subfileData, &len);
+	//configRet = webcfg_http_request(&webConfigData, r_count, index, status, &res_code, &transaction_uuid);
+	configRet = webcfg_http_request(&webConfigData, r_count, index, status, &res_code, &transaction_uuid, NULL, 0);
 	if(configRet == 0)
 	{
 		WebConfigLog("config ret success\n");
@@ -471,7 +482,7 @@ int processMultipartDocument()
 		getCurrent_Time(startPtr);
 		WebConfigLog("-----------Start of Base64 Encode ------------\n");
 		encodeSize = b64_get_encoded_buffer_size( subLen );
-		WebConfigLog("encodeSize is %d\n", encodeSize);
+		WebConfigLog("encodeSize is %zu\n", encodeSize);
 		b64buffer = malloc(encodeSize + 1);
 		b64_encode((const uint8_t *)subfileData, subLen, (uint8_t *)b64buffer);
 		b64buffer[encodeSize] = '\0' ;
@@ -481,7 +492,7 @@ int processMultipartDocument()
                 WebConfigLog("Base64 Encode Elapsed time : %ld ms\n", timeVal_Diff(startPtr, endPtr));
 
 		WebConfigLog("Final Encoded data: %s\n",b64buffer);
-		WebConfigLog("Final Encoded data length: %d\n",strlen(b64buffer));
+		WebConfigLog("Final Encoded data length: %zu\n",strlen(b64buffer));
 		/*********** base64 encode *****************/
 
 

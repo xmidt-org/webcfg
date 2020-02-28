@@ -54,7 +54,6 @@ bool _getRequestTimeStamp(int index,char **RequestTimeStamp);
 int _setRequestTimeStamp(int index);
 int _setSyncCheckOK(int index, bool status);
 int _setConfigVersion(int index, char *version);
-int _setSyncCheckOK(int index, bool status);
 
 char *get_global_systemReadyTime();
 char * getParameterValue(char *paramName);

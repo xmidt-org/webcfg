@@ -146,9 +146,14 @@ int process_params( wparam_t *e, msgpack_object_map *map )
 		    //printf("objects_left after name %d\n", objects_left);
                 }
 		if( 0 == match(p, "value") ) {
-                    //e->value = strndup( p->val.via.str.ptr, p->val.via.str.size );
+                    e->value = strndup( p->val.via.str.ptr, p->val.via.str.size );
+		    e->value_size =strlen(e->value);
+		    if(e->value_size != (int)p->val.via.str.size)
+		    {
+			printf("blob size update\n");
 		    e->value = (char*)p->val.via.str.ptr;
 		    e->value_size =(int) p->val.via.str.size;
+		    }
 			WebConfigLog("uint32_t size %d\n", (uint32_t)p->val.via.str.size);
 		    WebConfigLog("e->value_size int is %d\n", e->value_size);
 		    WebConfigLog("e->value is %s\n", e->value);
@@ -171,6 +176,7 @@ int process_params( wparam_t *e, msgpack_object_map *map )
 
 int process_webcfgparam( webcfgparam_t *pm, msgpack_object *obj )
 {
+	printf(" process_webcfgparam \n");
     msgpack_object_array *array = &obj->via.array;
     if( 0 < array->size ) {
         size_t i;
