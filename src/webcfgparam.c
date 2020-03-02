@@ -148,11 +148,11 @@ int process_params( wparam_t *e, msgpack_object_map *map )
 		if( 0 == match(p, "value") ) {
                     e->value = strndup( p->val.via.str.ptr, p->val.via.str.size );
 		    e->value_size =strlen(e->value);
-		    if(e->value_size != (int)p->val.via.str.size)
+		    if((uint32_t)e->value_size != (uint32_t)p->val.via.str.size)
 		    {
 			printf("blob size update\n");
 		    e->value = (char*)p->val.via.str.ptr;
-		    e->value_size =(int) p->val.via.str.size;
+		    e->value_size =(uint32_t) p->val.via.str.size;
 		    }
 			WebConfigLog("uint32_t size %d\n", (uint32_t)p->val.via.str.size);
 		    WebConfigLog("e->value_size int is %d\n", e->value_size);

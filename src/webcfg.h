@@ -43,7 +43,7 @@ extern bool g_shutdown;
  *
  *  @return 
  */
-void initWebConfigMultipartTask();
+//void initWebConfigMultipartTask();
 
 void processWebconfgSync(int index);
 

@@ -60,6 +60,7 @@ char * getParameterValue(char *paramName);
 void getDeviceMac();
 char* get_global_deviceMAC();
 
+void initWebConfigMultipartTask();
 void sendNotification(char *payload, char *source, char *destination);
 /**
  * @brief setValues interface sets the parameter value.

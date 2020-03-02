@@ -51,7 +51,7 @@ bool g_shutdown  = false;
 /*----------------------------------------------------------------------------*/
 void *WebConfigMultipartTask();
 int processMsgPackDocument(char *jsonData, int *retStatus, char **docVersion);
-int handleHttpResponse(long response_code, char *webConfigData, int retry_count, int index, char* transaction_uuid, char* ct, size_t dataSize);
+int handlehttpResponse(long response_code, char *webConfigData, int retry_count, int index, char* transaction_uuid, char* ct, size_t dataSize);
 /*----------------------------------------------------------------------------*/
 /*                             External Functions                             */
 /*----------------------------------------------------------------------------*/
@@ -68,7 +68,7 @@ void initWebConfigMultipartTask()
 	}
 	else
 	{
-		WebConfigLog("WebConfigMultipartTask Thread created Successfully\n");
+		WebConfigLog("WebConfigMultipartTask Thread created Successfully.\n");
 	}
 }
 
@@ -84,7 +84,7 @@ void *WebConfigMultipartTask()
 	int wait_flag=0;
 	int forced_sync=0;//, syncIndex = 0;
         int value=0;
-	WebConfigLog("Inside WebConfigMultipartTask\n");
+	WebConfigLog("Inside WebConfigMultipartTask.\n");
 	value =Get_PeriodicSyncCheckInterval();
 
 	//start webconfig notification thread.
@@ -242,8 +242,8 @@ void processWebconfgSync(int index)
 		//WebConfigLog("processMultipartDocument complete\n");
 		if(configRet == 0)
 		{
-			WebConfigLog("B4 handleHttpResponse\n");
-			rv = handleHttpResponse(res_code, webConfigData, retry_count, index, transaction_uuid, ct, dataSize);
+			WebConfigLog("B4 handlehttpResponse\n");
+			rv = handlehttpResponse(res_code, webConfigData, retry_count, index, transaction_uuid, ct, dataSize);
 			//rv  = 1;
 			if(rv ==1)
 			{
@@ -264,7 +264,7 @@ void processWebconfgSync(int index)
 	return;
 }
 
-int handleHttpResponse(long response_code, char *webConfigData, int retry_count, int index, char* transaction_uuid, char *ct, size_t dataSize)
+int handlehttpResponse(long response_code, char *webConfigData, int retry_count, int index, char* transaction_uuid, char *ct, size_t dataSize)
 {
 	int first_digit=0;
 	int msgpack_status=0;
@@ -277,7 +277,7 @@ int handleHttpResponse(long response_code, char *webConfigData, int retry_count,
 	int err = 0;
 
         //get common items for all status codes and send notification.
-        getRet = _getConfigURL(index, &configURL); //remove the index and add the sub doc names
+        //getRet = _getConfigURL(index, &configURL); //remove the index and add the sub doc names
 	if(getRet)
 	{
 		WebcfgDebug("configURL for index %d is %s\n", index, configURL);
@@ -287,7 +287,7 @@ int handleHttpResponse(long response_code, char *webConfigData, int retry_count,
 		WebConfigLog("getConfigURL failed for index %d\n", index);
 	}
 
-	getRet = _getConfigVersion(index, &configVersion);
+	//getRet = _getConfigVersion(index, &configVersion);
 	if(getRet)
 	{
 		WebConfigLog("configVersion for index %d is %s\n", index, configVersion);
@@ -297,7 +297,7 @@ int handleHttpResponse(long response_code, char *webConfigData, int retry_count,
 		WebConfigLog("getConfigVersion failed for index %d\n", index);
 	}
 
-        ret = _setRequestTimeStamp(index);
+        //ret = _setRequestTimeStamp(index);
 	if(ret == 0)
 	{
 		WebcfgDebug("RequestTimeStamp set successfully for index %d\n", index);
@@ -307,7 +307,7 @@ int handleHttpResponse(long response_code, char *webConfigData, int retry_count,
 		WebConfigLog("Failed to set RequestTimeStamp for index %d\n", index);
 	}
 
-        getRet = _getRequestTimeStamp(index, &RequestTimeStamp);
+        //getRet = _getRequestTimeStamp(index, &RequestTimeStamp);
 	if(getRet)
 	{
 		WebcfgDebug("RequestTimeStamp for index %d is %s\n", index, RequestTimeStamp);
@@ -320,7 +320,7 @@ int handleHttpResponse(long response_code, char *webConfigData, int retry_count,
 	if(response_code == 304)
 	{
 		WebConfigLog("webConfig is in sync with cloud. response_code:%ld\n", response_code);
-		_setSyncCheckOK(index, true);
+		//_setSyncCheckOK(index, true);
 		addWebConfigNotifyMsg(configURL, response_code, NULL, 0, RequestTimeStamp , configVersion, transaction_uuid);
 		return 1;
 	}
@@ -346,7 +346,7 @@ int handleHttpResponse(long response_code, char *webConfigData, int retry_count,
 				}
 
 				WebcfgDebug("set version and syncCheckOK for success\n");
-				ret = _setConfigVersion(index, newDocVersion);//get new version from msgpack doc
+				//ret = _setConfigVersion(index, newDocVersion);//get new version from msgpack doc
 				if(ret == 0)
 				{
 					WebcfgDebug("Config Version %s set successfully for index %d\n", newDocVersion, index);
@@ -356,7 +356,7 @@ int handleHttpResponse(long response_code, char *webConfigData, int retry_count,
 					WebConfigLog("Failed to set Config version %s for index %d\n", newDocVersion, index);
 				}
 
-				ret = _setSyncCheckOK(index, true );
+				//ret = _setSyncCheckOK(index, true );
 				if(ret == 0)
 				{
 					WebcfgDebug("SyncCheckOK set successfully for index %d\n", index);
@@ -372,7 +372,7 @@ int handleHttpResponse(long response_code, char *webConfigData, int retry_count,
 			else
 			{
 				WebConfigLog("Failure in parseMultipartDocument\n");
-				ret = _setSyncCheckOK(index, false);
+				//ret = _setSyncCheckOK(index, false);
 				if(ret == 0)
 				{
 					WebcfgDebug("SyncCheckOK set to false for index %d\n", index);
@@ -476,7 +476,7 @@ int processMultipartDocument()
 		WebConfigLog("config ret success\n");
 		subLen = (size_t) len;
 		subdbuff = ( void*)subfileData;
-		WebConfigLog("subLen is %ld\n", subLen);
+		WebConfigLog("subLen is %zu\n", subLen);
 
 		/*********** base64 encode *****************/
 		getCurrent_Time(startPtr);
