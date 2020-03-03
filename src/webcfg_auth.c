@@ -70,7 +70,7 @@ void getAuthToken()
 		{
 			if(strlen(serialNum) ==0)
 			{
-				serial_number = getParameterValue(SERIAL_NUMBER);
+				serial_number = getSerialNumber();
 		                if(serial_number !=NULL)
 		                {
 					strncpy(serialNum ,serial_number, sizeof(serialNum)-1);

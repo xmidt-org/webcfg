@@ -13,8 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __WEBCFGCOMMON_H__
-#define __WEBCFGCOMMON_H__
+#ifndef __WEBCFGGENERIC_H__
+#define __WEBCFGGENERIC_H__
 
 #include <stdint.h>
 #include <wdmp-c.h>
@@ -22,21 +22,7 @@
 /*----------------------------------------------------------------------------*/
 /*                                   Macros                                   */
 /*----------------------------------------------------------------------------*/
-#if defined(_COSA_BCM_MIPS_)
-#define DEVICE_MAC                   "Device.DPoE.Mac_address"
-#elif defined(PLATFORM_RASPBERRYPI)
-#define DEVICE_MAC                   "Device.Ethernet.Interface.5.MACAddress"
-#elif defined(RDKB_EMU)
-#define DEVICE_MAC                   "Device.DeviceInfo.X_COMCAST-COM_WAN_MAC"
-#else
-#define DEVICE_MAC                   "Device.X_CISCO_COM_CableModem.MACAddress"
-#endif
 
-#define SERIAL_NUMBER                "Device.DeviceInfo.SerialNumber"
-#define FIRMWARE_VERSION             "Device.DeviceInfo.X_CISCO_COM_FirmwareName"
-#define DEVICE_BOOT_TIME             "Device.DeviceInfo.X_RDKCENTRAL-COM_BootTime"
-#define MODEL_NAME		     "Device.DeviceInfo.ModelName"
-#define PRODUCT_CLASS		     "Device.DeviceInfo.ProductClass"
 /*----------------------------------------------------------------------------*/
 /*                               Data Structures                              */
 /*----------------------------------------------------------------------------*/
@@ -56,7 +42,11 @@ int _setSyncCheckOK(int index, bool status);
 int _setConfigVersion(int index, char *version);
 
 char *get_global_systemReadyTime();
-char * getParameterValue(char *paramName);
+char* getDeviceBootTime();
+char * getSerialNumber();
+char * getProductClass();
+char * getModelName();
+char * getFirmwareVersion();
 void getDeviceMac();
 char* get_global_deviceMAC();
 

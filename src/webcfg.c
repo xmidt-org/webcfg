@@ -50,7 +50,6 @@ bool g_shutdown  = false;
 /*                             Function Prototypes                            */
 /*----------------------------------------------------------------------------*/
 void *WebConfigMultipartTask();
-int processMsgPackDocument(char *jsonData, int *retStatus, char **docVersion);
 int handlehttpResponse(long response_code, char *webConfigData, int retry_count, int index, char* transaction_uuid, char* ct, size_t dataSize);
 /*----------------------------------------------------------------------------*/
 /*                             External Functions                             */
@@ -234,17 +233,12 @@ void processWebconfgSync(int index)
 			break;
 		}
 		printf("index is %d\n", index);
-		//configRet = webcfg_http_request(&webConfigData, r_count, &res_code, &transaction_uuid);
 		configRet = webcfg_http_request(&webConfigData, r_count, index, status, &res_code, &transaction_uuid, &ct, &dataSize);
 		printf("After webcfg_http_request ct is %s\n", ct );
-		//WebConfigLog("processMultipartDocument\n");
-		//configRet = processMultipartDocument();
-		//WebConfigLog("processMultipartDocument complete\n");
 		if(configRet == 0)
 		{
 			WebConfigLog("B4 handlehttpResponse\n");
 			rv = handlehttpResponse(res_code, webConfigData, retry_count, index, transaction_uuid, ct, dataSize);
-			//rv  = 1;
 			if(rv ==1)
 			{
 				WebConfigLog("No retries are required. Exiting..\n");
@@ -331,7 +325,6 @@ int handlehttpResponse(long response_code, char *webConfigData, int retry_count,
 		if(webConfigData !=NULL)
 		{
 			WebcfgDebug("webConfigData fetched successfully\n");
-			//msgpack_status = processMsgPackDocument(webConfigData, &setRet, &newDocVersion);
 			WebConfigLog("parseMultipartDocument\n");
 			msgpack_status = parseMultipartDocument(webConfigData, ct, dataSize);
 			WebConfigLog("setRet after process msgPack is %d\n", setRet);
@@ -339,7 +332,7 @@ int handlehttpResponse(long response_code, char *webConfigData, int retry_count,
 
 			if(msgpack_status == 1)
 			{
-				WebcfgDebug("processMsgPackDocument success\n");
+				WebcfgDebug("parseMultipartDocument success\n");
 				if(configURL!=NULL && newDocVersion !=NULL)
 				{
 					WebConfigLog("Configuration settings from %s version %s were applied successfully\n", configURL, newDocVersion );
@@ -438,173 +431,6 @@ int handlehttpResponse(long response_code, char *webConfigData, int retry_count,
 	}
 	return 0;
 }
-
-int processMsgPackDocument(char *jsonData, int *retStatus, char **docVersion)
-{
-	printf("jsonData %s retStatus %d docVersion %s\n" , jsonData, *retStatus, *docVersion);
-	WebConfigLog("--------------processMsgPackDocument----------------\n");
-	return 0;
-}
-
-int processMultipartDocument()
-{
-	int r_count=0;
-	int configRet = -1;
-        webcfgparam_t *pm;
-	char *webConfigData = NULL;
-	long res_code;
-	int status=0;
-        char *transaction_uuid =NULL;
-        int len =0, i=0;
-	void* subdbuff;
-	char *subfileData = NULL;
-	param_t *reqParam = NULL;
-	WDMP_STATUS ret = WDMP_FAILURE;
-	int ccspStatus=0;
-	char* b64buffer =  NULL;
-	size_t encodeSize = 0;
-	size_t subLen=0;
-	int index=0;
-	struct timespec start,end,*startPtr,*endPtr;
-        startPtr = &start;
-        endPtr = &end;
-
-	//configRet = webcfg_http_request(&webConfigData, r_count, index, status, &res_code, &transaction_uuid);
-	configRet = webcfg_http_request(&webConfigData, r_count, index, status, &res_code, &transaction_uuid, NULL, 0);
-	if(configRet == 0)
-	{
-		WebConfigLog("config ret success\n");
-		subLen = (size_t) len;
-		subdbuff = ( void*)subfileData;
-		WebConfigLog("subLen is %zu\n", subLen);
-
-		/*********** base64 encode *****************/
-		getCurrent_Time(startPtr);
-		WebConfigLog("-----------Start of Base64 Encode ------------\n");
-		encodeSize = b64_get_encoded_buffer_size( subLen );
-		WebConfigLog("encodeSize is %zu\n", encodeSize);
-		b64buffer = malloc(encodeSize + 1);
-		b64_encode((const uint8_t *)subfileData, subLen, (uint8_t *)b64buffer);
-		b64buffer[encodeSize] = '\0' ;
-
-		WebConfigLog("---------- End of Base64 Encode -------------\n");
-		getCurrent_Time(endPtr);
-                WebConfigLog("Base64 Encode Elapsed time : %ld ms\n", timeVal_Diff(startPtr, endPtr));
-
-		WebConfigLog("Final Encoded data: %s\n",b64buffer);
-		WebConfigLog("Final Encoded data length: %zu\n",strlen(b64buffer));
-		/*********** base64 encode *****************/
-
-
-		WebConfigLog("Proceed to setValues\n");
-		reqParam = (param_t *) malloc(sizeof(param_t));
-
-		reqParam[0].name = "Device.DeviceInfo.X_RDKCENTRAL-COM_xOpsDeviceMgmt.RPC.portMappingData";
-		reqParam[0].value = b64buffer;
-		reqParam[0].type = WDMP_BASE64;
-
-		WebConfigLog("Request:> param[0].name = %s\n",reqParam[0].name);
-		WebConfigLog("Request:> param[0].value = %s\n",reqParam[0].value);
-		WebConfigLog("Request:> param[0].type = %d\n",reqParam[0].type);
-
-		WebcfgInfo("WebConfig SET Request\n");
-
-		setValues(reqParam, 1, 0, NULL, NULL, &ret, &ccspStatus);
-		WebcfgInfo("Processed WebConfig SET Request\n");
-		WebcfgInfo("ccspStatus is %d\n", ccspStatus);
-                if(ret == WDMP_SUCCESS)
-                {
-                        WebConfigLog("setValues success. ccspStatus : %d\n", ccspStatus);
-                }
-                else
-                {
-                      WebConfigLog("setValues Failed. ccspStatus : %d\n", ccspStatus);
-                }
-		//Test purpose to decode config doc from webpa. This is to confirm data sent from webpa is proper
-		WebConfigLog("--------------decode config doc from webpa-------------\n");
-
-		//decode root doc
-		WebConfigLog("--------------decode root doc-------------\n");
-		pm = webcfgparam_convert( subdbuff, len+1 );
-
-		if ( NULL != pm)
-		{
-			for(i = 0; i < (int)pm->entries_count ; i++)
-			{
-				WebConfigLog("pm->entries[%d].name %s\n", i, pm->entries[i].name);
-				WebConfigLog("pm->entries[%d].value %s\n" , i, pm->entries[i].value);
-				WebConfigLog("pm->entries[%d].type %d\n", i, pm->entries[i].type);
-			}
-			WebConfigLog("--------------decode root doc done-------------\n");
-			WebConfigLog("blob_size is %d\n", pm->entries[0].value_size);
-
-			/************ portmapping inner blob decode ****************/
-
-			/*portmappingdoc_t *rpm;
-			WebConfigLog("--------------decode blob-------------\n");
-			rpm = portmappingdoc_convert( pm->entries[0].value, pm->entries[0].value_size );
-
-			if(NULL != rpm)
-			{
-				WebConfigLog("rpm->entries_count is %ld\n", rpm->entries_count);
-
-				for(i = 0; i < (int)rpm->entries_count ; i++)
-				{
-					WebConfigLog("rpm->entries[%d].InternalClient %s\n", i, rpm->entries[i].internal_client);
-					WebConfigLog("rpm->entries[%d].ExternalPortEndRange %s\n" , i, rpm->entries[i].external_port_end_range);
-					WebConfigLog("rpm->entries[%d].Enable %s\n", i, rpm->entries[i].enable?"true":"false");
-					WebConfigLog("rpm->entries[%d].Protocol %s\n", i, rpm->entries[i].protocol);
-					WebConfigLog("rpm->entries[%d].Description %s\n", i, rpm->entries[i].description);
-					WebConfigLog("rpm->entries[%d].external_port %s\n", i, rpm->entries[i].external_port);
-				}
-
-				portmappingdoc_destroy( rpm );
-
-			}*/
-			/************ portmapping inner blob decode ****************/
-
-			/************ macbinding inner blob decode ****************/
-
-			macbindingdoc_t *rpm;
-			printf("--------------decode blob-------------\n");
-			rpm = macbindingdoc_convert( pm->entries[0].value, pm->entries[0].value_size );
-			if(NULL != rpm)
-			{
-				printf("rpm->entries_count is %zu\n", rpm->entries_count);
-
-				for(i = 0; i < (int)rpm->entries_count ; i++)
-				{
-					printf("rpm->entries[%d].Yiaddr %s\n", i, rpm->entries[i].yiaddr);
-					printf("rpm->entries[%d].Chaddr %s\n" , i, rpm->entries[i].chaddr);
-				}
-
-				macbindingdoc_destroy( rpm );
-			}
-			/************ macbinding inner blob decode ****************/
-
-			webcfgparam_destroy( pm );
-			/*WAL_FREE(reqParam);
-			if(b64buffer != NULL)
-			{
-				free(b64buffer);
-				b64buffer = NULL;
-			}
-			*/
-			return 0;
-		}
-		else
-		{
-			WebConfigLog("pm is NULL, root doc decode failed\n");
-			return -1;
-		}
-	}	
-	else
-	{
-		WebConfigLog("webcfg_http_request failed\n");
-		return -1;
-	}
-}
-
 
 void webcfgStrncpy(char *destStr, const char *srcStr, size_t destSize)
 {

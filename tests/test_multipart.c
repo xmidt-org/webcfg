@@ -100,6 +100,31 @@ char * getParameterValue(char *paramName)
 	return NULL;
 }
 
+char * getSerialNumber()
+{
+	return NULL;
+}
+
+char * getDeviceBootTime()
+{
+	return NULL;
+}
+
+char * getProductClass()
+{
+	return NULL;
+}
+
+char * getModelName()
+{
+	return NULL;
+}
+
+char * getFirmwareVersion()
+{
+	return NULL;
+}
+
 void sendNotification(char *payload, char *source, char *destination)
 {
 	UNUSED(payload);
