@@ -13,19 +13,26 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __XDNS_H__
-#define __XDNS_H__
+#ifndef __PORTMAPPINGPARAM_H__
+#define __PORTMAPPINGPARAM_H__
 
 #include <stdint.h>
 #include <stdlib.h>
 
 typedef struct {
-    uint32_t default_ipv4;      /* (R) V 1.0.0 */
-    uint8_t default_ipv6[16];   /* (R) V 1.0.0 */
-} xdns_t;
+   char *name;
+   char *value;
+   uint16_t type;                       
+} pm_entry_t;
+
+typedef struct {
+    pm_entry_t *entries;        
+    size_t      entries_count;
+    char * version;
+} portmapping_t;
 
 /**
- *  This function converts a msgpack buffer into an xdns_t structure
+ *  This function converts a msgpack buffer into an portmapping_t structure
  *  if possible.
  *
  *  @param buf the buffer to convert
@@ -33,14 +40,14 @@ typedef struct {
  *
  *  @return NULL on error, success otherwise
  */
-xdns_t* xdns_convert( const void *buf, size_t len );
+portmapping_t* portmapping_convert( const void *buf, size_t len );
 
 /**
- *  This function destroys an xdns_t object.
+ *  This function destroys an portmapping_t object.
  *
- *  @param e the xdns to destroy
+ *  @param e the portmapping to destroy
  */
-void xdns_destroy( xdns_t *d );
+void portmapping_destroy( portmapping_t *d );
 
 /**
  *  This function returns a general reason why the conversion failed.
@@ -49,6 +56,6 @@ void xdns_destroy( xdns_t *d );
  *
  *  @return the constant string (do not alter or free) describing the error
  */
-const char* xdns_strerror( int errnum );
+const char* portmapping_strerror( int errnum );
 
 #endif

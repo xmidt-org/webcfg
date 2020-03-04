@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Comcast Cable Communications Management, LLC
+ * Copyright 2019 Comcast Cable Communications Management, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,28 +13,26 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __DHCP_H__
-#define __DHCP_H__
+#ifndef __WEBCFGDOC_H__
+#define __WEBCFGDOC_H__
 
 #include <stdint.h>
 #include <stdlib.h>
+#include <msgpack.h>
+typedef struct
+{
+    char *name;
+    char *url;
+    uint16_t version;
+} doc_t;
 
 typedef struct {
-    uint8_t mac[6];                     /* (R) V 1.0.0 */
-    uint32_t ip;                        /* (R) V 1.0.0 */
-} dhcp_static_t;
-
-typedef struct {
-    uint32_t       router_ip;           /* (R) V 1.0.0 */
-    uint32_t       subnet_mask;         /* (R) V 1.0.0 */
-    uint32_t       pool_range[2];       /* (R) V 1.0.0 */
-    uint32_t       lease_length;        /* (R) V 1.0.0 */
-    dhcp_static_t *fixed;               /* (O) V 1.0.0 */
-    size_t         fixed_count;
-} dhcp_t;
+    doc_t *entries;       
+    size_t      entries_count;
+} webcfgdoc_t;
 
 /**
- *  This function converts a msgpack buffer into an dhcp_t structure
+ *  This function converts a msgpack buffer into an webcfgdoc_t structure
  *  if possible.
  *
  *  @param buf the buffer to convert
@@ -42,14 +40,14 @@ typedef struct {
  *
  *  @return NULL on error, success otherwise
  */
-dhcp_t* dhcp_convert( const void *buf, size_t len );
+webcfgdoc_t* webcfgdoc_convert( const void *buf, size_t len );
 
 /**
- *  This function destroys an dhcp_t object.
+ *  This function destroys an webcfgdoc_t object.
  *
- *  @param e the dhcp to destroy
+ *  @param e the webcfgdoc to destroy
  */
-void dhcp_destroy( dhcp_t *d );
+void webcfgdoc_destroy( webcfgdoc_t *d );
 
 /**
  *  This function returns a general reason why the conversion failed.
@@ -58,6 +56,6 @@ void dhcp_destroy( dhcp_t *d );
  *
  *  @return the constant string (do not alter or free) describing the error
  */
-const char* dhcp_strerror( int errnum );
+const char* webcfgdoc_strerror( int errnum );
 
 #endif

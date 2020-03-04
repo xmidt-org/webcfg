@@ -18,7 +18,7 @@
 #include <msgpack.h>
 
 #include "helpers.h"
-#include "portmapping.h"
+#include "portmappingparam.h"
 
 /*----------------------------------------------------------------------------*/
 /*                                   Macros                                   */
@@ -39,6 +39,7 @@ enum {
     PM_BOTH_IPV4_AND_IPV6_TARGETS_EXIST,
     PM_INVALID_IPV6,
     PM_MISSING_INTERNAL_PORT,
+    PM_INVALID_DATATYPE,
     PM_MISSING_TARGET_IP,
     PM_MISSING_PORT_RANGE,
     PM_MISSING_PROTOCOL,
@@ -53,7 +54,7 @@ enum {
 /*----------------------------------------------------------------------------*/
 /*                             Function Prototypes                            */
 /*----------------------------------------------------------------------------*/
-int process_portrange( pm_entry_t *e, msgpack_object_array *array );
+//int process_portrange( pm_entry_t *e, msgpack_object_array *array );
 int process_entry( pm_entry_t *e, msgpack_object_map *map );
 int process_portmapping( portmapping_t *pm, msgpack_object *obj );
 
@@ -64,7 +65,7 @@ int process_portmapping( portmapping_t *pm, msgpack_object *obj );
 /* See portmapping.h for details. */
 portmapping_t* portmapping_convert( const void *buf, size_t len )
 {
-    return helper_convert( buf, len, sizeof(portmapping_t), "port-mapping",
+    return helper_convert( buf, len, sizeof(portmapping_t), "parameters",
                            MSGPACK_OBJECT_ARRAY, true,
                            (process_fn_t) process_portmapping,
                            (destroy_fn_t) portmapping_destroy );
@@ -73,11 +74,14 @@ portmapping_t* portmapping_convert( const void *buf, size_t len )
 /* See portmapping.h for details. */
 void portmapping_destroy( portmapping_t *pm )
 {
-    if( NULL != pm ) {
+     if( NULL != pm ) {
         size_t i;
         for( i = 0; i < pm->entries_count; i++ ) {
-            if( NULL != pm->entries[i].protocol ) {
-                free( pm->entries[i].protocol );
+            if( NULL != pm->entries[i].name ) {
+                free( pm->entries[i].name );
+            }
+	    if( NULL != pm->entries[i].value ) {
+                free( pm->entries[i].value );
             }
         }
         if( NULL != pm->entries ) {
@@ -132,6 +136,7 @@ const char* portmapping_strerror( int errnum )
  *
  *  @return 0 on success, error otherwise
  */
+/*
 int process_portrange( pm_entry_t *e, msgpack_object_array *array )
 {
     if( (2 == array->size) &&
@@ -147,7 +152,7 @@ int process_portrange( pm_entry_t *e, msgpack_object_array *array )
 
     errno = PM_INVALID_PORT_RANGE;
     return -1;
-}
+} */
 
 
 /**
@@ -159,7 +164,7 @@ int process_portrange( pm_entry_t *e, msgpack_object_array *array )
  *  @return 0 on success, error otherwise
  */
 int process_entry( pm_entry_t *e, msgpack_object_map *map )
-{
+/*{
     int left = map->size;
     uint8_t objects_left = 0x07;
     msgpack_object_kv *p;
@@ -168,7 +173,7 @@ int process_entry( pm_entry_t *e, msgpack_object_map *map )
     while( (0 < objects_left) && (0 < left--) ) {
         if( MSGPACK_OBJECT_STR == p->key.type ) {
             if( MSGPACK_OBJECT_POSITIVE_INTEGER == p->val.type ) {
-                if( 0 == match(p, "target-port") ) {
+                if( 0 == match(p, "Internal_client") ) {
                     if( UINT16_MAX < p->val.via.u64 ) {
                         errno = PM_INVALID_PORT_NUMBER;
                         return -1;
@@ -236,15 +241,66 @@ int process_entry( pm_entry_t *e, msgpack_object_map *map )
 
     return (0 == objects_left) ? 0 : -1;
 }
-
-int process_portmapping( portmapping_t *pm, msgpack_object *obj )
+*/
 {
+    int left = map->size;
+    uint8_t objects_left = 0x03;
+    msgpack_object_kv *p;
+
+    p = map->ptr;
+    while( (0 < objects_left) && (0 < left--) ) {
+        if( MSGPACK_OBJECT_STR == p->key.type ) {
+            if( MSGPACK_OBJECT_POSITIVE_INTEGER == p->val.type ) {
+                if( 0 == match(p, "dataType") ) {
+                    if( UINT16_MAX < p->val.via.u64 ) {
+			printf("e->type is %d\n", e->type);
+                        errno = PM_INVALID_DATATYPE;
+                        return -1;
+                    } else {
+                        e->type = (uint16_t) p->val.via.u64;
+			printf("e->type is %d\n", e->type);
+                    }
+                    objects_left &= ~(1 << 0);
+		    printf("objects_left after datatype %d\n", objects_left);
+                }
+            } else if( MSGPACK_OBJECT_STR == p->val.type ) {
+                if( 0 == match(p, "name") ) {
+                    e->name = strndup( p->val.via.str.ptr, p->val.via.str.size );
+		    printf("e->name is %s\n", e->name);
+                    objects_left &= ~(1 << 1);
+		    printf("objects_left after name %d\n", objects_left);
+                }
+		if( 0 == match(p, "value") ) {
+                    e->value = strndup( p->val.via.str.ptr, p->val.via.str.size );
+		    printf("e->value is %s\n", e->value);
+                    objects_left &= ~(1 << 2);
+		    printf("objects_left after value %d\n", objects_left);
+                }
+	
+            }
+        }
+        p++;
+    }
+
+    if( 1 & objects_left ) {
+    } else {
+        errno = PM_OK;
+    }
+
+    return (0 == objects_left) ? 0 : -1;
+}
+int process_portmapping( portmapping_t *pm, msgpack_object *obj )
+{ 
+
+    printf("in process \n");
     msgpack_object_array *array = &obj->via.array;
     if( 0 < array->size ) {
         size_t i;
 
         pm->entries_count = array->size;
         pm->entries = (pm_entry_t *) malloc( sizeof(pm_entry_t) * pm->entries_count );
+
+        printf("pm->entries_count is %zu\n",pm->entries_count);
         if( NULL == pm->entries ) {
             pm->entries_count = 0;
             return -1;

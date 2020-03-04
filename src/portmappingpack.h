@@ -13,50 +13,74 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __WEBCFG_H__
-#define __WEBCFG_H__
+#ifndef __PORTMAPPINGPACK_H__
+#define __PORTMAPPINGPACK_H__
 
 #include <stdint.h>
-#include "webcfg_log.h"
-#include <string.h>
 #include <stdbool.h>
+
+
 /*----------------------------------------------------------------------------*/
 /*                                   Macros                                   */
 /*----------------------------------------------------------------------------*/
-#define MAX_BUF_SIZE	           256
-#define MAX_PARAMETERNAME_LENGTH       512
-#define BACKOFF_SLEEP_DELAY_SEC 	    10
+/* none */
 
-#define WEBCFG_FREE(__x__) if(__x__ != NULL) { free((void*)(__x__)); __x__ = NULL;} else {printf("Trying to free null pointer\n");}
 /*----------------------------------------------------------------------------*/
 /*                               Data Structures                              */
 /*----------------------------------------------------------------------------*/
-extern bool g_shutdown;
+struct rootdata {
+    char *name;
+    char *value;
+    uint16_t type;
+};
+
+typedef struct data_struct {
+    size_t count;
+    struct rootdata *data_items;
+    char * version;
+} data_t;
+
+//for subdoc
+
+struct subdoc {
+    char      *internal_client; 
+    bool      enable;       
+    uint16_t  external_port_end_range;    
+    char      *protocol;
+    char      *description;
+    uint16_t  external_port; 
+};
+
+typedef struct subdoc_struct {
+    size_t count;
+    struct subdoc *subdoc_items;
+} subdoc_t;
+
 /*----------------------------------------------------------------------------*/
 /*                             External Functions                             */
 /*----------------------------------------------------------------------------*/
 
 /**
- *  Initialize the library.
+ *  Packs portmapping sub config doc.
  *
- *  @param opts the configuration options to abide by
+ *  @param 
  *
- *  @return 
+ *  @return 0 if the operation was a success, error otherwise
  */
-//void initWebConfigMultipartTask();
 
-void processWebconfgSync(int index);
+ssize_t portmap_pack_subdoc(const subdoc_t *subdocData,void **data);
 
 /**
-* @brief webcfgStrncpy WAL String copy function that copies the content of source string into destination string and null terminates the destination string
-*
-* @param[in] destStr Destination String
-* @param[in] srcStr Source String
-* @param[in] destSize size of destination string
-*/
-void webcfgStrncpy(char *destStr, const char *srcStr, size_t destSize);
-char* get_global_auth_token();
-int Get_PeriodicSyncCheckInterval();
-void getCurrent_Time(struct timespec *timer);
-long timeVal_Diff(struct timespec *starttime, struct timespec *finishtime);
+ *  Packs portmapping root config doc.
+ *
+ *  @param 
+ *
+ *  @return 0 if the operation was a success, error otherwise
+ */
+
+ssize_t portmap_pack_rootdoc( char *blob, const data_t *packData, void **data );
+
+
+
+
 #endif

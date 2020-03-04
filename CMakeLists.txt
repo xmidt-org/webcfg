@@ -40,8 +40,13 @@ file(MAKE_DIRECTORY ${TEST_RESULTS_DIR})
 include_directories(${INCLUDE_DIR}
                     ${INCLUDE_DIR}/cjson
                     ${INCLUDE_DIR}/msgpack
+		    ${INCLUDE_DIR}/trower-base64
+		    ${INCLUDE_DIR}/wdmp-c
+		    ${INCLUDE_DIR}/cimplog
 #                    ${INCLUDE_DIR}/curl
                     )
+
+if (NOT BUILD_YOCTO)
 
 # msgpack-c external dependency
 #-------------------------------------------------------------------------------
@@ -57,21 +62,67 @@ ExternalProject_Add(msgpack
 add_library(libmsgpack STATIC SHARED IMPORTED)
 add_dependencies(libmsgpack msgpack)
 
+# base64 external dependency
+#-------------------------------------------------------------------------------
+ExternalProject_Add(trower-base64
+    PREFIX ${CMAKE_CURRENT_BINARY_DIR}/_prefix/trower-base64
+    GIT_REPOSITORY https://github.com/Comcast/trower-base64.git
+    GIT_TAG "fbb9440ae2bc1118866baefcea7ff814f16613dd"
+    CMAKE_ARGS += -DCMAKE_INSTALL_PREFIX=${INSTALL_DIR} -DBUILD_TESTING=OFF
+)
+add_library(libtrower-base64 STATIC SHARED IMPORTED)
+add_dependencies(libtrower-base64 trower-base64)
+
+# wdmp-c external dependency
+#-------------------------------------------------------------------------------
+ExternalProject_Add(wdmp-c
+    PREFIX ${CMAKE_CURRENT_BINARY_DIR}/_prefix/wdmp-c
+    GIT_REPOSITORY https://github.com/Comcast/wdmp-c.git
+    GIT_TAG "c227bfa1e129404f21fa0272f411c7a472a0f237"
+    CMAKE_ARGS += -DCMAKE_INSTALL_PREFIX=${INSTALL_DIR}
+                  -DBUILD_TESTING=OFF
+)
+add_library(libwdmp-c STATIC SHARED IMPORTED)
+add_dependencies(libwdmp-c wdmp-c)
+
+# cimplog external dependency
+#-------------------------------------------------------------------------------
+ExternalProject_Add(cimplog
+    PREFIX ${CMAKE_CURRENT_BINARY_DIR}/_prefix/cimplog
+    GIT_REPOSITORY https://github.com/Comcast/cimplog.git
+    GIT_TAG "1.0.2"
+    CMAKE_ARGS += -DCMAKE_INSTALL_PREFIX=${INSTALL_DIR}
+)
+add_library(libcimplog STATIC SHARED IMPORTED)
+add_dependencies(libcimplog cimplog)
+
+# cJSON external dependency
+#-------------------------------------------------------------------------------
+ExternalProject_Add(cJSON
+    PREFIX ${PREFIX_DIR}/cJSON
+    GIT_REPOSITORY https://github.com/DaveGamble/cJSON.git
+    GIT_TAG "aafb64a1c549b7b927e339df6d35b1d5059dc235"
+    CMAKE_ARGS += -DCMAKE_INSTALL_PREFIX=${INSTALL_DIR}
+)
+add_library(libcJSON STATIC IMPORTED)
+add_dependencies(libcJSON cJSON)
+
 # curl external dependency
 #-------------------------------------------------------------------------------
-#ExternalProject_Add(curl
-#    PREFIX ${CMAKE_CURRENT_BINARY_DIR}/_prefix/curl
-#    GIT_REPOSITORY https://github.com/curl/curl.git
-#    GIT_TAG "curl-7_64_1"
-#    CMAKE_ARGS += -DCMAKE_INSTALL_PREFIX=${INSTALL_DIR} -DBUILD_TESTING=OFF
-#)
-#add_library(libcurl STATIC SHARED IMPORTED)
-#add_dependencies(libcurl curl)
-find_library( LIB_CURL,
-              NAMES curl
-              PATHS /usr/lib64 )
-
+ExternalProject_Add(curl
+    PREFIX ${CMAKE_CURRENT_BINARY_DIR}/_prefix/curl
+    GIT_REPOSITORY https://github.com/curl/curl.git
+    GIT_TAG "curl-7_64_1"
+    CMAKE_ARGS += -DCMAKE_INSTALL_PREFIX=${INSTALL_DIR} -DBUILD_TESTING=OFF
+)
+add_library(libcurl STATIC SHARED IMPORTED)
+add_dependencies(libcurl curl)
+#find_library( LIB_CURL,
+#              NAMES curl
+#              PATHS /usr/lib64 )
+endif ()
 link_directories ( ${LIBRARY_DIR} ${COMMON_LIBRARY_DIR} ${LIBRARY_DIR64} )
+
 
 add_subdirectory(src)
 

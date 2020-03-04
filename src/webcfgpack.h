@@ -17,46 +17,41 @@
 #define __WEBCFG_H__
 
 #include <stdint.h>
-#include "webcfg_log.h"
-#include <string.h>
-#include <stdbool.h>
+
+
 /*----------------------------------------------------------------------------*/
 /*                                   Macros                                   */
 /*----------------------------------------------------------------------------*/
-#define MAX_BUF_SIZE	           256
-#define MAX_PARAMETERNAME_LENGTH       512
-#define BACKOFF_SLEEP_DELAY_SEC 	    10
+/* none */
 
-#define WEBCFG_FREE(__x__) if(__x__ != NULL) { free((void*)(__x__)); __x__ = NULL;} else {printf("Trying to free null pointer\n");}
 /*----------------------------------------------------------------------------*/
 /*                               Data Structures                              */
 /*----------------------------------------------------------------------------*/
-extern bool g_shutdown;
+struct data {
+    char *name;
+    char *value;
+    uint16_t type;
+};
+
+typedef struct data_struct {
+    size_t count;
+    struct data *data_items;
+} data_t;
+
 /*----------------------------------------------------------------------------*/
 /*                             External Functions                             */
 /*----------------------------------------------------------------------------*/
 
 /**
- *  Initialize the library.
+ *  Packs webconfig root config doc.
  *
- *  @param opts the configuration options to abide by
+ *  @param 
  *
- *  @return 
+ *  @return 0 if the operation was a success, error otherwise
  */
-//void initWebConfigMultipartTask();
+ssize_t webcfg_pack_rootdoc( char *blob, const data_t *packData, void **data );
 
-void processWebconfgSync(int index);
 
-/**
-* @brief webcfgStrncpy WAL String copy function that copies the content of source string into destination string and null terminates the destination string
-*
-* @param[in] destStr Destination String
-* @param[in] srcStr Source String
-* @param[in] destSize size of destination string
-*/
-void webcfgStrncpy(char *destStr, const char *srcStr, size_t destSize);
-char* get_global_auth_token();
-int Get_PeriodicSyncCheckInterval();
-void getCurrent_Time(struct timespec *timer);
-long timeVal_Diff(struct timespec *starttime, struct timespec *finishtime);
+
+
 #endif

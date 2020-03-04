@@ -13,50 +13,55 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __WEBCFG_H__
-#define __WEBCFG_H__
+#ifndef __WEBCFGGENERIC_H__
+#define __WEBCFGGENERIC_H__
 
 #include <stdint.h>
-#include "webcfg_log.h"
-#include <string.h>
-#include <stdbool.h>
+#include <wdmp-c.h>
+
 /*----------------------------------------------------------------------------*/
 /*                                   Macros                                   */
 /*----------------------------------------------------------------------------*/
-#define MAX_BUF_SIZE	           256
-#define MAX_PARAMETERNAME_LENGTH       512
-#define BACKOFF_SLEEP_DELAY_SEC 	    10
 
-#define WEBCFG_FREE(__x__) if(__x__ != NULL) { free((void*)(__x__)); __x__ = NULL;} else {printf("Trying to free null pointer\n");}
 /*----------------------------------------------------------------------------*/
 /*                               Data Structures                              */
 /*----------------------------------------------------------------------------*/
-extern bool g_shutdown;
+
+
 /*----------------------------------------------------------------------------*/
 /*                             External Functions                             */
 /*----------------------------------------------------------------------------*/
+/* return logger file name */
+const char *fetch_generic_file(void);
+void _get_webCfg_interface(char **interface);
+int _getConfigVersion(int index, char **version);
+bool _getConfigURL(int index, char **url);
+bool _getRequestTimeStamp(int index,char **RequestTimeStamp);
+int _setRequestTimeStamp(int index);
+int _setSyncCheckOK(int index, bool status);
+int _setConfigVersion(int index, char *version);
 
+char *get_global_systemReadyTime();
+char* getDeviceBootTime();
+char * getSerialNumber();
+char * getProductClass();
+char * getModelName();
+char * getFirmwareVersion();
+void getDeviceMac();
+char* get_global_deviceMAC();
+
+void initWebConfigMultipartTask();
+void sendNotification(char *payload, char *source, char *destination);
 /**
- *  Initialize the library.
+ * @brief setValues interface sets the parameter value.
  *
- *  @param opts the configuration options to abide by
- *
- *  @return 
+ * @param[in] paramVal List of Parameter name/value pairs.
+ * @param[in] paramCount Number of parameters.
+ * @param[in] setType Flag to specify the type of set operation.
+ * @param[out] timeSpan timing_values for each component. 
+ * @param[out] retStatus Returns status
+ * @param[out] ccspStatus Returns ccsp set status
  */
-//void initWebConfigMultipartTask();
+void setValues(const param_t paramVal[], const unsigned int paramCount, const int setType, char *transactionId, money_trace_spans *timeSpan, WDMP_STATUS *retStatus, int *ccspStatus);
 
-void processWebconfgSync(int index);
-
-/**
-* @brief webcfgStrncpy WAL String copy function that copies the content of source string into destination string and null terminates the destination string
-*
-* @param[in] destStr Destination String
-* @param[in] srcStr Source String
-* @param[in] destSize size of destination string
-*/
-void webcfgStrncpy(char *destStr, const char *srcStr, size_t destSize);
-char* get_global_auth_token();
-int Get_PeriodicSyncCheckInterval();
-void getCurrent_Time(struct timespec *timer);
-long timeVal_Diff(struct timespec *starttime, struct timespec *finishtime);
 #endif
