@@ -88,7 +88,7 @@ int writeToFile(char *filename, char *data)
 
 void test_webcfgpack_unpack()
 {
-	int len=0;
+	/*int len=0;
 	char subdocfile[64] = "../../tests/multiple-now.bin";
 	
 	char *binfileData = NULL;
@@ -104,10 +104,12 @@ void test_webcfgpack_unpack()
 		printf("blobbuff %s blob len %lu\n", blobbuff, strlen(blobbuff));
 	
 		webcfgPackUnpack(blobbuff);
-	}
+	}*/
+ webcfgPackUnpack();
 }
 
-void webcfgPackUnpack(char *blob)
+//void webcfgPackUnpack(char *blob)
+void webcfgPackUnpack()
 {
    	data_t *packRootData = NULL;
 	size_t rootPackSize=-1;
@@ -119,16 +121,17 @@ void webcfgPackUnpack(char *blob)
 	{
 		memset(packRootData, 0, sizeof(data_t));
 
-		packRootData->count = 1;
+		packRootData->count = 2;
 		packRootData->data_items = (struct data *) malloc( sizeof(data) * packRootData->count );
 		memset( packRootData->data_items, 0, sizeof(data) * packRootData->count );
 
-		packRootData->data_items[0].name = strdup("Device.X_RDK_WebConfig.RootConfig.Data");
-		packRootData->data_items[0].value = strdup(blob);
-		packRootData->data_items[0].type = 2;
+		/*packRootData->data_items[0].name = strdup("Device.X_RDK_WebConfig.RootConfig.Data");
+		packRootData->data_items[0].value = strdup("true");
+		packRootData->data_items[0].type = 2;*/
 	}
 	printf("webcfg_pack_rootdoc\n");
-	rootPackSize = webcfg_pack_rootdoc( blob, packRootData, &data );
+	//rootPackSize = webcfg_pack_rootdoc( blob, packRootData, &data );
+        rootPackSize = webcfg_pack_rootdoc( packRootData, &data );
 	printf("rootPackSize is %ld\n", rootPackSize);
 	printf("data packed is %s\n", (char*)data);
 
@@ -153,18 +156,19 @@ void webcfgPackUnpack(char *blob)
 			printf( "errno: %s\n", webcfgparam_strerror(err) );
 			CU_ASSERT_FATAL( NULL != pm );
 			CU_ASSERT_FATAL( NULL != pm->entries );
-			CU_ASSERT_FATAL( 1 == pm->entries_count );
-			CU_ASSERT_STRING_EQUAL( "Device.X_RDK_WebConfig.RootConfig.Data", pm->entries[0].name );
-			CU_ASSERT_STRING_EQUAL( blob, pm->entries[0].value );
-			CU_ASSERT_FATAL( 2 == pm->entries[0].type );
+			//CU_ASSERT_FATAL( 1 == pm->entries_count );
+			//CU_ASSERT_STRING_EQUAL( "Device.X_RDK_WebConfig.RootConfig.Data", pm->entries[0].name );
+			//CU_ASSERT_STRING_EQUAL( blob, pm->entries[0].value );
+			//CU_ASSERT_FATAL( 2 == pm->entries[0].type );
 			for(i = 0; i < (int)pm->entries_count ; i++)
 			{
 				printf("pm->entries[%d].name %s\n", i, pm->entries[i].name);
 				printf("pm->entries[%d].value %s\n" , i, pm->entries[i].value);
 				printf("pm->entries[%d].type %d\n", i, pm->entries[i].type);
+                                printf("pm->entries[%d].notify_attribute %d\n", i, pm->entries[i].notify_attribute);
 			}
 
-			//decode inner blob
+		/*	//decode inner blob
 			webcfgdoc_t *rpm;
 			printf("--------------decode blob-------------\n");
 			rpm = webcfgdoc_convert( pm->entries[0].value, strlen(pm->entries[0].value) );
@@ -202,7 +206,7 @@ void webcfgPackUnpack(char *blob)
 				printf("rpm->entries[%d].version %d\n", i, rpm->entries[i].version);
 			}
 
-			webcfgdoc_destroy( rpm );
+			webcfgdoc_destroy( rpm );*/
 			webcfgparam_destroy( pm );
 		}
 

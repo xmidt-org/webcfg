@@ -83,6 +83,14 @@ void setValues(const param_t paramVal[], const unsigned int paramCount, const in
 	UNUSED(ccspStatus);
 	return;
 }
+void setAttributes(param_t *attArr, const unsigned int paramCount, money_trace_spans *timeSpan, WDMP_STATUS *retStatus)
+{       UNUSED(attArr);
+	UNUSED(paramCount);
+	UNUSED(timeSpan);
+	UNUSED(retStatus);
+        return;
+       
+}
 int _setConfigVersion(int index, char *version)
 {
 	UNUSED(index);

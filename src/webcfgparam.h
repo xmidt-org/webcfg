@@ -23,6 +23,7 @@ typedef struct
 {
     char *name;
     char *value;
+    int notify_attribute;
     uint32_t   value_size;
     uint16_t type;
 } wparam_t;

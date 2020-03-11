@@ -127,7 +127,7 @@ int webcfg_http_request(char **configData, int r_count, int index, int status, l
 		if(strlen(g_interface) == 0)
 		{
 			//get_webCfg_interface(&interface);
-			interface = strdup("erouter0"); //check here.
+			interface = strdup("wlan0"); //check here.
 			if(interface !=NULL)
 		        {
 		               strncpy(g_interface, interface, sizeof(g_interface)-1);
@@ -344,11 +344,13 @@ int processMsgpackSubdoc(multipart_t *mp)
 	int ccspStatus=0;
 	int paramCount = 0;
 	webcfgparam_t *pm;
+        int notify_flag = 0;
+        char notify[20] = "";
 
 	for(m = 0 ; m<((int)mp->entries_count-1); m++)
 	{
 		WebConfigLog("mp->entries[%d].name_space %s\n", m, mp->entries[m].name_space);
-		WebConfigLog("mp->entries[%d].etag %s\n" ,m,  mp->entries[m].etag);
+		WebConfigLog("mp->entries[%d].etag %lu\n" ,m,  (long)mp->entries[m].etag);
 		WebConfigLog("mp->entries[%d].data %s\n" ,m,  mp->entries[m].data);
 
 		WebConfigLog("mp->entries[%d].data_size is %zu\n", m,mp->entries[m].data_size);
@@ -373,11 +375,21 @@ int processMsgpackSubdoc(multipart_t *mp)
 			WebConfigLog("paramCount is %d\n", paramCount);
 
 			for (i = 0; i < paramCount; i++) 
-			{
-				reqParam[i].name = strdup(pm->entries[i].name);
-				reqParam[i].value = strdup(pm->entries[i].value);
-				reqParam[i].type = pm->entries[i].type;
-
+			{       
+                                if( 0 == pm->entries[i].notify_attribute)
+                                {
+				    reqParam[i].name = strdup(pm->entries[i].name);
+				    reqParam[i].value = strdup(pm->entries[i].value);
+				    reqParam[i].type = pm->entries[i].type;
+                                }
+                                else
+                                {
+                                    reqParam[i].name = strdup(pm->entries[i].name);
+                                    snprintf(notify, sizeof(notify), "%d", 1);
+                                    reqParam[i].value = strdup( notify);
+				    reqParam[i].type = WDMP_INT;
+                                    notify_flag = 1;
+                                }
 				WebConfigLog("--->Request:> param[%d].name = %s\n",i,reqParam[i].name);
 				WebConfigLog("--->Request:> param[%d].value = %s\n",i,reqParam[i].value);
 				WebConfigLog("--->Request:> param[%d].type = %d\n",i,reqParam[i].type);
@@ -388,19 +400,27 @@ int processMsgpackSubdoc(multipart_t *mp)
 			{
 				WebcfgInfo("WebConfig SET Request\n");
 
-				setValues(reqParam, paramCount, 0, NULL, NULL, &ret, &ccspStatus);
-				WebcfgInfo("Processed WebConfig SET Request\n");
-				WebcfgInfo("ccspStatus is %d\n", ccspStatus);
-				if(ret == WDMP_SUCCESS)
-				{
-				        WebConfigLog("setValues success. ccspStatus : %d\n", ccspStatus);
-					rv = 0;
+				if(!notify_flag)
+                                {
+		                     setValues(reqParam, paramCount, 0, NULL, NULL, &ret, &ccspStatus);
+				     WebcfgInfo("Processed WebConfig SET Request\n");
+				     WebcfgInfo("ccspStatus is %d\n", ccspStatus);
+					if(ret == WDMP_SUCCESS)
+					{
+					     WebConfigLog("setValues success. ccspStatus : %d\n", ccspStatus);
+					     rv = 0;
+					}
+					else
+					{
+					     WebConfigLog("setValues Failed. ccspStatus : %d\n", ccspStatus);
+					}
 				}
-				else
-				{
-				      WebConfigLog("setValues Failed. ccspStatus : %d\n", ccspStatus);
-				}
-				//WEBCFG_FREE(reqParam);
+                                else
+                                {
+                                     setAttributes(reqParam, 1, NULL, &ret);
+                                     printf("setAttributes function");
+                                }
+                         //WEBCFG_FREE(reqParam);
 			}
 			webcfgparam_destroy( pm );
 		}
@@ -548,11 +568,11 @@ void createCurlHeader( struct curl_slist *list, struct curl_slist **header_list,
 
 	WebConfigLog("Start of createCurlheader\n");
 	//Fetch auth JWT token from cloud.
-	getAuthToken();
-	//int len=0; char *token= NULL;
-	WebConfigLog("get_global_auth_token() is %s\n", get_global_auth_token());
-	//readFromFile("/tmp/webcfg_token", &token, &len );
-	//strncpy(get_global_auth_token(), token, len);
+	//getAuthToken();
+	int len=0; char *token= NULL;
+	//WebConfigLog("get_global_auth_token() is %s\n", get_global_auth_token());
+	readFromFile("/tmp/webcfg_token", &token, &len );
+	strncpy(get_global_auth_token(), token, len);
 
 	auth_header = (char *) malloc(sizeof(char)*MAX_HEADER_LEN);
 	if(auth_header !=NULL)
@@ -857,13 +877,14 @@ void parse_multipart(char *ptr, int no_of_bytes, multipartdocs_t *m, int *no_of_
 	/*for storing respective values */
 	if(0 == strncasecmp(ptr,"Namespace",strlen("Namespace")-1))
 	{
-		m->name_space = strndup(ptr,no_of_bytes);
+                m->name_space = strndup(ptr+(strlen("Namespace: ")),no_of_bytes-((strlen("Namespace: "))));
 		WebConfigLog("The Namespace is %s\n",m->name_space);
 	}
 	else if(0 == strncasecmp(ptr,"Etag",strlen("Etag")-1))
 	{
-		m->etag = strndup(ptr,no_of_bytes);
-		WebConfigLog("The Etag is %s\n",m->etag);
+                char * temp = strndup(ptr+(strlen("Etag: ")),no_of_bytes-((strlen("Etag: "))));
+                m->etag = strtoul(temp,0,0);
+		WebConfigLog("The Etag is %lu\n",(long)m->etag);
 	}
 	else if(strstr(ptr,"parameters"))
 	{

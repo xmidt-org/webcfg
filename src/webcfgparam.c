@@ -138,6 +138,12 @@ int process_params( wparam_t *e, msgpack_object_map *map )
                     objects_left &= ~(1 << 0);
 		    //printf("objects_left after datatype %d\n", objects_left);
                 }
+                else if(0 == match(p, "notify_attribute"))
+                {
+                       e->notify_attribute = (int) p->val.via.u64;
+                       objects_left = 0;
+                       printf("e->notify_attribute is %d\n", e->notify_attribute);
+                }
             } else if( MSGPACK_OBJECT_STR == p->val.type ) {
                 if( 0 == match(p, "name") ) {
                     e->name = strndup( p->val.via.str.ptr, p->val.via.str.size );

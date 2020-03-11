@@ -30,6 +30,7 @@
 struct data {
     char *name;
     char *value;
+    int notify_attribute;
     uint16_t type;
 };
 
@@ -49,7 +50,8 @@ typedef struct data_struct {
  *
  *  @return 0 if the operation was a success, error otherwise
  */
-ssize_t webcfg_pack_rootdoc( char *blob, const data_t *packData, void **data );
+//ssize_t webcfg_pack_rootdoc( char *blob, const data_t *packData, void **data );
+ssize_t webcfg_pack_rootdoc(  const data_t *packData, void **data );
 
 
 

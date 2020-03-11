@@ -74,7 +74,8 @@ static void __msgpack_pack_string_nvp( msgpack_packer *pk,
 
 
 
-ssize_t webcfg_pack_rootdoc( char *blob, const data_t *packData, void **data )
+//ssize_t webcfg_pack_rootdoc( char *blob, const data_t *packData, void **data )
+ssize_t webcfg_pack_rootdoc( const data_t *packData, void **data )
 {
     size_t rv = -1;
     msgpack_sbuffer sbuf;
@@ -91,27 +92,45 @@ ssize_t webcfg_pack_rootdoc( char *blob, const data_t *packData, void **data )
         
 	msgpack_pack_map( &pk, 3); //name, value, type
 
-	for( i = 0; i < count; i++ ) //1 element
+	for( i = 0; i < 1; i++ ) //1 element
 	{
 	    struct webcfg_token WEBCFG_MAP_NAME;
 
             WEBCFG_MAP_NAME.name = "name";
             WEBCFG_MAP_NAME.length = strlen( "name" );
-            __msgpack_pack_string_nvp( &pk, &WEBCFG_MAP_NAME, "Device.X_RDK_WebConfig.RootConfig.Data" );
+            __msgpack_pack_string_nvp( &pk, &WEBCFG_MAP_NAME, "Device.DeviceInfo.X_RDKCENTRAL-COM_xOpsDeviceMgmt.Mesh.Enable" );
 
 	    struct webcfg_token WEBCFG_MAP_VALUE;
 
             WEBCFG_MAP_VALUE.name = "value";
             WEBCFG_MAP_VALUE.length = strlen( "value" );
-	    __msgpack_pack_string_nvp( &pk, &WEBCFG_MAP_VALUE, blob );
+	    __msgpack_pack_string_nvp( &pk, &WEBCFG_MAP_VALUE, "true" );
 
 	    struct webcfg_token WEBCFG_MAP_TYPE;
 
-            WEBCFG_MAP_TYPE.name = "datatype";
-            WEBCFG_MAP_TYPE.length = strlen( "datatype" );
+            WEBCFG_MAP_TYPE.name = "dataType";
+            WEBCFG_MAP_TYPE.length = strlen( "dataType" );
              __msgpack_pack_string( &pk, WEBCFG_MAP_TYPE.name, WEBCFG_MAP_TYPE.length );
 	    msgpack_pack_int(&pk, 2 );
 	}
+        msgpack_pack_map( &pk, 2); //name, value, type
+
+	for( i = 0; i < 1; i++ ) //1 element
+	{
+	    struct webcfg_token WEBCFG_MAP_NAME1;
+
+            WEBCFG_MAP_NAME1.name = "name";
+            WEBCFG_MAP_NAME1.length = strlen( "name" );
+            __msgpack_pack_string_nvp( &pk, &WEBCFG_MAP_NAME1, "Device.NotifyComponent.X_RDKCENTRAL-COM_Connected-Client" );
+
+	    struct webcfg_token WEBCFG_MAP_NOTIFY;
+
+            WEBCFG_MAP_NOTIFY.name = "notify_attribute";
+            WEBCFG_MAP_NOTIFY.length = strlen( "notify_attribute" );
+             __msgpack_pack_string( &pk, WEBCFG_MAP_NOTIFY.name, WEBCFG_MAP_NOTIFY.length );
+	    msgpack_pack_int(&pk, 1 );
+	}
+
 
     } else {
         printf("parameters is NULL\n" );

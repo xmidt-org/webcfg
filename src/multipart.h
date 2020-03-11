@@ -23,7 +23,7 @@
 
 typedef struct
 {
-    char  *etag;
+    uint32_t  etag;
     char  *name_space;
     char  *data;
     size_t data_size;
