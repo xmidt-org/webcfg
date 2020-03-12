@@ -23,6 +23,7 @@
 #include "../src/webcfg.h"
 #include "../src/multipart.h"
 #include "../src/helpers.h"
+#include "../src/webcfg_db.h"
 #include "../src/macbindingdoc.h"
 #include "../src/portmappingdoc.h"
 #include "../src/portmappingparam.h"
@@ -91,6 +92,7 @@ void setAttributes(param_t *attArr, const unsigned int paramCount, money_trace_s
         return;
        
 }
+
 int _setConfigVersion(int index, char *version)
 {
 	UNUSED(index);

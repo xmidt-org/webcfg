@@ -17,6 +17,7 @@
 #define __WEBCFG_H__
 
 #include <stdint.h>
+#include "webcfg_db.h"
 
 
 /*----------------------------------------------------------------------------*/
@@ -52,8 +53,7 @@ typedef struct data_struct {
  */
 //ssize_t webcfg_pack_rootdoc( char *blob, const data_t *packData, void **data );
 ssize_t webcfg_pack_rootdoc(  const data_t *packData, void **data );
-
-
+ssize_t webcfgdb_pack( const webconfig_db_t *packData, void **data );
 
 
 #endif

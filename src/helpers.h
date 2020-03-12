@@ -72,4 +72,5 @@ void* helper_convert_array( const void *buf, size_t len,
                       process_fn_t process,
                       destroy_fn_t destroy );
 
+
 #endif

@@ -49,10 +49,10 @@ void* helper_convert( const void *buf, size_t len,
                       msgpack_object_type expect_type, bool optional,
                       process_fn_t process,
                       destroy_fn_t destroy )
-{
-	printf("B4 malloc\n");
+{ 
+    printf("B4 malloc\n");
     void *p = malloc( struct_size );
-printf("After malloc\n");
+    printf("After malloc\n");
     if( NULL == p ) {
         errno = HELPERS_OUT_OF_MEMORY;
     } else {
@@ -102,6 +102,7 @@ printf("After malloc\n");
 
     return p;
 }
+
 
 /*----------------------------------------------------------------------------*/
 /*                             Internal functions                             */

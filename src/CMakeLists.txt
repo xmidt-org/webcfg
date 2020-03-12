@@ -13,8 +13,8 @@
 #   limitations under the License.
 
 set(PROJ_WEBCFG webcfg)
-set(HEADERS webcfg.h webcfgparam.h webcfgdoc.h webcfgpack.h multipart.h portmappingpack.h portmappingparam.h portmappingdoc.h macbindingdoc.h webcfg_auth.h webcfg_notify.h webcfg_generic.h)
-set(SOURCES helpers.c array_helpers.c webcfg.c webcfgparam.c webcfgdoc.c webcfgpack.c multipart.c portmappingpack.c portmappingparam.c portmappingdoc.c macbindingdoc.c webcfg_auth.c webcfg_notify.c)
+set(HEADERS webcfg.h webcfgparam.h webcfgdoc.h webcfgpack.h multipart.h portmappingpack.h portmappingparam.h portmappingdoc.h macbindingdoc.h webcfg_auth.h webcfg_notify.h webcfg_generic.h webcfg_db.h)
+set(SOURCES helpers.c array_helpers.c webcfg.c webcfgparam.c webcfgdoc.c webcfgpack.c multipart.c portmappingpack.c portmappingparam.c portmappingdoc.c macbindingdoc.c webcfg_auth.c webcfg_notify.c webcfg_db.c)
 
 add_library(${PROJ_WEBCFG} STATIC ${HEADERS} ${SOURCES})
 add_library(${PROJ_WEBCFG}.shared SHARED ${HEADERS} ${SOURCES})

@@ -51,6 +51,7 @@ struct webcfg_token {
 /*                             Internal functions                             */
 /*----------------------------------------------------------------------------*/
 static const struct webcfg_token WEBCFG_PARAMETERS   = { .name = "parameters", .length = sizeof( "parameters" ) - 1 };
+static const struct webcfg_token WEBCFG_DB_PARAMETERS   = { .name = "webcfgdb", .length = sizeof( "webcfgdb" ) - 1 };
 static void __msgpack_pack_string( msgpack_packer *pk, const void *string, size_t n );
 static void __msgpack_pack_string_nvp( msgpack_packer *pk,
                                        const struct webcfg_token *token,
@@ -150,5 +151,61 @@ ssize_t webcfg_pack_rootdoc( const data_t *packData, void **data )
     msgpack_sbuffer_destroy( &sbuf );
     return rv;
 }
+
+ssize_t webcfgdb_pack( const webconfig_db_t *packData, void **data )
+{
+    size_t rv = -1;
+    msgpack_sbuffer sbuf;
+    msgpack_packer pk;
+    msgpack_sbuffer_init( &sbuf );
+    msgpack_packer_init( &pk, &sbuf, msgpack_sbuffer_write );
+    int i =0;
+
+    if( packData != NULL && packData->entries_count != 0 ) {
+	int count = packData->entries_count;
+	msgpack_pack_map( &pk, 1);
+
+        __msgpack_pack_string( &pk, WEBCFG_DB_PARAMETERS.name, WEBCFG_DB_PARAMETERS.length );
+	msgpack_pack_array( &pk, count );
+        
+	
+	for( i = 0; i < count; i++ ) //1 element
+	{   
+            msgpack_pack_map( &pk, 2); //name, version
+
+	    struct webcfg_token WEBCFG_MAP_NAME;
+
+            WEBCFG_MAP_NAME.name = "name";
+            WEBCFG_MAP_NAME.length = strlen( "name" );
+            __msgpack_pack_string_nvp( &pk, &WEBCFG_MAP_NAME, packData->entries[i].name );
+
+	    struct webcfg_token WEBCFG_MAP_VERSION;
+
+            WEBCFG_MAP_VERSION.name = "version";
+            WEBCFG_MAP_VERSION.length = strlen( "version" );
+	    __msgpack_pack_string( &pk, WEBCFG_MAP_VERSION.name, WEBCFG_MAP_VERSION.length);
+            msgpack_pack_uint64(&pk,(uint32_t) packData->entries[i].version);
+	}
+
+    } else {
+        printf("parameters is NULL\n" );
+        return rv;
+    }
+
+    if( sbuf.data ) {
+        *data = ( char * ) malloc( sizeof( char ) * sbuf.size );
+
+        if( NULL != *data ) {
+            memcpy( *data, sbuf.data, sbuf.size );
+	    //printf("sbuf.data is %s sbuf.size %ld\n", sbuf.data, sbuf.size);
+            rv = sbuf.size;
+        }
+    }
+
+    msgpack_sbuffer_destroy( &sbuf );
+    return rv;
+}
+
+
 
 
