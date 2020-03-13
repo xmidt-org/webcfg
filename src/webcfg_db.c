@@ -59,7 +59,7 @@ int process_webcfgdb( webconfig_db_t *pm, msgpack_object *obj );
 /*                             External Functions                             */
 /*----------------------------------------------------------------------------*/
 
-int initDB(char * db_file_path, webconfig_db_t* webcfgdb )
+int initDB(char * db_file_path )
 {
      FILE *fp;
      char *data;
@@ -83,8 +83,8 @@ int initDB(char * db_file_path, webconfig_db_t* webcfgdb )
      (data)[ch_count] ='\0';
      fclose(fp);
 
-     webcfgdb = decodeData((void *)data, len);
-     WebConfigLog("Size of webcfgdb %ld\n", (size_t)webcfgdb);
+     wd = decodeData((void *)data, len);
+     WebConfigLog("Size of wd %ld\n", (size_t)wd);
      return 1;
      
 }
@@ -94,9 +94,9 @@ int addNewDocEntry(webconfig_db_t *subdoc)
      size_t webcfgdbPackSize = -1;
      void* data = NULL;
  
-     printf("size of subdoc %ld\n", (size_t)subdoc);
+     printf("size of subdoc %zu\n", (size_t)subdoc);
      webcfgdbPackSize = webcfgdb_pack(subdoc, &data);
-     printf("size of webcfgdbPackSize %ld\n", webcfgdbPackSize);
+     printf("size of webcfgdbPackSize %zu\n", webcfgdbPackSize);
      writeToDBFile("webconfig_db.bin",(char *)data);
   
      return 0;
@@ -208,10 +208,10 @@ int process_webcfgdbparams( webconfig_db_data_t *e, msgpack_object_map *map )
                     else
                     {
                         e->version = (uint32_t) p->val.via.u64;
-			printf("e->version is %d\n", e->version);
+			//printf("e->version is %d\n", e->version);
                     }
-                    objects_left &= ~(1 << 0);
-		    printf("objects_left after datatype %d\n", objects_left);
+                    objects_left &= ~(1 << 1);
+		    //printf("objects_left after datatype %d\n", objects_left);
                 }
                 
             }
@@ -220,9 +220,9 @@ int process_webcfgdbparams( webconfig_db_data_t *e, msgpack_object_map *map )
                 if( 0 == match(p, "name") )
                 {
                     e->name = strndup( p->val.via.str.ptr, p->val.via.str.size );
-		    printf("e->name is %s\n", e->name);
-                    objects_left &= ~(1 << 1);
-		    printf("objects_left after name %d\n", objects_left);
+		    //printf("e->name is %s\n", e->name);
+                    objects_left &= ~(1 << 0);
+		    //printf("objects_left after name %d\n", objects_left);
                 }
             }
         }
@@ -242,7 +242,7 @@ int process_webcfgdbparams( webconfig_db_data_t *e, msgpack_object_map *map )
 
 int process_webcfgdb( webconfig_db_t *wd, msgpack_object *obj )
 {
-    printf(" process_webcfgdbparam \n");
+    //printf(" process_webcfgdbparam \n");
     msgpack_object_array *array = &obj->via.array;
     if( 0 < array->size )
     {
@@ -256,7 +256,7 @@ int process_webcfgdb( webconfig_db_t *wd, msgpack_object *obj )
             return -1;
         }
         
-        printf("wd->entries_count %lu\n",wd->entries_count);
+        //printf("wd->entries_count %lu\n",wd->entries_count);
         memset( wd->entries, 0, sizeof(webconfig_db_data_t) * wd->entries_count );
         for( i = 0; i < wd->entries_count; i++ )
         {
@@ -267,7 +267,7 @@ int process_webcfgdb( webconfig_db_t *wd, msgpack_object *obj )
             }
             if( 0 != process_webcfgdbparams(&wd->entries[i], &array->ptr[i].via.map) )
             {
-		printf("process_webcfgdbparam failed\n");
+		//printf("process_webcfgdbparam failed\n");
                 return -1;
             }
         }

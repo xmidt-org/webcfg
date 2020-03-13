@@ -65,7 +65,7 @@ typedef struct blob{
  *
  *  @return 
  */
-int initDB(char * db_file_path, webconfig_db_t* webcfgdb);
+int initDB(char * db_file_path);
 
 int addNewDocEntry(webconfig_db_t *subdoc);
 
@@ -107,4 +107,5 @@ void webcfgdb_destroy( webconfig_db_t *d );
  */
 const char* webcfgdbparam_strerror( int errnum );
 
+extern webconfig_db_t *wd;
 #endif
