@@ -148,8 +148,8 @@ int webcfg_http_request(char **configData, int r_count, char* doc, int status, l
 		WebConfigLog("fetching interface from device.properties\n");
 		if(strlen(g_interface) == 0)
 		{
-			//get_webCfg_interface(&interface);
-			interface = strdup("erouter0"); //check here.
+			get_webCfg_interface(&interface);
+			//interface = strdup("erouter0"); //check here.
 			if(interface !=NULL)
 		        {
 		               strncpy(g_interface, interface, sizeof(g_interface)-1);
