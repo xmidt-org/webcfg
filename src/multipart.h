@@ -21,6 +21,12 @@
 #include <base64.h>
 #define WEBCFG_FREE(__x__) if(__x__ != NULL) { free((void*)(__x__)); __x__ = NULL;} else {printf("Trying to free null pointer\n");}
 
+#ifdef BUILD_YOCTO
+#define DEVICE_PROPS_FILE       "/etc/device.properties"
+#else
+#define DEVICE_PROPS_FILE       "/tmp/webcfg_url" //TODO: command line argument for URL
+#endif
+
 typedef struct
 {
     uint32_t  etag;

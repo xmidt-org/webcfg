@@ -224,7 +224,7 @@ void processWebconfgSync(char* doc)
 	char *transaction_uuid =NULL;
 	char *ct=NULL;
 	size_t dataSize=0;
-	//initDB("webconfig_db.bin"); //Remove this. Testing purpose.
+	//initDB(WEBCFG_DB_FILE); //Remove this. Testing purpose.
 	//size_t j;//,k;
        /* for(j = 0;j< wd->entries_count ; j++)
         {

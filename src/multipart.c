@@ -65,6 +65,7 @@ void parse_multipart(char *ptr, int no_of_bytes, multipartdocs_t *m, int *no_of_
 void multipart_destroy( multipart_t *m );
 char* generate_trans_uuid();
 int processMsgpackSubdoc(multipart_t *mp);
+void loadInitURLFromFile(char **url);
 /*----------------------------------------------------------------------------*/
 /*                             External Functions                             */
 /*----------------------------------------------------------------------------*/
@@ -88,7 +89,7 @@ int webcfg_http_request(char **configData, int r_count, char* doc, int status, l
 	char *interface = NULL;
 	char *ct = NULL;
 	char *webConfigURL = NULL;
-	int len=0;
+	//int len=0;
 	char *transID = NULL;
 	char *docnames = NULL;
 
@@ -116,9 +117,11 @@ int webcfg_http_request(char **configData, int r_count, char* doc, int status, l
 			*transaction_id = strdup(transID);
 			WEBCFG_FREE(transID);
 		}
-		WebConfigLog("webConfigURL readFromFile\n"); //TODO: Read URL from device.properties
-		readFromFile(WEBCFG_URL_FILE, &webConfigURL, &len );
-		WebConfigLog("ConfigURL from readFromFile is %s\n", webConfigURL);
+		WebConfigLog("webConfigURL loadInitURLFromFile\n"); //TODO: Read URL from device.properties
+		//readFromFile(WEBCFG_URL_FILE, &webConfigURL, &len );
+		loadInitURLFromFile(&webConfigURL);
+
+		WebConfigLog("ConfigURL from loadInitURLFromFile is %s\n", webConfigURL);
 
 		//Update query param in the URL based on the doc name for force sync
 		if (doc != NULL && (strlen(doc)>0))
@@ -494,7 +497,7 @@ int processMsgpackSubdoc(multipart_t *mp)
         for(j = 0;j< wd->entries_count ; j++)
         {
             WebConfigLog("wd->entries[%lu].name %s\n", j, wd->entries[j].name);
-	    WebConfigLog("wd->entries[%lu].version %lu\n" ,j,  (long)wd->entries[j].version);  
+	    WebConfigLog("--->>>wd->entries[%lu].version %lu\n" ,j,  (long)wd->entries[j].version);
         }
         addNewDocEntry(wd);
         webcfgdb_destroy(wd);
@@ -600,6 +603,41 @@ void stripspaces(char *str, char **final_str)
 	*final_str = str;
 }
 
+void loadInitURLFromFile(char **url)
+{
+	FILE *fp = fopen(DEVICE_PROPS_FILE, "r");
+
+	if (NULL != fp)
+	{
+		char str[255] = {'\0'};
+		while (fgets(str, sizeof(str), fp) != NULL)
+		{
+		    char *value = NULL;
+                    if(NULL != (value = strstr(str, "WEBCONFIG_INIT_URL=")))
+		    {
+			value = value + strlen("WEBCONFIG_INIT_URL=");
+			value[strlen(value)-1] = '\0';
+			*url = strdup(value);
+			break;
+		    }
+
+		}
+		fclose(fp);
+	}
+	else
+	{
+		WebConfigLog("Failed to open device.properties file:%s\n", DEVICE_PROPS_FILE);
+	}
+	if (NULL == *url)
+	{
+		WebConfigLog("WebConfig url is not present in device.properties\n");
+	}
+	else
+	{
+		WebConfigLog("url fetched is %s\n", *url);
+	}
+}
+
 int readFromFile(char *filename, char **data, int *len)
 {
 	FILE *fp;
@@ -629,15 +667,17 @@ void getConfigDocList(char **doc)
 	size_t i;
 	if( NULL != wd )
 	{
+		WebConfigLog("_____________>>>wd NOT NULL\n");
 		if( NULL != wd->entries )
 		{
 			if( NULL != wd->entries[0].name ) //root
 			{
 				sprintf(docList, "%s", wd->entries[0].name); //root version.
 				WebConfigLog("docList is %s\n", docList);
-
-				for( i = 1; i < wd->entries_count-1; i++ )
+				WebConfigLog("wd->entries_count is %zu\n", wd->entries_count);
+				for( i = 1; i < wd->entries_count; i++ )
 				{
+					WebConfigLog("wd->entries[%zu].name is %s wd->entries[%zu].version %lu\n",i, wd->entries[i].name, i, (long)wd->entries[i].version);
 					if( NULL != wd->entries[i].name )
 					{
 						docList_tmp = strdup(docList);
@@ -650,6 +690,10 @@ void getConfigDocList(char **doc)
 			}
 
 		}
+	}
+	else
+	{
+		WebConfigLog("_____________>>>wd is NULL\n");
 	}
 }
 
@@ -667,9 +711,10 @@ void getConfigVersionList(char **version)
 		    {
 			sprintf(versionsList, "%lu", (long)wd->entries[0].version); //root version.
 			WebConfigLog("versionsList is %s\n", versionsList);
-			
-			for( i = 1; i < wd->entries_count-1; i++ )
+			WebConfigLog("wd->entries_count is %zu\n", wd->entries_count);
+			for( i = 1; i < wd->entries_count; i++ )
 			{
+				WebConfigLog("wd->entries[%zu].name is %s wd->entries[%zu].version %lu\n",i,  wd->entries[i].name, i, (long)wd->entries[i].version);
 				if( NULL != wd->entries[i].name )
 				{
 					versionsList_tmp = strdup(versionsList);
@@ -682,6 +727,10 @@ void getConfigVersionList(char **version)
 		   }
 	    
         	}
+	}
+	else
+	{
+		WebConfigLog("_____________>>>wd is NULL\n");
 	}
 }
 

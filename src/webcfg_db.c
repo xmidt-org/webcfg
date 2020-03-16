@@ -65,7 +65,7 @@ int initDB(char * db_file_path )
      char *data;
      size_t len;
      int ch_count=0;
-     printf("DB file path si %s\n", db_file_path);
+     printf("DB file path is %s\n", db_file_path);
      fp = fopen(db_file_path,"rb");
 
      if (fp == NULL)
