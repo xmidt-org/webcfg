@@ -34,6 +34,7 @@
 #define WEBPA_READ_HEADER          "/etc/parodus/parodus_read_file.sh"
 #define WEBPA_CREATE_HEADER        "/etc/parodus/parodus_create_file.sh"
 #define WEBCFG_URL_FILE 	   "/tmp/webcfg_url" //check here.
+#define WEBCFG_INTERFACE_DEFAULT   "erouter0"
 /*----------------------------------------------------------------------------*/
 /*                               Data Structures                              */
 /*----------------------------------------------------------------------------*/
