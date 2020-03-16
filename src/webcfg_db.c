@@ -97,7 +97,8 @@ int addNewDocEntry(webconfig_db_t *subdoc)
      printf("size of subdoc %zu\n", (size_t)subdoc);
      webcfgdbPackSize = webcfgdb_pack(subdoc, &data);
      printf("size of webcfgdbPackSize %zu\n", webcfgdbPackSize);
-     writeToDBFile("webconfig_db.bin",(char *)data);
+     WebConfigLog("writeToDBFile %s\n", WEBCFG_DB_FILE);
+     writeToDBFile(WEBCFG_DB_FILE,(char *)data);
   
      return 0;
 }

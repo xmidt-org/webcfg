@@ -89,8 +89,10 @@ void *WebConfigMultipartTask()
 
 	//start webconfig notification thread.
 	initWebConfigNotifyTask();
-	WebConfigLog("After initWebConfigNotifyTask\n");
-	initDB("webconfig_db.bin");
+	WebConfigLog("B4 initDB %s\n", WEBCFG_DB_FILE);
+
+	initDB(WEBCFG_DB_FILE);
+	WebConfigLog("After initDB\n");
 	while(1)
 	{
 		if(forced_sync)
@@ -222,7 +224,7 @@ void processWebconfgSync(char* doc)
 	char *transaction_uuid =NULL;
 	char *ct=NULL;
 	size_t dataSize=0;
-	initDB("webconfig_db.bin"); //Remove this. Testing purpose.
+	//initDB("webconfig_db.bin"); //Remove this. Testing purpose.
 	//size_t j;//,k;
        /* for(j = 0;j< wd->entries_count ; j++)
         {

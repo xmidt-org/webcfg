@@ -118,6 +118,7 @@ int webcfg_http_request(char **configData, int r_count, char* doc, int status, l
 		}
 		WebConfigLog("webConfigURL readFromFile\n"); //TODO: Read URL from device.properties
 		readFromFile(WEBCFG_URL_FILE, &webConfigURL, &len );
+		WebConfigLog("ConfigURL from readFromFile is %s\n", webConfigURL);
 
 		//Update query param in the URL based on the doc name for force sync
 		if (doc != NULL && (strlen(doc)>0))
@@ -145,7 +146,7 @@ int webcfg_http_request(char **configData, int r_count, char* doc, int status, l
 		if(strlen(g_interface) == 0)
 		{
 			//get_webCfg_interface(&interface);
-			interface = strdup("eth0"); //check here.
+			interface = strdup("erouter0"); //check here.
 			if(interface !=NULL)
 		        {
 		               strncpy(g_interface, interface, sizeof(g_interface)-1);
@@ -183,8 +184,8 @@ int webcfg_http_request(char **configData, int r_count, char* doc, int status, l
 		}
 		else
 		{
-			WebConfigLog("curl Ip resolve option set as default mode\n");
-			curl_easy_setopt(curl, CURLOPT_IPRESOLVE, CURL_IPRESOLVE_WHATEVER);
+			WebConfigLog("curl Ip resolve option set as default V4 mode\n");
+			curl_easy_setopt(curl, CURLOPT_IPRESOLVE, CURL_IPRESOLVE_V4);
 		}
 		curl_easy_setopt(curl, CURLOPT_CAINFO, CA_CERT_PATH);
 		// disconnect if it is failed to validate server's cert
@@ -711,10 +712,10 @@ void createCurlHeader( struct curl_slist *list, struct curl_slist **header_list,
 
 	WebConfigLog("Start of createCurlheader\n");
 	//Fetch auth JWT token from cloud.
-	//getAuthToken();
-	int len=0; char *token= NULL;
-	readFromFile("/tmp/webcfg_token", &token, &len );
-	strncpy(get_global_auth_token(), token, len);
+	getAuthToken();
+	//int len=0; char *token= NULL;
+	//readFromFile("/tmp/webcfg_token", &token, &len );
+	//strncpy(get_global_auth_token(), token, len);
 	WebConfigLog("get_global_auth_token() is %s\n", get_global_auth_token());
 
 	auth_header = (char *) malloc(sizeof(char)*MAX_HEADER_LEN);
