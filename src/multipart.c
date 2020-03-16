@@ -66,6 +66,7 @@ void multipart_destroy( multipart_t *m );
 char* generate_trans_uuid();
 int processMsgpackSubdoc(multipart_t *mp);
 void loadInitURLFromFile(char **url);
+static void get_webCfg_interface(char **interface);
 /*----------------------------------------------------------------------------*/
 /*                             External Functions                             */
 /*----------------------------------------------------------------------------*/
@@ -601,6 +602,48 @@ void stripspaces(char *str, char **final_str)
 	}
 	str[j]='\0';
 	*final_str = str;
+}
+
+static void get_webCfg_interface(char **interface)
+{
+
+        FILE *fp = fopen(DEVICE_PROPS_FILE, "r");
+
+        if (NULL != fp)
+        {
+                char str[255] = {'\0'};
+                while (fgets(str, sizeof(str), fp) != NULL)
+                {
+                    char *value = NULL;
+
+                    if(NULL != (value = strstr(str, "WEBCONFIG_INTERFACE=")))
+                    {
+                        value = value + strlen("WEBCONFIG_INTERFACE=");
+                        value[strlen(value)-1] = '\0';
+                        *interface = strdup(value);
+                        break;
+                    }
+
+                }
+                fclose(fp);
+        }
+        else
+        {
+                WebConfigLog("Failed to open device.properties file:%s\n", DEVICE_PROPS_FILE);
+                WebConfigLog("Adding default values for webConfig interface\n");
+                *interface = strdup(WEBCFG_INTERFACE_DEFAULT);
+        }
+
+        if (NULL == *interface)
+        {
+                WebConfigLog("WebConfig interface is not present in device.properties, adding default interface\n");
+
+                *interface = strdup(WEBCFG_INTERFACE_DEFAULT);
+        }
+        else
+        {
+                WebConfigLog("interface fetched is %s\n", *interface);
+        }
 }
 
 void loadInitURLFromFile(char **url)
