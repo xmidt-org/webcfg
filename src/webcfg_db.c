@@ -109,7 +109,7 @@ int writeToDBFile(char *db_file_path, char *data)
 	fp = fopen(db_file_path , "w+");
 	if (fp == NULL)
 	{
-		printf("Failed to open file in db %s\n", db_file_path );
+		WebConfigLog("Failed to open file in db %s\n", db_file_path );
 		return 0;
 	}
 	if(data !=NULL)
@@ -120,7 +120,7 @@ int writeToDBFile(char *db_file_path, char *data)
 	}
 	else
 	{
-		printf("WriteToJson failed, Data is NULL\n");
+		WebConfigLog("WriteToJson failed, Data is NULL\n");
 		return 0;
 	}
 }
@@ -209,7 +209,7 @@ int process_webcfgdbparams( webconfig_db_data_t *e, msgpack_object_map *map )
                     else
                     {
                         e->version = (uint32_t) p->val.via.u64;
-			//printf("e->version is %d\n", e->version);
+			WebConfigLog("e->version is %lu\n", (long)e->version);
                     }
                     objects_left &= ~(1 << 1);
 		    //printf("objects_left after datatype %d\n", objects_left);
@@ -221,7 +221,7 @@ int process_webcfgdbparams( webconfig_db_data_t *e, msgpack_object_map *map )
                 if( 0 == match(p, "name") )
                 {
                     e->name = strndup( p->val.via.str.ptr, p->val.via.str.size );
-		    //printf("e->name is %s\n", e->name);
+		    WebConfigLog("e->name is %s\n", e->name);
                     objects_left &= ~(1 << 0);
 		    //printf("objects_left after name %d\n", objects_left);
                 }

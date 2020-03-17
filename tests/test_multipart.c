@@ -182,7 +182,7 @@ void test_multipart()
 	//int status=0, 
 	//int index=0;
 	char *doc = NULL;
-	//doc = strdup("moca");
+	doc = strdup("moca");
 	//char *transaction_uuid =NULL;
 	
 	//char * decodeMsg =NULL;
@@ -203,6 +203,12 @@ void test_multipart()
 	if(configRet == 0)
 	{
 		printf("config ret success\n");
+		//printf("processWebconfgSync again..\n");
+		//processWebconfgSync(doc);
+		//printf("processWebconfgSync again..\n");
+		//processWebconfgSync(doc);
+		//printf("processWebconfgSync again..\n");
+		//processWebconfgSync(doc);
 		/*subLen = (size_t) len;
 		subdbuff = ( void*)subfileData;
 		printf("subLen is %ld\n", subLen);

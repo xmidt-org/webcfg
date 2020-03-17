@@ -225,8 +225,8 @@ void processWebconfgSync(char* doc)
 	char *ct=NULL;
 	size_t dataSize=0;
 	//initDB(WEBCFG_DB_FILE); //Remove this. Testing purpose.
-	//size_t j;//,k;
-       /* for(j = 0;j< wd->entries_count ; j++)
+	/*size_t j;
+        for(j = 0;j< wd->entries_count ; j++)
         {
             WebConfigLog("---wd->entries[%lu].name %s\n", j, wd->entries[j].name);
 	    WebConfigLog("---wd->entries[%lu].version %lu\n" ,j,  (long)wd->entries[j].version);  

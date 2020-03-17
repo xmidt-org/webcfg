@@ -379,8 +379,9 @@ int processMsgpackSubdoc(multipart_t *mp)
         
         wd = ( webconfig_db_t * ) malloc( sizeof( webconfig_db_t ) );
         wd->entries_count = mp->entries_count;
+	WebConfigLog("wd->entries_count %zu\n", wd->entries_count);
         wd->entries = (webconfig_db_data_t *) malloc( sizeof(webconfig_db_data_t) * wd->entries_count+1 );
-        memset( wd->entries, 0, sizeof(webconfig_db_data_t) * wd->entries_count );
+        memset( wd->entries, 0, sizeof(webconfig_db_data_t) * wd->entries_count+1 );
 	for(m = 0 ; m<((int)mp->entries_count)-1; m++)
 	{
 		WebConfigLog("mp->entries[%d].name_space %s\n", m, mp->entries[m].name_space);
@@ -500,7 +501,8 @@ int processMsgpackSubdoc(multipart_t *mp)
 	    WebConfigLog("--->>>wd->entries[%lu].version %lu\n" ,j,  (long)wd->entries[j].version);
         }
         addNewDocEntry(wd);
-        webcfgdb_destroy(wd);
+	WebConfigLog("After addNewDocEntry wd->entries_count %zu\n", wd->entries_count);
+        //webcfgdb_destroy(wd);
 
         /*temp = ( webconfig_db_t * ) malloc( sizeof( webconfig_db_t ) );
         initDB("webconfig_db.bin", temp ) ;
@@ -1080,7 +1082,7 @@ void parse_multipart(char *ptr, int no_of_bytes, multipartdocs_t *m, int *no_of_
 	{
                 char * temp = strndup(ptr+(strlen("Etag: ")),no_of_bytes-((strlen("Etag: "))));
                 m->etag = strtoul(temp,0,0);
-		//WebConfigLog("The Etag is %lu\n",(long)m->etag);
+		WebConfigLog("....The Etag version is %lu\n",(long)m->etag);
 	}
 	else if(strstr(ptr,"parameters"))
 	{
