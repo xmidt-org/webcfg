@@ -63,7 +63,7 @@ int readFromFile(char *filename, char **data, int *len)
 	return 1;
 }
 
-int writeToFile(char *filename, char *data)
+int writeTofile(char *filename, char *data)
 {
 	FILE *fp;
 	fp = fopen(filename , "w+");
@@ -135,7 +135,7 @@ void webcfgPackUnpack()
 	printf("rootPackSize is %ld\n", rootPackSize);
 	printf("data packed is %s\n", (char*)data);
 
-	int status = writeToFile("buff.txt", (char*)data);
+	int status = writeTofile("buff.txt", (char*)data);
 	if(status)
 	{
 		webcfgparam_t *pm;

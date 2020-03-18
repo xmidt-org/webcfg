@@ -182,7 +182,7 @@ void test_multipart()
 	//int status=0, 
 	//int index=0;
 	char *doc = NULL;
-	doc = strdup("moca");
+	//doc = strdup("moca");
 	//char *transaction_uuid =NULL;
 	
 	//char * decodeMsg =NULL;

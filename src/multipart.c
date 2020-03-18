@@ -375,8 +375,18 @@ int processMsgpackSubdoc(multipart_t *mp)
         //webconfig_db_t *temp;
         int notify_flag = 0;
         char notify[20] = "";
-        int count = 0;
+        int count = 0, addStatus =0;
+	int uStatus = 0, dStatus =0;
         
+	WebConfigLog("Adding mp entries to tmp list\n");
+        addStatus = addToTmpList(mp);
+        WebConfigLog("addToTmpList status is :%d\n", addStatus);
+        if(addStatus == 1)
+        {
+            WebConfigLog("Added %d mp entries To tmp List\n", get_numOfMpDocs());
+	    print_tmp_doc_list(mp->entries_count);
+        }
+
         wd = ( webconfig_db_t * ) malloc( sizeof( webconfig_db_t ) );
         wd->entries_count = mp->entries_count;
 	WebConfigLog("wd->entries_count %zu\n", wd->entries_count);
@@ -444,6 +454,31 @@ int processMsgpackSubdoc(multipart_t *mp)
 					if(ret == WDMP_SUCCESS)
 					{
 						WebConfigLog("setValues success. ccspStatus : %d\n", ccspStatus);
+
+						WebConfigLog("update doc status for %s\n", mp->entries[m].name_space);
+						uStatus = updateTmpList(mp->entries[m].name_space, mp->entries[m].etag, "success");
+						if(uStatus == 1)
+						{
+							print_tmp_doc_list(mp->entries_count);
+							WebConfigLog("updateTmpList success\n");
+
+							WebConfigLog("deleteFromTmpList as doc is applied\n");
+							dStatus = deleteFromTmpList(mp->entries[m].name_space);
+							if(dStatus == 0)
+							{
+								WebConfigLog("deleteFromTmpList success\n");
+								print_tmp_doc_list(mp->entries_count);
+							}
+							else
+							{
+								WebConfigLog("deleteFromTmpList failed\n");
+							}
+						}
+						else
+						{
+							WebConfigLog("updateTmpList failed\n");
+						}
+
 						printf("Before add in db m is %d\n",m);
 						wd->entries[m+1].name = mp->entries[m].name_space;
 						wd->entries[m+1].version = mp->entries[m].etag;
@@ -1135,3 +1170,25 @@ int subdocparse(char *filename, char **data, int *len)
 		return 0;
 	  }
 }
+
+void print_tmp_doc_list(size_t mp_count)
+{
+	int count =0;
+	webconfig_tmp_data_t *temp = NULL;
+	temp = get_global_node();
+	while (NULL != temp)
+	{
+		count = count+1;
+		WebConfigLog("--->>node is pointing to temp->name %s temp->version %lu temp->status %s\n",temp->name, (long)temp->version, temp->status);
+		WebConfigLog("checking the next item in the list\n");
+		temp= temp->next;
+		WebConfigLog("count %d mp_count %zu\n", count, mp_count);
+		if(count == (int)mp_count)
+		{
+			WebConfigLog("Found all docs in the list\n");
+			break;
+		}
+	}
+	return;
+}
+

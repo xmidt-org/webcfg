@@ -47,8 +47,8 @@ enum {
 /*----------------------------------------------------------------------------*/
 /*                            File Scoped Variables                           */
 /*----------------------------------------------------------------------------*/
-/* none */
-
+static webconfig_tmp_data_t * g_head = NULL;
+static int numOfMpDocs = 0;
 /*----------------------------------------------------------------------------*/
 /*                             Function Prototypes                            */
 /*----------------------------------------------------------------------------*/
@@ -173,6 +173,157 @@ const char* webcfgdbparam_strerror( int errnum )
 
     return map[i].txt;
 }
+
+webconfig_tmp_data_t * get_global_node(void)
+{
+    return g_head;
+}
+
+int get_numOfMpDocs()
+{
+    return numOfMpDocs;
+}
+
+//new_node indicates the docs which need to be added to list
+int addToTmpList( multipart_t *mp)
+{
+	int m = 0;
+	int retStatus = 0;
+
+	WebConfigLog("mp->entries_count is %zu\n", mp->entries_count);
+	for(m = 0 ; m<((int)mp->entries_count); m++)
+	{
+		webconfig_tmp_data_t *new_node;
+		new_node=(webconfig_tmp_data_t *)malloc(sizeof(webconfig_tmp_data_t));
+		if(new_node)
+		{
+			memset( new_node, 0, sizeof( webconfig_tmp_data_t ) );
+
+			if(numOfMpDocs == 0)
+			{
+				new_node->name = strdup("root");
+				new_node->version = 0;
+				new_node->status = strdup("pending");
+			}
+			else
+			{
+				new_node->name = strdup(mp->entries[m-1].name_space);
+				new_node->version = mp->entries[m-1].etag;
+				new_node->status = strdup("pending");
+			}
+
+			WebConfigLog("new_node->name is %s\n", new_node->name);
+			WebConfigLog("new_node->version is %lu\n", (long)new_node->version);
+			WebConfigLog("new_node->status is %s\n", new_node->status);
+
+
+			new_node->next=NULL;
+
+			if (g_head == NULL)
+			{
+				WebConfigLog("Adding first doc to list\n");
+				g_head = new_node;
+			}
+			else
+			{
+				webconfig_tmp_data_t *temp = NULL;
+				WebConfigLog("Adding docs to list\n");
+				temp = g_head;
+
+				while(temp->next !=NULL)
+				{
+					temp=temp->next;
+				}
+
+				temp->next=new_node;
+			}
+
+			WebConfigLog("--->>doc %s with version %lu is added to list\n", new_node->name, (long)new_node->version);
+			numOfMpDocs = numOfMpDocs + 1;
+		}
+		WebConfigLog("numOfMpDocs %d\n", numOfMpDocs);
+
+		if((int)mp->entries_count == numOfMpDocs)
+		{
+			WebConfigLog("addToTmpList success\n");
+			retStatus = 1;
+		}
+	}
+    WebConfigLog("addToList return %d\n", retStatus);
+    return retStatus;
+}
+
+//update version, status for each doc
+int updateTmpList(char *docname, uint32_t version, char *status)
+{
+	webconfig_tmp_data_t *temp = NULL;
+	temp = get_global_node();
+
+	//Traverse through doc list & update required doc
+	while (NULL != temp)
+	{
+		WebConfigLog("node is pointing to temp->name %s \n",temp->name);
+		if( strcmp(docname, temp->name) == 0)
+		{
+			temp->version = version;
+			temp->status = strdup(status);
+			WebConfigLog("-->>doc %s is updated to version %lu status %s\n", docname, (long)temp->version, temp->status);
+			return 1;
+		}
+		temp= temp->next;
+	}
+	return 0;
+}
+
+
+//delete doc from webcfg Tmp list
+int deleteFromTmpList(char* doc_name)
+{
+	webconfig_tmp_data_t *prev_node = NULL, *curr_node = NULL;
+
+	if( NULL == doc_name )
+	{
+		WebConfigLog("Invalid value for doc\n");
+		return -1;
+	}
+	WebConfigLog("doc to be deleted: %s\n", doc_name);
+
+	prev_node = NULL;
+	curr_node = g_head ;
+
+	// Traverse to get the doc to be deleted
+	while( NULL != curr_node )
+	{
+		if(strcmp(curr_node->name, doc_name) == 0)
+		{
+			WebConfigLog("Found the node to delete\n");
+			if( NULL == prev_node )
+			{
+				WebConfigLog("need to delete first doc\n");
+				g_head = curr_node->next;
+			}
+			else
+			{
+				WebConfigLog("Traversing to find node\n");
+				prev_node->next = curr_node->next;
+			}
+
+			WebConfigLog("Deleting the node\n");
+			free( curr_node );
+			curr_node = NULL;
+			WebConfigLog("Deleted successfully and returning..\n");
+			numOfMpDocs =numOfMpDocs - 1;
+			WebConfigLog("numOfMpDocs after delete is %d\n", numOfMpDocs);
+			return 0;
+		}
+
+		prev_node = curr_node;
+		curr_node = curr_node->next;
+	}
+	WebConfigLog("Could not find the entry to delete from list\n");
+	return -1;
+}
+
 /*----------------------------------------------------------------------------*/
 /*                             Internal functions                             */
 /*----------------------------------------------------------------------------*/

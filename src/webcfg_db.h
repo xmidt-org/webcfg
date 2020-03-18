@@ -19,6 +19,7 @@
 #include <stdint.h>
 #include <string.h>
 #include <stdbool.h>
+#include "multipart.h"
 /*----------------------------------------------------------------------------*/
 /*                                   Macros                                   */
 /*----------------------------------------------------------------------------*/
@@ -27,11 +28,13 @@
 /*                               Data Structures                              */
 /*----------------------------------------------------------------------------*/
 
-typedef struct{
-	char * name;
-	uint32_t version;
-	char * status;
-}webconfig_tmp_data_t;
+typedef struct webconfig_tmp_data
+{
+        char * name;
+        uint32_t version;
+        char * status;
+        struct webconfig_tmp_data *next;
+} webconfig_tmp_data_t;
 
 typedef struct {
 	webconfig_tmp_data_t *entries;
@@ -79,6 +82,15 @@ blob_t * get_DB_BLOB();
 
 char * get_DB_BLOB_base64();
 
+webconfig_tmp_data_t * get_global_node(void);
+
+int addToTmpList( multipart_t *mp);
+
+int updateTmpList(char *docname, uint32_t version, char *status);
+
+int deleteFromTmpList(char* doc_name);
+
+int get_numOfMpDocs();
 
 /**
  *  This function converts a msgpack buffer into an webconfig_db_t structure
