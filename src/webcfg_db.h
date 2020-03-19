@@ -42,10 +42,12 @@ typedef struct {
 } webconfig_tmp_t; // For storing in memory processing docs "pending", "failed"
 // root is also one entry with latest root version recived apply in progress
 
-typedef struct{
+typedef struct webconfig_db_data{
 	char * name;
 	uint32_t version;
+        struct webconfig_db_data *next;
 }webconfig_db_data_t;
+
 
 typedef struct {
 	webconfig_db_data_t *entries;
@@ -86,6 +88,8 @@ webconfig_tmp_data_t * get_global_node(void);
 
 int addToTmpList( multipart_t *mp);
 
+void addToDBList(webconfig_db_data_t *webcfgdb);
+
 int updateTmpList(char *docname, uint32_t version, char *status);
 
 int deleteFromTmpList(char* doc_name);
@@ -120,4 +124,5 @@ void webcfgdb_destroy( webconfig_db_t *d );
 const char* webcfgdbparam_strerror( int errnum );
 
 extern webconfig_db_t *wd;
+extern webconfig_db_data_t* webcfgdb_data;
 #endif

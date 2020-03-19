@@ -165,7 +165,6 @@ void webcfgPackUnpack()
 				printf("pm->entries[%d].name %s\n", i, pm->entries[i].name);
 				printf("pm->entries[%d].value %s\n" , i, pm->entries[i].value);
 				printf("pm->entries[%d].type %d\n", i, pm->entries[i].type);
-                                printf("pm->entries[%d].notify_attribute %d\n", i, pm->entries[i].notify_attribute);
 			}
 
 		/*	//decode inner blob

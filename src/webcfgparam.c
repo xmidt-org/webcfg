@@ -140,9 +140,7 @@ int process_params( wparam_t *e, msgpack_object_map *map )
                 }
                 else if(0 == match(p, "notify_attribute"))
                 {
-                       e->notify_attribute = (int) p->val.via.u64;
-                       objects_left = 0;
-                       //printf("e->notify_attribute is %d\n", e->notify_attribute);
+                     objects_left = 0;
                 }
             } else if( MSGPACK_OBJECT_STR == p->val.type ) {
                 if( 0 == match(p, "name") ) {
@@ -156,13 +154,13 @@ int process_params( wparam_t *e, msgpack_object_map *map )
 		    e->value_size =strlen(e->value);
 		    if((uint32_t)e->value_size != (uint32_t)p->val.via.str.size)
 		    {
-			printf("blob size update\n");
+			WebConfigLog("blob size update\n");
 		    e->value = (char*)p->val.via.str.ptr;
 		    e->value_size =(uint32_t) p->val.via.str.size;
 		    }
-			//printf("uint32_t size %d\n", (uint32_t)p->val.via.str.size);
-		   // printf("e->value_size int is %d\n", e->value_size);
-		    //printf("e->value is %s\n", e->value);
+			WebConfigLog("uint32_t size %d\n", (uint32_t)p->val.via.str.size);
+		   // WebConfigLog("e->value_size int is %d\n", e->value_size);
+		    //WebConfigLog("e->value is %s\n", e->value);
                     objects_left &= ~(1 << 2);
 		    //printf("objects_left after value %d\n", objects_left);
                 }

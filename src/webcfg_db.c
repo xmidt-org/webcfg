@@ -65,7 +65,8 @@ int initDB(char * db_file_path )
      char *data;
      size_t len;
      int ch_count=0;
-     printf("DB file path is %s\n", db_file_path);
+     size_t k;
+     WebConfigLog("DB file path is %s\n", db_file_path);
      fp = fopen(db_file_path,"rb");
 
      if (fp == NULL)
@@ -83,8 +84,39 @@ int initDB(char * db_file_path )
      (data)[ch_count] ='\0';
      fclose(fp);
 
+     wd = ( webconfig_db_t * ) malloc( sizeof( webconfig_db_t ) );
      wd = decodeData((void *)data, len);
-     WebConfigLog("Size of wd %ld\n", (size_t)wd);
+     WebConfigLog("Size of webcfgdb %ld\n", (size_t)wd);
+     if(wd != NULL)
+     {   
+         webcfgdb_data = NULL;
+         
+         for(k = 0;k< wd->entries_count ; k++)
+         {   
+             webconfig_db_data_t * webcfgdb = NULL;
+             webcfgdb = (webconfig_db_data_t *) malloc (sizeof(webconfig_db_data_t));
+            
+             webcfgdb->name = wd->entries[k].name;
+             webcfgdb->version = wd->entries[k].version;
+             webcfgdb->next = NULL;
+
+             addToDBList(webcfgdb);
+         }
+
+         /*For test purpose */
+          size_t j = wd->entries_count;
+          webconfig_db_data_t* temp1 = webcfgdb_data;
+          while(temp1 )
+          {   
+              WebConfigLog("db->entries[%lu].name %s\n", (wd->entries_count)-j, temp1->name);
+	      WebConfigLog("db->entries[%lu].version %lu\n" ,(wd->entries_count)-j,  (long)temp1->version); 
+              j--; 
+            
+              temp1 = temp1->next;
+          }
+        
+     }
+       
      return 1;
      
 }
@@ -94,9 +126,9 @@ int addNewDocEntry(webconfig_db_t *subdoc)
      size_t webcfgdbPackSize = -1;
      void* data = NULL;
  
-     printf("size of subdoc %zu\n", (size_t)subdoc);
+     WebConfigLog("size of subdoc %ld\n", (size_t)subdoc);
      webcfgdbPackSize = webcfgdb_pack(subdoc, &data);
-     printf("size of webcfgdbPackSize %zu\n", webcfgdbPackSize);
+     WebConfigLog("size of webcfgdbPackSize %ld\n", webcfgdbPackSize);
      WebConfigLog("writeToDBFile %s\n", WEBCFG_DB_FILE);
      writeToDBFile(WEBCFG_DB_FILE,(char *)data);
   

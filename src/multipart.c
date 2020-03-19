@@ -53,7 +53,7 @@ static char g_FirmwareVersion[64]={'\0'};
 static char g_bootTime[64]={'\0'};
 static char g_productClass[64]={'\0'};
 static char g_ModelName[64]={'\0'};
-webconfig_db_t *wd = NULL;
+webconfig_db_data_t* webcfgdb_data = NULL;
 /*----------------------------------------------------------------------------*/
 /*                             Function Prototypes                            */
 /*----------------------------------------------------------------------------*/
@@ -63,8 +63,10 @@ void stripspaces(char *str, char **final_str);
 void createCurlHeader( struct curl_slist *list, struct curl_slist **header_list, int status, char *doc, char ** trans_uuid);
 void parse_multipart(char *ptr, int no_of_bytes, multipartdocs_t *m, int *no_of_subdocbytes);
 void multipart_destroy( multipart_t *m );
+void addToDBList(webconfig_db_data_t *webcfgdb);
 char* generate_trans_uuid();
 int processMsgpackSubdoc(multipart_t *mp);
+webconfig_db_t *wd;
 void loadInitURLFromFile(char **url);
 /*----------------------------------------------------------------------------*/
 /*                             External Functions                             */
@@ -253,7 +255,7 @@ int parseMultipartDocument(void *config_data, char *ct , size_t data_size)
 	int boundary_len =0;
 	int rv = -1,count =0;
 	
-	printf("ct is %s\n", ct );
+	WebConfigLog("ct is %s\n", ct );
 	// fetch boundary
 	str = strtok(ct,";");
 	str = strtok(NULL, ";");
@@ -303,6 +305,7 @@ int parseMultipartDocument(void *config_data, char *ct , size_t data_size)
 	mp->entries_count = (size_t)num_of_parts;
 	mp->entries = (multipartdocs_t *) malloc(sizeof(multipartdocs_t )*(mp->entries_count-1) );
 	memset( mp->entries, 0, sizeof(multipartdocs_t)*(mp->entries_count-1));
+       WebConfigLog("Header Etag is: %s\n",g_ETAG);
 	///Scanning each lines with \n as delimiter
 	while((ptr_lb - str_body) < (int)data_size)
 	{
@@ -367,14 +370,10 @@ int processMsgpackSubdoc(multipart_t *mp)
 	int i =0, m=0;
 	int rv = -1;
 	param_t *reqParam = NULL;
-	WDMP_STATUS ret = WDMP_FAILURE;
+	WDMP_STATUS ret = WDMP_SUCCESS;
 	int ccspStatus=0;
 	int paramCount = 0;
 	webcfgparam_t *pm;
-        //webconfig_db_t *wd;
-        //webconfig_db_t *temp;
-        int notify_flag = 0;
-        char notify[20] = "";
         int count = 0, addStatus =0;
 	int uStatus = 0, dStatus =0;
         
@@ -389,11 +388,16 @@ int processMsgpackSubdoc(multipart_t *mp)
 
         wd = ( webconfig_db_t * ) malloc( sizeof( webconfig_db_t ) );
         wd->entries_count = mp->entries_count;
-	WebConfigLog("wd->entries_count %zu\n", wd->entries_count);
-        wd->entries = (webconfig_db_data_t *) malloc( sizeof(webconfig_db_data_t) * wd->entries_count+1 );
-        memset( wd->entries, 0, sizeof(webconfig_db_data_t) * wd->entries_count+1 );
+      //  wd->entries = (webconfig_db_data_t *) malloc( sizeof(webconfig_db_data_t) * wd->entries_count+1 );
+       // memset( wd->entries, 0, sizeof(webconfig_db_data_t) * wd->entries_count+1 );
+
+        
+
 	for(m = 0 ; m<((int)mp->entries_count)-1; m++)
-	{
+	{       
+                webconfig_db_data_t * webcfgdb = NULL;
+                webcfgdb = (webconfig_db_data_t *) malloc (sizeof(webconfig_db_data_t));
+
 		WebConfigLog("mp->entries[%d].name_space %s\n", m, mp->entries[m].name_space);
 		WebConfigLog("mp->entries[%d].etag %lu\n" ,m,  (long)mp->entries[m].etag);
 		WebConfigLog("mp->entries[%d].data %s\n" ,m,  mp->entries[m].data);
@@ -421,19 +425,11 @@ int processMsgpackSubdoc(multipart_t *mp)
 
 			for (i = 0; i < paramCount; i++) 
 			{       
-                                if( 0 == pm->entries[i].notify_attribute)
+                                if(pm->entries[i].value != NULL)
                                 {
 				    reqParam[i].name = strdup(pm->entries[i].name);
 				    reqParam[i].value = strdup(pm->entries[i].value);
 				    reqParam[i].type = pm->entries[i].type;
-                                }
-                                else
-                                {
-                                    reqParam[i].name = strdup(pm->entries[i].name);
-                                    snprintf(notify, sizeof(notify), "%d", 1);
-                                    reqParam[i].value = strdup( notify);
-				    reqParam[i].type = WDMP_INT;
-                                    notify_flag = 1;
                                 }
 				//WebConfigLog("--->Request:> param[%d].name = %s\n",i,reqParam[i].name);
 				//WebConfigLog("--->Request:> param[%d].value = %s\n",i,reqParam[i].value);
@@ -444,9 +440,6 @@ int processMsgpackSubdoc(multipart_t *mp)
 			if(reqParam !=NULL)
 			{
 				WebcfgInfo("WebConfig SET Request\n");
-                                WebcfgInfo("notify_flag is : %d\n",notify_flag);
-				if(!notify_flag)
-                                {
 					setValues(reqParam, paramCount, 0, NULL, NULL, &ret, &ccspStatus);
 					WebcfgInfo("Processed WebConfig SET Request\n");
 					WebcfgInfo("ccspStatus is %d\n", ccspStatus);
@@ -480,46 +473,42 @@ int processMsgpackSubdoc(multipart_t *mp)
 						}
 
 						printf("Before add in db m is %d\n",m);
-						wd->entries[m+1].name = mp->entries[m].name_space;
-						wd->entries[m+1].version = mp->entries[m].etag;
-						count++;
-						printf("The mp->entries_count %d\n",(int)mp->entries_count);
-						printf("The count %d\n",count);
-						if(count ==(int) mp->entries_count-1)
-						{    
-							char * temp = strdup(g_ETAG);
+                                     webcfgdb->name = mp->entries[m].name_space;
+                                     webcfgdb->version = mp->entries[m].etag;
+                                     webcfgdb->next = NULL;
+                                     count++;
 
-							wd->entries[0].name = strdup("root");
-							wd->entries[0].version = strtoul(temp,0,0); 
-							WebConfigLog("The Etag is %lu\n",(long)wd->entries[0].version );
-						}
-						rv = 0;
-					}
-					else
-					{
-						WebConfigLog("setValues Failed. ccspStatus : %d\n", ccspStatus);
-						rv = -1;
-					}
+                                     WebConfigLog("webcfgdb->name in process is %s\n",webcfgdb->name);
+                                     WebConfigLog("webcfgdb->version in process is %lu\n",(long)webcfgdb->version);
+                                     addToDBList(webcfgdb);
+
+                                     WebConfigLog("The mp->entries_count %d\n",(int)mp->entries_count);
+                                     WebConfigLog("The count %d\n",count);
+                                     if(count ==(int) mp->entries_count-1)
+                                     {    
+                                          char * temp = strdup(g_ETAG);
+                                          webconfig_db_data_t * webcfgdb = NULL;
+                                          webcfgdb = (webconfig_db_data_t *) malloc (sizeof(webconfig_db_data_t));
+		                        
+                                          webcfgdb->name = strdup("root");
+                                          webcfgdb->version = strtoul(temp,0,0); 
+                                          webcfgdb->next = NULL;
+                                     WebConfigLog("webcfgdb->name in process is %s\n",webcfgdb->name);
+                                     WebConfigLog("webcfgdb->version in process is %lu\n",(long)webcfgdb->version);
+                                          addToDBList(webcfgdb);
+
+                                          WebConfigLog("The Etag is %lu\n",(long)webcfgdb->version );
+                                     }
+				     rv = 0;
 				}
-                                else
-                                {
-					setAttributes(reqParam, 1, NULL, &ret);
-					ret = WDMP_SUCCESS; //Remove this. Testing purpose.
-					if(ret == WDMP_SUCCESS)
-					{
-						wd->entries[m+1].name = mp->entries[m].name_space;
-						wd->entries[m+1].version = mp->entries[m].etag;
-						count++;
-						WebConfigLog("setAttributes success\n");
-						rv = 0;
-					}
-					else
-					{
-						WebConfigLog("setAttributes Failed. ccspStatus : %d\n", ccspStatus);
-						rv = -1;
-					}
-                                     notify_flag = 0;
-                                }
+				else
+				{
+				     WebConfigLog("setValues Failed. ccspStatus : %d\n", ccspStatus);
+		
+                                     webcfgdb->name = strdup("root");
+                                     webcfgdb->version = 1; 
+				}
+                            
                          //WEBCFG_FREE(reqParam);
 			}
 			webcfgparam_destroy( pm );
@@ -529,26 +518,29 @@ int processMsgpackSubdoc(multipart_t *mp)
 			WebConfigLog("--------------decode root doc failed-------------\n");	
 		}
 	}
-        size_t j;
-        for(j = 0;j< wd->entries_count ; j++)
-        {
-            WebConfigLog("wd->entries[%lu].name %s\n", j, wd->entries[j].name);
-	    WebConfigLog("--->>>wd->entries[%lu].version %lu\n" ,j,  (long)wd->entries[j].version);
+        
+      
+        size_t j=count;
+        wd->entries_count = count+1;
+        wd->entries = (webconfig_db_data_t *) malloc( sizeof(webconfig_db_data_t) * wd->entries_count );
+        memset( wd->entries, 0, sizeof(webconfig_db_data_t) * wd->entries_count);
+        wd->entries = webcfgdb_data;
+
+        webconfig_db_data_t* temp1 = wd->entries;
+
+        while(temp1 )
+        {   
+            WebConfigLog("wd->entries[%lu].name %s\n", count-j, temp1->name);
+	    WebConfigLog("wd->entries[%lu].version %lu\n" ,count-j,  (long)temp1->version); 
+            j--; 
+            
+             temp1 = temp1->next;
         }
         addNewDocEntry(wd);
 	WebConfigLog("After addNewDocEntry wd->entries_count %zu\n", wd->entries_count);
         //webcfgdb_destroy(wd);
-
-        /*temp = ( webconfig_db_t * ) malloc( sizeof( webconfig_db_t ) );
-        initDB("webconfig_db.bin", temp ) ;
-        
-            for(k = 0;k< temp->entries_count ; k++)
-            {
-                WebConfigLog("temp->entries[%lu].name %s\n", k, temp->entries[j].name);
-	        WebConfigLog("temp->entries[%lu].version %lu\n" ,k,  (long)temp->entries[j].version);  
-            }
-        
-        webcfgdb_destroy(temp);*/
+         initDB("/tmp/webconfig_db.bin" ) ;
+         
 	return rv;
 }
 
@@ -1190,5 +1182,33 @@ void print_tmp_doc_list(size_t mp_count)
 		}
 	}
 	return;
+}
+
+void addToDBList(webconfig_db_data_t *webcfgdb)
+{
+      if(webcfgdb_data == NULL)
+      {
+          webcfgdb_data = webcfgdb;
+          //WebConfigLog("Producer webcfgdb_data->name is %s\n",webcfgdb_data->name);
+          WebConfigLog("Producer added webcfgdb\n");
+          webcfgdb = NULL;
+      }
+      else
+      {
+          webconfig_db_data_t *temp = NULL;
+          temp = webcfgdb_data;
+         // WebConfigLog("Loop before webcfgdb_data->name is %s\n",webcfgdb_data->name);
+          //WebConfigLog("Loop before temp->name is %s\n",temp->name);
+          while(temp->next)
+          {   
+            //  WebConfigLog("Loop inside temp->name is %s\n",temp->name);
+              temp = temp->next;
+             
+          }
+          //WebConfigLog("before temp->name is %s\n",temp->name);
+          temp->next = webcfgdb;
+          //WebConfigLog("after temp->name is %s\n",temp->name); 
+         
+      }
 }
 
