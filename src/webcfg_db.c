@@ -206,7 +206,12 @@ const char* webcfgdbparam_strerror( int errnum )
     return map[i].txt;
 }
 
-webconfig_tmp_data_t * get_global_node(void)
+webconfig_db_data_t * get_global_db_node(void)
+{
+    return webcfgdb_data;
+}
+
+webconfig_tmp_data_t * get_global_tmp_node(void)
 {
     return g_head;
 }
@@ -289,7 +294,7 @@ int addToTmpList( multipart_t *mp)
 int updateTmpList(char *docname, uint32_t version, char *status)
 {
 	webconfig_tmp_data_t *temp = NULL;
-	temp = get_global_node();
+	temp = get_global_tmp_node();
 
 	//Traverse through doc list & update required doc
 	while (NULL != temp)

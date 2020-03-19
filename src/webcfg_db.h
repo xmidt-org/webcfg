@@ -84,7 +84,10 @@ blob_t * get_DB_BLOB();
 
 char * get_DB_BLOB_base64();
 
-webconfig_tmp_data_t * get_global_node(void);
+
+webconfig_db_data_t * get_global_db_node(void);
+
+webconfig_tmp_data_t * get_global_tmp_node(void);
 
 int addToTmpList( multipart_t *mp);
 
