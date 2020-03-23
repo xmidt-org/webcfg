@@ -125,9 +125,9 @@ int webcfg_http_request(char **configData, int r_count, char* doc, int status, l
 		loadInitURLFromFile(&webConfigURL);
 		WebConfigLog("ConfigURL from loadInitURLFromFile is %s\n", webConfigURL);
 
-		//Update query param in the URL based on the doc name for force sync
-		if (doc != NULL && (strlen(doc)>0))
-		{
+		//Update query param in the URL based on the existing doc names from db
+		//if (doc != NULL && (strlen(doc)>0))
+		//{
 			WebConfigLog("update webConfigURL based on sync doc %s\n", doc);
 			getConfigDocList(&docnames);
 			WebConfigLog("docnames is %s\n", docnames);
@@ -141,7 +141,7 @@ int webcfg_http_request(char **configData, int r_count, char* doc, int status, l
 				}
 				WEBCFG_FREE(docnames);
 			}
-		}
+		//}
 
 		if(webConfigURL !=NULL)
 		{
@@ -506,6 +506,19 @@ int processMsgpackSubdoc(multipart_t *mp)
 						addToDBList(webcfgdb);
 
 						WebConfigLog("The Etag is %lu\n",(long)webcfgdb->version );
+						WebConfigLog("update doc status for %s\n", mp->entries[m].name_space);
+						//update tmp queue root as all docs are applied
+						WebConfigLog("Update tmp queue root as all docs are applied\n");
+						WebConfigLog("root version update as %lu\n", (long)webcfgdb->version);
+						uStatus = updateTmpList("root", webcfgdb->version, "success");
+						if(uStatus == 1)
+						{
+							WebConfigLog("Update tmp queue root is success\n");
+						}
+						else
+						{
+							WebConfigLog("Update tmp queue root is failed\n");
+						}
 					}
 					rv = 0;
 				}
@@ -514,8 +527,6 @@ int processMsgpackSubdoc(multipart_t *mp)
 					WebConfigLog("setValues Failed. ccspStatus : %d\n", ccspStatus);
 					//WEBCFG_FREE(reqParam);
 					//webcfgparam_destroy( pm );
-					//return rv;
-					rv = -1;
 				}
 
                          //WEBCFG_FREE(reqParam);
@@ -528,28 +539,25 @@ int processMsgpackSubdoc(multipart_t *mp)
 		}
 	}
         
-	if(rv == 0)
+	size_t j=count;
+	wd->entries_count = count+1;
+	wd->entries = (webconfig_db_data_t *) malloc( sizeof(webconfig_db_data_t) * wd->entries_count );
+	memset( wd->entries, 0, sizeof(webconfig_db_data_t) * wd->entries_count);
+	wd->entries = webcfgdb_data;
+
+	webconfig_db_data_t* temp1 = wd->entries;
+
+	while(temp1 )
 	{
-		size_t j=count;
-		wd->entries_count = count+1;
-		wd->entries = (webconfig_db_data_t *) malloc( sizeof(webconfig_db_data_t) * wd->entries_count );
-		memset( wd->entries, 0, sizeof(webconfig_db_data_t) * wd->entries_count);
-		wd->entries = webcfgdb_data;
-
-		webconfig_db_data_t* temp1 = wd->entries;
-
-		while(temp1 )
-		{
-		    WebConfigLog("wd->entries[%lu].name %s\n", count-j, temp1->name);
-		    WebConfigLog("wd->entries[%lu].version %lu\n" ,count-j,  (long)temp1->version);
-		    j--;
-		     temp1 = temp1->next;
-		}
-		addNewDocEntry(wd);
-		WebConfigLog("After addNewDocEntry wd->entries_count %zu\n", wd->entries_count);
-		//webcfgdb_destroy(wd);
-		initDB(WEBCFG_DB_FILE ) ;
+	    WebConfigLog("wd->entries[%lu].name %s\n", count-j, temp1->name);
+	    WebConfigLog("wd->entries[%lu].version %lu\n" ,count-j,  (long)temp1->version);
+	    j--;
+	     temp1 = temp1->next;
 	}
+	addNewDocEntry(wd);
+	WebConfigLog("After addNewDocEntry wd->entries_count %zu\n", wd->entries_count);
+	//webcfgdb_destroy(wd);
+	initDB(WEBCFG_DB_FILE ) ;
 	return rv;
 }
 
