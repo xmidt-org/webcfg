@@ -123,7 +123,6 @@ int webcfg_http_request(char **configData, int r_count, char* doc, int status, l
 		WebConfigLog("webConfigURL loadInitURLFromFile\n"); //TODO: Read URL from device.properties
 		//readFromFile(WEBCFG_URL_FILE, &webConfigURL, &len );
 		loadInitURLFromFile(&webConfigURL);
-
 		WebConfigLog("ConfigURL from loadInitURLFromFile is %s\n", webConfigURL);
 
 		//Update query param in the URL based on the doc name for force sync
@@ -425,23 +424,31 @@ int processMsgpackSubdoc(multipart_t *mp)
 			WebConfigLog("paramCount is %d\n", paramCount);
 
 			for (i = 0; i < paramCount; i++) 
-			{       
+			{
+				WebConfigLog("update reqParam\n");
                                 if(pm->entries[i].value != NULL)
                                 {
 				    reqParam[i].name = strdup(pm->entries[i].name);
 				    reqParam[i].value = strdup(pm->entries[i].value);
 				    reqParam[i].type = pm->entries[i].type;
                                 }
-				//WebConfigLog("--->Request:> param[%d].name = %s\n",i,reqParam[i].name);
-				//WebConfigLog("--->Request:> param[%d].value = %s\n",i,reqParam[i].value);
-				//WebConfigLog("--->Request:> param[%d].type = %d\n",i,reqParam[i].type);
+				else
+				{
+					WebConfigLog("pm->entries[i].value is NULL, reducing paramCount as it is setattributes case\n");
+					paramCount = paramCount -1;
+				}
+				WebConfigLog("--->Request:> param[%d].name = %s\n",i,reqParam[i].name);
+				WebConfigLog("--->Request:> param[%d].value = %s\n",i,reqParam[i].value);
+				WebConfigLog("--->Request:> param[%d].type = %d\n",i,reqParam[i].type);
 			}
 
-			WebConfigLog("Proceed to setValues\n");
+			WebConfigLog("Proceed to setValues..\n");
 			if(reqParam !=NULL)
 			{
 				WebcfgInfo("WebConfig SET Request\n");
+				WebConfigLog("paramCount B4 setValues %d\n", paramCount);
 				setValues(reqParam, paramCount, 0, NULL, NULL, &ret, &ccspStatus);
+				WebConfigLog("After setValues\n");
 				WebcfgInfo("Processed WebConfig SET Request\n");
 				WebcfgInfo("ccspStatus is %d\n", ccspStatus);
 				//ret = WDMP_SUCCESS; //Remove this. Testing purpose.
@@ -506,8 +513,9 @@ int processMsgpackSubdoc(multipart_t *mp)
 				{
 					WebConfigLog("setValues Failed. ccspStatus : %d\n", ccspStatus);
 					//WEBCFG_FREE(reqParam);
-					webcfgparam_destroy( pm );
-					return rv;
+					//webcfgparam_destroy( pm );
+					//return rv;
+					rv = -1;
 				}
 
                          //WEBCFG_FREE(reqParam);
@@ -520,26 +528,28 @@ int processMsgpackSubdoc(multipart_t *mp)
 		}
 	}
         
-        size_t j=count;
-        wd->entries_count = count+1;
-        wd->entries = (webconfig_db_data_t *) malloc( sizeof(webconfig_db_data_t) * wd->entries_count );
-        memset( wd->entries, 0, sizeof(webconfig_db_data_t) * wd->entries_count);
-        wd->entries = webcfgdb_data;
+	if(rv == 0)
+	{
+		size_t j=count;
+		wd->entries_count = count+1;
+		wd->entries = (webconfig_db_data_t *) malloc( sizeof(webconfig_db_data_t) * wd->entries_count );
+		memset( wd->entries, 0, sizeof(webconfig_db_data_t) * wd->entries_count);
+		wd->entries = webcfgdb_data;
 
-        webconfig_db_data_t* temp1 = wd->entries;
+		webconfig_db_data_t* temp1 = wd->entries;
 
-        while(temp1 )
-        {   
-            WebConfigLog("wd->entries[%lu].name %s\n", count-j, temp1->name);
-	    WebConfigLog("wd->entries[%lu].version %lu\n" ,count-j,  (long)temp1->version); 
-            j--; 
-            
-             temp1 = temp1->next;
-        }
-	addNewDocEntry(wd);
-	WebConfigLog("After addNewDocEntry wd->entries_count %zu\n", wd->entries_count);
-	//webcfgdb_destroy(wd);
-	initDB(WEBCFG_DB_FILE ) ;
+		while(temp1 )
+		{
+		    WebConfigLog("wd->entries[%lu].name %s\n", count-j, temp1->name);
+		    WebConfigLog("wd->entries[%lu].version %lu\n" ,count-j,  (long)temp1->version);
+		    j--;
+		     temp1 = temp1->next;
+		}
+		addNewDocEntry(wd);
+		WebConfigLog("After addNewDocEntry wd->entries_count %zu\n", wd->entries_count);
+		//webcfgdb_destroy(wd);
+		initDB(WEBCFG_DB_FILE ) ;
+	}
 	return rv;
 }
 
