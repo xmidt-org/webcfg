@@ -228,6 +228,9 @@ int addToTmpList( multipart_t *mp)
 	int retStatus = 0;
 
 	WebConfigLog("mp->entries_count is %zu\n", mp->entries_count);
+	WebConfigLog("B4 addToTmpList numOfMpDocs %d\n", numOfMpDocs);
+	numOfMpDocs = 0;
+	WebConfigLog("reset numOfMpDocs to %d\n", numOfMpDocs);
 	for(m = 0 ; m<((int)mp->entries_count); m++)
 	{
 		webconfig_tmp_data_t *new_node;
@@ -238,13 +241,16 @@ int addToTmpList( multipart_t *mp)
 
 			if(numOfMpDocs == 0)
 			{
+				WebConfigLog("Adding root to tmp\n");
 				new_node->name = strdup("root");
 				new_node->version = 0;
 				new_node->status = strdup("pending");
 			}
 			else
 			{
+				WebConfigLog("Adding docs to tmp. m value is %d\n", m);
 				new_node->name = strdup(mp->entries[m-1].name_space);
+				WebConfigLog("mp->entries[m-1].name_space is %s\n", mp->entries[m-1].name_space);
 				new_node->version = mp->entries[m-1].etag;
 				new_node->status = strdup("pending");
 			}
@@ -286,8 +292,8 @@ int addToTmpList( multipart_t *mp)
 			retStatus = 1;
 		}
 	}
-    WebConfigLog("addToList return %d\n", retStatus);
-    return retStatus;
+	WebConfigLog("addToList return %d\n", retStatus);
+	return retStatus;
 }
 
 //update version, status for each doc

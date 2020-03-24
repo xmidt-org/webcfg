@@ -389,6 +389,10 @@ int processMsgpackSubdoc(multipart_t *mp)
 		WebConfigLog("Added %d mp entries To tmp List\n", get_numOfMpDocs());
 		print_tmp_doc_list(mp->entries_count);
         }
+	else
+	{
+		WebConfigLog("addToTmpList failed\n");
+	}
 
         wd = ( webconfig_db_t * ) malloc( sizeof( webconfig_db_t ) );
         wd->entries_count = mp->entries_count;
@@ -499,26 +503,25 @@ int processMsgpackSubdoc(multipart_t *mp)
 						webcfgdb = (webconfig_db_data_t *) malloc (sizeof(webconfig_db_data_t));
 
 						webcfgdb->name = strdup("root");
-                                          webcfgdb->version = strtoul(temp,NULL,0); 
+						webcfgdb->version = strtoul(temp,NULL,0);
 						webcfgdb->next = NULL;
 						WebConfigLog("webcfgdb->name in process is %s\n",webcfgdb->name);
 						WebConfigLog("webcfgdb->version in process is %lu\n",(long)webcfgdb->version);
 						addToDBList(webcfgdb);
-                                          count++;
+						count++;
 
 						WebConfigLog("The Etag is %lu\n",(long)webcfgdb->version );
-						WebConfigLog("update doc status for %s\n", mp->entries[m].name_space);
-						//update tmp queue root as all docs are applied
-						WebConfigLog("Update tmp queue root as all docs are applied\n");
-						WebConfigLog("root version update as %lu\n", (long)webcfgdb->version);
-						uStatus = updateTmpList("root", webcfgdb->version, "success");
-						if(uStatus == 1)
+						//Delete tmp queue root as all docs are applied
+						WebConfigLog("Delete tmp queue root as all docs are applied\n");
+						WebConfigLog("root version to delete is %lu\n", (long)webcfgdb->version);
+						dStatus = deleteFromTmpList("root");
+						if(dStatus == 1)
 						{
-							WebConfigLog("Update tmp queue root is success\n");
+							WebConfigLog("Delete tmp queue root is success\n");
 						}
 						else
 						{
-							WebConfigLog("Update tmp queue root is failed\n");
+							WebConfigLog("Delete tmp queue root is failed\n");
 						}
 					}
 					rv = 0;
@@ -541,7 +544,7 @@ int processMsgpackSubdoc(multipart_t *mp)
 	}
         
 	size_t j=count;
-    wd->entries_count = count;
+	wd->entries_count = count;
 	wd->entries = (webconfig_db_data_t *) malloc( sizeof(webconfig_db_data_t) * wd->entries_count );
 	memset( wd->entries, 0, sizeof(webconfig_db_data_t) * wd->entries_count);
 	wd->entries = webcfgdb_data;
@@ -770,7 +773,6 @@ void getConfigVersionList(char **version)
 	uint32_t root_version;
 
 	get_root_version(&root_version);
-	WebConfigLog("db root_version is %lu\n", (long)root_version);
 
 	versionsList = (char*) malloc(512);
 	if(versionsList)
