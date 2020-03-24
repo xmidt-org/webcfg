@@ -186,6 +186,7 @@ ssize_t webcfgdb_pack( const webconfig_db_t *packData, void **data )
             WEBCFG_MAP_VERSION.name = "version";
             WEBCFG_MAP_VERSION.length = strlen( "version" );
 	    __msgpack_pack_string( &pk, WEBCFG_MAP_VERSION.name, WEBCFG_MAP_VERSION.length);
+            printf("The version is %ld\n",(long)temp->version);
             msgpack_pack_uint64(&pk,(uint32_t) temp->version);
             
             temp = temp->next;

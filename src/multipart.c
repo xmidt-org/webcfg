@@ -33,7 +33,7 @@
 #define CA_CERT_PATH 		   "/etc/ssl/certs/ca-certificates.crt"
 #define WEBPA_READ_HEADER          "/etc/parodus/parodus_read_file.sh"
 #define WEBPA_CREATE_HEADER        "/etc/parodus/parodus_create_file.sh"
-#define WEBCFG_URL_FILE 	   "/tmp/webcfg_url" //check here.
+#define WEBCFG_URL_FILE 	   "/nvram/webcfg_url" //check here.
 /*----------------------------------------------------------------------------*/
 /*                               Data Structures                              */
 /*----------------------------------------------------------------------------*/
@@ -499,11 +499,12 @@ int processMsgpackSubdoc(multipart_t *mp)
 						webcfgdb = (webconfig_db_data_t *) malloc (sizeof(webconfig_db_data_t));
 
 						webcfgdb->name = strdup("root");
-						webcfgdb->version = strtoul(temp,0,0);
+                                          webcfgdb->version = strtoul(temp,NULL,0); 
 						webcfgdb->next = NULL;
 						WebConfigLog("webcfgdb->name in process is %s\n",webcfgdb->name);
 						WebConfigLog("webcfgdb->version in process is %lu\n",(long)webcfgdb->version);
 						addToDBList(webcfgdb);
+                                          count++;
 
 						WebConfigLog("The Etag is %lu\n",(long)webcfgdb->version );
 						WebConfigLog("update doc status for %s\n", mp->entries[m].name_space);
@@ -540,7 +541,7 @@ int processMsgpackSubdoc(multipart_t *mp)
 	}
         
 	size_t j=count;
-	wd->entries_count = count+1;
+    wd->entries_count = count;
 	wd->entries = (webconfig_db_data_t *) malloc( sizeof(webconfig_db_data_t) * wd->entries_count );
 	memset( wd->entries, 0, sizeof(webconfig_db_data_t) * wd->entries_count);
 	wd->entries = webcfgdb_data;
@@ -556,7 +557,7 @@ int processMsgpackSubdoc(multipart_t *mp)
 	}
 	addNewDocEntry(wd);
 	WebConfigLog("After addNewDocEntry wd->entries_count %zu\n", wd->entries_count);
-	//webcfgdb_destroy(wd);
+        webcfgdb_destroy(wd);
 	initDB(WEBCFG_DB_FILE ) ;
 	return rv;
 }
@@ -1219,29 +1220,5 @@ void print_tmp_doc_list(size_t mp_count)
 		}
 	}
 	return;
-}
-
-void addToDBList(webconfig_db_data_t *webcfgdb)
-{
-      if(webcfgdb_data == NULL)
-      {
-          webcfgdb_data = webcfgdb;
-          //WebConfigLog("Producer webcfgdb_data->name is %s\n",webcfgdb_data->name);
-          WebConfigLog("Producer added webcfgdb\n");
-          webcfgdb = NULL;
-      }
-      else
-      {
-          webconfig_db_data_t *temp = NULL;
-          temp = webcfgdb_data;
-          //WebConfigLog("Loop before temp->name is %s\n",temp->name);
-          while(temp->next)
-          {   
-              temp = temp->next;
-             
-          }
-          temp->next = webcfgdb;
-         
-      }
 }
 

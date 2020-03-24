@@ -79,9 +79,9 @@ int initDB(char * db_file_path )
      ch_count = ftell(fp);
      fseek(fp, 0, SEEK_SET);
      data = (char *) malloc(sizeof(char) * (ch_count + 1));
-     fread(data, 1, ch_count-1,fp);
+     fread(data, 1, ch_count,fp);
      len = ch_count;
-     (data)[ch_count] ='\0';
+    // (data)[ch_count] ='\0';
      fclose(fp);
 
      wd = ( webconfig_db_t * ) malloc( sizeof( webconfig_db_t ) );
@@ -116,7 +116,7 @@ int initDB(char * db_file_path )
           }
         
      }
-       
+       webcfgdb_destroy(wd);
      return 1;
      
 }
@@ -171,7 +171,7 @@ void webcfgdb_destroy( webconfig_db_t *wd )
         size_t i;
         for( i = 0; i < wd->entries_count; i++ ) {
             if( NULL != wd->entries[i].name ) {
-                free( wd->entries[i].name );
+                //free( wd->entries[i].name );
             }
 	    
         }
@@ -463,4 +463,32 @@ int process_webcfgdb( webconfig_db_t *wd, msgpack_object *obj )
     }
 
     return 0;
+}
+
+void addToDBList(webconfig_db_data_t *webcfgdb)
+{
+      if(webcfgdb_data == NULL)
+      {
+          webcfgdb_data = webcfgdb;
+          //WebConfigLog("Producer webcfgdb_data->name is %s\n",webcfgdb_data->name);
+          WebConfigLog("Producer added webcfgdb\n");
+          webcfgdb = NULL;
+      }
+      else
+      {
+          webconfig_db_data_t *temp = NULL;
+          temp = webcfgdb_data;
+         // WebConfigLog("Loop before webcfgdb_data->name is %s\n",webcfgdb_data->name);
+          //WebConfigLog("Loop before temp->name is %s\n",temp->name);
+          while(temp->next)
+          {   
+            //  WebConfigLog("Loop inside temp->name is %s\n",temp->name);
+              temp = temp->next;
+             
+          }
+          //WebConfigLog("before temp->name is %s\n",temp->name);
+          temp->next = webcfgdb;
+          //WebConfigLog("after temp->name is %s\n",temp->name); 
+         
+      }
 }
