@@ -515,7 +515,7 @@ int processMsgpackSubdoc(multipart_t *mp)
 						WebConfigLog("Delete tmp queue root as all docs are applied\n");
 						WebConfigLog("root version to delete is %lu\n", (long)webcfgdb->version);
 						dStatus = deleteFromTmpList("root");
-						if(dStatus == 1)
+						if(dStatus == 0)
 						{
 							WebConfigLog("Delete tmp queue root is success\n");
 						}
@@ -543,25 +543,28 @@ int processMsgpackSubdoc(multipart_t *mp)
 		}
 	}
         
-	size_t j=count;
-	wd->entries_count = count;
-	wd->entries = (webconfig_db_data_t *) malloc( sizeof(webconfig_db_data_t) * wd->entries_count );
-	memset( wd->entries, 0, sizeof(webconfig_db_data_t) * wd->entries_count);
-	wd->entries = webcfgdb_data;
-
-	webconfig_db_data_t* temp1 = wd->entries;
-
-	while(temp1 )
+	if(count) //No DB update when all docs failed.
 	{
-	    WebConfigLog("wd->entries[%lu].name %s\n", count-j, temp1->name);
-	    WebConfigLog("wd->entries[%lu].version %lu\n" ,count-j,  (long)temp1->version);
-	    j--;
-	     temp1 = temp1->next;
+		size_t j=count;
+		wd->entries_count = count;
+		wd->entries = (webconfig_db_data_t *) malloc( sizeof(webconfig_db_data_t) * wd->entries_count );
+		memset( wd->entries, 0, sizeof(webconfig_db_data_t) * wd->entries_count);
+		wd->entries = webcfgdb_data;
+
+		webconfig_db_data_t* temp1 = wd->entries;
+
+		while(temp1 )
+		{
+		    WebConfigLog("wd->entries[%lu].name %s\n", count-j, temp1->name);
+		    WebConfigLog("wd->entries[%lu].version %lu\n" ,count-j,  (long)temp1->version);
+		    j--;
+		     temp1 = temp1->next;
+		}
+		addNewDocEntry(wd);
+		WebConfigLog("After addNewDocEntry wd->entries_count %zu\n", wd->entries_count);
+		webcfgdb_destroy(wd);
+		initDB(WEBCFG_DB_FILE ) ;
 	}
-	addNewDocEntry(wd);
-	WebConfigLog("After addNewDocEntry wd->entries_count %zu\n", wd->entries_count);
-        webcfgdb_destroy(wd);
-	initDB(WEBCFG_DB_FILE ) ;
 	return rv;
 }
 
