@@ -63,7 +63,7 @@ int readFromFile(char *filename, char **data, int *len)
 	return 1;
 }
 
-int writeToFile(char *filename, char *data)
+int writeTofile(char *filename, char *data)
 {
 	FILE *fp;
 	fp = fopen(filename , "w+");
@@ -135,7 +135,7 @@ void webcfgPackUnpack()
 	printf("rootPackSize is %ld\n", rootPackSize);
 	printf("data packed is %s\n", (char*)data);
 
-	int status = writeToFile("buff.txt", (char*)data);
+	int status = writeTofile("buff.txt", (char*)data);
 	if(status)
 	{
 		webcfgparam_t *pm;
@@ -165,7 +165,6 @@ void webcfgPackUnpack()
 				printf("pm->entries[%d].name %s\n", i, pm->entries[i].name);
 				printf("pm->entries[%d].value %s\n" , i, pm->entries[i].value);
 				printf("pm->entries[%d].type %d\n", i, pm->entries[i].type);
-                                printf("pm->entries[%d].notify_attribute %d\n", i, pm->entries[i].notify_attribute);
 			}
 
 		/*	//decode inner blob

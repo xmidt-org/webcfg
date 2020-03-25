@@ -71,7 +71,8 @@ int _setSyncCheckOK(int index, bool status)
 
 char* get_global_deviceMAC()
 {
-	return NULL;
+	char *tmp = strdup("b42xxxxxxxxx");
+	return tmp;
 }
 void setValues(const param_t paramVal[], const unsigned int paramCount, const int setType, char *transactionId, money_trace_spans *timeSpan, WDMP_STATUS *retStatus, int *ccspStatus)
 {
@@ -83,14 +84,6 @@ void setValues(const param_t paramVal[], const unsigned int paramCount, const in
 	UNUSED(retStatus);
 	UNUSED(ccspStatus);
 	return;
-}
-void setAttributes(param_t *attArr, const unsigned int paramCount, money_trace_spans *timeSpan, WDMP_STATUS *retStatus)
-{       UNUSED(attArr);
-	UNUSED(paramCount);
-	UNUSED(timeSpan);
-	UNUSED(retStatus);
-        return;
-       
 }
 
 int _setConfigVersion(int index, char *version)
@@ -163,6 +156,20 @@ char *get_global_systemReadyTime()
 	return NULL;
 }
 
+int Get_Webconfig_URL( char **pString)
+{
+	char *webConfigURL =NULL;
+	loadInitURLFromFile(&webConfigURL);
+	*pString = webConfigURL;
+	return 0;
+}
+
+int Set_Webconfig_URL( char *pString)
+{
+	UNUSED(pString);
+	return 0;
+}
+
 void test_multipart()
 {
 	//int r_count=0;
@@ -203,6 +210,12 @@ void test_multipart()
 	if(configRet == 0)
 	{
 		printf("config ret success\n");
+		//printf("processWebconfgSync again..\n");
+		//processWebconfgSync(doc);
+		//printf("processWebconfgSync again..\n");
+		//processWebconfgSync(doc);
+		//printf("processWebconfgSync again..\n");
+		//processWebconfgSync(doc);
 		/*subLen = (size_t) len;
 		subdbuff = ( void*)subfileData;
 		printf("subLen is %ld\n", subLen);

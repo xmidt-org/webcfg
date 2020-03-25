@@ -19,6 +19,7 @@
 #include <stdint.h>
 #include <string.h>
 #include <stdbool.h>
+#include "multipart.h"
 /*----------------------------------------------------------------------------*/
 /*                                   Macros                                   */
 /*----------------------------------------------------------------------------*/
@@ -27,11 +28,13 @@
 /*                               Data Structures                              */
 /*----------------------------------------------------------------------------*/
 
-typedef struct{
-	char * name;
-	uint32_t version;
-	char * status;
-}webconfig_tmp_data_t;
+typedef struct webconfig_tmp_data
+{
+        char * name;
+        uint32_t version;
+        char * status;
+        struct webconfig_tmp_data *next;
+} webconfig_tmp_data_t;
 
 typedef struct {
 	webconfig_tmp_data_t *entries;
@@ -39,10 +42,12 @@ typedef struct {
 } webconfig_tmp_t; // For storing in memory processing docs "pending", "failed"
 // root is also one entry with latest root version recived apply in progress
 
-typedef struct{
+typedef struct webconfig_db_data{
 	char * name;
 	uint32_t version;
+        struct webconfig_db_data *next;
 }webconfig_db_data_t;
+
 
 typedef struct {
 	webconfig_db_data_t *entries;
@@ -80,6 +85,20 @@ blob_t * get_DB_BLOB();
 char * get_DB_BLOB_base64();
 
 
+webconfig_db_data_t * get_global_db_node(void);
+
+webconfig_tmp_data_t * get_global_tmp_node(void);
+
+int addToTmpList( multipart_t *mp);
+
+void addToDBList(webconfig_db_data_t *webcfgdb);
+
+int updateTmpList(char *docname, uint32_t version, char *status);
+
+int deleteFromTmpList(char* doc_name);
+
+int get_numOfMpDocs();
+
 /**
  *  This function converts a msgpack buffer into an webconfig_db_t structure
  *  if possible.
@@ -108,4 +127,5 @@ void webcfgdb_destroy( webconfig_db_t *d );
 const char* webcfgdbparam_strerror( int errnum );
 
 extern webconfig_db_t *wd;
+extern webconfig_db_data_t* webcfgdb_data;
 #endif

@@ -159,7 +159,6 @@ ssize_t webcfgdb_pack( const webconfig_db_t *packData, void **data )
     msgpack_packer pk;
     msgpack_sbuffer_init( &sbuf );
     msgpack_packer_init( &pk, &sbuf, msgpack_sbuffer_write );
-    int i =0;
 
     if( packData != NULL && packData->entries_count != 0 ) {
 	int count = packData->entries_count;
@@ -168,8 +167,11 @@ ssize_t webcfgdb_pack( const webconfig_db_t *packData, void **data )
         __msgpack_pack_string( &pk, WEBCFG_DB_PARAMETERS.name, WEBCFG_DB_PARAMETERS.length );
 	msgpack_pack_array( &pk, count );
         
-	
-	for( i = 0; i < count; i++ ) //1 element
+	printf("The pack count is %d\n",count);
+    
+        webconfig_db_data_t *temp = packData->entries;
+        
+	while(temp != NULL) //1 element
 	{   
             msgpack_pack_map( &pk, 2); //name, version
 
@@ -177,14 +179,18 @@ ssize_t webcfgdb_pack( const webconfig_db_t *packData, void **data )
 
             WEBCFG_MAP_NAME.name = "name";
             WEBCFG_MAP_NAME.length = strlen( "name" );
-            __msgpack_pack_string_nvp( &pk, &WEBCFG_MAP_NAME, packData->entries[i].name );
+            __msgpack_pack_string_nvp( &pk, &WEBCFG_MAP_NAME, temp->name );
 
 	    struct webcfg_token WEBCFG_MAP_VERSION;
 
             WEBCFG_MAP_VERSION.name = "version";
             WEBCFG_MAP_VERSION.length = strlen( "version" );
 	    __msgpack_pack_string( &pk, WEBCFG_MAP_VERSION.name, WEBCFG_MAP_VERSION.length);
-            msgpack_pack_uint64(&pk,(uint32_t) packData->entries[i].version);
+            printf("The version is %ld\n",(long)temp->version);
+            msgpack_pack_uint64(&pk,(uint32_t) temp->version);
+            
+            temp = temp->next;
+
 	}
 
     } else {
