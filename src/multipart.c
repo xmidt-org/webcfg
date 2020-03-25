@@ -34,7 +34,6 @@
 #define WEBPA_READ_HEADER          "/etc/parodus/parodus_read_file.sh"
 #define WEBPA_CREATE_HEADER        "/etc/parodus/parodus_create_file.sh"
 #define WEBCFG_URL_FILE 	   "/tmp/webcfg_url" //check here.
-#define WEBCFG_INTERFACE_DEFAULT   "erouter0"
 /*----------------------------------------------------------------------------*/
 /*                               Data Structures                              */
 /*----------------------------------------------------------------------------*/
@@ -631,15 +630,12 @@ static void get_webCfg_interface(char **interface)
         else
         {
                 WebConfigLog("Failed to open device.properties file:%s\n", DEVICE_PROPS_FILE);
-                WebConfigLog("Adding default values for webConfig interface\n");
-                *interface = strdup(WEBCFG_INTERFACE_DEFAULT);
         }
 
         if (NULL == *interface)
         {
-                WebConfigLog("WebConfig interface is not present in device.properties, adding default interface\n");
+                WebConfigLog("WebConfig interface is not present in device.properties\n");
 
-                *interface = strdup(WEBCFG_INTERFACE_DEFAULT);
         }
         else
         {
