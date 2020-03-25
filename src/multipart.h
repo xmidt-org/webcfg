@@ -52,4 +52,5 @@ int readFromFile(char *filename, char **data, int *len);
 int parseMultipartDocument(void *config_data, char *ct , size_t data_size);
 void getConfigDocList(char **doc);
 void print_tmp_doc_list(size_t mp_count);
+void loadInitURLFromFile(char **url);
 #endif

@@ -71,7 +71,8 @@ int _setSyncCheckOK(int index, bool status)
 
 char* get_global_deviceMAC()
 {
-	return NULL;
+	char *tmp = strdup("b42xxxxxxxxx");
+	return tmp;
 }
 void setValues(const param_t paramVal[], const unsigned int paramCount, const int setType, char *transactionId, money_trace_spans *timeSpan, WDMP_STATUS *retStatus, int *ccspStatus)
 {
@@ -153,6 +154,20 @@ void sendNotification(char *payload, char *source, char *destination)
 char *get_global_systemReadyTime()
 {
 	return NULL;
+}
+
+int Get_Webconfig_URL( char **pString)
+{
+	char *webConfigURL =NULL;
+	loadInitURLFromFile(&webConfigURL);
+	*pString = webConfigURL;
+	return 0;
+}
+
+int Set_Webconfig_URL( char *pString)
+{
+	UNUSED(pString);
+	return 0;
 }
 
 void test_multipart()

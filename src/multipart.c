@@ -67,8 +67,8 @@ void addToDBList(webconfig_db_data_t *webcfgdb);
 char* generate_trans_uuid();
 int processMsgpackSubdoc(multipart_t *mp);
 webconfig_db_t *wd;
-void loadInitURLFromFile(char **url);
 void get_root_version(uint32_t *rt_version);
+char *replaceMacWord(const char *s, const char *macW, const char *deviceMACW);
 /*----------------------------------------------------------------------------*/
 /*                             External Functions                             */
 /*----------------------------------------------------------------------------*/
@@ -92,9 +92,10 @@ int webcfg_http_request(char **configData, int r_count, char* doc, int status, l
 	char *interface = NULL;
 	char *ct = NULL;
 	char *webConfigURL = NULL;
-	//int len=0;
 	char *transID = NULL;
 	char *docnames = NULL;
+	char * configURL = NULL;
+	char c[] = "{mac}";
 
 	int content_res=0;
 	struct token_data data;
@@ -120,9 +121,21 @@ int webcfg_http_request(char **configData, int r_count, char* doc, int status, l
 			*transaction_id = strdup(transID);
 			WEBCFG_FREE(transID);
 		}
-		WebConfigLog("webConfigURL loadInitURLFromFile\n"); //TODO: Read URL from device.properties
-		//readFromFile(WEBCFG_URL_FILE, &webConfigURL, &len );
-		loadInitURLFromFile(&webConfigURL);
+		//loadInitURLFromFile(&webConfigURL);
+		WebConfigLog("B4 Get_Webconfig_URL\n");
+		Get_Webconfig_URL(&configURL);
+		if(configURL !=NULL)
+		{
+			//Replace {mac} string from default init url with actual deviceMAC
+			WebConfigLog("B4 replaceMacWord\n");
+			webConfigURL = replaceMacWord(configURL, c, get_global_deviceMAC());
+			WebConfigLog("webConfigURL is %s\n", webConfigURL);
+		}
+		else
+		{
+			WebConfigLog("Failed to get configURL\n");
+			return rv;
+		}
 		WebConfigLog("ConfigURL from loadInitURLFromFile is %s\n", webConfigURL);
 
 		//Update query param in the URL based on the existing doc names from db
@@ -1225,5 +1238,43 @@ void print_tmp_doc_list(size_t mp_count)
 		}
 	}
 	return;
+}
+
+char *replaceMacWord(const char *s, const char *macW, const char *deviceMACW)
+{
+	char *result = NULL;
+	int i, cnt = 0;
+
+	if(deviceMACW != NULL)
+	{
+		int deviceMACWlen = strlen(deviceMACW);
+		int macWlen = strlen(macW);
+		// Counting the number of times mac word occur in the string
+		for (i = 0; s[i] != '\0'; i++)
+		{
+			if (strstr(&s[i], macW) == &s[i])
+			{
+			    cnt++;
+			    // Jumping to index after the mac word.
+			    i += macWlen - 1;
+			}
+		}
+
+		result = (char *)malloc(i + cnt * (deviceMACWlen - macWlen) + 1);
+		i = 0;
+		while (*s)
+		{
+			if (strstr(s, macW) == s)
+			{
+				strcpy(&result[i], deviceMACW);
+				i += deviceMACWlen;
+				s += macWlen;
+			}
+			else
+			    result[i++] = *s++;
+		}
+		result[i] = '\0';
+	}
+	return result;
 }
 
