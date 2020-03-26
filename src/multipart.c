@@ -141,22 +141,18 @@ int webcfg_http_request(char **configData, int r_count, char* doc, int status, l
 		WebConfigLog("ConfigURL from loadInitURLFromFile is %s\n", webConfigURL);
 
 		//Update query param in the URL based on the existing doc names from db
-		//if (doc != NULL && (strlen(doc)>0))
-		//{
-			WebConfigLog("update webConfigURL based on sync doc %s\n", doc);
-			getConfigDocList(&docnames);
-			WebConfigLog("docnames is %s\n", docnames);
-			if(docnames !=NULL )
+		getConfigDocList(&docnames);
+		WebConfigLog("docnames is %s\n", docnames);
+		if(docnames !=NULL )
+		{
+			if(strlen(docnames) > 0)
 			{
-				if(strlen(docnames) > 0)
-				{
-					snprintf(syncURL, MAX_BUF_SIZE, "%s?group_id=%s", webConfigURL, docnames);
-					WebConfigLog("syncURL is %s\n", syncURL);
-					webConfigURL =strdup( syncURL);
-				}
-				WEBCFG_FREE(docnames);
+				snprintf(syncURL, MAX_BUF_SIZE, "%s?group_id=%s", webConfigURL, docnames);
+				WebConfigLog("syncURL is %s\n", syncURL);
+				webConfigURL =strdup( syncURL);
 			}
-		//}
+			WEBCFG_FREE(docnames);
+		}
 
 		if(webConfigURL !=NULL)
 		{
@@ -173,7 +169,6 @@ int webcfg_http_request(char **configData, int r_count, char* doc, int status, l
 		if(strlen(g_interface) == 0)
 		{
 			get_webCfg_interface(&interface);
-			//interface = strdup("erouter0"); //check here.
 			if(interface !=NULL)
 		        {
 		               strncpy(g_interface, interface, sizeof(g_interface)-1);
@@ -647,6 +642,18 @@ size_t headr_callback(char *buffer, size_t size, size_t nitems)
 	}
 	WebConfigLog("header_callback size %zu\n", size);
 	return nitems;
+}
+
+//Convert string root version from multipart header to uint32
+uint32_t get_global_root()
+{
+	char * temp = NULL;
+	uint32_t g_version;
+
+	temp = strdup(g_ETAG);
+	g_version = strtoul(temp,NULL,0);
+	WebConfigLog("g_version is %lu\n", (long)g_version);
+	return g_version;
 }
 
 //To strip all spaces , new line & carriage return characters from header output

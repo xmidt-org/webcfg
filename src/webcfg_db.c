@@ -230,6 +230,8 @@ int addToTmpList( multipart_t *mp)
 	WebConfigLog("mp->entries_count is %zu\n", mp->entries_count);
 	numOfMpDocs = 0;
 	WebConfigLog("reset numOfMpDocs to %d\n", numOfMpDocs);
+	WebConfigLog("get_global_root is %lu\n", (long)get_global_root());
+
 	for(m = 0 ; m<((int)mp->entries_count); m++)
 	{
 		webconfig_tmp_data_t *new_node;
@@ -241,7 +243,7 @@ int addToTmpList( multipart_t *mp)
 			if(numOfMpDocs == 0)
 			{
 				new_node->name = strdup("root");
-				new_node->version = 0;
+				new_node->version = get_global_root();
 				new_node->status = strdup("pending");
 			}
 			else
