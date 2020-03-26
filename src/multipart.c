@@ -66,6 +66,8 @@ void multipart_destroy( multipart_t *m );
 void addToDBList(webconfig_db_data_t *webcfgdb);
 char* generate_trans_uuid();
 int processMsgpackSubdoc(multipart_t *mp);
+void loadInitURLFromFile(char **url);
+static void get_webCfg_interface(char **interface);
 webconfig_db_t *wd;
 void get_root_version(uint32_t *rt_version);
 char *replaceMacWord(const char *s, const char *macW, const char *deviceMACW);
@@ -170,8 +172,8 @@ int webcfg_http_request(char **configData, int r_count, char* doc, int status, l
 		WebConfigLog("fetching interface from device.properties\n");
 		if(strlen(g_interface) == 0)
 		{
-			//get_webCfg_interface(&interface);
-			interface = strdup("erouter0"); //check here.
+			get_webCfg_interface(&interface);
+			//interface = strdup("erouter0"); //check here.
 			if(interface !=NULL)
 		        {
 		               strncpy(g_interface, interface, sizeof(g_interface)-1);
@@ -667,6 +669,45 @@ void stripspaces(char *str, char **final_str)
 	}
 	str[j]='\0';
 	*final_str = str;
+}
+
+static void get_webCfg_interface(char **interface)
+{
+
+        FILE *fp = fopen(DEVICE_PROPS_FILE, "r");
+
+        if (NULL != fp)
+        {
+                char str[255] = {'\0'};
+                while (fgets(str, sizeof(str), fp) != NULL)
+                {
+                    char *value = NULL;
+
+                    if(NULL != (value = strstr(str, "WEBCONFIG_INTERFACE=")))
+                    {
+                        value = value + strlen("WEBCONFIG_INTERFACE=");
+                        value[strlen(value)-1] = '\0';
+                        *interface = strdup(value);
+                        break;
+                    }
+
+                }
+                fclose(fp);
+        }
+        else
+        {
+                WebConfigLog("Failed to open device.properties file:%s\n", DEVICE_PROPS_FILE);
+        }
+
+        if (NULL == *interface)
+        {
+                WebConfigLog("WebConfig interface is not present in device.properties\n");
+
+        }
+        else
+        {
+                WebConfigLog("interface fetched is %s\n", *interface);
+        }
 }
 
 void loadInitURLFromFile(char **url)
