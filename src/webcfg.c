@@ -240,7 +240,6 @@ void processWebconfgSync(char* doc)
 			retry_count=0;
 			break;
 		}
-		WebConfigLog("doc is %s\n", doc);
 		configRet = webcfg_http_request(&webConfigData, r_count, doc, status, &res_code, &transaction_uuid, &ct, &dataSize);
 		printf("After webcfg_http_request ct is %s\n", ct );
 		if(configRet == 0)

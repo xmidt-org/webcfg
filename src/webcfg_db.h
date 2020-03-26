@@ -23,7 +23,7 @@
 /*----------------------------------------------------------------------------*/
 /*                                   Macros                                   */
 /*----------------------------------------------------------------------------*/
-#define WEBCFG_DB_FILE 	    "/tmp/webconfig_db.bin" //TODO:command line argument to pass /nvram/webconfig_db.bin
+#define WEBCFG_DB_FILE 	    "/nvram/webconfig_db.bin" //TODO:command line argument to pass /nvram/webconfig_db.bin
 /*----------------------------------------------------------------------------*/
 /*                               Data Structures                              */
 /*----------------------------------------------------------------------------*/
