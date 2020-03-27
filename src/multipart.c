@@ -420,7 +420,6 @@ int processMsgpackSubdoc(multipart_t *mp)
 
 		WebConfigLog("--------------decode root doc-------------\n");
 		pm = webcfgparam_convert( mp->entries[m].data, mp->entries[m].data_size+1 );
-		WebConfigLog("After webcfgparam_convert\n");
 		if ( NULL != pm)
 		{
 			paramCount = (int)pm->entries_count;
@@ -439,7 +438,6 @@ int processMsgpackSubdoc(multipart_t *mp)
 
 			for (i = 0; i < paramCount; i++) 
 			{
-				WebConfigLog("update reqParam\n");
                                 if(pm->entries[i].value != NULL)
                                 {
 				    reqParam[i].name = strdup(pm->entries[i].name);
@@ -462,8 +460,6 @@ int processMsgpackSubdoc(multipart_t *mp)
 				WebcfgInfo("WebConfig SET Request\n");
 				WebConfigLog("paramCount B4 setValues %d\n", paramCount);
 				setValues(reqParam, paramCount, 0, NULL, NULL, &ret, &ccspStatus);
-				WebConfigLog("After setValues\n");
-				WebcfgInfo("Processed WebConfig SET Request\n");
 				WebcfgInfo("ccspStatus is %d\n", ccspStatus);
 				//ret = WDMP_SUCCESS; //Remove this. Testing purpose.
 				if(ret == WDMP_SUCCESS)
@@ -494,7 +490,6 @@ int processMsgpackSubdoc(multipart_t *mp)
 						WebConfigLog("updateTmpList failed\n");
 					}
 
-					printf("Before add in db m is %d\n",m);
 					webcfgdb->name = mp->entries[m].name_space;
 					webcfgdb->version = mp->entries[m].etag;
 					webcfgdb->next = NULL;
@@ -515,8 +510,8 @@ int processMsgpackSubdoc(multipart_t *mp)
 						webcfgdb->name = strdup("root");
 						webcfgdb->version = strtoul(temp,NULL,0);
 						webcfgdb->next = NULL;
-						WebConfigLog("webcfgdb->name in process is %s\n",webcfgdb->name);
-						WebConfigLog("webcfgdb->version in process is %lu\n",(long)webcfgdb->version);
+						//WebConfigLog("webcfgdb->name in process is %s\n",webcfgdb->name);
+						//WebConfigLog("webcfgdb->version in process is %lu\n",(long)webcfgdb->version);
 						addToDBList(webcfgdb);
 						count++;
 
@@ -539,8 +534,6 @@ int processMsgpackSubdoc(multipart_t *mp)
 				else
 				{
 					WebConfigLog("setValues Failed. ccspStatus : %d\n", ccspStatus);
-					//WEBCFG_FREE(reqParam);
-					//webcfgparam_destroy( pm );
 				}
 
                          //WEBCFG_FREE(reqParam);
@@ -852,6 +845,11 @@ void getConfigVersionList(char **version)
 			{
 				WebConfigLog("Updating root_version to versionsList\n");
 				sprintf(versionsList, "%lu", (long)root_version);
+			}
+			else
+			{
+				WebConfigLog("Updating versionsList as NONE\n");
+				sprintf(versionsList, "%s", "NONE");
 			}
 			WebConfigLog("versionsList is %s\n", versionsList);
 
