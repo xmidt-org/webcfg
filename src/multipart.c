@@ -125,7 +125,7 @@ int webcfg_http_request(char **configData, int r_count, char* doc, int status, l
 		}
 		//loadInitURLFromFile(&webConfigURL);
 		WebConfigLog("B4 Get_Webconfig_URL\n");
-		Get_Webconfig_URL(&configURL);
+		Get_Webconfig_URL(configURL);
 		if(configURL !=NULL)
 		{
 			//Replace {mac} string from default init url with actual deviceMAC

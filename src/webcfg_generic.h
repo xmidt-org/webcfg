@@ -55,7 +55,7 @@ char* get_global_deviceMAC();
 void initWebConfigMultipartTask();
 void sendNotification(char *payload, char *source, char *destination);
 
-int Get_Webconfig_URL( char **pString);
+int Get_Webconfig_URL( char *pString);
 int Set_Webconfig_URL( char *pString);
 /**
  * @brief setValues interface sets the parameter value.
