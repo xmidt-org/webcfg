@@ -378,6 +378,10 @@ int addToTmpList( multipart_t *mp)
 	WebConfigLog("reset numOfMpDocs to %d\n", numOfMpDocs);
 	WebConfigLog("get_global_root is %lu\n", (long)get_global_root());
 
+	WebConfigLog("Delete existing docs from tmp queue if any\n");
+	delete_tmp_doc_list();
+	WebConfigLog("delete_tmp_doc_list done, proceed to addToTmpList\n");
+
 	for(m = 0 ; m<((int)mp->entries_count); m++)
 	{
 		webconfig_tmp_data_t *new_node;
@@ -512,6 +516,21 @@ int deleteFromTmpList(char* doc_name)
 	return -1;
 }
 
+void delete_tmp_doc_list()
+{
+   webconfig_tmp_data_t *temp = NULL;
+   webconfig_tmp_data_t *head = NULL;
+   head = get_global_tmp_node();
+
+    while(head != NULL)
+    {
+        temp = head;
+        head = head->next;
+	WebConfigLog("Delete node--> temp->name %s temp->version %lu temp->status %s\n",temp->name, (long)temp->version, temp->status);
+        free(temp);
+    }
+    WebConfigLog("Deleted all docs from tmp list\n");
+}
 /*----------------------------------------------------------------------------*/
 /*                             Internal functions                             */
 /*----------------------------------------------------------------------------*/
