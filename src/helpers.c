@@ -18,7 +18,6 @@
 #include <msgpack.h>
 
 #include "helpers.h"
-#include "webcfgdoc.h"
 #include "webcfg_log.h"
 /*----------------------------------------------------------------------------*/
 /*                                   Macros                                   */

@@ -25,8 +25,6 @@
 #include "webcfg_db.h"
 #include "webcfg_generic.h"
 #include "webcfgpack.h"
-#include "macbindingdoc.h"
-#include "portmappingdoc.h"
 
 /*----------------------------------------------------------------------------*/
 /*                                   Macros                                   */

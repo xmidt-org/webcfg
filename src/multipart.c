@@ -22,8 +22,6 @@
 #include "webcfg_generic.h"
 #include "webcfg_db.h"
 #include <uuid/uuid.h>
-#include "macbindingdoc.h"
-#include "portmappingdoc.h"
 /*----------------------------------------------------------------------------*/
 /*                                   Macros                                   */
 /*----------------------------------------------------------------------------*/
@@ -444,11 +442,6 @@ int processMsgpackSubdoc(multipart_t *mp)
 				    reqParam[i].value = strdup(pm->entries[i].value);
 				    reqParam[i].type = pm->entries[i].type;
                                 }
-				else
-				{
-					WebConfigLog("pm->entries[i].value is NULL, reducing paramCount as it is setattributes case\n");
-					paramCount = paramCount -1;
-				}
 				WebConfigLog("--->Request:> param[%d].name = %s\n",i,reqParam[i].name);
 				WebConfigLog("--->Request:> param[%d].value = %s\n",i,reqParam[i].value);
 				WebConfigLog("--->Request:> param[%d].type = %d\n",i,reqParam[i].type);

@@ -18,7 +18,6 @@
 #include <errno.h>
 #include <stdio.h>
 #include <CUnit/Basic.h>
-#include "../src/webcfgdoc.h"
 #include "../src/webcfgparam.h"
 #include "../src/webcfgpack.h"
 

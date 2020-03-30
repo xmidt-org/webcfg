@@ -29,7 +29,6 @@
 #include <msgpack.h>
 #include <wdmp-c.h>
 #include <base64.h>
-#include "macbindingdoc.h"
 #include "webcfg_db.h"
 /*----------------------------------------------------------------------------*/
 /*                                   Macros                                   */
