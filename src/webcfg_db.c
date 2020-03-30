@@ -398,6 +398,7 @@ int addToTmpList( multipart_t *mp)
 
 			if(numOfMpDocs == 0)
 			{
+				WebConfigLog("Adding root doc to list\n");
 				new_node->name = strdup("root");
 				new_node->version = get_global_root();
 				new_node->status = strdup("pending");
@@ -427,12 +428,13 @@ int addToTmpList( multipart_t *mp)
 				webconfig_tmp_data_t *temp = NULL;
 				WebConfigLog("Adding docs to list\n");
 				temp = g_head;
-
+				WebConfigLog("B4 temp->next\n");
 				while(temp->next !=NULL)
 				{
+					WebConfigLog("Inside temp->next while\n");
 					temp=temp->next;
 				}
-
+				WebConfigLog("After temp->next\n");
 				temp->next=new_node;
 			}
 
@@ -534,7 +536,9 @@ void delete_tmp_doc_list()
         head = head->next;
 	WebConfigLog("Delete node--> temp->name %s temp->version %lu temp->status %s\n",temp->name, (long)temp->version, temp->status);
         free(temp);
+	temp = NULL;
     }
+    g_head = NULL;
     WebConfigLog("Deleted all docs from tmp list\n");
 }
 /*----------------------------------------------------------------------------*/
