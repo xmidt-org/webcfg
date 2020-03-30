@@ -56,6 +56,7 @@ enum {
 static webconfig_tmp_data_t * g_head = NULL;
 static blob_t * webcfgdb_blob = NULL;
 static int numOfMpDocs = 0;
+static int success_doc_count = 0;
 /*----------------------------------------------------------------------------*/
 /*                             Function Prototypes                            */
 /*----------------------------------------------------------------------------*/
@@ -362,6 +363,11 @@ int get_numOfMpDocs()
     return numOfMpDocs;
 }
 
+int get_successDocCount()
+{
+    return success_doc_count;
+}
+
 blob_t * get_DB_BLOB()
 {
      return webcfgdb_blob;
@@ -654,6 +660,7 @@ void addToDBList(webconfig_db_data_t *webcfgdb)
           {   
             //  WebConfigLog("Loop inside temp->name is %s\n",temp->name);
               temp = temp->next;
+              success_doc_count++;
              
           }
           //WebConfigLog("before temp->name is %s\n",temp->name);

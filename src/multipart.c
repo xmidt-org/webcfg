@@ -551,7 +551,7 @@ int processMsgpackSubdoc(multipart_t *mp)
 			temp1 = temp1->next;
 		}
 		WebConfigLog("B4 addNewDocEntry\n");
-		addNewDocEntry(success_count);
+		addNewDocEntry(get_successDocCount());
 
 		//initDB("WEBCFG_DB_FILE" ) ;
 
@@ -559,11 +559,17 @@ int processMsgpackSubdoc(multipart_t *mp)
         char * blob_data = NULL;
         size_t blob_len = -1 ;
 	WebConfigLog("Proceed to generateBlob\n");
-	generateBlob();
-	blob_data = get_DB_BLOB_base64(&blob_len);
-	WebConfigLog("The b64 encoded blob is : %s\n",blob_data);
-        WebConfigLog("The b64 encoded blob_length is : %zu\n",blob_len);
-        readBlobFromFile(WEBCFG_BLOB_PATH);
+	if(generateBlob())
+        {
+	    blob_data = get_DB_BLOB_base64(&blob_len);
+	    WebConfigLog("The b64 encoded blob is : %s\n",blob_data);
+            WebConfigLog("The b64 encoded blob_length is : %zu\n",blob_len);
+            readBlobFromFile(WEBCFG_BLOB_PATH);
+        }
+        else
+        {
+            WebConfigLog("Failed in Blob generation\n");
+        }
 	return rv;
 }
 

@@ -100,6 +100,8 @@ void delete_tmp_doc_list();
 
 int get_numOfMpDocs();
 
+int get_successDocCount();
+
 void b64_encoder(const void *buf,size_t len, char ** decodeMsg);
 
 int writeBlobToFile(char *blob_file_path, char *data);
