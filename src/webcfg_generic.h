@@ -18,11 +18,12 @@
 
 #include <stdint.h>
 #include <wdmp-c.h>
-
+#include <msgpack.h>
 /*----------------------------------------------------------------------------*/
 /*                                   Macros                                   */
 /*----------------------------------------------------------------------------*/
 
+#define WEBCFG_BLOB_PATH                      "/tmp/webcfg_blob.bin"
 /*----------------------------------------------------------------------------*/
 /*                               Data Structures                              */
 /*----------------------------------------------------------------------------*/
@@ -43,6 +44,7 @@ int _setConfigVersion(int index, char *version);
 int setForceSync(char* pString, char *transactionId,int *session_status);
 int getForceSync(char** pString, char **transactionId);
 
+char * get_DB_BLOB_base64(size_t *len);
 char *get_global_systemReadyTime();
 char* getDeviceBootTime();
 char * getSerialNumber();
@@ -57,6 +59,28 @@ void sendNotification(char *payload, char *source, char *destination);
 
 int Get_Webconfig_URL( char **pString);
 int Set_Webconfig_URL( char *pString);
+
+/*For Blob Test purpose*/
+typedef struct{
+        char * name;
+        uint32_t version;
+        char * status;        
+}blob_data_t;
+
+typedef struct{
+        blob_data_t *entries;
+        size_t entries_count;
+}blob_struct_t;
+
+int readBlobFromFile(char * blob_file_path);
+void webcfgdbblob_destroy( blob_struct_t *bd );
+const char* webcfgdbblob_strerror( int errnum );
+int process_webcfgdbblob( blob_struct_t *bd, msgpack_object *obj );
+int process_webcfgdbblobparams( blob_data_t *e, msgpack_object_map *map );
+blob_struct_t* decodeBlobData(const void * buf, size_t len);
+
+
+
 /**
  * @brief setValues interface sets the parameter value.
  *

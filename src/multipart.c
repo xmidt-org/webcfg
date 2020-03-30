@@ -387,7 +387,7 @@ int processMsgpackSubdoc(multipart_t *mp)
 	int ccspStatus=0;
 	int paramCount = 0;
 	webcfgparam_t *pm;
-        int count = 0, addStatus =0;
+    int success_count = 0, addStatus =0;
 	int uStatus = 0, dStatus =0;
         
 	WebConfigLog("Adding mp entries to tmp list\n");
@@ -401,9 +401,6 @@ int processMsgpackSubdoc(multipart_t *mp)
 	{
 		WebConfigLog("addToTmpList failed\n");
 	}
-
-        wd = ( webconfig_db_t * ) malloc( sizeof( webconfig_db_t ) );
-        wd->entries_count = mp->entries_count;
 
 	for(m = 0 ; m<((int)mp->entries_count)-1; m++)
 	{       
@@ -486,15 +483,15 @@ int processMsgpackSubdoc(multipart_t *mp)
 					webcfgdb->name = mp->entries[m].name_space;
 					webcfgdb->version = mp->entries[m].etag;
 					webcfgdb->next = NULL;
-					count++;
+					success_count++;
 
 					WebConfigLog("webcfgdb->name in process is %s\n",webcfgdb->name);
 					WebConfigLog("webcfgdb->version in process is %lu\n",(long)webcfgdb->version);
 					addToDBList(webcfgdb);
 
 					WebConfigLog("The mp->entries_count %d\n",(int)mp->entries_count);
-					WebConfigLog("The count %d\n",count);
-					if(count ==(int) mp->entries_count-1)
+					WebConfigLog("The count %d\n",success_count);
+					if(success_count ==(int) mp->entries_count-1)
 					{
 						char * temp = strdup(g_ETAG);
 						webconfig_db_data_t * webcfgdb = NULL;
@@ -506,7 +503,7 @@ int processMsgpackSubdoc(multipart_t *mp)
 						//WebConfigLog("webcfgdb->name in process is %s\n",webcfgdb->name);
 						//WebConfigLog("webcfgdb->version in process is %lu\n",(long)webcfgdb->version);
 						addToDBList(webcfgdb);
-						count++;
+                        success_count++;
 
 						WebConfigLog("The Etag is %lu\n",(long)webcfgdb->version );
 						//Delete tmp queue root as all docs are applied
@@ -539,28 +536,34 @@ int processMsgpackSubdoc(multipart_t *mp)
 		}
 	}
         
-	if(count) //No DB update when all docs failed.
+	if(success_count) //No DB update when all docs failed.
 	{
-		size_t j=count;
-		wd->entries_count = count;
-		wd->entries = (webconfig_db_data_t *) malloc( sizeof(webconfig_db_data_t) * wd->entries_count );
-		memset( wd->entries, 0, sizeof(webconfig_db_data_t) * wd->entries_count);
-		wd->entries = webcfgdb_data;
+		size_t j=success_count;
+		
 
-		webconfig_db_data_t* temp1 = wd->entries;
+		webconfig_db_data_t* temp1 = webcfgdb_data;
 
 		while(temp1 )
 		{
-		    WebConfigLog("wd->entries[%lu].name %s\n", count-j, temp1->name);
-		    WebConfigLog("wd->entries[%lu].version %lu\n" ,count-j,  (long)temp1->version);
-		    j--;
-		     temp1 = temp1->next;
+			WebConfigLog("wd->entries[%lu].name %s\n", success_count-j, temp1->name);
+			WebConfigLog("wd->entries[%lu].version %lu\n" ,success_count-j,  (long)temp1->version);
+			j--;
+			temp1 = temp1->next;
 		}
-		addNewDocEntry(wd);
-		WebConfigLog("After addNewDocEntry wd->entries_count %zu\n", wd->entries_count);
-		webcfgdb_destroy(wd);
-		initDB(WEBCFG_DB_FILE ) ;
+		WebConfigLog("B4 addNewDocEntry\n");
+		addNewDocEntry(success_count);
+
+		//initDB("WEBCFG_DB_FILE" ) ;
+
 	}
+        char * blob_data = NULL;
+        size_t blob_len = -1 ;
+	WebConfigLog("Proceed to generateBlob\n");
+	generateBlob();
+	blob_data = get_DB_BLOB_base64(&blob_len);
+	WebConfigLog("The b64 encoded blob is : %s\n",blob_data);
+        WebConfigLog("The b64 encoded blob_length is : %zu\n",blob_len);
+        readBlobFromFile(WEBCFG_BLOB_PATH);
 	return rv;
 }
 

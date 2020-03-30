@@ -52,6 +52,7 @@ struct webcfg_token {
 /*----------------------------------------------------------------------------*/
 static const struct webcfg_token WEBCFG_PARAMETERS   = { .name = "parameters", .length = sizeof( "parameters" ) - 1 };
 static const struct webcfg_token WEBCFG_DB_PARAMETERS   = { .name = "webcfgdb", .length = sizeof( "webcfgdb" ) - 1 };
+static const struct webcfg_token WEBCFG_BLOB_PARAMETERS   = { .name = "webcfgblob", .length = sizeof( "webcfgblob" ) - 1 };
 static void __msgpack_pack_string( msgpack_packer *pk, const void *string, size_t n );
 static void __msgpack_pack_string_nvp( msgpack_packer *pk,
                                        const struct webcfg_token *token,
@@ -151,8 +152,136 @@ ssize_t webcfg_pack_rootdoc( const data_t *packData, void **data )
     msgpack_sbuffer_destroy( &sbuf );
     return rv;
 }
+ssize_t webcfgdb_blob_pack(webconfig_db_data_t *webcfgdb, webconfig_tmp_data_t * webcfgtemp, void **data)
+{
+    size_t rv = -1;
+    int db_count = 0,tmp_count = 0;
+    msgpack_sbuffer sbuf;
+    msgpack_packer pk;
+    msgpack_sbuffer_init( &sbuf );
+    msgpack_packer_init( &pk, &sbuf, msgpack_sbuffer_write );
 
-ssize_t webcfgdb_pack( const webconfig_db_t *packData, void **data )
+    webconfig_db_data_t *db_data;
+    webconfig_tmp_data_t *temp_data;
+
+    db_data = webcfgdb;
+    temp_data = webcfgtemp;
+
+    while(db_data != NULL)
+    {
+        printf("The db name is %s\n",db_data->name);
+        db_data = db_data->next;
+        printf("The pack count of DB_count calc is %d\n",db_count );
+        db_count++;
+    }
+
+    while(temp_data != NULL)
+    {
+        temp_data = temp_data->next;
+        printf("The pack count of temp_count calc is %d\n",tmp_count);
+        tmp_count++;
+    }
+
+    db_data = NULL;
+    temp_data = NULL;
+
+    db_data = webcfgdb;
+    temp_data = webcfgtemp;
+
+    if( db_data != NULL || temp_data != NULL ) {
+
+	msgpack_pack_map( &pk, 1);
+
+        __msgpack_pack_string( &pk, WEBCFG_BLOB_PARAMETERS.name, WEBCFG_BLOB_PARAMETERS.length );
+	msgpack_pack_array( &pk, (db_count + tmp_count) );
+
+        printf("The pack count of DB_count is %d\n",db_count );
+        printf("The pack count of temp_count is %d\n",tmp_count);
+	printf("The pack count of blob is %d\n",(db_count + tmp_count));
+
+       if(db_data != NULL)
+       {
+	    while(db_data != NULL) //1 element
+	    {
+                msgpack_pack_map( &pk, 3); //name, version,status
+
+	        struct webcfg_token WEBCFG_MAP_BLOB_NAME;
+
+                WEBCFG_MAP_BLOB_NAME.name = "name";
+                WEBCFG_MAP_BLOB_NAME.length = strlen( "name" );
+                __msgpack_pack_string_nvp( &pk, &WEBCFG_MAP_BLOB_NAME, db_data->name );
+
+	        struct webcfg_token WEBCFG_MAP_BLOB_VERSION;
+
+                WEBCFG_MAP_BLOB_VERSION.name = "version";
+                WEBCFG_MAP_BLOB_VERSION.length = strlen( "version" );
+	        __msgpack_pack_string( &pk, WEBCFG_MAP_BLOB_VERSION.name, WEBCFG_MAP_BLOB_VERSION.length);
+                printf("The db version is %ld\n",(long)db_data->version);
+                msgpack_pack_uint64(&pk,(uint32_t) db_data->version);
+
+                struct webcfg_token WEBCFG_MAP_BLOB_STATUS;
+
+                WEBCFG_MAP_BLOB_STATUS.name = "status";
+                WEBCFG_MAP_BLOB_STATUS.length = strlen( "status" );
+                __msgpack_pack_string_nvp( &pk, &WEBCFG_MAP_BLOB_STATUS, "success" );
+
+                db_data = db_data->next;
+
+	    }
+       }
+
+      if(temp_data != NULL)
+       {
+	    while(temp_data != NULL) //1 element
+	    {
+                msgpack_pack_map( &pk, 3); //name, version
+
+	        struct webcfg_token WEBCFG_MAP_TEMP_NAME;
+
+                WEBCFG_MAP_TEMP_NAME.name = "name";
+                WEBCFG_MAP_TEMP_NAME.length = strlen( "name" );
+                printf("The tmp name is %s\n",temp_data->name);
+                __msgpack_pack_string_nvp( &pk, &WEBCFG_MAP_TEMP_NAME, temp_data->name );
+
+	        struct webcfg_token WEBCFG_MAP_TEMP_VERSION;
+
+                WEBCFG_MAP_TEMP_VERSION.name = "version";
+                WEBCFG_MAP_TEMP_VERSION.length = strlen( "version" );
+	        __msgpack_pack_string( &pk, WEBCFG_MAP_TEMP_VERSION.name, WEBCFG_MAP_TEMP_VERSION.length);
+                printf("The tmp version is %ld\n",(long)temp_data->version);
+		msgpack_pack_uint64(&pk,(uint32_t) temp_data->version);
+
+                struct webcfg_token WEBCFG_MAP_TEMP_STATUS;
+
+                WEBCFG_MAP_TEMP_STATUS.name = "status";
+                WEBCFG_MAP_TEMP_STATUS.length = strlen( "status" );
+                printf("The tmp name is %s\n",temp_data->status);
+                __msgpack_pack_string_nvp( &pk, &WEBCFG_MAP_TEMP_STATUS, temp_data->status );
+
+                temp_data = temp_data->next;
+
+	    }
+       }
+    } else {
+        printf("parameters is NULL\n" );
+        return rv;
+    }
+
+    if( sbuf.data ) {
+        *data = ( char * ) malloc( sizeof( char ) * sbuf.size );
+
+        if( NULL != *data ) {
+            memcpy( *data, sbuf.data, sbuf.size );
+	    //printf("sbuf.data is %s sbuf.size %ld\n", sbuf.data, sbuf.size);
+            rv = sbuf.size;
+        }
+    }
+
+    msgpack_sbuffer_destroy( &sbuf );
+    return rv;
+}
+
+ssize_t webcfgdb_pack( webconfig_db_data_t *packData, void **data, size_t count )
 {
     size_t rv = -1;
     msgpack_sbuffer sbuf;
@@ -160,17 +289,17 @@ ssize_t webcfgdb_pack( const webconfig_db_t *packData, void **data )
     msgpack_sbuffer_init( &sbuf );
     msgpack_packer_init( &pk, &sbuf, msgpack_sbuffer_write );
 
-    if( packData != NULL && packData->entries_count != 0 ) {
-	int count = packData->entries_count;
+    if( packData != NULL ) {
+
 	msgpack_pack_map( &pk, 1);
 
         __msgpack_pack_string( &pk, WEBCFG_DB_PARAMETERS.name, WEBCFG_DB_PARAMETERS.length );
 	msgpack_pack_array( &pk, count );
         
-	printf("The pack count is %d\n",count);
+	printf("The pack count is %zu\n",count);
     
-        webconfig_db_data_t *temp = packData->entries;
-        
+    webconfig_db_data_t *temp = packData;
+
 	while(temp != NULL) //1 element
 	{   
             msgpack_pack_map( &pk, 2); //name, version
