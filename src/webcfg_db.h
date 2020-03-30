@@ -96,6 +96,8 @@ int updateTmpList(char *docname, uint32_t version, char *status);
 
 int deleteFromTmpList(char* doc_name);
 
+void delete_tmp_doc_list();
+
 int get_numOfMpDocs();
 
 void b64_encoder(const void *buf,size_t len, char ** decodeMsg);
