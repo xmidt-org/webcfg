@@ -50,28 +50,12 @@ char* get_global_deviceMAC();
 void initWebConfigMultipartTask(unsigned long status);
 void sendNotification(char *payload, char *source, char *destination);
 
+int Get_Webconfig_Blob( char *pString);
 int Get_Webconfig_URL( char **pString);
 int Set_Webconfig_URL( char *pString);
 
-/*For Blob Test purpose*/
-typedef struct{
-        char * name;
-        uint32_t version;
-        char * status;        
-}blob_data_t;
-
-typedef struct{
-        blob_data_t *entries;
-        size_t entries_count;
-}blob_struct_t;
-
 int readBlobFromFile(char * blob_file_path);
-void webcfgdbblob_destroy( blob_struct_t *bd );
-const char* webcfgdbblob_strerror( int errnum );
-int process_webcfgdbblob( blob_struct_t *bd, msgpack_object *obj );
-int process_webcfgdbblobparams( blob_data_t *e, msgpack_object_map *map );
-blob_struct_t* decodeBlobData(const void * buf, size_t len);
-
+int writeBlobToFile(char *blob_file_path, char *data);
 /**
  * @brief setValues interface sets the parameter value.
  *
