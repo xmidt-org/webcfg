@@ -36,7 +36,7 @@
 /*                             External Functions                             */
 /*----------------------------------------------------------------------------*/
 extern bool g_shutdown;
-void processWebconfgSync();
+void processWebconfgSync(int Status);
 int webcfg_http_request(char **configData, int r_count, int status, long *code, char **transaction_id,char** contentType, size_t* dataSize);
 /**
 * @brief webcfgStrncpy String copy function that copies the content of source string into destination string and null terminates the destination string

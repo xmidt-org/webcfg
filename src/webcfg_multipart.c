@@ -106,7 +106,7 @@ int webcfg_http_request(char **configData, int r_count, int status, long *code, 
 	void * dataVal = NULL;
 	char syncURL[256]={'\0'};
 
-	WebConfigLog("Inside webcfg_http_request.\n");
+	WebConfigLog("Inside webcfg_http_request. status %d\n", status);
 	curl = curl_easy_init();
 	if(curl)
 	{

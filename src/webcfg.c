@@ -49,18 +49,18 @@ bool g_shutdown  = false;
 /*----------------------------------------------------------------------------*/
 /*                             Function Prototypes                            */
 /*----------------------------------------------------------------------------*/
-void *WebConfigMultipartTask();
+void *WebConfigMultipartTask(void *status);
 int handlehttpResponse(long response_code, char *webConfigData, int retry_count, char* transaction_uuid, char* ct, size_t dataSize);
 /*----------------------------------------------------------------------------*/
 /*                             External Functions                             */
 /*----------------------------------------------------------------------------*/
 
-void initWebConfigMultipartTask()
+void initWebConfigMultipartTask(unsigned long status)
 {
 	int err = 0;
 	pthread_t threadId;
 
-	err = pthread_create(&threadId, NULL, WebConfigMultipartTask, NULL);
+	err = pthread_create(&threadId, NULL, WebConfigMultipartTask, (void *) status);
 	if (err != 0) 
 	{
 		WebConfigLog("Error creating WebConfigMultipartTask thread :[%s]\n", strerror(err));
@@ -71,7 +71,7 @@ void initWebConfigMultipartTask()
 	}
 }
 
-void *WebConfigMultipartTask()
+void *WebConfigMultipartTask(void *status)
 {
 	pthread_detach(pthread_self());
 	int ret = 0;
@@ -81,8 +81,10 @@ void *WebConfigMultipartTask()
         time_t t;
 	int wait_flag=0;
 	int forced_sync=0;
-        int value=0;
+        int value=0, Status = 0;
 	value =Get_PeriodicSyncCheckInterval();
+	Status = (unsigned long)status;
+	WebConfigLog("Status is %d\n", Status);
 
 	//start webconfig notification thread.
 	initWebConfigNotifyTask();
@@ -94,7 +96,7 @@ void *WebConfigMultipartTask()
 		if(forced_sync)
 		{
 			WebConfigLog("Triggered Forced sync\n");
-			processWebconfgSync();
+			processWebconfgSync((int)Status);
 			WebConfigLog("reset forced_sync after sync\n");
 			forced_sync = 0;
 			WebConfigLog("reset ForceSyncCheck after sync\n");
@@ -103,7 +105,7 @@ void *WebConfigMultipartTask()
 		else if(!wait_flag)
 		{
 			WebConfigLog("B4 processWebconfgSync\n");
-			processWebconfgSync();
+			processWebconfgSync((int)Status);
 		}
 
 		pthread_mutex_lock (&periodicsync_mutex);
@@ -202,7 +204,7 @@ void *WebConfigMultipartTask()
 /*----------------------------------------------------------------------------*/
 /*                             Internal functions                             */
 /*----------------------------------------------------------------------------*/
-void processWebconfgSync()
+void processWebconfgSync(int status)
 {
 	int retry_count=0;
 	int r_count=0;
@@ -210,7 +212,6 @@ void processWebconfgSync()
 	char *webConfigData = NULL;
 	long res_code;
 	int rv=0;
-	int status=0;
 	char *transaction_uuid =NULL;
 	char *ct=NULL;
 	size_t dataSize=0;
@@ -224,6 +225,7 @@ void processWebconfgSync()
 			retry_count=0;
 			break;
 		}
+		WebConfigLog("processWebconfgSync. status is %d\n", status );
 		configRet = webcfg_http_request(&webConfigData, r_count, status, &res_code, &transaction_uuid, &ct, &dataSize);
 		WebConfigLog("webcfg_http_request ct is %s\n", ct );
 		if(configRet == 0)
@@ -263,25 +265,25 @@ int handlehttpResponse(long response_code, char *webConfigData, int retry_count,
 	int index =0 ;//TODO: Notification data has to be modified for each sub doc.
 
         //get common items for all status codes and send notification.
-        //getRet = _getConfigURL(index, &configURL); //remove the index and add the sub doc names
+        //getRet = getConfigURL(index, &configURL); //TODO: remove the index and add the sub doc names
 	if(getRet)
 	{
 		WebcfgDebug("configURL for index %d is %s\n", index, configURL);
 	}
 
-	//getRet = _getConfigVersion(index, &configVersion);
+	//getRet = getConfigVersion(index, &configVersion);
 	if(getRet)
 	{
 		WebConfigLog("configVersion for index %d is %s\n", index, configVersion);
 	}
 
-        //ret = _setRequestTimeStamp(index);
+        //ret = setRequestTimeStamp(index);
 	if(ret == 0)
 	{
 		WebcfgDebug("RequestTimeStamp set successfully for index %d\n", index);
 	}
 
-        //getRet = _getRequestTimeStamp(index, &RequestTimeStamp);
+        //getRet = getRequestTimeStamp(index, &RequestTimeStamp);
 	if(getRet)
 	{
 		WebcfgDebug("RequestTimeStamp for index %d is %s\n", index, RequestTimeStamp);
@@ -290,7 +292,7 @@ int handlehttpResponse(long response_code, char *webConfigData, int retry_count,
 	if(response_code == 304)
 	{
 		WebConfigLog("webConfig is in sync with cloud. response_code:%ld\n", response_code);
-		//_setSyncCheckOK(index, true);
+		//setSyncCheckOK(index, true);
 		addWebConfigNotifyMsg(configURL, response_code, NULL, 0, RequestTimeStamp , configVersion, transaction_uuid);
 		return 1;
 	}
@@ -314,7 +316,7 @@ int handlehttpResponse(long response_code, char *webConfigData, int retry_count,
 				}
 
 				WebcfgDebug("set version and syncCheckOK for success\n");
-				//ret = _setConfigVersion(index, newDocVersion);//get new version from msgpack doc
+				//ret = setConfigVersion(index, newDocVersion);//get new version from msgpack doc
 				if(ret == 0)
 				{
 					WebcfgDebug("Config Version %s set successfully for index %d\n", newDocVersion, index);
@@ -324,7 +326,7 @@ int handlehttpResponse(long response_code, char *webConfigData, int retry_count,
 					WebConfigLog("Failed to set Config version %s for index %d\n", newDocVersion, index);
 				}
 
-				//ret = _setSyncCheckOK(index, true );
+				//ret = setSyncCheckOK(index, true );
 				if(ret == 0)
 				{
 					WebcfgDebug("SyncCheckOK set successfully for index %d\n", index);
@@ -340,7 +342,7 @@ int handlehttpResponse(long response_code, char *webConfigData, int retry_count,
 			else
 			{
 				WebConfigLog("Failure in parseMultipartDocument\n");
-				//ret = _setSyncCheckOK(index, false);
+				//ret = setSyncCheckOK(index, false);
 				if(ret == 0)
 				{
 					WebcfgDebug("SyncCheckOK set to false for index %d\n", index);

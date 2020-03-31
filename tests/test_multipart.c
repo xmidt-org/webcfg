@@ -130,23 +130,14 @@ int Set_Webconfig_URL( char *pString)
 
 void test_multipart()
 {
-	int configRet = 0;
-	char *doc = NULL;
+	unsigned long status = 0;
 
 	if(url == NULL)
 	{
 		printf("\nProvide config URL as argument\n");
 		return;
 	}
-	processWebconfgSync(doc);
-	if(configRet == 0)
-	{
-		printf("config ret success\n");
-	}	
-	else
-	{
-		printf("webcfg_http_request failed\n");
-	}
+	processWebconfgSync(status);
 }
 
 void add_suites( CU_pSuite *suite )

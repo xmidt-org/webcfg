@@ -47,7 +47,7 @@ char * getFirmwareVersion();
 void getDeviceMac();
 char* get_global_deviceMAC();
 
-void initWebConfigMultipartTask();
+void initWebConfigMultipartTask(unsigned long status);
 void sendNotification(char *payload, char *source, char *destination);
 
 int Get_Webconfig_URL( char **pString);
