@@ -18,8 +18,8 @@
 #include <errno.h>
 #include <stdio.h>
 #include <CUnit/Basic.h>
-#include "../src/webcfgparam.h"
-#include "../src/webcfgpack.h"
+#include "../src/webcfg_param.h"
+#include "../src/webcfg_pack.h"
 
 void webcfgPackUnpack();
 /*

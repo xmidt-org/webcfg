@@ -18,13 +18,13 @@
 #include <stdlib.h>
 #include <msgpack.h>
 
-#include "helpers.h"
-#include "multipart.h"
-#include "webcfgparam.h"
+#include "webcfg_helpers.h"
+#include "webcfg_multipart.h"
+#include "webcfg_param.h"
 #include "webcfg_log.h"
 #include "webcfg_db.h"
 #include "webcfg_generic.h"
-#include "webcfgpack.h"
+#include "webcfg_pack.h"
 
 /*----------------------------------------------------------------------------*/
 /*                                   Macros                                   */
@@ -89,7 +89,6 @@ int initDB(char * db_file_path )
      data = (char *) malloc(sizeof(char) * (ch_count + 1));
      fread(data, 1, ch_count,fp);
      len = ch_count;
-    // (data)[ch_count] ='\0';
      fclose(fp);
 
      wd = ( webconfig_db_t * ) malloc( sizeof( webconfig_db_t ) );
@@ -154,7 +153,7 @@ int generateBlob()
     webcfgdb_blob->len  = webcfgdbBlobPackSize;
 
     WebConfigLog("The webcfgdbBlobPackSize is : %ld\n",webcfgdb_blob->len);
-    WebConfigLog("The value of blob is %s\n",webcfgdb_blob->data);
+    //WebConfigLog("The value of blob is %s\n",webcfgdb_blob->data);
     return 1;
 }
 
@@ -202,7 +201,6 @@ int readBlobFromFile(char * blob_file_path)
      data = (char *) malloc(sizeof(char) * (ch_count + 1));
      fread(data, 1, ch_count,fp);
      len = ch_count;
-    // (data)[ch_count] ='\0';
      fclose(fp);
 
      blob_struct_t *bd = NULL;
@@ -384,9 +382,8 @@ int addToTmpList( multipart_t *mp)
 	WebConfigLog("reset numOfMpDocs to %d\n", numOfMpDocs);
 	WebConfigLog("get_global_root is %lu\n", (long)get_global_root());
 
-	WebConfigLog("Delete existing docs from tmp queue if any\n");
 	delete_tmp_doc_list();
-	WebConfigLog("delete_tmp_doc_list done, proceed to addToTmpList\n");
+	WebConfigLog("Deleted existing tmp list, proceed to addToTmpList\n");
 
 	for(m = 0 ; m<((int)mp->entries_count); m++)
 	{
@@ -420,7 +417,6 @@ int addToTmpList( multipart_t *mp)
 
 			if (g_head == NULL)
 			{
-				WebConfigLog("Adding first doc to list\n");
 				g_head = new_node;
 			}
 			else
@@ -428,13 +424,10 @@ int addToTmpList( multipart_t *mp)
 				webconfig_tmp_data_t *temp = NULL;
 				WebConfigLog("Adding docs to list\n");
 				temp = g_head;
-				WebConfigLog("B4 temp->next\n");
 				while(temp->next !=NULL)
 				{
-					WebConfigLog("Inside temp->next while\n");
 					temp=temp->next;
 				}
-				WebConfigLog("After temp->next\n");
 				temp->next=new_node;
 			}
 
@@ -650,7 +643,6 @@ void addToDBList(webconfig_db_data_t *webcfgdb)
       if(webcfgdb_data == NULL)
       {
           webcfgdb_data = webcfgdb;
-          //WebConfigLog("Producer webcfgdb_data->name is %s\n",webcfgdb_data->name);
           WebConfigLog("Producer added webcfgdb\n");
           webcfgdb = NULL;
       }
@@ -658,18 +650,13 @@ void addToDBList(webconfig_db_data_t *webcfgdb)
       {
           webconfig_db_data_t *temp = NULL;
           temp = webcfgdb_data;
-         // WebConfigLog("Loop before webcfgdb_data->name is %s\n",webcfgdb_data->name);
-          //WebConfigLog("Loop before temp->name is %s\n",temp->name);
           while(temp->next)
           {   
-            //  WebConfigLog("Loop inside temp->name is %s\n",temp->name);
               temp = temp->next;
               success_doc_count++;
              
           }
-          //WebConfigLog("before temp->name is %s\n",temp->name);
           temp->next = webcfgdb;
-          //WebConfigLog("after temp->name is %s\n",temp->name); 
          
       }
 }
@@ -699,7 +686,6 @@ void b64_encoder(const void *buf,size_t len, char ** decodeMsg)
 	b64buffer[encodeSize] = '\0' ;
 	WebConfigLog("---------- End of Base64 Encode -------------\n");
 
-	//WebConfigLog("Final Encoded data: %s\n",b64buffer);
 	WebConfigLog("Final Encoded data length: %ld\n",strlen(b64buffer));
 	/*********** base64 encode *****************/
 
@@ -711,7 +697,7 @@ void b64_encoder(const void *buf,size_t len, char ** decodeMsg)
 	*decodeMsg = (char *) malloc(sizeof(char) * decodeMsgSize);
 
 	size = b64_decode( (const uint8_t *)b64buffer, strlen(b64buffer), (uint8_t *)*decodeMsg );
-	WebConfigLog("base64 decoded data containing %ld bytes is :%s\n",size, *decodeMsg);
+	WebConfigLog("base64 decoded data containing %ld bytes\n",size);
         
         writeBlobToFile(WEBCFG_BLOB_PATH, *decodeMsg);
 	WebConfigLog("----End of b64 decoding----\n");

@@ -27,7 +27,7 @@ link_directories ( ${LIBRARY_DIR} )
 #   test_webcfgparam
 #-------------------------------------------------------------------------------
 add_test(NAME test_webcfgparam COMMAND ${MEMORY_CHECK} ./test_webcfgparam)
-add_executable(test_webcfgparam test_webcfgparam.c ../src/webcfgparam.c ../src/helpers.c)
+add_executable(test_webcfgparam test_webcfgparam.c ../src/webcfg_param.c ../src/webcfg_helpers.c)
 target_link_libraries (test_webcfgparam -lcunit -lmsgpackc -lcimplog)
 
 target_link_libraries (test_webcfgparam gcov -Wl,--no-as-needed )
@@ -36,7 +36,7 @@ target_link_libraries (test_webcfgparam gcov -Wl,--no-as-needed )
 #   test_webcfgpack
 #-------------------------------------------------------------------------------
 add_test(NAME test_webcfgpack COMMAND ${MEMORY_CHECK} ./test_webcfgpack)
-add_executable(test_webcfgpack test_webcfgpack.c ../src/webcfgparam.c ../src/webcfgpack.c ../src/helpers.c)
+add_executable(test_webcfgpack test_webcfgpack.c ../src/webcfg_param.c ../src/webcfg_pack.c ../src/webcfg_helpers.c)
 target_link_libraries (test_webcfgpack -lcunit -lmsgpackc -lcimplog)
 
 target_link_libraries (test_webcfgpack gcov -Wl,--no-as-needed )
@@ -45,7 +45,7 @@ target_link_libraries (test_webcfgpack gcov -Wl,--no-as-needed )
 #   test_multipart
 #-------------------------------------------------------------------------------
 add_test(NAME test_multipart COMMAND ${MEMORY_CHECK} ./test_multipart)
-add_executable(test_multipart test_multipart.c ../src/webcfgparam.c ../src/multipart.c ../src/helpers.c ../src/webcfg.c ../src/webcfg_auth.c ../src/webcfg_notify.c ../src/webcfg_db.c ../src/webcfgpack.c)
+add_executable(test_multipart test_multipart.c ../src/webcfg_param.c ../src/webcfg_multipart.c ../src/webcfg_helpers.c ../src/webcfg.c ../src/webcfg_auth.c ../src/webcfg_notify.c ../src/webcfg_db.c ../src/webcfg_pack.c)
 target_link_libraries (test_multipart -lcunit -lmsgpackc -lcurl -lpthread  -lm -luuid -ltrower-base64 -lwdmp-c -lcimplog -lcjson)
 
 target_link_libraries (test_multipart gcov -Wl,--no-as-needed )

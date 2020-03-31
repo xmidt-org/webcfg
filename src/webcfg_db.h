@@ -19,11 +19,11 @@
 #include <stdint.h>
 #include <string.h>
 #include <stdbool.h>
-#include "multipart.h"
+#include "webcfg_multipart.h"
 /*----------------------------------------------------------------------------*/
 /*                                   Macros                                   */
 /*----------------------------------------------------------------------------*/
-#define WEBCFG_DB_FILE 	    "/nvram/webconfig_db.bin" //TODO:command line argument to pass /nvram/webconfig_db.bin
+#define WEBCFG_DB_FILE 	    "/nvram/webconfig_db.bin"
 /*----------------------------------------------------------------------------*/
 /*                               Data Structures                              */
 /*----------------------------------------------------------------------------*/

@@ -24,7 +24,7 @@
 #ifdef BUILD_YOCTO
 #define DEVICE_PROPS_FILE       "/etc/device.properties"
 #else
-#define DEVICE_PROPS_FILE       "/tmp/webcfg_url" //TODO: command line argument for URL
+#define DEVICE_PROPS_FILE       "/tmp/device.properties"
 #endif
 
 typedef struct

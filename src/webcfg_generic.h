@@ -34,13 +34,6 @@
 /*----------------------------------------------------------------------------*/
 /* return logger file name */
 const char *fetch_generic_file(void);
-void _get_webCfg_interface(char **interface);
-int _getConfigVersion(int index, char **version);
-bool _getConfigURL(int index, char **url);
-bool _getRequestTimeStamp(int index,char **RequestTimeStamp);
-int _setRequestTimeStamp(int index);
-int _setSyncCheckOK(int index, bool status);
-int _setConfigVersion(int index, char *version);
 int setForceSync(char* pString, char *transactionId,int *session_status);
 int getForceSync(char** pString, char **transactionId);
 
@@ -79,14 +72,13 @@ int process_webcfgdbblob( blob_struct_t *bd, msgpack_object *obj );
 int process_webcfgdbblobparams( blob_data_t *e, msgpack_object_map *map );
 blob_struct_t* decodeBlobData(const void * buf, size_t len);
 
-
-
 /**
  * @brief setValues interface sets the parameter value.
  *
  * @param[in] paramVal List of Parameter name/value pairs.
  * @param[in] paramCount Number of parameters.
- * @param[in] setType Flag to specify the type of set operation.
+ * @param[in] setType enum to specify the type of set operation. 
+ * WEBPA_SET = 0 for set values, 1 for atomic set, 2 for XPC atomic set.
  * @param[out] timeSpan timing_values for each component. 
  * @param[out] retStatus Returns status
  * @param[out] ccspStatus Returns ccsp set status

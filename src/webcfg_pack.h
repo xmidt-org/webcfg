@@ -44,14 +44,6 @@ typedef struct data_struct {
 /*                             External Functions                             */
 /*----------------------------------------------------------------------------*/
 
-/**
- *  Packs webconfig root config doc.
- *
- *  @param 
- *
- *  @return 0 if the operation was a success, error otherwise
- */
-//ssize_t webcfg_pack_rootdoc( char *blob, const data_t *packData, void **data );
 ssize_t webcfg_pack_rootdoc(  const data_t *packData, void **data );
 ssize_t webcfgdb_blob_pack(webconfig_db_data_t *webcfgdb_data, webconfig_tmp_data_t * g_head, void **data);
 ssize_t webcfgdb_pack( webconfig_db_data_t *packData, void **data, size_t count );

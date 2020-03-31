@@ -21,10 +21,10 @@
 #include <math.h>
 #include <string.h>
 #include "webcfg.h"
-#include "multipart.h"
+#include "webcfg_multipart.h"
 #include "webcfg_notify.h"
 #include "webcfg_generic.h"
-#include "webcfgparam.h"
+#include "webcfg_param.h"
 #include "webcfg_auth.h"
 #include <msgpack.h>
 #include <wdmp-c.h>
@@ -50,7 +50,7 @@ bool g_shutdown  = false;
 /*                             Function Prototypes                            */
 /*----------------------------------------------------------------------------*/
 void *WebConfigMultipartTask();
-int handlehttpResponse(long response_code, char *webConfigData, int retry_count, char* doc, char* transaction_uuid, char* ct, size_t dataSize);
+int handlehttpResponse(long response_code, char *webConfigData, int retry_count, char* transaction_uuid, char* ct, size_t dataSize);
 /*----------------------------------------------------------------------------*/
 /*                             External Functions                             */
 /*----------------------------------------------------------------------------*/
@@ -81,35 +81,29 @@ void *WebConfigMultipartTask()
         time_t t;
 	int wait_flag=0;
 	int forced_sync=0;
-	char *syncDoc = NULL;
         int value=0;
-	WebConfigLog("Inside WebConfigMultipartTask.\n");
 	value =Get_PeriodicSyncCheckInterval();
 
 	//start webconfig notification thread.
 	initWebConfigNotifyTask();
-	WebConfigLog("B4 initDB %s\n", WEBCFG_DB_FILE);
+	WebConfigLog("initDB %s\n", WEBCFG_DB_FILE);
 
 	initDB(WEBCFG_DB_FILE);
-	WebConfigLog("After initDB\n");
 	while(1)
 	{
 		if(forced_sync)
 		{
-			//trigger sync only for particular doc
-			WebConfigLog("Trigger Forced sync for doc %s\n", syncDoc);
-			processWebconfgSync(syncDoc);
-			WebConfigLog("reset forced_sync and syncDoc after sync\n");
+			WebConfigLog("Triggered Forced sync\n");
+			processWebconfgSync();
+			WebConfigLog("reset forced_sync after sync\n");
 			forced_sync = 0;
-			WEBCFG_FREE(syncDoc);
-			syncDoc = NULL;
 			WebConfigLog("reset ForceSyncCheck after sync\n");
 			setForceSync("", "", 0);
 		}
 		else if(!wait_flag)
 		{
 			WebConfigLog("B4 processWebconfgSync\n");
-			processWebconfgSync(syncDoc);
+			processWebconfgSync();
 		}
 
 		pthread_mutex_lock (&periodicsync_mutex);
@@ -144,18 +138,15 @@ void *WebConfigMultipartTask()
 			char *ForceSyncDoc = NULL;
 			char* ForceSyncTransID = NULL;
 
-			// Identify comma separated doc name which needs ForceSync
+			// Identify ForceSync based on docname
 			getForceSync(&ForceSyncDoc, &ForceSyncTransID);
 			WebConfigLog("ForceSyncDoc %s ForceSyncTransID. %s\n", ForceSyncDoc, ForceSyncTransID);
 			if(ForceSyncTransID !=NULL)
 			{
 				if((ForceSyncDoc != NULL) && strlen(ForceSyncDoc)>0)
 				{
-					//if(ForceSyncEnable)
 					wait_flag=0;
 					forced_sync = 1;
-					//syncIndex = index;
-					syncDoc = strdup(ForceSyncDoc);
 					WebConfigLog("Received signal interrupt to getForceSync at %s\n",ctime(&t));
 					WEBCFG_FREE(ForceSyncDoc);
 					WEBCFG_FREE(ForceSyncTransID);
@@ -211,7 +202,7 @@ void *WebConfigMultipartTask()
 /*----------------------------------------------------------------------------*/
 /*                             Internal functions                             */
 /*----------------------------------------------------------------------------*/
-void processWebconfgSync(char* doc)
+void processWebconfgSync()
 {
 	int retry_count=0;
 	int r_count=0;
@@ -223,13 +214,7 @@ void processWebconfgSync(char* doc)
 	char *transaction_uuid =NULL;
 	char *ct=NULL;
 	size_t dataSize=0;
-	//initDB(WEBCFG_DB_FILE); //Remove this. Testing purpose.
-	/*size_t j;
-        for(j = 0;j< wd->entries_count ; j++)
-        {
-            WebConfigLog("---wd->entries[%lu].name %s\n", j, wd->entries[j].name);
-	    WebConfigLog("---wd->entries[%lu].version %lu\n" ,j,  (long)wd->entries[j].version);  
-        }*/
+
 	WebConfigLog("========= Start of processWebconfgSync =============\n");
 	while(1)
 	{
@@ -239,12 +224,12 @@ void processWebconfgSync(char* doc)
 			retry_count=0;
 			break;
 		}
-		configRet = webcfg_http_request(&webConfigData, r_count, doc, status, &res_code, &transaction_uuid, &ct, &dataSize);
-		printf("After webcfg_http_request ct is %s\n", ct );
+		configRet = webcfg_http_request(&webConfigData, r_count, status, &res_code, &transaction_uuid, &ct, &dataSize);
+		WebConfigLog("webcfg_http_request ct is %s\n", ct );
 		if(configRet == 0)
 		{
-			WebConfigLog("B4 handlehttpResponse\n");
-			rv = handlehttpResponse(res_code, webConfigData, retry_count, doc, transaction_uuid, ct, dataSize);
+			WebConfigLog("handlehttpResponse\n");
+			rv = handlehttpResponse(res_code, webConfigData, retry_count, transaction_uuid, ct, dataSize);
 			if(rv ==1)
 			{
 				WebConfigLog("No retries are required. Exiting..\n");
@@ -264,7 +249,7 @@ void processWebconfgSync(char* doc)
 	return;
 }
 
-int handlehttpResponse(long response_code, char *webConfigData, int retry_count, char* doc, char* transaction_uuid, char *ct, size_t dataSize)
+int handlehttpResponse(long response_code, char *webConfigData, int retry_count, char* transaction_uuid, char *ct, size_t dataSize)
 {
 	int first_digit=0;
 	int msgpack_status=0;
@@ -275,7 +260,7 @@ int handlehttpResponse(long response_code, char *webConfigData, int retry_count,
 	char *RequestTimeStamp=NULL;
 	char *newDocVersion = NULL;
 	int err = 0;
-	int index =0 ;//remove this.
+	int index =0 ;//TODO: Notification data has to be modified for each sub doc.
 
         //get common items for all status codes and send notification.
         //getRet = _getConfigURL(index, &configURL); //remove the index and add the sub doc names
@@ -283,19 +268,11 @@ int handlehttpResponse(long response_code, char *webConfigData, int retry_count,
 	{
 		WebcfgDebug("configURL for index %d is %s\n", index, configURL);
 	}
-	else
-	{
-		WebConfigLog("getConfigURL failed for index %d\n", index);
-	}
-	WebConfigLog("doc is %s\n", doc);
+
 	//getRet = _getConfigVersion(index, &configVersion);
 	if(getRet)
 	{
 		WebConfigLog("configVersion for index %d is %s\n", index, configVersion);
-	}
-	else
-	{
-		WebConfigLog("getConfigVersion failed for index %d\n", index);
 	}
 
         //ret = _setRequestTimeStamp(index);
@@ -303,19 +280,11 @@ int handlehttpResponse(long response_code, char *webConfigData, int retry_count,
 	{
 		WebcfgDebug("RequestTimeStamp set successfully for index %d\n", index);
 	}
-	else
-	{
-		WebConfigLog("Failed to set RequestTimeStamp for index %d\n", index);
-	}
 
         //getRet = _getRequestTimeStamp(index, &RequestTimeStamp);
 	if(getRet)
 	{
 		WebcfgDebug("RequestTimeStamp for index %d is %s\n", index, RequestTimeStamp);
-	}
-	else
-	{
-		WebConfigLog("RequestTimeStamp get failed for index %d\n", index);
 	}
 
 	if(response_code == 304)
@@ -335,7 +304,6 @@ int handlehttpResponse(long response_code, char *webConfigData, int retry_count,
 			WebConfigLog("parseMultipartDocument\n");
 			msgpack_status = parseMultipartDocument(webConfigData, ct, dataSize);
 			WebConfigLog("setRet after process msgPack is %d\n", setRet);
-			WebcfgDebug("newDocVersion is %s\n", newDocVersion);
 
 			if(msgpack_status == 1)
 			{
@@ -458,6 +426,7 @@ long timeVal_Diff(struct timespec *starttime, struct timespec *finishtime)
 	return msec;
 }
 
+//TODO: periodic Sync has to be removed as it not required as per new design.
 int Get_PeriodicSyncCheckInterval()
 {
 	return 0;

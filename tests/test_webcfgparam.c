@@ -18,7 +18,7 @@
 #include <errno.h>
 #include <stdio.h>
 #include <CUnit/Basic.h>
-#include "../src/webcfgparam.h"
+#include "../src/webcfg_param.h"
 
 #define WEB_CFG_FILE "../../tests/webcfg-now100.bin"
 int readFromFile(char **data, int *len)

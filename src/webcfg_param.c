@@ -17,8 +17,8 @@
 #include <string.h>
 #include <msgpack.h>
 
-#include "helpers.h"
-#include "webcfgparam.h"
+#include "webcfg_helpers.h"
+#include "webcfg_param.h"
 #include "webcfg_log.h"
 /*----------------------------------------------------------------------------*/
 /*                                   Macros                                   */
@@ -158,9 +158,6 @@ int process_params( wparam_t *e, msgpack_object_map *map )
 		    e->value = (char*)p->val.via.str.ptr;
 		    e->value_size =(uint32_t) p->val.via.str.size;
 		    }
-			//WebConfigLog("uint32_t size %d\n", (uint32_t)p->val.via.str.size);
-		   // WebConfigLog("e->value_size int is %d\n", e->value_size);
-		    //WebConfigLog("e->value is %s\n", e->value);
                     objects_left &= ~(1 << 2);
 		    //printf("objects_left after value %d\n", objects_left);
                 }

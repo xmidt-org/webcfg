@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "multipart.h"
+#include "webcfg_multipart.h"
 #include "webcfg_notify.h"
 #include "webcfg_generic.h"
 #include "webcfg.h"

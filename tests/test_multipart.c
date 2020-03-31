@@ -18,10 +18,10 @@
 #include <errno.h>
 #include <stdio.h>
 #include <CUnit/Basic.h>
-#include "../src/webcfgparam.h"
+#include "../src/webcfg_param.h"
 #include "../src/webcfg.h"
-#include "../src/multipart.h"
-#include "../src/helpers.h"
+#include "../src/webcfg_multipart.h"
+#include "../src/webcfg_helpers.h"
 #include "../src/webcfg_db.h"
 #include <msgpack.h>
 #include <curl/curl.h>
@@ -33,37 +33,6 @@
 
 char *url = NULL;
 char *interface = NULL;
-
-bool _getConfigURL(int index, char **url)
-{
-	UNUSED(index);
-	UNUSED(url);
-	return 0;
-}
-
-int _getConfigVersion(int index, char **version)
-{
-	UNUSED(index);
-	UNUSED(version);
-	return 0;
-}
-int _setRequestTimeStamp(int index)
-{
-	UNUSED(index);
-	return 0;
-}
-bool _getRequestTimeStamp(int index,char **RequestTimeStamp)
-{
-	UNUSED(index);
-	UNUSED(RequestTimeStamp);
-	return 0;
-}
-int _setSyncCheckOK(int index, bool status)
-{
-	UNUSED(index);
-	UNUSED(status);
-	return 0;
-}
 
 char* get_global_deviceMAC()
 {
@@ -80,13 +49,6 @@ void setValues(const param_t paramVal[], const unsigned int paramCount, const in
 	UNUSED(retStatus);
 	UNUSED(ccspStatus);
 	return;
-}
-
-int _setConfigVersion(int index, char *version)
-{
-	UNUSED(index);
-	UNUSED(version);
-	return 0;
 }
 
 int getForceSync(char** pString, char **transactionId)

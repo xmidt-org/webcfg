@@ -17,9 +17,9 @@
 #include <string.h>
 #include <msgpack.h>
 
-#include "helpers.h"
-#include "webcfgpack.h"
-
+#include "webcfg_helpers.h"
+#include "webcfg_pack.h"
+#include "webcfg_log.h"
 /*----------------------------------------------------------------------------*/
 /*                                   Macros                                   */
 /*----------------------------------------------------------------------------*/
@@ -76,7 +76,6 @@ static void __msgpack_pack_string_nvp( msgpack_packer *pk,
 
 
 
-//ssize_t webcfg_pack_rootdoc( char *blob, const data_t *packData, void **data )
 ssize_t webcfg_pack_rootdoc( const data_t *packData, void **data )
 {
     size_t rv = -1;
@@ -135,7 +134,7 @@ ssize_t webcfg_pack_rootdoc( const data_t *packData, void **data )
 
 
     } else {
-        printf("parameters is NULL\n" );
+        WebConfigLog("parameters is NULL\n" );
         return rv;
     }
 
@@ -169,16 +168,15 @@ ssize_t webcfgdb_blob_pack(webconfig_db_data_t *webcfgdb, webconfig_tmp_data_t *
 
     while(db_data != NULL)
     {
-        printf("The db name is %s\n",db_data->name);
+        //printf("The db name is %s\n",db_data->name);
         db_data = db_data->next;
-        printf("The pack count of DB_count calc is %d\n",db_count );
+        //printf("The pack count of DB_count calc is %d\n",db_count );
         db_count++;
     }
 
     while(temp_data != NULL)
     {
         temp_data = temp_data->next;
-        printf("The pack count of temp_count calc is %d\n",tmp_count);
         tmp_count++;
     }
 
@@ -195,9 +193,9 @@ ssize_t webcfgdb_blob_pack(webconfig_db_data_t *webcfgdb, webconfig_tmp_data_t *
         __msgpack_pack_string( &pk, WEBCFG_BLOB_PARAMETERS.name, WEBCFG_BLOB_PARAMETERS.length );
 	msgpack_pack_array( &pk, (db_count + tmp_count) );
 
-        printf("The pack count of DB_count is %d\n",db_count );
-        printf("The pack count of temp_count is %d\n",tmp_count);
-	printf("The pack count of blob is %d\n",(db_count + tmp_count));
+        WebConfigLog("The pack count of DB_count is %d\n",db_count );
+        WebConfigLog("The pack count of temp_count is %d\n",tmp_count);
+	WebConfigLog("The pack count of blob is %d\n",(db_count + tmp_count));
 
        if(db_data != NULL)
        {
@@ -216,7 +214,7 @@ ssize_t webcfgdb_blob_pack(webconfig_db_data_t *webcfgdb, webconfig_tmp_data_t *
                 WEBCFG_MAP_BLOB_VERSION.name = "version";
                 WEBCFG_MAP_BLOB_VERSION.length = strlen( "version" );
 	        __msgpack_pack_string( &pk, WEBCFG_MAP_BLOB_VERSION.name, WEBCFG_MAP_BLOB_VERSION.length);
-                printf("The db version is %ld\n",(long)db_data->version);
+                //printf("The db version is %ld\n",(long)db_data->version);
                 msgpack_pack_uint64(&pk,(uint32_t) db_data->version);
 
                 struct webcfg_token WEBCFG_MAP_BLOB_STATUS;
@@ -240,7 +238,7 @@ ssize_t webcfgdb_blob_pack(webconfig_db_data_t *webcfgdb, webconfig_tmp_data_t *
 
                 WEBCFG_MAP_TEMP_NAME.name = "name";
                 WEBCFG_MAP_TEMP_NAME.length = strlen( "name" );
-                printf("The tmp name is %s\n",temp_data->name);
+                WebConfigLog("The tmp name is %s\n",temp_data->name);
                 __msgpack_pack_string_nvp( &pk, &WEBCFG_MAP_TEMP_NAME, temp_data->name );
 
 	        struct webcfg_token WEBCFG_MAP_TEMP_VERSION;
@@ -248,14 +246,14 @@ ssize_t webcfgdb_blob_pack(webconfig_db_data_t *webcfgdb, webconfig_tmp_data_t *
                 WEBCFG_MAP_TEMP_VERSION.name = "version";
                 WEBCFG_MAP_TEMP_VERSION.length = strlen( "version" );
 	        __msgpack_pack_string( &pk, WEBCFG_MAP_TEMP_VERSION.name, WEBCFG_MAP_TEMP_VERSION.length);
-                printf("The tmp version is %ld\n",(long)temp_data->version);
+                WebConfigLog("The tmp version is %ld\n",(long)temp_data->version);
 		msgpack_pack_uint64(&pk,(uint32_t) temp_data->version);
 
                 struct webcfg_token WEBCFG_MAP_TEMP_STATUS;
 
                 WEBCFG_MAP_TEMP_STATUS.name = "status";
                 WEBCFG_MAP_TEMP_STATUS.length = strlen( "status" );
-                printf("The tmp name is %s\n",temp_data->status);
+                WebConfigLog("The tmp name is %s\n",temp_data->status);
                 __msgpack_pack_string_nvp( &pk, &WEBCFG_MAP_TEMP_STATUS, temp_data->status );
 
                 temp_data = temp_data->next;
@@ -263,7 +261,7 @@ ssize_t webcfgdb_blob_pack(webconfig_db_data_t *webcfgdb, webconfig_tmp_data_t *
 	    }
        }
     } else {
-        printf("parameters is NULL\n" );
+        WebConfigLog("parameters is NULL\n" );
         return rv;
     }
 
@@ -296,7 +294,7 @@ ssize_t webcfgdb_pack( webconfig_db_data_t *packData, void **data, size_t count 
         __msgpack_pack_string( &pk, WEBCFG_DB_PARAMETERS.name, WEBCFG_DB_PARAMETERS.length );
 	msgpack_pack_array( &pk, count );
         
-	printf("The pack count is %zu\n",count);
+	WebConfigLog("The pack count is %zu\n",count);
     
     webconfig_db_data_t *temp = packData;
 
@@ -315,7 +313,7 @@ ssize_t webcfgdb_pack( webconfig_db_data_t *packData, void **data, size_t count 
             WEBCFG_MAP_VERSION.name = "version";
             WEBCFG_MAP_VERSION.length = strlen( "version" );
 	    __msgpack_pack_string( &pk, WEBCFG_MAP_VERSION.name, WEBCFG_MAP_VERSION.length);
-            printf("The version is %ld\n",(long)temp->version);
+            //printf("The version is %ld\n",(long)temp->version);
             msgpack_pack_uint64(&pk,(uint32_t) temp->version);
             
             temp = temp->next;
@@ -323,7 +321,7 @@ ssize_t webcfgdb_pack( webconfig_db_data_t *packData, void **data, size_t count 
 	}
 
     } else {
-        printf("parameters is NULL\n" );
+        WebConfigLog("parameters is NULL\n" );
         return rv;
     }
 
