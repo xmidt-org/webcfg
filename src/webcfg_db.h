@@ -70,6 +70,23 @@ typedef struct blob{
  *
  *  @return 
  */
+/*For Blob Test purpose*/
+typedef struct{
+        char * name;
+        uint32_t version;
+        char * status;
+}blob_data_t;
+
+typedef struct{
+        blob_data_t *entries;
+        size_t entries_count;
+}blob_struct_t;
+
+
+void webcfgdbblob_destroy( blob_struct_t *bd );
+const char* webcfgdbblob_strerror( int errnum );
+blob_struct_t* decodeBlobData(const void * buf, size_t len);
+
 int initDB(char * db_file_path);
 
 int addNewDocEntry(size_t count);

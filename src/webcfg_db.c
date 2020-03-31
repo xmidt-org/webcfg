@@ -63,6 +63,9 @@ static int success_doc_count = 0;
 int process_webcfgdbparams( webconfig_db_data_t *e, msgpack_object_map *map );
 int process_webcfgdb( webconfig_db_t *pm, msgpack_object *obj );
 
+int process_webcfgdbblob( blob_struct_t *bd, msgpack_object *obj );
+int process_webcfgdbblobparams( blob_data_t *e, msgpack_object_map *map );
+
 /*----------------------------------------------------------------------------*/
 /*                             External Functions                             */
 /*----------------------------------------------------------------------------*/
@@ -699,7 +702,6 @@ void b64_encoder(const void *buf,size_t len, char ** decodeMsg)
 	size = b64_decode( (const uint8_t *)b64buffer, strlen(b64buffer), (uint8_t *)*decodeMsg );
 	WebConfigLog("base64 decoded data containing %ld bytes\n",size);
         
-        writeBlobToFile(WEBCFG_BLOB_PATH, *decodeMsg);
 	WebConfigLog("----End of b64 decoding----\n");
 
 	//End of b64 decoding
