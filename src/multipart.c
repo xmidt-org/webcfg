@@ -96,7 +96,7 @@ int webcfg_http_request(char **configData, int r_count, char* doc, int status, l
 	char *webConfigURL = NULL;
 	char *transID = NULL;
 	char *docnames = NULL;
-	char * configURL = NULL;
+	char configURL[256] = { 0 };
 	char c[] = "{mac}";
 
 	int content_res=0;
@@ -125,7 +125,6 @@ int webcfg_http_request(char **configData, int r_count, char* doc, int status, l
 		}
 		//loadInitURLFromFile(&webConfigURL);
 		WebConfigLog("B4 Get_Webconfig_URL\n");
-		configURL=malloc(256*sizeof(char));
 		Get_Webconfig_URL(configURL);
 		if(configURL !=NULL)
 		{
