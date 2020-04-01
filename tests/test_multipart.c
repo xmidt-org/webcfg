@@ -114,11 +114,12 @@ char *get_global_systemReadyTime()
 	return NULL;
 }
 
-int Get_Webconfig_URL( char **pString)
+int Get_Webconfig_URL( char *pString)
 {
 	char *webConfigURL =NULL;
 	loadInitURLFromFile(&webConfigURL);
-	*pString = webConfigURL;
+	pString = webConfigURL;
+        printf("The value of pString is %s\n",pString);
 	return 0;
 }
 
