@@ -36,12 +36,6 @@ typedef struct webconfig_tmp_data
         struct webconfig_tmp_data *next;
 } webconfig_tmp_data_t;
 
-typedef struct {
-	webconfig_tmp_data_t *entries;
-	size_t      entries_count;
-} webconfig_tmp_t; // For storing in memory processing docs "pending", "failed"
-// root is also one entry with latest root version recived apply in progress
-
 typedef struct webconfig_db_data{
 	char * name;
 	uint32_t version;
@@ -59,17 +53,7 @@ typedef struct blob{
 	char *data;
 	size_t len;
 } blob_t; // will be formed from the struct webconfig_tmp_t and returned in Device.X_RDK_WebConfig.Data as base64 encode
-/*----------------------------------------------------------------------------*/
-/*                             External Functions                             */
-/*----------------------------------------------------------------------------*/
 
-/**
- *  Initialize/Load data from DB file.
- *
- *  @param db_file_path full path name
- *
- *  @return 
- */
 /*For Blob Test purpose*/
 typedef struct{
         char * name;
@@ -82,6 +66,17 @@ typedef struct{
         size_t entries_count;
 }blob_struct_t;
 
+/*----------------------------------------------------------------------------*/
+/*                             External Functions                             */
+/*----------------------------------------------------------------------------*/
+
+/**
+ *  Initialize/Load data from DB file.
+ *
+ *  @param db_file_path full path name
+ *
+ *  @return 
+ */
 
 void webcfgdbblob_destroy( blob_struct_t *bd );
 const char* webcfgdbblob_strerror( int errnum );
@@ -131,7 +126,7 @@ int writeBlobToFile(char *blob_file_path, char *data);
  *
  *  @return NULL on error, success otherwise
  */
-webconfig_db_t* decodeData(const void * data, size_t len);
+webconfig_db_data_t* decodeData(const void * data, size_t len);
 
 /**
  *  This function destroys an webconfig_db_t object.

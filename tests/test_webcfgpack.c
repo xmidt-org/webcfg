@@ -130,7 +130,7 @@ void webcfgPackUnpack()
 	}
 	printf("webcfg_pack_rootdoc\n");
 	//rootPackSize = webcfg_pack_rootdoc( blob, packRootData, &data );
-        rootPackSize = webcfg_pack_rootdoc( packRootData, &data );
+       // rootPackSize = webcfg_pack_rootdoc( packRootData, &data );
 	printf("rootPackSize is %ld\n", rootPackSize);
 	printf("data packed is %s\n", (char*)data);
 

@@ -61,7 +61,7 @@ static int success_doc_count = 0;
 /*                             Function Prototypes                            */
 /*----------------------------------------------------------------------------*/
 int process_webcfgdbparams( webconfig_db_data_t *e, msgpack_object_map *map );
-int process_webcfgdb( webconfig_db_t *pm, msgpack_object *obj );
+int process_webcfgdb( webconfig_db_data_t *wd, msgpack_object *obj );
 
 int process_webcfgdbblob( blob_struct_t *bd, msgpack_object *obj );
 int process_webcfgdbblobparams( blob_data_t *e, msgpack_object_map *map );
@@ -76,7 +76,7 @@ int initDB(char * db_file_path )
      char *data;
      size_t len;
      int ch_count=0;
-     size_t k;
+     //size_t k;
      WebConfigLog("DB file path is %s\n", db_file_path);
      fp = fopen(db_file_path,"rb");
 
@@ -94,39 +94,7 @@ int initDB(char * db_file_path )
      len = ch_count;
      fclose(fp);
 
-     wd = ( webconfig_db_t * ) malloc( sizeof( webconfig_db_t ) );
-     wd = decodeData((void *)data, len);
-     WebConfigLog("Size of webcfgdb %ld\n", (size_t)wd);
-     if(wd != NULL)
-     {   
-         webcfgdb_data = NULL;
-         
-         for(k = 0;k< wd->entries_count ; k++)
-         {   
-             webconfig_db_data_t * webcfgdb = NULL;
-             webcfgdb = (webconfig_db_data_t *) malloc (sizeof(webconfig_db_data_t));
-            
-             webcfgdb->name = wd->entries[k].name;
-             webcfgdb->version = wd->entries[k].version;
-             webcfgdb->next = NULL;
-
-             addToDBList(webcfgdb);
-         }
-
-         /*For test purpose */
-          size_t j = wd->entries_count;
-          webconfig_db_data_t* temp1 = webcfgdb_data;
-          while(temp1 )
-          {   
-              WebConfigLog("db->entries[%lu].name %s\n", (wd->entries_count)-j, temp1->name);
-	      WebConfigLog("db->entries[%lu].version %lu\n" ,(wd->entries_count)-j,  (long)temp1->version); 
-              j--; 
-            
-              temp1 = temp1->next;
-          }
-        
-     }
-       webcfgdb_destroy(wd);
+     decodeData((void *)data, len);
      return 1;
      
 }
@@ -248,9 +216,9 @@ int writeBlobToFile(char *blob_file_path, char *data)
 	}
 }
 
-webconfig_db_t* decodeData(const void * buf, size_t len)
+webconfig_db_data_t* decodeData(const void * buf, size_t len)
 {
-     return helper_convert( buf, len, sizeof(webconfig_db_t),"webcfgdb",
+     return helper_convert( buf, len, sizeof(webconfig_db_data_t),"webcfgdb",
                            MSGPACK_OBJECT_ARRAY, true,
                            (process_fn_t) process_webcfgdb,
                            (destroy_fn_t) webcfgdb_destroy );
@@ -605,35 +573,37 @@ int process_webcfgdbparams( webconfig_db_data_t *e, msgpack_object_map *map )
     return (0 == objects_left) ? 0 : -1;
 }
 
-int process_webcfgdb( webconfig_db_t *wd, msgpack_object *obj )
+
+int process_webcfgdb( webconfig_db_data_t *wd, msgpack_object *obj )
 {
     //WebConfigLog(" process_webcfgdbparam \n");
     msgpack_object_array *array = &obj->via.array;
     if( 0 < array->size )
     {
         size_t i;
+        size_t entries_count = -1;
 
-        wd->entries_count = array->size;
-        wd->entries = (webconfig_db_data_t *) malloc( sizeof(webconfig_db_data_t) * wd->entries_count );
-        if( NULL == wd->entries )
+        entries_count = array->size;
+        webcfgdb_data = NULL;
+        WebConfigLog("entries_count %zu\n",entries_count);
+        for( i = 0; i < entries_count; i++ )
         {
-            wd->entries_count = 0;
-            return -1;
-        }
-        
-        //WebConfigLog("wd->entries_count %lu\n",wd->entries_count);
-        memset( wd->entries, 0, sizeof(webconfig_db_data_t) * wd->entries_count );
-        for( i = 0; i < wd->entries_count; i++ )
-        {
+            wd = (webconfig_db_data_t *) malloc (sizeof(webconfig_db_data_t));   
             if( MSGPACK_OBJECT_MAP != array->ptr[i].type )
             {
                 errno = WD_INVALID_WD_OBJECT;
                 return -1;
             }
-            if( 0 != process_webcfgdbparams(&wd->entries[i], &array->ptr[i].via.map) )
+            if( 0 != process_webcfgdbparams(wd, &array->ptr[i].via.map) )
             {
 		//WebConfigLog("process_webcfgdbparam failed\n");
                 return -1;
+            }
+            else
+            {
+                wd->next = NULL;
+                addToDBList(wd);
+               
             }
         }
     }
@@ -647,6 +617,7 @@ void addToDBList(webconfig_db_data_t *webcfgdb)
       {
           webcfgdb_data = webcfgdb;
           WebConfigLog("Producer added webcfgdb\n");
+          success_doc_count++;
           webcfgdb = NULL;
       }
       else
@@ -656,10 +627,9 @@ void addToDBList(webconfig_db_data_t *webcfgdb)
           while(temp->next)
           {   
               temp = temp->next;
-              success_doc_count++;
-             
           }
           temp->next = webcfgdb;
+          success_doc_count++;
          
       }
 }
