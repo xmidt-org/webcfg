@@ -36,19 +36,13 @@
 /*                             External Functions                             */
 /*----------------------------------------------------------------------------*/
 extern bool g_shutdown;
+void initWebConfigMultipartTask(unsigned long status);
 void processWebconfgSync(int Status);
 int webcfg_http_request(char **configData, int r_count, int status, long *code, char **transaction_id,char** contentType, size_t* dataSize);
-/**
-* @brief webcfgStrncpy String copy function that copies the content of source string into destination string and null terminates the destination string
-*
-* @param[in] destStr Destination String
-* @param[in] srcStr Source String
-* @param[in] destSize size of destination string
-*/
+
 void webcfgStrncpy(char *destStr, const char *srcStr, size_t destSize);
 
 char* get_global_auth_token();
-int Get_PeriodicSyncCheckInterval();
 void getCurrent_Time(struct timespec *timer);
 long timeVal_Diff(struct timespec *starttime, struct timespec *finishtime);
 

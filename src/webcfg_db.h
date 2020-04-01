@@ -24,6 +24,7 @@
 /*                                   Macros                                   */
 /*----------------------------------------------------------------------------*/
 #define WEBCFG_DB_FILE 	    "/nvram/webconfig_db.bin"
+#define WEBCFG_BLOB_PATH    "/tmp/webcfg_blob.bin"
 /*----------------------------------------------------------------------------*/
 /*                               Data Structures                              */
 /*----------------------------------------------------------------------------*/
@@ -116,7 +117,11 @@ int get_successDocCount();
 
 void b64_encoder(const void *buf,size_t len, char ** decodeMsg);
 
+int readBlobFromFile(char * blob_file_path);
+
 int writeBlobToFile(char *blob_file_path, char *data);
+
+char * get_DB_BLOB_base64(size_t *len);
 /**
  *  This function converts a msgpack buffer into an webconfig_db_t structure
  *  if possible.

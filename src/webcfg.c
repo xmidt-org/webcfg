@@ -76,13 +76,8 @@ void *WebConfigMultipartTask(void *status)
 	pthread_detach(pthread_self());
 	int ret = 0;
 	int rv=0;
-        struct timeval tp;
-        struct timespec ts;
-        time_t t;
-	int wait_flag=0;
 	int forced_sync=0;
-        int value=0, Status = 0;
-	value =Get_PeriodicSyncCheckInterval();
+        int Status = 0;
 	Status = (unsigned long)status;
 	WebConfigLog("Status is %d\n", Status);
 
@@ -102,17 +97,13 @@ void *WebConfigMultipartTask(void *status)
 			WebConfigLog("reset ForceSyncCheck after sync\n");
 			setForceSync("", "", 0);
 		}
-		else if(!wait_flag)
+		else
 		{
 			WebConfigLog("B4 processWebconfgSync\n");
 			processWebconfgSync((int)Status);
 		}
 
 		pthread_mutex_lock (&periodicsync_mutex);
-		gettimeofday(&tp, NULL);
-		ts.tv_sec = tp.tv_sec;
-		ts.tv_nsec = tp.tv_usec * 1000;
-		ts.tv_sec += value;
 
 		if (g_shutdown)
 		{
@@ -120,23 +111,12 @@ void *WebConfigMultipartTask(void *status)
 			pthread_mutex_unlock (&periodicsync_mutex);
 			break;
 		}
-		value=Get_PeriodicSyncCheckInterval();
-		WebConfigLog("PeriodicSyncCheckInterval value is %d\n",value);
-		if(value == 0)
-		{
-			WebcfgDebug("B4 periodicsync_condition pthread_cond_wait\n");
-			pthread_cond_wait(&periodicsync_condition, &periodicsync_mutex);
-			rv =0;
-		}
-		else
-		{
-			WebcfgDebug("B4 periodicsync_condition pthread_cond_timedwait\n");
-			rv = pthread_cond_timedwait(&periodicsync_condition, &periodicsync_mutex, &ts);
-		}
+		WebConfigLog("B4 periodicsync_condition pthread_cond_wait\n");
+		pthread_cond_wait(&periodicsync_condition, &periodicsync_mutex);
+		rv =0;
 
 		if(!rv && !g_shutdown)
 		{
-			time(&t);
 			char *ForceSyncDoc = NULL;
 			char* ForceSyncTransID = NULL;
 
@@ -147,9 +127,8 @@ void *WebConfigMultipartTask(void *status)
 			{
 				if((ForceSyncDoc != NULL) && strlen(ForceSyncDoc)>0)
 				{
-					wait_flag=0;
 					forced_sync = 1;
-					WebConfigLog("Received signal interrupt to getForceSync at %s\n",ctime(&t));
+					WebConfigLog("Received signal interrupt to getForceSync\n");
 					WEBCFG_FREE(ForceSyncDoc);
 					WEBCFG_FREE(ForceSyncTransID);
 				}
@@ -161,18 +140,6 @@ void *WebConfigMultipartTask(void *status)
 			}
 
 			WebConfigLog("forced_sync is %d\n", forced_sync);
-			if(!forced_sync)
-			{
-				wait_flag=1;
-				value=Get_PeriodicSyncCheckInterval();
-				WebConfigLog("Received signal interrupt to change the sync interval to %d\n",value);
-			}
-		}
-		else if (rv == ETIMEDOUT && !g_shutdown)
-		{
-			time(&t);
-			wait_flag=0;
-			WebConfigLog("Periodic Sync Interval %d sec and syncing at %s\n",value,ctime(&t));
 		}
 		else if(g_shutdown)
 		{
@@ -255,45 +222,11 @@ int handlehttpResponse(long response_code, char *webConfigData, int retry_count,
 {
 	int first_digit=0;
 	int msgpack_status=0;
-	int setRet = 0;
-	int ret=0, getRet = 0;
-	char *configURL = NULL;
-	char *configVersion = NULL;
-	char *RequestTimeStamp=NULL;
-	char *newDocVersion = NULL;
 	int err = 0;
-	int index =0 ;//TODO: Notification data has to be modified for each sub doc.
-
-        //get common items for all status codes and send notification.
-        //getRet = getConfigURL(index, &configURL); //TODO: remove the index and add the sub doc names
-	if(getRet)
-	{
-		WebcfgDebug("configURL for index %d is %s\n", index, configURL);
-	}
-
-	//getRet = getConfigVersion(index, &configVersion);
-	if(getRet)
-	{
-		WebConfigLog("configVersion for index %d is %s\n", index, configVersion);
-	}
-
-        //ret = setRequestTimeStamp(index);
-	if(ret == 0)
-	{
-		WebcfgDebug("RequestTimeStamp set successfully for index %d\n", index);
-	}
-
-        //getRet = getRequestTimeStamp(index, &RequestTimeStamp);
-	if(getRet)
-	{
-		WebcfgDebug("RequestTimeStamp for index %d is %s\n", index, RequestTimeStamp);
-	}
 
 	if(response_code == 304)
 	{
 		WebConfigLog("webConfig is in sync with cloud. response_code:%ld\n", response_code);
-		//setSyncCheckOK(index, true);
-		addWebConfigNotifyMsg(configURL, response_code, NULL, 0, RequestTimeStamp , configVersion, transaction_uuid);
 		return 1;
 	}
 	else if(response_code == 200)
@@ -305,56 +238,15 @@ int handlehttpResponse(long response_code, char *webConfigData, int retry_count,
 			WebcfgDebug("webConfigData fetched successfully\n");
 			WebConfigLog("parseMultipartDocument\n");
 			msgpack_status = parseMultipartDocument(webConfigData, ct, dataSize);
-			WebConfigLog("setRet after process msgPack is %d\n", setRet);
 
 			if(msgpack_status == 1)
 			{
 				WebcfgDebug("parseMultipartDocument success\n");
-				if(configURL!=NULL && newDocVersion !=NULL)
-				{
-					WebConfigLog("Configuration settings from %s version %s were applied successfully\n", configURL, newDocVersion );
-				}
-
-				WebcfgDebug("set version and syncCheckOK for success\n");
-				//ret = setConfigVersion(index, newDocVersion);//get new version from msgpack doc
-				if(ret == 0)
-				{
-					WebcfgDebug("Config Version %s set successfully for index %d\n", newDocVersion, index);
-				}
-				else
-				{
-					WebConfigLog("Failed to set Config version %s for index %d\n", newDocVersion, index);
-				}
-
-				//ret = setSyncCheckOK(index, true );
-				if(ret == 0)
-				{
-					WebcfgDebug("SyncCheckOK set successfully for index %d\n", index);
-				}
-				else
-				{
-					WebConfigLog("Failed to set SyncCheckOK for index %d\n", index);
-				}
-
-				addWebConfigNotifyMsg(configURL, response_code, "success", setRet, RequestTimeStamp , newDocVersion, transaction_uuid);
 				return 1;
 			}
 			else
 			{
 				WebConfigLog("Failure in parseMultipartDocument\n");
-				//ret = setSyncCheckOK(index, false);
-				if(ret == 0)
-				{
-					WebcfgDebug("SyncCheckOK set to false for index %d\n", index);
-				}
-				else
-				{
-					WebConfigLog("Failed to set SyncCheckOK to false for index %d\n", index);
-				}
-
-				WebConfigLog("Configuration settings from %s version %s FAILED\n", configURL, newDocVersion );
-				WebConfigLog("Sending Webconfig apply Failure Notification\n");
-				addWebConfigNotifyMsg(configURL, response_code, "failed", setRet, RequestTimeStamp , newDocVersion, transaction_uuid);
 				return 1;
 			}
 		}
@@ -366,7 +258,6 @@ int handlehttpResponse(long response_code, char *webConfigData, int retry_count,
 	else if(response_code == 204)
 	{
 		WebConfigLog("No configuration available for this device. response_code:%ld\n", response_code);
-		addWebConfigNotifyMsg(configURL, response_code, NULL, 0, RequestTimeStamp , configVersion, transaction_uuid);
 		return 1;
 	}
 	else if(response_code == 403)
@@ -379,9 +270,6 @@ int handlehttpResponse(long response_code, char *webConfigData, int retry_count,
 	else if(response_code == 429)
 	{
 		WebConfigLog("No action required from client. response_code:%ld\n", response_code);
-		WEBCFG_FREE(configURL);
-		WEBCFG_FREE(configVersion);
-		WEBCFG_FREE(RequestTimeStamp);
 		WEBCFG_FREE(transaction_uuid);
 		return 1;
 	}
@@ -389,7 +277,6 @@ int handlehttpResponse(long response_code, char *webConfigData, int retry_count,
 	if((response_code !=403) && (first_digit == 4)) //4xx
 	{
 		WebConfigLog("Action not supported. response_code:%ld\n", response_code);
-		addWebConfigNotifyMsg(configURL, response_code, NULL, 0, RequestTimeStamp , configVersion, transaction_uuid);
 		return 1;
 	}
 	else //5xx & all other errors
@@ -397,13 +284,9 @@ int handlehttpResponse(long response_code, char *webConfigData, int retry_count,
 		WebConfigLog("Error code returned, need to retry. response_code:%ld\n", response_code);
 		if(retry_count == 3 && !err)
 		{
-			WebcfgDebug("Sending Notification after 3 retry attempts\n");
-			addWebConfigNotifyMsg(configURL, response_code, NULL, 0, RequestTimeStamp , configVersion, transaction_uuid);
+			WebcfgDebug("3 retry attempts\n");
 			return 0;
 		}
-		WEBCFG_FREE(configURL);
-		WEBCFG_FREE(configVersion);
-		WEBCFG_FREE(RequestTimeStamp);
 		WEBCFG_FREE(transaction_uuid);
 	}
 	return 0;
@@ -427,10 +310,3 @@ long timeVal_Diff(struct timespec *starttime, struct timespec *finishtime)
 	msec+=(finishtime->tv_nsec-starttime->tv_nsec)/1000000;
 	return msec;
 }
-
-//TODO: periodic Sync has to be removed as it not required as per new design.
-int Get_PeriodicSyncCheckInterval()
-{
-	return 0;
-}
-

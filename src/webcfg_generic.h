@@ -18,12 +18,10 @@
 
 #include <stdint.h>
 #include <wdmp-c.h>
-#include <msgpack.h>
 /*----------------------------------------------------------------------------*/
 /*                                   Macros                                   */
 /*----------------------------------------------------------------------------*/
 
-#define WEBCFG_BLOB_PATH                      "/tmp/webcfg_blob.bin"
 /*----------------------------------------------------------------------------*/
 /*                               Data Structures                              */
 /*----------------------------------------------------------------------------*/
@@ -32,30 +30,27 @@
 /*----------------------------------------------------------------------------*/
 /*                             External Functions                             */
 /*----------------------------------------------------------------------------*/
-/* return logger file name */
-const char *fetch_generic_file(void);
-int setForceSync(char* pString, char *transactionId,int *session_status);
-int getForceSync(char** pString, char **transactionId);
 
-char * get_DB_BLOB_base64(size_t *len);
-char *get_global_systemReadyTime();
-char* getDeviceBootTime();
+/* Device specific getter functions */
+char * getDeviceBootTime();
 char * getSerialNumber();
 char * getProductClass();
 char * getModelName();
 char * getFirmwareVersion();
 void getDeviceMac();
+
+/* Getter function to return systemReadyTime in UTC format */
+char *get_global_systemReadyTime();
+
+/* Getter function to return deviceMAC */
 char* get_global_deviceMAC();
 
-void initWebConfigMultipartTask(unsigned long status);
-void sendNotification(char *payload, char *source, char *destination);
-
-int Get_Webconfig_Blob( char *pString);
+/* Function that gets the values from TR181 dml layer */
+int setForceSync(char* pString, char *transactionId,int *session_status);
+int getForceSync(char** pString, char **transactionId);
 int Get_Webconfig_URL( char *pString);
 int Set_Webconfig_URL( char *pString);
 
-int readBlobFromFile(char * blob_file_path);
-int writeBlobToFile(char *blob_file_path, char *data);
 /**
  * @brief setValues interface sets the parameter value.
  *
@@ -69,4 +64,15 @@ int writeBlobToFile(char *blob_file_path, char *data);
  */
 void setValues(const param_t paramVal[], const unsigned int paramCount, const int setType, char *transactionId, money_trace_spans *timeSpan, WDMP_STATUS *retStatus, int *ccspStatus);
 
+/**
+ * @brief sendNotification sends event notification to cloud via parodus.
+ *
+ * @param[in] payload Notify payload to be send to cloud.
+ * @param[in] source The source end from which notify event is triggered.
+ * @param[in] destination The destination at which notification has to be reached.
+ */
+void sendNotification(char *payload, char *source, char *destination);
+
+/* Returns logger file name */
+const char *fetch_generic_file(void);
 #endif

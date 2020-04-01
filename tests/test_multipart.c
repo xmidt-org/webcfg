@@ -78,27 +78,32 @@ char * getParameterValue(char *paramName)
 
 char * getSerialNumber()
 {
-	return NULL;
+	char *sNum = strdup("1234");
+	return sNum;
 }
 
 char * getDeviceBootTime()
 {
-	return NULL;
+	char *bTime = strdup("152200345");
+	return bTime;
 }
 
 char * getProductClass()
 {
-	return NULL;
+	char *pClass = strdup("Product");
+	return pClass;
 }
 
 char * getModelName()
 {
-	return NULL;
+	char *mName = strdup("Model");
+	return mName;
 }
 
 char * getFirmwareVersion()
 {
-	return NULL;
+	char *fName = strdup("Firmware.bin");
+	return fName;
 }
 
 void sendNotification(char *payload, char *source, char *destination)
@@ -111,7 +116,8 @@ void sendNotification(char *payload, char *source, char *destination)
 
 char *get_global_systemReadyTime()
 {
-	return NULL;
+	char *sTime = strdup("158000123");
+	return sTime;
 }
 
 int Get_Webconfig_URL( char *pString)
@@ -125,7 +131,7 @@ int Get_Webconfig_URL( char *pString)
 
 int Set_Webconfig_URL( char *pString)
 {
-	UNUSED(pString);
+	printf("Set_Webconfig_URL pString %s\n", pString);
 	return 0;
 }
 

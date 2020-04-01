@@ -127,12 +127,14 @@ int webcfg_http_request(char **configData, int r_count, int status, long *code, 
 		//loadInitURLFromFile(&webConfigURL);
 		WebConfigLog("B4 Get_Webconfig_URL\n");
 		Get_Webconfig_URL(configURL);
-		if(configURL !=NULL)
+		WebConfigLog("ConfigURL %s\n", configURL);
+		if(configURL !=NULL && (strlen(configURL)>0))
 		{
 			//Replace {mac} string from default init url with actual deviceMAC
 			WebConfigLog("replaceMacWord to actual device mac\n");
 			webConfigURL = replaceMacWord(configURL, c, get_global_deviceMAC());
 			WebConfigLog("webConfigURL is %s\n", webConfigURL);
+			Set_Webconfig_URL(webConfigURL);
 		}
 		else
 		{

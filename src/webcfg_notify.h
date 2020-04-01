@@ -21,6 +21,7 @@
 #include "webcfg_log.h"
 #include "webcfg.h"
 
+//TODO: Notification has to be modified to send for each doc
 void initWebConfigNotifyTask();
 pthread_t get_global_notify_threadid();
 void addWebConfigNotifyMsg(char *url, long status_code, char *application_status, int application_details, char *request_timestamp, char *version, char *transaction_uuid);
