@@ -18,7 +18,7 @@
 
 #include <stdint.h>
 #include <curl/curl.h>
-#include <base64.h>
+
 #define WEBCFG_FREE(__x__) if(__x__ != NULL) { free((void*)(__x__)); __x__ = NULL;} else {printf("Trying to free null pointer\n");}
 
 #ifdef BUILD_YOCTO

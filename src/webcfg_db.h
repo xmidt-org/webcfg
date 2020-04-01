@@ -19,6 +19,7 @@
 #include <stdint.h>
 #include <string.h>
 #include <stdbool.h>
+#include <base64.h>
 #include "webcfg_multipart.h"
 /*----------------------------------------------------------------------------*/
 /*                                   Macros                                   */

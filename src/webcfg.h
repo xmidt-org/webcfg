@@ -17,7 +17,6 @@
 #define __WEBCFG_H__
 
 #include <stdint.h>
-#include "webcfg_log.h"
 #include <string.h>
 #include <stdbool.h>
 /*----------------------------------------------------------------------------*/
