@@ -31,23 +31,25 @@
 /*----------------------------------------------------------------------------*/
 /*                               Data Structures                              */
 /*----------------------------------------------------------------------------*/
-extern bool g_shutdown;
+
 /*----------------------------------------------------------------------------*/
 /*                             External Functions                             */
 /*----------------------------------------------------------------------------*/
-
-void processWebconfgSync(char* doc);
-int webcfg_http_request(char **configData, int r_count, char* doc, int status, long *code, char **transaction_id,char** contentType, size_t* dataSize);
+extern bool g_shutdown;
+void processWebconfgSync(int Status);
+int webcfg_http_request(char **configData, int r_count, int status, long *code, char **transaction_id,char** contentType, size_t* dataSize);
 /**
-* @brief webcfgStrncpy WAL String copy function that copies the content of source string into destination string and null terminates the destination string
+* @brief webcfgStrncpy String copy function that copies the content of source string into destination string and null terminates the destination string
 *
 * @param[in] destStr Destination String
 * @param[in] srcStr Source String
 * @param[in] destSize size of destination string
 */
 void webcfgStrncpy(char *destStr, const char *srcStr, size_t destSize);
+
 char* get_global_auth_token();
 int Get_PeriodicSyncCheckInterval();
 void getCurrent_Time(struct timespec *timer);
 long timeVal_Diff(struct timespec *starttime, struct timespec *finishtime);
+
 #endif

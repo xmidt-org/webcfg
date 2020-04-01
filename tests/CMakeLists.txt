@@ -24,38 +24,19 @@ endif ()
 link_directories ( ${LIBRARY_DIR} )
 
 #-------------------------------------------------------------------------------
-#-------------------------------------------------------------------------------
-#   test_portmapping
-#-------------------------------------------------------------------------------
-add_test(NAME test_portmapping COMMAND ${MEMORY_CHECK} ./test_portmapping)
-add_executable(test_portmapping test_portmapping.c ../src/portmappingdoc.c ../src/portmappingparam.c ../src/portmappingpack.c ../src/helpers.c ../src/array_helpers.c)
-target_link_libraries (test_portmapping -lcunit -lmsgpackc)
-
-target_link_libraries (test_portmapping gcov -Wl,--no-as-needed )
-
-#-------------------------------------------------------------------------------
 #   test_webcfgparam
 #-------------------------------------------------------------------------------
 add_test(NAME test_webcfgparam COMMAND ${MEMORY_CHECK} ./test_webcfgparam)
-add_executable(test_webcfgparam test_webcfgparam.c ../src/webcfgparam.c ../src/helpers.c)
+add_executable(test_webcfgparam test_webcfgparam.c ../src/webcfg_param.c ../src/webcfg_helpers.c)
 target_link_libraries (test_webcfgparam -lcunit -lmsgpackc -lcimplog)
 
 target_link_libraries (test_webcfgparam gcov -Wl,--no-as-needed )
 
 #-------------------------------------------------------------------------------
-#   test_webcfgdoc
-#-------------------------------------------------------------------------------
-add_test(NAME test_webcfgdoc COMMAND ${MEMORY_CHECK} ./test_webcfgdoc)
-add_executable(test_webcfgdoc test_webcfgdoc.c ../src/webcfgdoc.c ../src/webcfgparam.c ../src/helpers.c ../src/array_helpers.c)
-target_link_libraries (test_webcfgdoc -lcunit -lmsgpackc -lcimplog)
-
-target_link_libraries (test_webcfgdoc gcov -Wl,--no-as-needed )
-
-#-------------------------------------------------------------------------------
 #   test_webcfgpack
 #-------------------------------------------------------------------------------
 add_test(NAME test_webcfgpack COMMAND ${MEMORY_CHECK} ./test_webcfgpack)
-add_executable(test_webcfgpack test_webcfgpack.c ../src/webcfgdoc.c ../src/webcfgparam.c ../src/webcfgpack.c ../src/helpers.c ../src/array_helpers.c )
+add_executable(test_webcfgpack test_webcfgpack.c ../src/webcfg_param.c ../src/webcfg_pack.c ../src/webcfg_helpers.c)
 target_link_libraries (test_webcfgpack -lcunit -lmsgpackc -lcimplog)
 
 target_link_libraries (test_webcfgpack gcov -Wl,--no-as-needed )
@@ -64,7 +45,7 @@ target_link_libraries (test_webcfgpack gcov -Wl,--no-as-needed )
 #   test_multipart
 #-------------------------------------------------------------------------------
 add_test(NAME test_multipart COMMAND ${MEMORY_CHECK} ./test_multipart)
-add_executable(test_multipart test_multipart.c ../src/webcfgdoc.c ../src/webcfgparam.c ../src/multipart.c ../src/helpers.c ../src/array_helpers.c ../src/helpers.c ../src/portmappingdoc.c ../src/portmappingparam.c ../src/macbindingdoc.c ../src/webcfg.c ../src/webcfg_auth.c ../src/webcfg_notify.c ../src/webcfg_db.c ../src/webcfgpack.c)
+add_executable(test_multipart test_multipart.c ../src/webcfg_param.c ../src/webcfg_multipart.c ../src/webcfg_helpers.c ../src/webcfg.c ../src/webcfg_auth.c ../src/webcfg_notify.c ../src/webcfg_db.c ../src/webcfg_pack.c)
 target_link_libraries (test_multipart -lcunit -lmsgpackc -lcurl -lpthread  -lm -luuid -ltrower-base64 -lwdmp-c -lcimplog -lcjson)
 
 target_link_libraries (test_multipart gcov -Wl,--no-as-needed )
@@ -75,16 +56,10 @@ add_custom_target(coverage
 COMMAND lcov -q --capture --directory 
 ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/test_webcfgpack.dir/__/src --output-file test_webcfgpack.info
 COMMAND lcov -q --capture --directory 
-${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/test_webcfgdoc.dir/__/src --output-file test_webcfgdoc.info
-COMMAND lcov -q --capture --directory 
 ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/test_webcfgparam.dir/__/src --output-file test_webcfgparam.info
-COMMAND lcov -q --capture --directory
-${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/test_portmapping.dir/__/src --output-file test_portmapping.info 
 
 COMMAND lcov
--a test_webcfgdoc.info
 -a test_webcfgparam.info
--a test_portmapping.info
 -a test_webcfgpack.info
 --output-file coverage.info
 

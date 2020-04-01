@@ -18,11 +18,12 @@
 
 #include <stdint.h>
 #include <wdmp-c.h>
-
+#include <msgpack.h>
 /*----------------------------------------------------------------------------*/
 /*                                   Macros                                   */
 /*----------------------------------------------------------------------------*/
 
+#define WEBCFG_BLOB_PATH                      "/tmp/webcfg_blob.bin"
 /*----------------------------------------------------------------------------*/
 /*                               Data Structures                              */
 /*----------------------------------------------------------------------------*/
@@ -33,16 +34,10 @@
 /*----------------------------------------------------------------------------*/
 /* return logger file name */
 const char *fetch_generic_file(void);
-void _get_webCfg_interface(char **interface);
-int _getConfigVersion(int index, char **version);
-bool _getConfigURL(int index, char **url);
-bool _getRequestTimeStamp(int index,char **RequestTimeStamp);
-int _setRequestTimeStamp(int index);
-int _setSyncCheckOK(int index, bool status);
-int _setConfigVersion(int index, char *version);
 int setForceSync(char* pString, char *transactionId,int *session_status);
 int getForceSync(char** pString, char **transactionId);
 
+char * get_DB_BLOB_base64(size_t *len);
 char *get_global_systemReadyTime();
 char* getDeviceBootTime();
 char * getSerialNumber();
@@ -52,23 +47,26 @@ char * getFirmwareVersion();
 void getDeviceMac();
 char* get_global_deviceMAC();
 
-void initWebConfigMultipartTask();
+void initWebConfigMultipartTask(unsigned long status);
 void sendNotification(char *payload, char *source, char *destination);
 
+int Get_Webconfig_Blob( char *pString);
 int Get_Webconfig_URL( char *pString);
 int Set_Webconfig_URL( char *pString);
+
+int readBlobFromFile(char * blob_file_path);
+int writeBlobToFile(char *blob_file_path, char *data);
 /**
  * @brief setValues interface sets the parameter value.
  *
  * @param[in] paramVal List of Parameter name/value pairs.
  * @param[in] paramCount Number of parameters.
- * @param[in] setType Flag to specify the type of set operation.
+ * @param[in] setType enum to specify the type of set operation. 
+ * WEBPA_SET = 0 for set values, 1 for atomic set, 2 for XPC atomic set.
  * @param[out] timeSpan timing_values for each component. 
  * @param[out] retStatus Returns status
  * @param[out] ccspStatus Returns ccsp set status
  */
 void setValues(const param_t paramVal[], const unsigned int paramCount, const int setType, char *transactionId, money_trace_spans *timeSpan, WDMP_STATUS *retStatus, int *ccspStatus);
-
-void setAttributes(param_t *attArr, const unsigned int paramCount, money_trace_spans *timeSpan, WDMP_STATUS *retStatus);
 
 #endif

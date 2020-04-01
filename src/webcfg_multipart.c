@@ -15,15 +15,13 @@
  */
 #include <string.h>
 #include <stdlib.h>
-#include "multipart.h"
-#include "webcfgparam.h"
+#include "webcfg_multipart.h"
+#include "webcfg_param.h"
 #include "webcfg_log.h"
 #include "webcfg_auth.h"
 #include "webcfg_generic.h"
 #include "webcfg_db.h"
 #include <uuid/uuid.h>
-#include "macbindingdoc.h"
-#include "portmappingdoc.h"
 /*----------------------------------------------------------------------------*/
 /*                                   Macros                                   */
 /*----------------------------------------------------------------------------*/
@@ -33,7 +31,6 @@
 #define CA_CERT_PATH 		   "/etc/ssl/certs/ca-certificates.crt"
 #define WEBPA_READ_HEADER          "/etc/parodus/parodus_read_file.sh"
 #define WEBPA_CREATE_HEADER        "/etc/parodus/parodus_create_file.sh"
-#define WEBCFG_URL_FILE 	   "/nvram/webcfg_url" //check here.
 /*----------------------------------------------------------------------------*/
 /*                               Data Structures                              */
 /*----------------------------------------------------------------------------*/
@@ -60,7 +57,7 @@ webconfig_db_data_t* webcfgdb_data = NULL;
 size_t writer_callback_fn(void *buffer, size_t size, size_t nmemb, struct token_data *data);
 size_t headr_callback(char *buffer, size_t size, size_t nitems);
 void stripspaces(char *str, char **final_str);
-void createCurlHeader( struct curl_slist *list, struct curl_slist **header_list, int status, char *doc, char ** trans_uuid);
+void createCurlHeader( struct curl_slist *list, struct curl_slist **header_list, int status, char ** trans_uuid);
 void parse_multipart(char *ptr, int no_of_bytes, multipartdocs_t *m, int *no_of_subdocbytes);
 void multipart_destroy( multipart_t *m );
 void addToDBList(webconfig_db_data_t *webcfgdb);
@@ -77,11 +74,15 @@ char *replaceMacWord(const char *s, const char *macW, const char *deviceMACW);
 /*
 * @brief Initialize curl object with required options. create configData using libcurl.
 * @param[out] configData
-* @param[in] len total configData size
 * @param[in] r_count Number of curl retries on ipv4 and ipv6 mode during failure
+* @param[in] doc name to detect force sync
+* @param[in] status device operational status
+* @param[out] code curl response code
+* @param[out] transaction_id use webpa transaction_id for webpa force sync, else generate new id.
+* @param[out] contentType config data contentType 
 * @return returns 0 if success, otherwise failed to fetch auth token and will be retried.
 */
-int webcfg_http_request(char **configData, int r_count, char* doc, int status, long *code, char **transaction_id, char** contentType, size_t *dataSize)
+int webcfg_http_request(char **configData, int r_count, int status, long *code, char **transaction_id, char** contentType, size_t *dataSize)
 {
 	CURL *curl;
 	CURLcode res;
@@ -105,7 +106,7 @@ int webcfg_http_request(char **configData, int r_count, char* doc, int status, l
 	void * dataVal = NULL;
 	char syncURL[256]={'\0'};
 
-	WebConfigLog("Inside webcfg_http_request.\n");
+	WebConfigLog("Inside webcfg_http_request. status %d\n", status);
 	curl = curl_easy_init();
 	if(curl)
 	{
@@ -117,7 +118,7 @@ int webcfg_http_request(char **configData, int r_count, char* doc, int status, l
 			return rv;
 		}
 		data.data[0] = '\0';
-		createCurlHeader(list, &headers_list, status, doc, &transID);
+		createCurlHeader(list, &headers_list, status, &transID);
 		if(transID !=NULL)
 		{
 			*transaction_id = strdup(transID);
@@ -129,7 +130,7 @@ int webcfg_http_request(char **configData, int r_count, char* doc, int status, l
 		if(configURL !=NULL)
 		{
 			//Replace {mac} string from default init url with actual deviceMAC
-			WebConfigLog("B4 replaceMacWord\n");
+			WebConfigLog("replaceMacWord to actual device mac\n");
 			webConfigURL = replaceMacWord(configURL, c, get_global_deviceMAC());
 			WebConfigLog("webConfigURL is %s\n", webConfigURL);
 		}
@@ -138,25 +139,21 @@ int webcfg_http_request(char **configData, int r_count, char* doc, int status, l
 			WebConfigLog("Failed to get configURL\n");
 			return rv;
 		}
-		WebConfigLog("ConfigURL from loadInitURLFromFile is %s\n", webConfigURL);
+		WebConfigLog("ConfigURL fetched is %s\n", webConfigURL);
 
 		//Update query param in the URL based on the existing doc names from db
-		//if (doc != NULL && (strlen(doc)>0))
-		//{
-			WebConfigLog("update webConfigURL based on sync doc %s\n", doc);
-			getConfigDocList(&docnames);
-			WebConfigLog("docnames is %s\n", docnames);
-			if(docnames !=NULL )
+		getConfigDocList(&docnames);
+		if(docnames !=NULL )
+		{
+			if(strlen(docnames) > 0)
 			{
-				if(strlen(docnames) > 0)
-				{
-					snprintf(syncURL, MAX_BUF_SIZE, "%s?group_id=%s", webConfigURL, docnames);
-					WebConfigLog("syncURL is %s\n", syncURL);
-					webConfigURL =strdup( syncURL);
-				}
-				WEBCFG_FREE(docnames);
+				WebConfigLog("docnames is %s\n", docnames);
+				snprintf(syncURL, MAX_BUF_SIZE, "%s?group_id=%s", webConfigURL, docnames);
+				WebConfigLog("syncURL is %s\n", syncURL);
+				webConfigURL =strdup( syncURL);
 			}
-		//}
+			WEBCFG_FREE(docnames);
+		}
 
 		if(webConfigURL !=NULL)
 		{
@@ -173,7 +170,6 @@ int webcfg_http_request(char **configData, int r_count, char* doc, int status, l
 		if(strlen(g_interface) == 0)
 		{
 			get_webCfg_interface(&interface);
-			//interface = strdup("erouter0"); //check here.
 			if(interface !=NULL)
 		        {
 		               strncpy(g_interface, interface, sizeof(g_interface)-1);
@@ -274,6 +270,7 @@ int parseMultipartDocument(void *config_data, char *ct , size_t data_size)
 	int subdocbytes =0;
 	int boundary_len =0;
 	int rv = -1,count =0;
+	int status =0;
 	
 	WebConfigLog("ct is %s\n", ct );
 	// fetch boundary
@@ -371,7 +368,6 @@ int parseMultipartDocument(void *config_data, char *ct , size_t data_size)
 		}
 	}
 
-	int status =0;
 	status = processMsgpackSubdoc(mp);
 	if(status ==0)
 	{
@@ -394,10 +390,12 @@ int processMsgpackSubdoc(multipart_t *mp)
 	int ccspStatus=0;
 	int paramCount = 0;
 	webcfgparam_t *pm;
-        int count = 0, addStatus =0;
+    	int success_count = 0, addStatus =0;
 	int uStatus = 0, dStatus =0;
+	char * blob_data = NULL;
+        size_t blob_len = -1 ;
         
-	WebConfigLog("Adding mp entries to tmp list\n");
+	WebConfigLog("Add mp entries to tmp list\n");
         addStatus = addToTmpList(mp);
         if(addStatus == 1)
         {
@@ -408,9 +406,6 @@ int processMsgpackSubdoc(multipart_t *mp)
 	{
 		WebConfigLog("addToTmpList failed\n");
 	}
-
-        wd = ( webconfig_db_t * ) malloc( sizeof( webconfig_db_t ) );
-        wd->entries_count = mp->entries_count;
 
 	for(m = 0 ; m<((int)mp->entries_count)-1; m++)
 	{       
@@ -425,17 +420,9 @@ int processMsgpackSubdoc(multipart_t *mp)
 
 		WebConfigLog("--------------decode root doc-------------\n");
 		pm = webcfgparam_convert( mp->entries[m].data, mp->entries[m].data_size+1 );
-		WebConfigLog("After webcfgparam_convert\n");
 		if ( NULL != pm)
 		{
 			paramCount = (int)pm->entries_count;
-			for(i = 0; i < paramCount ; i++)
-			{
-				//printf("pm->entries[%d].name %s\n", i, pm->entries[i].name);
-				//printf("pm->entries[%d].value %s\n" , i, pm->entries[i].value);
-				//printf("pm->entries[%d].type %d\n", i, pm->entries[i].type);
-				//WebConfigLog("--------------decode root doc done-------------\n");
-			}
 
 			reqParam = (param_t *) malloc(sizeof(param_t) * paramCount);
 			memset(reqParam,0,(sizeof(param_t) * paramCount));
@@ -444,18 +431,12 @@ int processMsgpackSubdoc(multipart_t *mp)
 
 			for (i = 0; i < paramCount; i++) 
 			{
-				WebConfigLog("update reqParam\n");
                                 if(pm->entries[i].value != NULL)
                                 {
 				    reqParam[i].name = strdup(pm->entries[i].name);
 				    reqParam[i].value = strdup(pm->entries[i].value);
 				    reqParam[i].type = pm->entries[i].type;
                                 }
-				else
-				{
-					WebConfigLog("pm->entries[i].value is NULL, reducing paramCount as it is setattributes case\n");
-					paramCount = paramCount -1;
-				}
 				WebConfigLog("--->Request:> param[%d].name = %s\n",i,reqParam[i].name);
 				WebConfigLog("--->Request:> param[%d].value = %s\n",i,reqParam[i].value);
 				WebConfigLog("--->Request:> param[%d].type = %d\n",i,reqParam[i].type);
@@ -465,12 +446,8 @@ int processMsgpackSubdoc(multipart_t *mp)
 			if(reqParam !=NULL)
 			{
 				WebcfgInfo("WebConfig SET Request\n");
-				WebConfigLog("paramCount B4 setValues %d\n", paramCount);
 				setValues(reqParam, paramCount, 0, NULL, NULL, &ret, &ccspStatus);
-				WebConfigLog("After setValues\n");
-				WebcfgInfo("Processed WebConfig SET Request\n");
 				WebcfgInfo("ccspStatus is %d\n", ccspStatus);
-				//ret = WDMP_SUCCESS; //Remove this. Testing purpose.
 				if(ret == WDMP_SUCCESS)
 				{
 					WebConfigLog("setValues success. ccspStatus : %d\n", ccspStatus);
@@ -499,19 +476,18 @@ int processMsgpackSubdoc(multipart_t *mp)
 						WebConfigLog("updateTmpList failed\n");
 					}
 
-					printf("Before add in db m is %d\n",m);
 					webcfgdb->name = mp->entries[m].name_space;
 					webcfgdb->version = mp->entries[m].etag;
 					webcfgdb->next = NULL;
-					count++;
+					success_count++;
 
 					WebConfigLog("webcfgdb->name in process is %s\n",webcfgdb->name);
 					WebConfigLog("webcfgdb->version in process is %lu\n",(long)webcfgdb->version);
 					addToDBList(webcfgdb);
 
 					WebConfigLog("The mp->entries_count %d\n",(int)mp->entries_count);
-					WebConfigLog("The count %d\n",count);
-					if(count ==(int) mp->entries_count-1)
+					WebConfigLog("The count %d\n",success_count);
+					if(success_count ==(int) mp->entries_count-1)
 					{
 						char * temp = strdup(g_ETAG);
 						webconfig_db_data_t * webcfgdb = NULL;
@@ -520,10 +496,8 @@ int processMsgpackSubdoc(multipart_t *mp)
 						webcfgdb->name = strdup("root");
 						webcfgdb->version = strtoul(temp,NULL,0);
 						webcfgdb->next = NULL;
-						WebConfigLog("webcfgdb->name in process is %s\n",webcfgdb->name);
-						WebConfigLog("webcfgdb->version in process is %lu\n",(long)webcfgdb->version);
 						addToDBList(webcfgdb);
-						count++;
+                        			success_count++;
 
 						WebConfigLog("The Etag is %lu\n",(long)webcfgdb->version );
 						//Delete tmp queue root as all docs are applied
@@ -544,8 +518,6 @@ int processMsgpackSubdoc(multipart_t *mp)
 				else
 				{
 					WebConfigLog("setValues Failed. ccspStatus : %d\n", ccspStatus);
-					//WEBCFG_FREE(reqParam);
-					//webcfgparam_destroy( pm );
 				}
 
                          //WEBCFG_FREE(reqParam);
@@ -558,28 +530,36 @@ int processMsgpackSubdoc(multipart_t *mp)
 		}
 	}
         
-	if(count) //No DB update when all docs failed.
+	if(success_count) //No DB update when all docs failed.
 	{
-		size_t j=count;
-		wd->entries_count = count;
-		wd->entries = (webconfig_db_data_t *) malloc( sizeof(webconfig_db_data_t) * wd->entries_count );
-		memset( wd->entries, 0, sizeof(webconfig_db_data_t) * wd->entries_count);
-		wd->entries = webcfgdb_data;
-
-		webconfig_db_data_t* temp1 = wd->entries;
+		size_t j=success_count;
+		
+		webconfig_db_data_t* temp1 = webcfgdb_data;
 
 		while(temp1 )
 		{
-		    WebConfigLog("wd->entries[%lu].name %s\n", count-j, temp1->name);
-		    WebConfigLog("wd->entries[%lu].version %lu\n" ,count-j,  (long)temp1->version);
-		    j--;
-		     temp1 = temp1->next;
+			WebConfigLog("wd->entries[%lu].name %s\n", success_count-j, temp1->name);
+			WebConfigLog("wd->entries[%lu].version %lu\n" ,success_count-j,  (long)temp1->version);
+			j--;
+			temp1 = temp1->next;
 		}
-		addNewDocEntry(wd);
-		WebConfigLog("After addNewDocEntry wd->entries_count %zu\n", wd->entries_count);
-		webcfgdb_destroy(wd);
-		initDB(WEBCFG_DB_FILE ) ;
+		WebConfigLog("addNewDocEntry\n");
+		addNewDocEntry(get_successDocCount());
 	}
+
+	WebConfigLog("Proceed to generateBlob\n");
+	if(generateBlob())
+        {
+	    blob_data = get_DB_BLOB_base64(&blob_len);
+            writeBlobToFile(WEBCFG_BLOB_PATH, blob_data);
+	    WebConfigLog("The b64 encoded blob is : %s\n",blob_data);
+            WebConfigLog("The b64 encoded blob_length is : %zu\n",blob_len);
+            readBlobFromFile(WEBCFG_BLOB_PATH);
+        }
+        else
+        {
+            WebConfigLog("Failed in Blob generation\n");
+        }
 	return rv;
 }
 
@@ -618,6 +598,7 @@ size_t writer_callback_fn(void *buffer, size_t size, size_t nmemb, struct token_
 }
 
 /* @brief callback function to extract response header data.
+   This is to get multipart root version which is received as header.
 */
 size_t headr_callback(char *buffer, size_t size, size_t nitems)
 {
@@ -647,6 +628,18 @@ size_t headr_callback(char *buffer, size_t size, size_t nitems)
 	}
 	WebConfigLog("header_callback size %zu\n", size);
 	return nitems;
+}
+
+//Convert string root version from multipart header to uint32
+uint32_t get_global_root()
+{
+	char * temp = NULL;
+	uint32_t g_version;
+
+	temp = strdup(g_ETAG);
+	g_version = strtoul(temp,NULL,0);
+	WebConfigLog("g_version is %lu\n", (long)g_version);
+	return g_version;
 }
 
 //To strip all spaces , new line & carriage return characters from header output
@@ -798,8 +791,8 @@ void getConfigDocList(char **doc)
 				}
 				temp= temp->next;
 			}
+			WebConfigLog("Final docList is %s\n", docList);
 		}
-		WebConfigLog("Final docList is %s\n", docList);
 		*doc = docList;
 	}
 }
@@ -827,9 +820,10 @@ void getConfigVersionList(char **version)
 {
 	char *versionsList = NULL;
 	char *versionsList_tmp = NULL;
-	uint32_t root_version;
+	uint32_t root_version = 0;
 
 	get_root_version(&root_version);
+	WebConfigLog("root_version %lu\n", (long)root_version);
 
 	versionsList = (char*) malloc(512);
 	if(versionsList)
@@ -840,7 +834,16 @@ void getConfigVersionList(char **version)
 
 		if(NULL != temp)
 		{
-			sprintf(versionsList, "%lu", (long)root_version);
+			if(root_version)
+			{
+				WebConfigLog("Updating root_version to versionsList\n");
+				sprintf(versionsList, "%lu", (long)root_version);
+			}
+			else
+			{
+				WebConfigLog("Updating versionsList as NONE\n");
+				sprintf(versionsList, "%s", "NONE");
+			}
 			WebConfigLog("versionsList is %s\n", versionsList);
 
 			while (NULL != temp)
@@ -856,8 +859,8 @@ void getConfigVersionList(char **version)
 				}
 				temp= temp->next;
 			}
+			WebConfigLog("Final versionsList is %s\n", versionsList);
 		}
-		WebConfigLog("Final versionsList is %s\n", versionsList);
 		*version = versionsList;
 	}
 }
@@ -865,9 +868,10 @@ void getConfigVersionList(char **version)
 /* @brief Function to create curl header options
  * @param[in] list temp curl header list
  * @param[in] device status value
+ * @param[out] trans_uuid for sync
  * @param[out] header_list output curl header list
 */
-void createCurlHeader( struct curl_slist *list, struct curl_slist **header_list, int status, char* doc, char ** trans_uuid)
+void createCurlHeader( struct curl_slist *list, struct curl_slist **header_list, int status, char ** trans_uuid)
 {
 	char *version_header = NULL;
 	char *auth_header = NULL;
@@ -890,9 +894,6 @@ void createCurlHeader( struct curl_slist *list, struct curl_slist **header_list,
 	WebConfigLog("Start of createCurlheader\n");
 	//Fetch auth JWT token from cloud.
 	getAuthToken();
-	//int len=0; char *token= NULL;
-	//readFromFile("/tmp/webcfg_token", &token, &len );
-	//strncpy(get_global_auth_token(), token, len);
 	WebConfigLog("get_global_auth_token() is %s\n", get_global_auth_token());
 
 	auth_header = (char *) malloc(sizeof(char)*MAX_HEADER_LEN);
@@ -905,7 +906,6 @@ void createCurlHeader( struct curl_slist *list, struct curl_slist **header_list,
 	version_header = (char *) malloc(sizeof(char)*MAX_BUF_SIZE);
 	if(version_header !=NULL)
 	{
-		printf("doc is %s\n", doc);
 		getConfigVersionList(&version);
 		snprintf(version_header, MAX_BUF_SIZE, "IF-NONE-MATCH:%s", ((NULL != version && (strlen(version)!=0)) ? version : "NONE"));
 		WebConfigLog("version_header formed %s\n", version_header);
@@ -1144,6 +1144,7 @@ char* generate_trans_uuid()
 	return transID;
 }
 
+//TODO:
 void multipart_destroy( multipart_t *m )
 {
     if( NULL != m ) {
@@ -1201,7 +1202,6 @@ void parse_multipart(char *ptr, int no_of_bytes, multipartdocs_t *m, int *no_of_
 	if(0 == strncasecmp(ptr,"Namespace",strlen("Namespace")-1))
 	{
                 m->name_space = strndup(ptr+(strlen("Namespace: ")),no_of_bytes-((strlen("Namespace: "))));
-		//WebConfigLog("The Namespace is %s\n",m->name_space);
 	}
 	else if(0 == strncasecmp(ptr,"Etag",strlen("Etag")-1))
 	{
@@ -1213,52 +1213,11 @@ void parse_multipart(char *ptr, int no_of_bytes, multipartdocs_t *m, int *no_of_
 	{
 		m->data = ptr;
 		mulsubdoc = (void *) ptr;
-		//WebConfigLog("The paramters is %s\n",m->data);
-		//WebConfigLog("no_of_bytes is %d\n", no_of_bytes);
 		webcfgparam_convert( mulsubdoc, no_of_bytes );
 		*no_of_subdocbytes = no_of_bytes;
-		//WebConfigLog("*no_of_subdocbytes is %d\n", *no_of_subdocbytes);
 		//store doc size of each sub doc
 		m->data_size = no_of_bytes;
 	}
-}
-
-int subdocparse(char *filename, char **data, int *len)
-{
-	FILE *fp = fopen(filename, "rb");
-	int ch_count = 0, value_count = 0;
-	char line[256];
-	if (fp == NULL)
-	{
-		WebConfigLog("subdocparse Failed to open file %s\n", filename);
-		return 0;
-	}
-	else
-	{
-		fseek(fp, 0, SEEK_END);
-		ch_count = ftell(fp);
-		fseek(fp, 0, SEEK_SET);
-		*data = (char *) malloc(sizeof(char) * (ch_count + 1));
-		while(fgets(line, sizeof(line), fp)!= NULL)
-		{
-			if(strstr(line, ETAG_HEADER))
-			{
-				value_count = ftell(fp) + 2; // 2 is for newline \n \r
-				fseek(fp, value_count, SEEK_SET);
-				fread(*data,1, ch_count,fp);
-
-				*len = ch_count;
-				(*data)[ch_count] ='\0';
-				fclose(fp);
-				WebConfigLog("ch_count %d\n",ch_count);
-				writeToFile("buff1.bin", (char*)*data,(ch_count-value_count));
-				return 1;
-
-			}
-		}
-		fclose(fp);
-		return 0;
-	  }
 }
 
 void print_tmp_doc_list(size_t mp_count)

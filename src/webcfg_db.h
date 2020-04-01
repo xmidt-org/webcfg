@@ -19,11 +19,11 @@
 #include <stdint.h>
 #include <string.h>
 #include <stdbool.h>
-#include "multipart.h"
+#include "webcfg_multipart.h"
 /*----------------------------------------------------------------------------*/
 /*                                   Macros                                   */
 /*----------------------------------------------------------------------------*/
-#define WEBCFG_DB_FILE 	    "/tmp/webconfig_db.bin" //TODO:command line argument to pass /nvram/webconfig_db.bin
+#define WEBCFG_DB_FILE 	    "/nvram/webconfig_db.bin"
 /*----------------------------------------------------------------------------*/
 /*                               Data Structures                              */
 /*----------------------------------------------------------------------------*/
@@ -70,9 +70,26 @@ typedef struct blob{
  *
  *  @return 
  */
+/*For Blob Test purpose*/
+typedef struct{
+        char * name;
+        uint32_t version;
+        char * status;
+}blob_data_t;
+
+typedef struct{
+        blob_data_t *entries;
+        size_t entries_count;
+}blob_struct_t;
+
+
+void webcfgdbblob_destroy( blob_struct_t *bd );
+const char* webcfgdbblob_strerror( int errnum );
+blob_struct_t* decodeBlobData(const void * buf, size_t len);
+
 int initDB(char * db_file_path);
 
-int addNewDocEntry(webconfig_db_t *subdoc);
+int addNewDocEntry(size_t count);
 
 webconfig_db_t* getDocEntry(char *doc_name);
 
@@ -80,10 +97,9 @@ int updateDocEntry(char *doc_name, webconfig_db_t *subdoc);
 
 int writeToDBFile(char * db_file_path, char * data);
 
+int generateBlob();
+
 blob_t * get_DB_BLOB();
-
-char * get_DB_BLOB_base64();
-
 
 webconfig_db_data_t * get_global_db_node(void);
 
@@ -97,8 +113,15 @@ int updateTmpList(char *docname, uint32_t version, char *status);
 
 int deleteFromTmpList(char* doc_name);
 
+void delete_tmp_doc_list();
+
 int get_numOfMpDocs();
 
+int get_successDocCount();
+
+void b64_encoder(const void *buf,size_t len, char ** decodeMsg);
+
+int writeBlobToFile(char *blob_file_path, char *data);
 /**
  *  This function converts a msgpack buffer into an webconfig_db_t structure
  *  if possible.
