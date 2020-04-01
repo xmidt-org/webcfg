@@ -19,7 +19,7 @@
 #include <stdint.h>
 #include <string.h>
 #include <stdbool.h>
-#include <base64.h>
+#include<base64.h>
 #include "webcfg_multipart.h"
 /*----------------------------------------------------------------------------*/
 /*                                   Macros                                   */
@@ -43,13 +43,6 @@ typedef struct webconfig_db_data{
 	uint32_t version;
         struct webconfig_db_data *next;
 }webconfig_db_data_t;
-
-
-typedef struct {
-	webconfig_db_data_t *entries;
-	size_t      entries_count;
-} webconfig_db_t; // For storing the successfully applied docs
-// root is also one entry with root version applied
 
 typedef struct blob{
 	char *data;
@@ -87,10 +80,6 @@ blob_struct_t* decodeBlobData(const void * buf, size_t len);
 int initDB(char * db_file_path);
 
 int addNewDocEntry(size_t count);
-
-webconfig_db_t* getDocEntry(char *doc_name);
-
-int updateDocEntry(char *doc_name, webconfig_db_t *subdoc);
 
 int writeToDBFile(char * db_file_path, char * data);
 
@@ -134,12 +123,6 @@ char * get_DB_BLOB_base64(size_t *len);
  */
 webconfig_db_data_t* decodeData(const void * data, size_t len);
 
-/**
- *  This function destroys an webconfig_db_t object.
- *
- *  @param e the webcfgparam to destroy
- */
-void webcfgdb_destroy( webconfig_db_t *d );
 
 /**
  *  This function returns a general reason why the conversion failed.
@@ -150,6 +133,5 @@ void webcfgdb_destroy( webconfig_db_t *d );
  */
 const char* webcfgdbparam_strerror( int errnum );
 
-extern webconfig_db_t *wd;
 extern webconfig_db_data_t* webcfgdb_data;
 #endif
