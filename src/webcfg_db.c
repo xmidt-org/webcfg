@@ -70,6 +70,7 @@ int process_webcfgdbblobparams( blob_data_t *e, msgpack_object_map *map );
 /*                             External Functions                             */
 /*----------------------------------------------------------------------------*/
 
+//To initialize the DB when DB file is present
 int initDB(char * db_file_path )
 {
      FILE *fp;
@@ -99,6 +100,7 @@ int initDB(char * db_file_path )
      
 }
 
+//addNewDocEntry function will pack the DB blob and persist to a bin file
 int addNewDocEntry(size_t count)
 {    
      size_t webcfgdbPackSize = -1;
@@ -113,6 +115,7 @@ int addNewDocEntry(size_t count)
      return 0;
 }
 
+//generateBlob function is used to pack webconfig_tmp_data_t and webconfig_db_data_t
 int generateBlob()
 {
     size_t webcfgdbBlobPackSize = -1;
@@ -216,14 +219,16 @@ int writeBlobToFile(char *blob_file_path, char *data)
 	}
 }
 
+//Used to decode the DB bin file 
 webconfig_db_data_t* decodeData(const void * buf, size_t len)
 {
      return helper_convert( buf, len, sizeof(webconfig_db_data_t),"webcfgdb",
                            MSGPACK_OBJECT_ARRAY, true,
                            (process_fn_t) process_webcfgdb,
-                           (destroy_fn_t) webcfgdb_destroy );
+                           NULL );
 }
 
+//Used to decode the webconfig_tmp_data_t and webconfig_db_data_t msgpack
 blob_struct_t* decodeBlobData(const void * buf, size_t len)
 {
      return helper_convert( buf, len, sizeof(blob_struct_t),"webcfgblob",
@@ -232,22 +237,6 @@ blob_struct_t* decodeBlobData(const void * buf, size_t len)
                            (destroy_fn_t) webcfgdbblob_destroy );
 }
 
-void webcfgdb_destroy( webconfig_db_t *wd )
-{
-    if( NULL != wd ) {
-        size_t i;
-        for( i = 0; i < wd->entries_count; i++ ) {
-            if( NULL != wd->entries[i].name ) {
-                //free( wd->entries[i].name );
-            }
-	    
-        }
-        if( NULL != wd->entries ) {
-            free( wd->entries );
-        }
-        free( wd );
-    }
-}
 
 void webcfgdbblob_destroy( blob_struct_t *bd )
 {
@@ -541,7 +530,7 @@ int process_webcfgdbparams( webconfig_db_data_t *e, msgpack_object_map *map )
                     else
                     {
                         e->version = (uint32_t) p->val.via.u64;
-			WebConfigLog("e->version is %lu\n", (long)e->version);
+			//WebConfigLog("e->version is %lu\n", (long)e->version);
                     }
                     objects_left &= ~(1 << 1);
 		    //WebConfigLog("objects_left after datatype %d\n", objects_left);
@@ -553,7 +542,7 @@ int process_webcfgdbparams( webconfig_db_data_t *e, msgpack_object_map *map )
                 if( 0 == match(p, "name") )
                 {
                     e->name = strndup( p->val.via.str.ptr, p->val.via.str.size );
-		    WebConfigLog("e->name is %s\n", e->name);
+		    //WebConfigLog("e->name is %s\n", e->name);
                     objects_left &= ~(1 << 0);
 		    //WebConfigLog("objects_left after name %d\n", objects_left);
                 }

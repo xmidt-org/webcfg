@@ -65,7 +65,6 @@ char* generate_trans_uuid();
 int processMsgpackSubdoc(multipart_t *mp);
 void loadInitURLFromFile(char **url);
 static void get_webCfg_interface(char **interface);
-webconfig_db_t *wd;
 void get_root_version(uint32_t *rt_version);
 char *replaceMacWord(const char *s, const char *macW, const char *deviceMACW);
 /*----------------------------------------------------------------------------*/
