@@ -51,7 +51,7 @@ void initWebConfigMultipartTask(unsigned long status);
 void sendNotification(char *payload, char *source, char *destination);
 
 int Get_Webconfig_Blob( char *pString);
-int Get_Webconfig_URL( char **pString);
+int Get_Webconfig_URL( char *pString);
 int Set_Webconfig_URL( char *pString);
 
 int readBlobFromFile(char * blob_file_path);

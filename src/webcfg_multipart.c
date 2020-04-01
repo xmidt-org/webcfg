@@ -97,7 +97,7 @@ int webcfg_http_request(char **configData, int r_count, int status, long *code, 
 	char *webConfigURL = NULL;
 	char *transID = NULL;
 	char *docnames = NULL;
-	char * configURL = NULL;
+	char configURL[256] = { 0 };
 	char c[] = "{mac}";
 
 	int content_res=0;
@@ -124,8 +124,9 @@ int webcfg_http_request(char **configData, int r_count, int status, long *code, 
 			*transaction_id = strdup(transID);
 			WEBCFG_FREE(transID);
 		}
-		WebConfigLog("Get_Webconfig_URL\n");
-		Get_Webconfig_URL(&configURL);
+		//loadInitURLFromFile(&webConfigURL);
+		WebConfigLog("B4 Get_Webconfig_URL\n");
+		Get_Webconfig_URL(configURL);
 		if(configURL !=NULL)
 		{
 			//Replace {mac} string from default init url with actual deviceMAC
