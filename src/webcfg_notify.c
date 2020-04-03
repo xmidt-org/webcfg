@@ -146,13 +146,13 @@ void* processWebConfigNotification()
 		if(msg !=NULL)
 		{
                         WebConfigLog("Processing msg\n");
-			if(strlen(get_global_deviceMAC()) == 0)
+			if(strlen(get_deviceMAC()) == 0)
 			{
 				WebConfigLog("deviceMAC is NULL, failed to send Webconfig Notification\n");
 			}
 			else
 			{
-				snprintf(device_id, sizeof(device_id), "mac:%s", get_global_deviceMAC());
+				snprintf(device_id, sizeof(device_id), "mac:%s", get_deviceMAC());
 				WebConfigLog("webconfig Device_id %s\n", device_id);
 
 				notifyPayload = cJSON_CreateObject();

@@ -30,14 +30,22 @@
 /*----------------------------------------------------------------------------*/
 /*                               Data Structures                              */
 /*----------------------------------------------------------------------------*/
-
+typedef enum
+{
+    WEBCFG_SUCCESS = 0,
+    WEBCFG_FAILURE
+} WEBCFG_STATUS;
 /*----------------------------------------------------------------------------*/
 /*                             External Functions                             */
 /*----------------------------------------------------------------------------*/
-extern bool g_shutdown;
+bool get_global_shutdown();
+void set_global_shutdown(bool shutdown);
+pthread_cond_t *get_global_sync_condition(void);
+pthread_mutex_t *get_global_sync_mutex(void);
+
 void initWebConfigMultipartTask(unsigned long status);
 void processWebconfgSync(int Status);
-int webcfg_http_request(char **configData, int r_count, int status, long *code, char **transaction_id,char** contentType, size_t* dataSize);
+WEBCFG_STATUS webcfg_http_request(char **configData, int r_count, int status, long *code, char **transaction_id,char** contentType, size_t* dataSize);
 
 void webcfgStrncpy(char *destStr, const char *srcStr, size_t destSize);
 

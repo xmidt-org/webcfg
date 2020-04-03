@@ -18,6 +18,7 @@
 
 #include <stdint.h>
 #include <curl/curl.h>
+#include "webcfg.h"
 
 #define WEBCFG_FREE(__x__) if(__x__ != NULL) { free((void*)(__x__)); __x__ = NULL;} else {printf("Trying to free null pointer\n");}
 
@@ -42,8 +43,8 @@ typedef struct {
 
 
 int readFromFile(char *filename, char **data, int *len);
-int parseMultipartDocument(void *config_data, char *ct , size_t data_size);
-void getConfigDocList(char **doc);
+WEBCFG_STATUS parseMultipartDocument(void *config_data, char *ct , size_t data_size);
+void getConfigDocList(char *docList);
 void print_tmp_doc_list(size_t mp_count);
 void loadInitURLFromFile(char **url);
 uint32_t get_global_root();

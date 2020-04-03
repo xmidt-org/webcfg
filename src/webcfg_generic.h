@@ -37,13 +37,10 @@ char * getSerialNumber();
 char * getProductClass();
 char * getModelName();
 char * getFirmwareVersion();
-void getDeviceMac();
+char* get_deviceMAC();
 
 /* Getter function to return systemReadyTime in UTC format */
 char *get_global_systemReadyTime();
-
-/* Getter function to return deviceMAC */
-char* get_global_deviceMAC();
 
 /* Function that gets the values from TR181 dml layer */
 int setForceSync(char* pString, char *transactionId,int *session_status);

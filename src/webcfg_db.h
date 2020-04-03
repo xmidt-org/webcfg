@@ -19,7 +19,8 @@
 #include <stdint.h>
 #include <string.h>
 #include <stdbool.h>
-#include<base64.h>
+#include <base64.h>
+#include "webcfg.h"
 #include "webcfg_multipart.h"
 /*----------------------------------------------------------------------------*/
 /*                                   Macros                                   */
@@ -77,13 +78,13 @@ void webcfgdbblob_destroy( blob_struct_t *bd );
 const char* webcfgdbblob_strerror( int errnum );
 blob_struct_t* decodeBlobData(const void * buf, size_t len);
 
-int initDB(char * db_file_path);
+WEBCFG_STATUS initDB(char * db_file_path);
 
-int addNewDocEntry(size_t count);
+WEBCFG_STATUS addNewDocEntry(size_t count);
 
 int writeToDBFile(char * db_file_path, char * data);
 
-int generateBlob();
+WEBCFG_STATUS generateBlob();
 
 blob_t * get_DB_BLOB();
 
@@ -91,13 +92,13 @@ webconfig_db_data_t * get_global_db_node(void);
 
 webconfig_tmp_data_t * get_global_tmp_node(void);
 
-int addToTmpList( multipart_t *mp);
+WEBCFG_STATUS addToTmpList( multipart_t *mp);
 
 void addToDBList(webconfig_db_data_t *webcfgdb);
 
-int updateTmpList(char *docname, uint32_t version, char *status);
+WEBCFG_STATUS updateTmpList(char *docname, uint32_t version, char *status);
 
-int deleteFromTmpList(char* doc_name);
+WEBCFG_STATUS deleteFromTmpList(char* doc_name);
 
 void delete_tmp_doc_list();
 
@@ -133,5 +134,5 @@ webconfig_db_data_t* decodeData(const void * data, size_t len);
  */
 const char* webcfgdbparam_strerror( int errnum );
 
-extern webconfig_db_data_t* webcfgdb_data;
+
 #endif

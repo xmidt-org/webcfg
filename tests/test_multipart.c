@@ -34,7 +34,7 @@
 char *url = NULL;
 char *interface = NULL;
 
-char* get_global_deviceMAC()
+char* get_deviceMAC()
 {
 	char *tmp = strdup("b42xxxxxxxxx");
 	return tmp;
@@ -63,11 +63,6 @@ int setForceSync(char* pString, char *transactionId,int *session_status)
 	UNUSED(transactionId);
 	UNUSED(session_status);
 	return 0;
-}
-
-void getDeviceMac()
-{
-	return;
 }
 
 char * getParameterValue(char *paramName)

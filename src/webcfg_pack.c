@@ -17,6 +17,7 @@
 #include <string.h>
 #include <msgpack.h>
 
+#include "webcfg.h"
 #include "webcfg_helpers.h"
 #include "webcfg_pack.h"
 #include "webcfg_log.h"

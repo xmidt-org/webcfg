@@ -23,7 +23,6 @@
 #include "webcfg_param.h"
 #include "webcfg_log.h"
 #include "webcfg_db.h"
-#include "webcfg_generic.h"
 #include "webcfg_pack.h"
 
 /*----------------------------------------------------------------------------*/
@@ -53,6 +52,7 @@ enum {
 /*----------------------------------------------------------------------------*/
 /*                            File Scoped Variables                           */
 /*----------------------------------------------------------------------------*/
+webconfig_db_data_t* webcfgdb_data = NULL;
 static webconfig_tmp_data_t * g_head = NULL;
 static blob_t * webcfgdb_blob = NULL;
 static int numOfMpDocs = 0;
@@ -71,20 +71,19 @@ int process_webcfgdbblobparams( blob_data_t *e, msgpack_object_map *map );
 /*----------------------------------------------------------------------------*/
 
 //To initialize the DB when DB file is present
-int initDB(char * db_file_path )
+WEBCFG_STATUS initDB(char * db_file_path )
 {
      FILE *fp;
      char *data;
      size_t len;
      int ch_count=0;
-     //size_t k;
      WebConfigLog("DB file path is %s\n", db_file_path);
      fp = fopen(db_file_path,"rb");
 
      if (fp == NULL)
      {
 	WebConfigLog("Failed to open file %s\n", db_file_path);
-	return 0;
+	return WEBCFG_FAILURE;
      }
      
      fseek(fp, 0, SEEK_END);
@@ -96,12 +95,12 @@ int initDB(char * db_file_path )
      fclose(fp);
 
      decodeData((void *)data, len);
-     return 1;
+     return WEBCFG_SUCCESS;
      
 }
 
 //addNewDocEntry function will pack the DB blob and persist to a bin file
-int addNewDocEntry(size_t count)
+WEBCFG_STATUS addNewDocEntry(size_t count)
 {    
      size_t webcfgdbPackSize = -1;
      void* data = NULL;
@@ -112,11 +111,11 @@ int addNewDocEntry(size_t count)
      WebConfigLog("writeToDBFile %s\n", WEBCFG_DB_FILE);
      writeToDBFile(WEBCFG_DB_FILE,(char *)data);
   
-     return 0;
+     return WEBCFG_SUCCESS;
 }
 
 //generateBlob function is used to pack webconfig_tmp_data_t and webconfig_db_data_t
-int generateBlob()
+WEBCFG_STATUS generateBlob()
 {
     size_t webcfgdbBlobPackSize = -1;
     void * data = NULL;
@@ -128,7 +127,7 @@ int generateBlob()
 
     WebConfigLog("The webcfgdbBlobPackSize is : %ld\n",webcfgdb_blob->len);
     //WebConfigLog("The value of blob is %s\n",webcfgdb_blob->data);
-    return 1;
+    return WEBCFG_SUCCESS;
 }
 
 int writeToDBFile(char *db_file_path, char *data)
@@ -332,10 +331,10 @@ blob_t * get_DB_BLOB()
 }
 
 //new_node indicates the docs which need to be added to list
-int addToTmpList( multipart_t *mp)
+WEBCFG_STATUS addToTmpList( multipart_t *mp)
 {
 	int m = 0;
-	int retStatus = 0;
+	int retStatus = WEBCFG_FAILURE;
 
 	WebConfigLog("mp->entries_count is %zu\n", mp->entries_count);
 	numOfMpDocs = 0;
@@ -399,7 +398,7 @@ int addToTmpList( multipart_t *mp)
 		if((int)mp->entries_count == numOfMpDocs)
 		{
 			WebConfigLog("addToTmpList success\n");
-			retStatus = 1;
+			retStatus = WEBCFG_SUCCESS;
 		}
 	}
 	WebConfigLog("addToList return %d\n", retStatus);
@@ -407,7 +406,7 @@ int addToTmpList( multipart_t *mp)
 }
 
 //update version, status for each doc
-int updateTmpList(char *docname, uint32_t version, char *status)
+WEBCFG_STATUS updateTmpList(char *docname, uint32_t version, char *status)
 {
 	webconfig_tmp_data_t *temp = NULL;
 	temp = get_global_tmp_node();
@@ -421,23 +420,23 @@ int updateTmpList(char *docname, uint32_t version, char *status)
 			temp->version = version;
 			temp->status = strdup(status);
 			WebConfigLog("-->>doc %s is updated to version %lu status %s\n", docname, (long)temp->version, temp->status);
-			return 1;
+			return WEBCFG_SUCCESS;
 		}
 		temp= temp->next;
 	}
-	return 0;
+	return WEBCFG_FAILURE;
 }
 
 
 //delete doc from webcfg Tmp list
-int deleteFromTmpList(char* doc_name)
+WEBCFG_STATUS deleteFromTmpList(char* doc_name)
 {
 	webconfig_tmp_data_t *prev_node = NULL, *curr_node = NULL;
 
 	if( NULL == doc_name )
 	{
 		WebConfigLog("Invalid value for doc\n");
-		return -1;
+		return WEBCFG_FAILURE;
 	}
 	WebConfigLog("doc to be deleted: %s\n", doc_name);
 
@@ -467,14 +466,14 @@ int deleteFromTmpList(char* doc_name)
 			WebConfigLog("Deleted successfully and returning..\n");
 			numOfMpDocs =numOfMpDocs - 1;
 			WebConfigLog("numOfMpDocs after delete is %d\n", numOfMpDocs);
-			return 0;
+			return WEBCFG_SUCCESS;
 		}
 
 		prev_node = curr_node;
 		curr_node = curr_node->next;
 	}
 	WebConfigLog("Could not find the entry to delete from list\n");
-	return -1;
+	return WEBCFG_FAILURE;
 }
 
 void delete_tmp_doc_list()

@@ -21,6 +21,10 @@
 #include "../src/webcfg_param.h"
 #include "../src/webcfg_pack.h"
 
+uint32_t get_global_root()
+{
+	return 0;
+}
 void webcfgPackUnpack();
 /*
 	{

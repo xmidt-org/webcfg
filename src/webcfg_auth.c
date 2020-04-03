@@ -63,10 +63,10 @@ void getAuthToken()
 
 	if( strlen(WEBPA_READ_HEADER) !=0 && strlen(WEBPA_CREATE_HEADER) !=0)
 	{
-                getDeviceMac();
-                WebConfigLog("deviceMAC: %s\n",get_global_deviceMAC());
+                get_deviceMAC();
+                WebConfigLog("deviceMAC: %s\n",get_deviceMAC());
 
-		if( get_global_deviceMAC() != NULL && strlen(get_global_deviceMAC()) !=0 )
+		if( get_deviceMAC() != NULL && strlen(get_deviceMAC()) !=0 )
 		{
 			if(strlen(serialNum) ==0)
 			{
@@ -81,7 +81,7 @@ void getAuthToken()
 
 			if( strlen(serialNum)>0 )
 			{
-				execute_token_script(output, WEBPA_READ_HEADER, sizeof(output), get_global_deviceMAC(), serialNum);
+				execute_token_script(output, WEBPA_READ_HEADER, sizeof(output), get_deviceMAC(), serialNum);
 				if ((strlen(output) == 0))
 				{
 					WebConfigLog("Unable to get auth token\n");
@@ -90,7 +90,7 @@ void getAuthToken()
 				{
 					WebConfigLog("Failed to read token from %s. Proceeding to create new token.\n",WEBPA_READ_HEADER);
 					//Call create/acquisition script
-					createNewAuthToken(webpa_auth_token, sizeof(webpa_auth_token), get_global_deviceMAC(), serialNum );
+					createNewAuthToken(webpa_auth_token, sizeof(webpa_auth_token), get_deviceMAC(), serialNum );
 				}
 				else
 				{

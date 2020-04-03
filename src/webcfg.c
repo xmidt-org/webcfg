@@ -43,8 +43,8 @@
 /*----------------------------------------------------------------------------*/
 /*                            File Scoped Variables                           */
 /*----------------------------------------------------------------------------*/
-pthread_mutex_t periodicsync_mutex=PTHREAD_MUTEX_INITIALIZER;
-pthread_cond_t periodicsync_condition=PTHREAD_COND_INITIALIZER;
+pthread_mutex_t sync_mutex=PTHREAD_MUTEX_INITIALIZER;
+pthread_cond_t sync_condition=PTHREAD_COND_INITIALIZER;
 bool g_shutdown  = false;
 /*----------------------------------------------------------------------------*/
 /*                             Function Prototypes                            */
@@ -103,16 +103,16 @@ void *WebConfigMultipartTask(void *status)
 			processWebconfgSync((int)Status);
 		}
 
-		pthread_mutex_lock (&periodicsync_mutex);
+		pthread_mutex_lock (&sync_mutex);
 
 		if (g_shutdown)
 		{
 			WebConfigLog("g_shutdown is %d, proceeding to kill webconfig thread\n", g_shutdown);
-			pthread_mutex_unlock (&periodicsync_mutex);
+			pthread_mutex_unlock (&sync_mutex);
 			break;
 		}
-		WebConfigLog("B4 periodicsync_condition pthread_cond_wait\n");
-		pthread_cond_wait(&periodicsync_condition, &periodicsync_mutex);
+		WebcfgDebug("B4 sync_condition pthread_cond_wait\n");
+		pthread_cond_wait(&sync_condition, &sync_mutex);
 		rv =0;
 
 		if(!rv && !g_shutdown)
@@ -128,7 +128,7 @@ void *WebConfigMultipartTask(void *status)
 				if((ForceSyncDoc != NULL) && strlen(ForceSyncDoc)>0)
 				{
 					forced_sync = 1;
-					WebConfigLog("Received signal interrupt to getForceSync\n");
+					WebConfigLog("Received signal interrupt to Force Sync\n");
 					WEBCFG_FREE(ForceSyncDoc);
 					WEBCFG_FREE(ForceSyncTransID);
 				}
@@ -144,10 +144,10 @@ void *WebConfigMultipartTask(void *status)
 		else if(g_shutdown)
 		{
 			WebConfigLog("Received signal interrupt to RFC disable. g_shutdown is %d, proceeding to kill webconfig thread\n", g_shutdown);
-			pthread_mutex_unlock (&periodicsync_mutex);
+			pthread_mutex_unlock (&sync_mutex);
 			break;
 		}
-		pthread_mutex_unlock(&periodicsync_mutex);
+		pthread_mutex_unlock(&sync_mutex);
 
 	}
 	if(get_global_notify_threadid())
@@ -168,6 +168,25 @@ void *WebConfigMultipartTask(void *status)
 	return NULL;
 }
 
+pthread_cond_t *get_global_sync_condition(void)
+{
+    return &sync_condition;
+}
+
+pthread_mutex_t *get_global_sync_mutex(void)
+{
+    return &sync_mutex;
+}
+
+bool get_global_shutdown()
+{
+    return g_shutdown;
+}
+
+void set_global_shutdown(bool shutdown)
+{
+    g_shutdown = shutdown;
+}
 /*----------------------------------------------------------------------------*/
 /*                             Internal functions                             */
 /*----------------------------------------------------------------------------*/
@@ -194,10 +213,8 @@ void processWebconfgSync(int status)
 		}
 		WebConfigLog("processWebconfgSync. status is %d\n", status );
 		configRet = webcfg_http_request(&webConfigData, r_count, status, &res_code, &transaction_uuid, &ct, &dataSize);
-		WebConfigLog("webcfg_http_request ct is %s\n", ct );
 		if(configRet == 0)
 		{
-			WebConfigLog("handlehttpResponse\n");
 			rv = handlehttpResponse(res_code, webConfigData, retry_count, transaction_uuid, ct, dataSize);
 			if(rv ==1)
 			{
@@ -263,7 +280,7 @@ int handlehttpResponse(long response_code, char *webConfigData, int retry_count,
 	else if(response_code == 403)
 	{
 		WebConfigLog("Token is expired, fetch new token. response_code:%ld\n", response_code);
-		createNewAuthToken(get_global_auth_token(), sizeof(get_global_auth_token()), get_global_deviceMAC(), get_global_serialNum() );
+		createNewAuthToken(get_global_auth_token(), sizeof(get_global_auth_token()), get_deviceMAC(), get_global_serialNum() );
 		WebcfgDebug("createNewAuthToken done in 403 case\n");
 		err = 1;
 	}

@@ -50,7 +50,6 @@ static char g_FirmwareVersion[64]={'\0'};
 static char g_bootTime[64]={'\0'};
 static char g_productClass[64]={'\0'};
 static char g_ModelName[64]={'\0'};
-webconfig_db_data_t* webcfgdb_data = NULL;
 /*----------------------------------------------------------------------------*/
 /*                             Function Prototypes                            */
 /*----------------------------------------------------------------------------*/
@@ -62,7 +61,7 @@ void parse_multipart(char *ptr, int no_of_bytes, multipartdocs_t *m, int *no_of_
 void multipart_destroy( multipart_t *m );
 void addToDBList(webconfig_db_data_t *webcfgdb);
 char* generate_trans_uuid();
-int processMsgpackSubdoc(multipart_t *mp);
+WEBCFG_STATUS processMsgpackSubdoc(multipart_t *mp);
 void loadInitURLFromFile(char **url);
 static void get_webCfg_interface(char **interface);
 void get_root_version(uint32_t *rt_version);
@@ -81,21 +80,20 @@ char *replaceMacWord(const char *s, const char *macW, const char *deviceMACW);
 * @param[out] contentType config data contentType 
 * @return returns 0 if success, otherwise failed to fetch auth token and will be retried.
 */
-int webcfg_http_request(char **configData, int r_count, int status, long *code, char **transaction_id, char** contentType, size_t *dataSize)
+WEBCFG_STATUS webcfg_http_request(char **configData, int r_count, int status, long *code, char **transaction_id, char** contentType, size_t *dataSize)
 {
 	CURL *curl;
 	CURLcode res;
 	CURLcode time_res;
 	struct curl_slist *list = NULL;
 	struct curl_slist *headers_list = NULL;
-	int rv=1;
 	double total;
 	long response_code = 0;
 	char *interface = NULL;
 	char *ct = NULL;
 	char *webConfigURL = NULL;
 	char *transID = NULL;
-	char *docnames = NULL;
+	char docList[512] = {'\0'};
 	char configURL[256] = { 0 };
 	char c[] = "{mac}";
 
@@ -114,7 +112,7 @@ int webcfg_http_request(char **configData, int r_count, int status, long *code, 
 		if(NULL == data.data)
 		{
 			WebConfigLog("Failed to allocate memory.\n");
-			return rv;
+			return WEBCFG_FAILURE;
 		}
 		data.data[0] = '\0';
 		createCurlHeader(list, &headers_list, status, &transID);
@@ -124,36 +122,29 @@ int webcfg_http_request(char **configData, int r_count, int status, long *code, 
 			WEBCFG_FREE(transID);
 		}
 		//loadInitURLFromFile(&webConfigURL);
-		WebConfigLog("B4 Get_Webconfig_URL\n");
 		Get_Webconfig_URL(configURL);
-		WebConfigLog("ConfigURL %s\n", configURL);
 		if(configURL !=NULL && (strlen(configURL)>0))
 		{
 			//Replace {mac} string from default init url with actual deviceMAC
 			WebConfigLog("replaceMacWord to actual device mac\n");
-			webConfigURL = replaceMacWord(configURL, c, get_global_deviceMAC());
-			WebConfigLog("webConfigURL is %s\n", webConfigURL);
+			webConfigURL = replaceMacWord(configURL, c, get_deviceMAC());
 			Set_Webconfig_URL(webConfigURL);
 		}
 		else
 		{
 			WebConfigLog("Failed to get configURL\n");
-			return rv;
+			return WEBCFG_FAILURE;
 		}
 		WebConfigLog("ConfigURL fetched is %s\n", webConfigURL);
 
 		//Update query param in the URL based on the existing doc names from db
-		getConfigDocList(&docnames);
-		if(docnames !=NULL )
+		getConfigDocList(docList);
+		if(strlen(docList) > 0)
 		{
-			if(strlen(docnames) > 0)
-			{
-				WebConfigLog("docnames is %s\n", docnames);
-				snprintf(syncURL, MAX_BUF_SIZE, "%s?group_id=%s", webConfigURL, docnames);
-				WebConfigLog("syncURL is %s\n", syncURL);
-				webConfigURL =strdup( syncURL);
-			}
-			WEBCFG_FREE(docnames);
+			WebConfigLog("docList is %s\n", docList);
+			snprintf(syncURL, MAX_BUF_SIZE, "%s?group_id=%s", webConfigURL, docList);
+			WebConfigLog("syncURL is %s\n", syncURL);
+			webConfigURL =strdup( syncURL);
 		}
 
 		if(webConfigURL !=NULL)
@@ -164,7 +155,7 @@ int webcfg_http_request(char **configData, int r_count, int status, long *code, 
 		else
 		{
 			WebConfigLog("Failed to get webconfig configURL\n");
-			return rv;
+			return WEBCFG_FAILURE;
 		}
 		curl_easy_setopt(curl, CURLOPT_TIMEOUT, CURL_TIMEOUT_SEC);
 		WebConfigLog("fetching interface from device.properties\n");
@@ -243,24 +234,37 @@ int webcfg_http_request(char **configData, int r_count, int status, long *code, 
 				WebConfigLog("checking content type\n");
 				content_res = curl_easy_getinfo(curl, CURLINFO_CONTENT_TYPE, &ct);
 				WebConfigLog("ct is %s, content_res is %d\n", ct, content_res);
-				*configData=data.data;
-				WebConfigLog("Data size is : %d\n",(int)data.size);
-				*contentType = strdup(ct);
-				*dataSize = data.size;
+
+				if(ct !=NULL)
+				{
+					if(strncmp(ct, "multipart/mixed", 15) !=0)
+					{
+						WebConfigLog("Invalid Content-Type\n");
+					}
+					else
+					{
+						WebConfigLog("Content-Type is valid\n");
+						*contentType = strdup(ct);
+
+						*configData=data.data;
+						*dataSize = data.size;
+						WebConfigLog("Data size is %d\n",(int)data.size);
+					}
+				}
 			}
 		}
 		//WEBCFG_FREE(data.data);
 		curl_easy_cleanup(curl);
-		rv=0;
+		return WEBCFG_SUCCESS;
 	}
 	else
 	{
 		WebConfigLog("curl init failure\n");
 	}
-	return rv;
+	return WEBCFG_FAILURE;
 }
 
-int parseMultipartDocument(void *config_data, char *ct , size_t data_size)
+WEBCFG_STATUS parseMultipartDocument(void *config_data, char *ct , size_t data_size)
 {
 	char *boundary = NULL;
 	char *str=NULL;
@@ -270,7 +274,7 @@ int parseMultipartDocument(void *config_data, char *ct , size_t data_size)
 	multipart_t *mp = NULL;
 	int subdocbytes =0;
 	int boundary_len =0;
-	int rv = -1,count =0;
+	int count =0;
 	int status =0;
 	
 	WebConfigLog("ct is %s\n", ct );
@@ -373,32 +377,33 @@ int parseMultipartDocument(void *config_data, char *ct , size_t data_size)
 	if(status ==0)
 	{
 		WebConfigLog("processMsgpackSubdoc success\n");
-		rv =1;
+		return WEBCFG_SUCCESS;
 	}
 	else
 	{
 		WebConfigLog("processMsgpackSubdoc failed\n");	
 	}
-	return rv;
+	return WEBCFG_FAILURE;
 }
 
-int processMsgpackSubdoc(multipart_t *mp)
+WEBCFG_STATUS processMsgpackSubdoc(multipart_t *mp)
 {
 	int i =0, m=0;
-	int rv = -1;
+	WEBCFG_STATUS rv = WEBCFG_FAILURE;
 	param_t *reqParam = NULL;
 	WDMP_STATUS ret = WDMP_FAILURE;
 	int ccspStatus=0;
 	int paramCount = 0;
 	webcfgparam_t *pm;
-    	int success_count = 0, addStatus =0;
-	int uStatus = 0, dStatus =0;
+	int success_count = 0;
+	WEBCFG_STATUS addStatus =0;
+	WEBCFG_STATUS uStatus = 0, dStatus =0;
 	char * blob_data = NULL;
         size_t blob_len = -1 ;
         
 	WebConfigLog("Add mp entries to tmp list\n");
         addStatus = addToTmpList(mp);
-        if(addStatus == 1)
+        if(addStatus == WEBCFG_SUCCESS)
         {
 		WebConfigLog("Added %d mp entries To tmp List\n", get_numOfMpDocs());
 		print_tmp_doc_list(mp->entries_count);
@@ -455,14 +460,14 @@ int processMsgpackSubdoc(multipart_t *mp)
 
 					WebConfigLog("update doc status for %s\n", mp->entries[m].name_space);
 					uStatus = updateTmpList(mp->entries[m].name_space, mp->entries[m].etag, "success");
-					if(uStatus == 1)
+					if(uStatus == WEBCFG_SUCCESS)
 					{
 						print_tmp_doc_list(mp->entries_count);
 						WebConfigLog("updateTmpList success\n");
 
 						WebConfigLog("deleteFromTmpList as doc is applied\n");
 						dStatus = deleteFromTmpList(mp->entries[m].name_space);
-						if(dStatus == 0)
+						if(dStatus == WEBCFG_SUCCESS)
 						{
 							WebConfigLog("deleteFromTmpList success\n");
 							print_tmp_doc_list(mp->entries_count);
@@ -514,7 +519,7 @@ int processMsgpackSubdoc(multipart_t *mp)
 							WebConfigLog("Delete tmp queue root is failed\n");
 						}
 					}
-					rv = 0;
+					rv = WEBCFG_SUCCESS;
 				}
 				else
 				{
@@ -535,7 +540,8 @@ int processMsgpackSubdoc(multipart_t *mp)
 	{
 		size_t j=success_count;
 		
-		webconfig_db_data_t* temp1 = webcfgdb_data;
+		webconfig_db_data_t* temp1 = NULL;
+		temp1 = get_global_db_node();
 
 		while(temp1 )
 		{
@@ -549,7 +555,7 @@ int processMsgpackSubdoc(multipart_t *mp)
 	}
 
 	WebConfigLog("Proceed to generateBlob\n");
-	if(generateBlob())
+	if(generateBlob() == WEBCFG_SUCCESS)
         {
 	    blob_data = get_DB_BLOB_base64(&blob_len);
             writeBlobToFile(WEBCFG_BLOB_PATH, blob_data);
@@ -763,39 +769,31 @@ int readFromFile(char *filename, char **data, int *len)
 
 /* Traverse through db list to get docnames of all docs with root.
 e.g. root,ble,lan,mesh,moca. */
-void getConfigDocList(char **doc)
+void getConfigDocList(char *docList)
 {
 	char *docList_tmp = NULL;
-	char *docList = NULL;
-	docList = (char*) malloc(512);
+	webconfig_db_data_t *temp = NULL;
+	temp = get_global_db_node();
 
-	if(docList)
+	if( NULL != temp)
 	{
-		memset(docList, 0, 512);
-		webconfig_db_data_t *temp = NULL;
-		temp = get_global_db_node();
+		sprintf(docList, "%s", "root");
+		WebConfigLog("docList is %s\n", docList);
 
-		if( NULL != temp)
+		while (NULL != temp)
 		{
-			sprintf(docList, "%s", "root");
-			WebConfigLog("docList is %s\n", docList);
-
-			while (NULL != temp)
+			if( temp->name != NULL)
 			{
-				if( temp->name != NULL)
+				if( strcmp(temp->name,"root") !=0 )
 				{
-					if( strcmp(temp->name,"root") !=0 )
-					{
-						docList_tmp = strdup(docList);
-						sprintf(docList, "%s,%s",docList_tmp, temp->name);
-						WEBCFG_FREE(docList_tmp);
-					}
+					docList_tmp = strdup(docList);
+					sprintf(docList, "%s,%s",docList_tmp, temp->name);
+					WEBCFG_FREE(docList_tmp);
 				}
-				temp= temp->next;
 			}
-			WebConfigLog("Final docList is %s\n", docList);
+			temp= temp->next;
 		}
-		*doc = docList;
+		WebConfigLog("Final docList is %s len %lu\n", docList, strlen(docList));
 	}
 }
 
@@ -816,54 +814,48 @@ void get_root_version(uint32_t *rt_version)
 }
 
 /* Traverse through db list to get versions of all docs with root.
-e.g. IF-NONE-MATCH: 123,44317,66317,77317 where 123 is root version. */
-
-void getConfigVersionList(char **version)
+e.g. IF-NONE-MATCH: 123,44317,66317,77317 where 123 is root version.
+Currently versionsList length is fixed to 512 which can support up to 45 docs.
+This can be increased if required. */
+void getConfigVersionList(char *versionsList)
 {
-	char *versionsList = NULL;
 	char *versionsList_tmp = NULL;
 	uint32_t root_version = 0;
 
 	get_root_version(&root_version);
 	WebConfigLog("root_version %lu\n", (long)root_version);
 
-	versionsList = (char*) malloc(512);
-	if(versionsList)
+	webconfig_db_data_t *temp = NULL;
+	temp = get_global_db_node();
+
+	if(NULL != temp)
 	{
-		memset(versionsList, 0, 512);
-		webconfig_db_data_t *temp = NULL;
-		temp = get_global_db_node();
-
-		if(NULL != temp)
+		if(root_version)
 		{
-			if(root_version)
-			{
-				WebConfigLog("Updating root_version to versionsList\n");
-				sprintf(versionsList, "%lu", (long)root_version);
-			}
-			else
-			{
-				WebConfigLog("Updating versionsList as NONE\n");
-				sprintf(versionsList, "%s", "NONE");
-			}
-			WebConfigLog("versionsList is %s\n", versionsList);
-
-			while (NULL != temp)
-			{
-				if( temp->name != NULL)
-				{
-					if( strcmp(temp->name,"root") !=0 )
-					{
-						versionsList_tmp = strdup(versionsList);
-						sprintf(versionsList, "%s,%lu",versionsList_tmp,(long)temp->version);
-						WEBCFG_FREE(versionsList_tmp);
-					}
-				}
-				temp= temp->next;
-			}
-			WebConfigLog("Final versionsList is %s\n", versionsList);
+			WebConfigLog("Updating root_version to versionsList\n");
+			sprintf(versionsList, "%lu", (long)root_version);
 		}
-		*version = versionsList;
+		else
+		{
+			WebConfigLog("Updating versionsList as NONE\n");
+			sprintf(versionsList, "%s", "NONE");
+		}
+		WebConfigLog("versionsList is %s\n", versionsList);
+
+		while (NULL != temp)
+		{
+			if( temp->name != NULL)
+			{
+				if( strcmp(temp->name,"root") !=0 )
+				{
+					versionsList_tmp = strdup(versionsList);
+					sprintf(versionsList, "%s,%lu",versionsList_tmp,(long)temp->version);
+					WEBCFG_FREE(versionsList_tmp);
+				}
+			}
+			temp= temp->next;
+		}
+		WebConfigLog("Final versionsList is %s len %lu\n", versionsList, strlen(versionsList));
 	}
 }
 
@@ -889,7 +881,7 @@ void createCurlHeader( struct curl_slist *list, struct curl_slist **header_list,
 	char *currentTime_header=NULL;
 	char *uuid_header = NULL;
 	char *transaction_uuid = NULL;
-	char *version = NULL;
+	char version[512]={'\0'};
 	char* syncTransID = NULL;
 	char* ForceSyncDoc = NULL;
 
@@ -908,15 +900,11 @@ void createCurlHeader( struct curl_slist *list, struct curl_slist **header_list,
 	version_header = (char *) malloc(sizeof(char)*MAX_BUF_SIZE);
 	if(version_header !=NULL)
 	{
-		getConfigVersionList(&version);
+		getConfigVersionList(version);
 		snprintf(version_header, MAX_BUF_SIZE, "IF-NONE-MATCH:%s", ((NULL != version && (strlen(version)!=0)) ? version : "NONE"));
 		WebConfigLog("version_header formed %s\n", version_header);
 		list = curl_slist_append(list, version_header);
 		WEBCFG_FREE(version_header);
-		if(version !=NULL)
-		{
-			WEBCFG_FREE(version);
-		}
 	}
 	list = curl_slist_append(list, "Accept: application/msgpack");
 
@@ -1038,7 +1026,6 @@ void createCurlHeader( struct curl_slist *list, struct curl_slist **header_list,
                 WebConfigLog("Failed to get systemReadyTime\n");
         }
 
-	WebConfigLog("B4 getForceSync\n");
 	getForceSync(&ForceSyncDoc, &syncTransID);
 
 	if(syncTransID !=NULL)
