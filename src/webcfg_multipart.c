@@ -518,8 +518,9 @@ WEBCFG_STATUS processMsgpackSubdoc(multipart_t *mp)
 						{
 							WebConfigLog("Delete tmp queue root is failed\n");
 						}
+						WebConfigLog("processMsgpackSubdoc is success as all the docs are applied\n");
+						rv = WEBCFG_SUCCESS;
 					}
-					rv = WEBCFG_SUCCESS;
 				}
 				else
 				{

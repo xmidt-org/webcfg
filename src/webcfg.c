@@ -256,9 +256,9 @@ int handlehttpResponse(long response_code, char *webConfigData, int retry_count,
 			WebConfigLog("parseMultipartDocument\n");
 			msgpack_status = parseMultipartDocument(webConfigData, ct, dataSize);
 
-			if(msgpack_status == 1)
+			if(msgpack_status == WEBCFG_SUCCESS)
 			{
-				WebcfgDebug("parseMultipartDocument success\n");
+				WebConfigLog("parseMultipartDocument success\n");
 				return 1;
 			}
 			else
