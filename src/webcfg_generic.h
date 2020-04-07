@@ -18,6 +18,9 @@
 
 #include <stdint.h>
 #include <wdmp-c.h>
+
+/***!!!! NOTE: This file includes Device specific override functions. Mock implementations are added in webcfg_generic.c. Actual implementation need to be provided by platform specific code. !!!!***/
+
 /*----------------------------------------------------------------------------*/
 /*                                   Macros                                   */
 /*----------------------------------------------------------------------------*/
