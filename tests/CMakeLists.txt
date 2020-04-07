@@ -45,7 +45,7 @@ target_link_libraries (test_webcfgpack gcov -Wl,--no-as-needed )
 #   test_multipart
 #-------------------------------------------------------------------------------
 add_test(NAME test_multipart COMMAND ${MEMORY_CHECK} ./test_multipart)
-add_executable(test_multipart test_multipart.c ../src/webcfg_param.c ../src/webcfg_multipart.c ../src/webcfg_db.c ../src/webcfg_helpers.c ../src/webcfg.c ../src/webcfg_auth.c ../src/webcfg_notify.c ../src/webcfg_pack.c)
+add_executable(test_multipart test_multipart.c ../src/webcfg_param.c ../src/webcfg_multipart.c ../src/webcfg_db.c ../src/webcfg_helpers.c ../src/webcfg.c ../src/webcfg_auth.c ../src/webcfg_notify.c ../src/webcfg_pack.c ../src/webcfg_generic.c)
 target_link_libraries (test_multipart -lcunit -lmsgpackc -lcurl -lpthread  -lm -luuid -ltrower-base64 -lwdmp-c -lcimplog -lcjson)
 
 target_link_libraries (test_multipart gcov -Wl,--no-as-needed )
