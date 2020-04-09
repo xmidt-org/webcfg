@@ -557,17 +557,15 @@ WEBCFG_STATUS processMsgpackSubdoc(multipart_t *mp)
 
 	WebConfigLog("Proceed to generateBlob\n");
 	if(generateBlob() == WEBCFG_SUCCESS)
-        {
+    {
 	    blob_data = get_DB_BLOB_base64(&blob_len);
-            writeBlobToFile(WEBCFG_BLOB_PATH, blob_data);
 	    WebConfigLog("The b64 encoded blob is : %s\n",blob_data);
-            WebConfigLog("The b64 encoded blob_length is : %zu\n",blob_len);
-            readBlobFromFile(WEBCFG_BLOB_PATH);
-        }
-        else
-        {
-            WebConfigLog("Failed in Blob generation\n");
-        }
+        WebConfigLog("The b64 encoded blob_length is : %zu\n",strlen(blob_data));
+    }
+    else
+    {
+        WebConfigLog("Failed in Blob generation\n");
+    }
 
 	return rv;
 }

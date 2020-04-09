@@ -52,9 +52,9 @@ enum {
 /*----------------------------------------------------------------------------*/
 /*                            File Scoped Variables                           */
 /*----------------------------------------------------------------------------*/
-webconfig_db_data_t* webcfgdb_data = NULL;
 static webconfig_tmp_data_t * g_head = NULL;
 static blob_t * webcfgdb_blob = NULL;
+static webconfig_db_data_t* webcfgdb_data = NULL;
 static int numOfMpDocs = 0;
 static int success_doc_count = 0;
 /*----------------------------------------------------------------------------*/
@@ -95,6 +95,7 @@ WEBCFG_STATUS initDB(char * db_file_path )
      fclose(fp);
 
      decodeData((void *)data, len);
+     generateBlob();
      return WEBCFG_SUCCESS;
      
 }
@@ -120,14 +121,22 @@ WEBCFG_STATUS generateBlob()
     size_t webcfgdbBlobPackSize = -1;
     void * data = NULL;
 
-    webcfgdbBlobPackSize = webcfgdb_blob_pack(webcfgdb_data, g_head, &data);
-    webcfgdb_blob = (blob_t *)malloc(sizeof(blob_t));
-    webcfgdb_blob->data = (char *)data;
-    webcfgdb_blob->len  = webcfgdbBlobPackSize;
+    if(webcfgdb_data != NULL || g_head != NULL)
+    {
+        webcfgdbBlobPackSize = webcfgdb_blob_pack(webcfgdb_data, g_head, &data);
+        webcfgdb_blob = (blob_t *)malloc(sizeof(blob_t));
+        webcfgdb_blob->data = (char *)data;
+        webcfgdb_blob->len  = webcfgdbBlobPackSize;
 
-    WebConfigLog("The webcfgdbBlobPackSize is : %ld\n",webcfgdb_blob->len);
-    //WebConfigLog("The value of blob is %s\n",webcfgdb_blob->data);
-    return WEBCFG_SUCCESS;
+        WebConfigLog("The webcfgdbBlobPackSize is : %ld\n",webcfgdb_blob->len);
+        //WebConfigLog("The value of blob is %s\n",webcfgdb_blob->data);
+        return WEBCFG_SUCCESS;
+    }
+    else
+    {
+        WebConfigLog("Failed in packing blob\n");
+        return WEBCFG_FAILURE;
+    }
 }
 
 int writeToDBFile(char *db_file_path, char *data)
@@ -137,72 +146,6 @@ int writeToDBFile(char *db_file_path, char *data)
 	if (fp == NULL)
 	{
 		WebConfigLog("Failed to open file in db %s\n", db_file_path );
-		return 0;
-	}
-	if(data !=NULL)
-	{
-		fwrite(data, strlen(data), 1, fp);
-		fclose(fp);
-		return 1;
-	}
-	else
-	{
-		WebConfigLog("WriteToJson failed, Data is NULL\n");
-		return 0;
-	}
-}
-
-int readBlobFromFile(char * blob_file_path)
-{
-     FILE *fp;
-     char *data;
-     size_t len;
-     int ch_count=0;
-     size_t k;
-     WebConfigLog("DB file path is %s\n", blob_file_path);
-     fp = fopen(blob_file_path,"rb");
-
-     if (fp == NULL)
-     {
-	WebConfigLog("Failed to open file %s\n", blob_file_path);
-	return 0;
-     }
-     
-     fseek(fp, 0, SEEK_END);
-     ch_count = ftell(fp);
-     fseek(fp, 0, SEEK_SET);
-     data = (char *) malloc(sizeof(char) * (ch_count + 1));
-     fread(data, 1, ch_count,fp);
-     len = ch_count;
-     fclose(fp);
-
-     blob_struct_t *bd = NULL;
-     bd = ( blob_struct_t * ) malloc( sizeof( blob_struct_t ) );
-     bd = decodeBlobData((void *)data, len);
-     WebConfigLog("Size of webcfgdbblob %ld\n", (size_t)bd);
-     if(bd != NULL)
-     {   
-         
-         for(k = 0;k< bd->entries_count ; k++)
-         {   
-             WebConfigLog("bd->entries[%zu].name %s\n", k, bd->entries[k].name);
-	     WebConfigLog("bd->entries[%zu].version %lu\n" ,k,  (long)bd->entries[k].version); 
-             WebConfigLog("bd->entries[%zu].status %s\n", k, bd->entries[k].status);
-         }
-
-               
-     }
-       webcfgdbblob_destroy(bd);
-     return 1;
-}
-
-int writeBlobToFile(char *blob_file_path, char *data)
-{
-	FILE *fp;
-	fp = fopen(blob_file_path , "w+");
-	if (fp == NULL)
-	{
-		WebConfigLog("Failed to open file in db %s\n", blob_file_path );
 		return 0;
 	}
 	if(data !=NULL)
@@ -622,50 +565,29 @@ void addToDBList(webconfig_db_data_t *webcfgdb)
       }
 }
 
-char * get_DB_BLOB_base64(size_t *len)
+char * get_DB_BLOB_base64()
 {
-    char * decodeMsg = NULL;
-    blob_t * temp_blob = (blob_t *)malloc(sizeof(blob_t));
-    temp_blob = get_DB_BLOB();
-    *len = temp_blob->len; 
-    b64_encoder(temp_blob->data, temp_blob->len, &decodeMsg);
-    return decodeMsg;
+    char* b64buffer =  NULL;
+    blob_t * db_blob = get_DB_BLOB();
+    size_t encodeSize = -1;
+
+    if(db_blob != NULL)
+    {
+        WebConfigLog("-----------Start of Base64 Encode ------------\n");
+        encodeSize = b64_get_encoded_buffer_size( db_blob->len );
+        WebConfigLog("encodeSize is %zu\n", encodeSize);
+        b64buffer = malloc(encodeSize + 1);
+        b64_encode((uint8_t *)db_blob->data, db_blob->len, (uint8_t *)b64buffer);
+        b64buffer[encodeSize] = '\0' ;
+        WebConfigLog("b64buffer is %s\n", b64buffer);
+        WebConfigLog("---------- End of Base64 Encode -------------\n");
+     }
+     else
+     {
+        WebConfigLog("Blob is NULL\n");
+     }
+    return b64buffer;
 }
-
-void b64_encoder(const void *buf,size_t len, char ** decodeMsg)
-{
-        char* b64buffer =  NULL;
-	size_t encodeSize = 0;
-        size_t size =0;
-	size_t decodeMsgSize =0;
-
-	WebConfigLog("-----------Start of Base64 Encode ------------\n");
-	encodeSize = b64_get_encoded_buffer_size( len );
-	WebConfigLog("encodeSize is %ld\n", encodeSize);
-	b64buffer = malloc(encodeSize+1);
-	b64_encode((const uint8_t *)buf, len, (uint8_t *)b64buffer);
-	b64buffer[encodeSize] = '\0' ;
-	WebConfigLog("---------- End of Base64 Encode -------------\n");
-
-	WebConfigLog("Final Encoded data length: %ld\n",strlen(b64buffer));
-	/*********** base64 encode *****************/
-
-	//Start of b64 decoding
-	WebConfigLog("----Start of b64 decoding----\n");
-	decodeMsgSize = b64_get_decoded_buffer_size(strlen(b64buffer));
-	WebConfigLog("expected b64 decoded msg size : %ld bytes\n",decodeMsgSize);
-
-	*decodeMsg = (char *) malloc(sizeof(char) * decodeMsgSize);
-
-	size = b64_decode( (const uint8_t *)b64buffer, strlen(b64buffer), (uint8_t *)*decodeMsg );
-	WebConfigLog("base64 decoded data containing %ld bytes\n",size);
-        
-	WebConfigLog("----End of b64 decoding----\n");
-
-	//End of b64 decoding
-
-}
-
 
 /* For Blob decode purpose */
 
