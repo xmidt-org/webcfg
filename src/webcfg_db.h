@@ -108,6 +108,11 @@ int get_numOfMpDocs();
 int get_successDocCount();
 
 char * get_DB_BLOB_base64();
+
+void checkDBList(char *docname, uint32_t version);
+
+WEBCFG_STATUS updateDBlist(char *docname, uint32_t version);
+
 /**
  *  This function converts a msgpack buffer into an webconfig_db_t structure
  *  if possible.
