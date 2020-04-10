@@ -644,9 +644,8 @@ int process_webcfgdbblobparams( blob_data_t *e, msgpack_object_map *map )
 				else if(0 == match(p, "error_details") )
                 {
                      e->error_details = strndup( p->val.via.str.ptr, p->val.via.str.size );
-		     WebConfigLog("e->error_details is %s\n", e->error_details);
+		     //WebConfigLog("e->error_details is %s\n", e->error_details);
                      objects_left &= ~(1 << 3);
-		     WebConfigLog("objects_left after error_details %d\n", objects_left);
                 }
             }
         }

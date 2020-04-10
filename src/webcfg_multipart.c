@@ -201,8 +201,8 @@ WEBCFG_STATUS webcfg_http_request(char **configData, int r_count, int status, lo
 		}
 		else
 		{
-			WebConfigLog("curl Ip resolve option set as default V4 mode\n");
-			curl_easy_setopt(curl, CURLOPT_IPRESOLVE, CURL_IPRESOLVE_V4);
+			WebConfigLog("curl Ip resolve option set as default mode\n");
+			curl_easy_setopt(curl, CURLOPT_IPRESOLVE, CURL_IPRESOLVE_WHATEVER);
 		}
 		curl_easy_setopt(curl, CURLOPT_CAINFO, CA_CERT_PATH);
 		// disconnect if it is failed to validate server's cert
