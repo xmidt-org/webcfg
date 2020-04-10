@@ -22,8 +22,17 @@
 #include "webcfg.h"
 #include "webcfg_db.h"
 
-//TODO: Notification has to be modified to send for each doc
+typedef struct _notify_params
+{
+	char * name;
+	char * application_status;
+	char * version;
+	char * error_details;
+	char * transaction_uuid;
+	struct _notify_params *next;
+} notify_params_t;
+
 void initWebConfigNotifyTask();
 pthread_t get_global_notify_threadid();
-void addWebConfigNotifyMsg(webconfig_tmp_data_t* webcfg_data, char *transaction_uuid);
+void addWebConfgNotifyMsg(char *docname, uint32_t version, char *status, char *error_details, char *transaction_uuid);
 #endif

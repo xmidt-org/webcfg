@@ -301,6 +301,7 @@ WEBCFG_STATUS addToTmpList( multipart_t *mp)
 				new_node->name = strdup("root");
 				new_node->version = get_global_root();
 				new_node->status = strdup("pending");
+				new_node->error_details = strdup("none");
 			}
 			else
 			{
@@ -308,11 +309,13 @@ WEBCFG_STATUS addToTmpList( multipart_t *mp)
 				WebConfigLog("mp->entries[m-1].name_space is %s\n", mp->entries[m-1].name_space);
 				new_node->version = mp->entries[m-1].etag;
 				new_node->status = strdup("pending");
+				new_node->error_details = strdup("none");
 			}
 
 			WebConfigLog("new_node->name is %s\n", new_node->name);
 			WebConfigLog("new_node->version is %lu\n", (long)new_node->version);
 			WebConfigLog("new_node->status is %s\n", new_node->status);
+			WebConfigLog("new_node->error_details is %s\n", new_node->error_details);
 
 
 			new_node->next=NULL;
@@ -349,7 +352,7 @@ WEBCFG_STATUS addToTmpList( multipart_t *mp)
 }
 
 //update version, status for each doc
-WEBCFG_STATUS updateTmpList(char *docname, uint32_t version, char *status)
+WEBCFG_STATUS updateTmpList(char *docname, uint32_t version, char *status, char *error_details)
 {
 	webconfig_tmp_data_t *temp = NULL;
 	temp = get_global_tmp_node();
@@ -357,12 +360,13 @@ WEBCFG_STATUS updateTmpList(char *docname, uint32_t version, char *status)
 	//Traverse through doc list & update required doc
 	while (NULL != temp)
 	{
-		WebConfigLog("node is pointing to temp->name %s \n",temp->name);
+		//WebcfgDebug("node is pointing to temp->name %s \n",temp->name);
 		if( strcmp(docname, temp->name) == 0)
 		{
 			temp->version = version;
 			temp->status = strdup(status);
-			WebConfigLog("-->>doc %s is updated to version %lu status %s\n", docname, (long)temp->version, temp->status);
+			temp->error_details = strdup(error_details);
+			WebConfigLog("-->>>doc %s is updated to version %lu status %s temp->error_details %s\n", docname, (long)temp->version, temp->status, temp->error_details);
 			return WEBCFG_SUCCESS;
 		}
 		temp= temp->next;
@@ -429,7 +433,7 @@ void delete_tmp_doc_list()
     {
         temp = head;
         head = head->next;
-	WebConfigLog("Delete node--> temp->name %s temp->version %lu temp->status %s\n",temp->name, (long)temp->version, temp->status);
+	WebConfigLog("Delete node--> temp->name %s temp->version %lu temp->status %s temp->error_details %s\n",temp->name, (long)temp->version, temp->status, temp->error_details);
         free(temp);
 	temp = NULL;
     }

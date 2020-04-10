@@ -35,6 +35,7 @@ typedef struct webconfig_tmp_data
         char * name;
         uint32_t version;
         char * status;
+	char * error_details;
         struct webconfig_tmp_data *next;
 } webconfig_tmp_data_t;
 
@@ -95,7 +96,7 @@ WEBCFG_STATUS addToTmpList( multipart_t *mp);
 
 void addToDBList(webconfig_db_data_t *webcfgdb);
 
-WEBCFG_STATUS updateTmpList(char *docname, uint32_t version, char *status);
+WEBCFG_STATUS updateTmpList(char *docname, uint32_t version, char *status, char *error_details);
 
 WEBCFG_STATUS deleteFromTmpList(char* doc_name);
 

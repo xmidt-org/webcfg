@@ -21,6 +21,7 @@
 #include "webcfg_auth.h"
 #include "webcfg_generic.h"
 #include "webcfg_db.h"
+#include "webcfg_notify.h"
 #include <uuid/uuid.h>
 /*----------------------------------------------------------------------------*/
 /*                                   Macros                                   */
@@ -31,6 +32,7 @@
 #define CA_CERT_PATH 		   "/etc/ssl/certs/ca-certificates.crt"
 #define WEBPA_READ_HEADER          "/etc/parodus/parodus_read_file.sh"
 #define WEBPA_CREATE_HEADER        "/etc/parodus/parodus_create_file.sh"
+#define CCSP_CRASH_STATUS_CODE      192
 /*----------------------------------------------------------------------------*/
 /*                               Data Structures                              */
 /*----------------------------------------------------------------------------*/
@@ -61,7 +63,7 @@ void parse_multipart(char *ptr, int no_of_bytes, multipartdocs_t *m, int *no_of_
 void multipart_destroy( multipart_t *m );
 void addToDBList(webconfig_db_data_t *webcfgdb);
 char* generate_trans_uuid();
-WEBCFG_STATUS processMsgpackSubdoc(multipart_t *mp);
+WEBCFG_STATUS processMsgpackSubdoc(multipart_t *mp, char *transaction_id);
 void loadInitURLFromFile(char **url);
 static void get_webCfg_interface(char **interface);
 void get_root_version(uint32_t *rt_version);
@@ -264,7 +266,7 @@ WEBCFG_STATUS webcfg_http_request(char **configData, int r_count, int status, lo
 	return WEBCFG_FAILURE;
 }
 
-WEBCFG_STATUS parseMultipartDocument(void *config_data, char *ct , size_t data_size)
+WEBCFG_STATUS parseMultipartDocument(void *config_data, char *ct , size_t data_size, char* trans_uuid)
 {
 	char *boundary = NULL;
 	char *str=NULL;
@@ -372,8 +374,7 @@ WEBCFG_STATUS parseMultipartDocument(void *config_data, char *ct , size_t data_s
 			ptr_lb++;
 		}
 	}
-
-	status = processMsgpackSubdoc(mp);
+	status = processMsgpackSubdoc(mp, trans_uuid);
 	if(status ==0)
 	{
 		WebConfigLog("processMsgpackSubdoc success\n");
@@ -386,7 +387,7 @@ WEBCFG_STATUS parseMultipartDocument(void *config_data, char *ct , size_t data_s
 	return WEBCFG_FAILURE;
 }
 
-WEBCFG_STATUS processMsgpackSubdoc(multipart_t *mp)
+WEBCFG_STATUS processMsgpackSubdoc(multipart_t *mp, char *transaction_id)
 {
 	int i =0, m=0;
 	WEBCFG_STATUS rv = WEBCFG_FAILURE;
@@ -400,6 +401,14 @@ WEBCFG_STATUS processMsgpackSubdoc(multipart_t *mp)
 	WEBCFG_STATUS uStatus = 0, dStatus =0;
 	char * blob_data = NULL;
         size_t blob_len = -1 ;
+	char * trans_id = NULL;
+
+	if(transaction_id !=NULL)
+	{
+		trans_id = strdup(transaction_id);
+		WEBCFG_FREE(transaction_id);
+		WebConfigLog("In processMsgpackSubdoc trans_id %s\n", trans_id);
+	}
         
 	WebConfigLog("Add mp entries to tmp list\n");
         addStatus = addToTmpList(mp);
@@ -459,12 +468,15 @@ WEBCFG_STATUS processMsgpackSubdoc(multipart_t *mp)
 					WebConfigLog("setValues success. ccspStatus : %d\n", ccspStatus);
 
 					WebConfigLog("update doc status for %s\n", mp->entries[m].name_space);
-					uStatus = updateTmpList(mp->entries[m].name_space, mp->entries[m].etag, "success");
+					uStatus = updateTmpList(mp->entries[m].name_space, mp->entries[m].etag, "success", "none");
 					if(uStatus == WEBCFG_SUCCESS)
 					{
 						print_tmp_doc_list(mp->entries_count);
 						WebConfigLog("updateTmpList success\n");
 
+						//send success notification to cloud
+						WebConfigLog("send notify for mp->entries[m].name_space %s\n", mp->entries[m].name_space);
+						addWebConfgNotifyMsg(mp->entries[m].name_space, mp->entries[m].etag, "success", "none", trans_id);
 						WebConfigLog("deleteFromTmpList as doc is applied\n");
 						dStatus = deleteFromTmpList(mp->entries[m].name_space);
 						if(dStatus == WEBCFG_SUCCESS)
@@ -525,8 +537,31 @@ WEBCFG_STATUS processMsgpackSubdoc(multipart_t *mp)
 				else
 				{
 					WebConfigLog("setValues Failed. ccspStatus : %d\n", ccspStatus);
-				}
 
+					//Update error_details to tmp list and send failure notification to cloud.
+					uStatus = WEBCFG_FAILURE;
+					if(ccspStatus == CCSP_CRASH_STATUS_CODE)
+					{
+						WebConfigLog("ccspStatus is crash %d\n", CCSP_CRASH_STATUS_CODE);
+						uStatus = updateTmpList(mp->entries[m].name_space, mp->entries[m].etag, "failed", "crash");
+						addWebConfgNotifyMsg(mp->entries[m].name_space, mp->entries[m].etag, "failed", "crash", trans_id);
+					}
+					else
+					{
+						uStatus = updateTmpList(mp->entries[m].name_space, mp->entries[m].etag, "failed", "doc_rejected");
+						addWebConfgNotifyMsg(mp->entries[m].name_space, mp->entries[m].etag, "failed", "doc_rejected", trans_id);
+					}
+
+					if(uStatus == WEBCFG_SUCCESS)
+					{
+						WebConfigLog("updateTmpList success for error_details\n");
+					}
+					else
+					{
+						WebConfigLog("updateTmpList failed for error_details\n");
+					}
+					print_tmp_doc_list(mp->entries_count);
+				}
                          //WEBCFG_FREE(reqParam);
 			}
 			webcfgparam_destroy( pm );
@@ -1216,7 +1251,7 @@ void print_tmp_doc_list(size_t mp_count)
 	while (NULL != temp)
 	{
 		count = count+1;
-		WebConfigLog("--->>node is pointing to temp->name %s temp->version %lu temp->status %s\n",temp->name, (long)temp->version, temp->status);
+		WebConfigLog("--->>node is pointing to temp->name %s temp->version %lu temp->status %s temp->error_details %s\n",temp->name, (long)temp->version, temp->status, temp->error_details);
 		temp= temp->next;
 		WebConfigLog("count %d mp_count %zu\n", count, mp_count);
 		if(count == (int)mp_count)

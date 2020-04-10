@@ -20,6 +20,7 @@
 #include "webcfg.h"
 #include <pthread.h>
 #include <cJSON.h>
+#include <unistd.h>
 /*----------------------------------------------------------------------------*/
 /*                                   Macros                                   */
 /*----------------------------------------------------------------------------*/
@@ -27,24 +28,17 @@
 /*----------------------------------------------------------------------------*/
 /*                               Data Structures                              */
 /*----------------------------------------------------------------------------*/
-typedef struct _notify_params
-{
-	char * name;
-	char * application_status;
-	char * version;
-	char * transaction_uuid;
-} notify_params_t;
 /*----------------------------------------------------------------------------*/
 /*                            File Scoped Variables                           */
 /*----------------------------------------------------------------------------*/
 static pthread_t NotificationThreadId=0;
 pthread_mutex_t notify_mut=PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t notify_con=PTHREAD_COND_INITIALIZER;
-notify_params_t *notifyMsg = NULL;
+notify_params_t *notifyMsgQ = NULL;
 /*----------------------------------------------------------------------------*/
 /*                             Function Prototypes                            */
 /*----------------------------------------------------------------------------*/
-void* processWebConfigNotification();
+void* processWebConfgNotification();
 void free_notify_params_struct(notify_params_t *param);
 /*----------------------------------------------------------------------------*/
 /*                             External Functions                             */
@@ -63,7 +57,7 @@ void initWebConfigNotifyTask()
 {
 	int err = 0;
 	WebConfigLog("Inside initWebConfigNotifyTask\n");
-	err = pthread_create(&NotificationThreadId, NULL, processWebConfigNotification, NULL);
+	err = pthread_create(&NotificationThreadId, NULL, processWebConfgNotification, NULL);
 	if (err != 0)
 	{
 		WebConfigLog("Error creating Webconfig Notification thread :[%s]\n", strerror(err));
@@ -75,75 +69,94 @@ void initWebConfigNotifyTask()
 
 }
 
-void addWebConfigNotifyMsg(webconfig_tmp_data_t* webcfg_data, char *transaction_uuid)
+void addWebConfgNotifyMsg(char *docname, uint32_t version, char *status, char *error_details, char *transaction_uuid)
 {
 	notify_params_t *args = NULL;
+
 	args = (notify_params_t *)malloc(sizeof(notify_params_t));
+	char versionStr[32] = {'\0'};
 
-	if(args != NULL)
+	if(args)
 	{
-                WebcfgDebug("pthread mutex lock\n");
-		pthread_mutex_lock (&notify_mut);
-		memset(args, 0, sizeof(notify_params_t));
-
-		if(webcfg_data->name != NULL)
+		if(docname != NULL)
 		{
-			args->name = strdup(webcfg_data->name);
-			WEBCFG_FREE(webcfg_data->name);
-		}
-		
-		if(webcfg_data->status != NULL)
-		{		
-			args->application_status = strdup(webcfg_data->status);
-			WEBCFG_FREE(webcfg_data->status);
+			args->name = strdup(docname);
 		}
 
-		if(webcfg_data->version != 0)
+		if(status != NULL)
 		{
-//sprintf(args->version,"%u",webcfg_data->version);
-//args->version=strdup(webcfg_data->version);
-			//WEBCFG_FREE(webcfg_data->version);
+			args->application_status = strdup(status);
+		}
+
+		if(error_details != NULL)
+		{
+			args->error_details = strdup(error_details);
+		}
+
+		snprintf(versionStr, sizeof(versionStr), "%lu", (long)version);
+
+		if(strlen(versionStr) > 0)
+		{
+			args->version = strdup(versionStr);
 		}
 
 		if(transaction_uuid != NULL)
 		{
 			args->transaction_uuid = strdup(transaction_uuid);
-			WEBCFG_FREE(transaction_uuid);
 		}
 
-		WebcfgDebug("args->name:%s,args->application_status:%s,args->version:%s,args->transaction_uuid:%s\n",args->name,args->application_status, args->version, args->transaction_uuid );
+		WebConfigLog("args->name:%s,args->application_status:%s,args->error_details:%s,args->version:%s,args->transaction_uuid:%s\n",args->name,args->application_status, args->error_details, args->version, args->transaction_uuid );
 
-		notifyMsg = args;
+		args->next=NULL;
 
-                WebcfgDebug("Before notify pthread cond signal\n");
-		pthread_cond_signal(&notify_con);
-                WebcfgDebug("After notify pthread cond signal\n");
-		pthread_mutex_unlock (&notify_mut);
-                WebcfgDebug("pthread mutex unlock\n");
+		pthread_mutex_lock (&notify_mut);
+		//Producer adds the notifyMsg into queue
+		if(notifyMsgQ == NULL)
+		{
+			notifyMsgQ = args;
+			WebConfigLog("Producer added notify message\n");
+			pthread_cond_signal(&notify_con);
+			pthread_mutex_unlock (&notify_mut);
+			WebConfigLog("mutex unlock in notify producer thread\n");
+		}
+		else
+		{
+			notify_params_t *temp = notifyMsgQ;
+			while(temp->next)
+			{
+			    temp = temp->next;
+			}
+			temp->next = args;
+			pthread_mutex_unlock (&notify_mut);
+		}
+	}
+	else
+	{
+	    WebConfigLog("failure in allocation for notify message\n");
 	}
 }
 
 //Notify thread function waiting for notify msgs
-void* processWebConfigNotification()
+void* processWebConfgNotification()
 {
 	char device_id[32] = { '\0' };
 	cJSON *notifyPayload = NULL;
 	char  * stringifiedNotifyPayload = NULL;
-	notify_params_t *msg = NULL;
 	char dest[512] = {'\0'};
 	char *source = NULL;
-	//cJSON * reports, *one_report;
 
 	while(1)
 	{
-                WebConfigLog("processWebConfigNotification Inside while\n");
 		pthread_mutex_lock (&notify_mut);
-		WebConfigLog("processWebConfigNotification mutex lock\n");
-		msg = notifyMsg;
-		if(msg !=NULL)
+		WebConfigLog("mutex lock in notify consumer thread\n");
+		if(notifyMsgQ != NULL)
 		{
-                        WebConfigLog("Processing msg\n");
-			if(strlen(get_deviceMAC()) == 0)
+			notify_params_t *msg = notifyMsgQ;
+			notifyMsgQ = notifyMsgQ->next;
+			pthread_mutex_unlock (&notify_mut);
+			WebConfigLog("mutex unlock in notify consumer thread\n");
+
+			if((get_deviceMAC() !=NULL) && (strlen(get_deviceMAC()) == 0))
 			{
 				WebConfigLog("deviceMAC is NULL, failed to send Webconfig Notification\n");
 			}
@@ -160,9 +173,12 @@ void* processWebConfigNotification()
 
 					if(msg)
 					{
-
-						cJSON_AddStringToObject(notifyPayload,"namespace", (NULL != msg->name && (strlen(msg->name)!=0)) ? msg->name : "NONE");
+						cJSON_AddStringToObject(notifyPayload,"namespace", (NULL != msg->name && (strlen(msg->name)!=0)) ? msg->name : "unknown");
 						cJSON_AddStringToObject(notifyPayload,"application_status", (NULL != msg->application_status) ? msg->application_status : "unknown");
+						if((msg->error_details !=NULL) && (strcmp(msg->error_details, "none")!=0))
+						{
+							cJSON_AddStringToObject(notifyPayload,"error_details", (NULL != msg->error_details) ? msg->error_details : "unknown");
+						}
 						cJSON_AddStringToObject(notifyPayload,"transaction_uuid", (NULL != msg->transaction_uuid && (strlen(msg->transaction_uuid)!=0)) ? msg->transaction_uuid : "unknown");
 						cJSON_AddStringToObject(notifyPayload,"version", (NULL != msg->version && (strlen(msg->version)!=0)) ? msg->version : "NONE");
 					
@@ -185,18 +201,17 @@ void* processWebConfigNotification()
 				if(msg != NULL)
 				{
 					free_notify_params_struct(msg);
-					notifyMsg = NULL;
+					msg = NULL;
 				}
 			}
 			pthread_mutex_unlock (&notify_mut);
-			WebcfgDebug("processWebConfigNotification mutex unlock\n");
 		}
 		else
 		{
 			WebConfigLog("Before pthread cond wait in notify thread\n");
 			pthread_cond_wait(&notify_con, &notify_mut);
 			pthread_mutex_unlock (&notify_mut);
-			WebcfgDebug("mutex unlock in notify thread after cond wait\n");
+			WebConfigLog("mutex unlock in notify thread after cond wait\n");
 		}
 	}
 	return NULL;
@@ -213,6 +228,10 @@ void free_notify_params_struct(notify_params_t *param)
         if(param->application_status != NULL)
         {
             WEBCFG_FREE(param->application_status);
+        }
+	if(param->error_details != NULL)
+        {
+            WEBCFG_FREE(param->error_details);
         }
         if(param->version != NULL)
         {

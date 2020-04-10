@@ -156,7 +156,7 @@ ssize_t webcfgdb_blob_pack(webconfig_db_data_t *webcfgdb, webconfig_tmp_data_t *
        {
 	    while(temp_data != NULL) //1 element
 	    {
-                msgpack_pack_map( &pk, 3); //name, version
+                msgpack_pack_map( &pk, 4); //name, version
 
 	        struct webcfg_token WEBCFG_MAP_TEMP_NAME;
 
@@ -170,15 +170,22 @@ ssize_t webcfgdb_blob_pack(webconfig_db_data_t *webcfgdb, webconfig_tmp_data_t *
                 WEBCFG_MAP_TEMP_VERSION.name = "version";
                 WEBCFG_MAP_TEMP_VERSION.length = strlen( "version" );
 	        __msgpack_pack_string( &pk, WEBCFG_MAP_TEMP_VERSION.name, WEBCFG_MAP_TEMP_VERSION.length);
-                WebConfigLog("The tmp version is %ld\n",(long)temp_data->version);
+                //WebConfigLog("The tmp version is %ld\n",(long)temp_data->version);
 		msgpack_pack_uint64(&pk,(uint32_t) temp_data->version);
 
                 struct webcfg_token WEBCFG_MAP_TEMP_STATUS;
 
                 WEBCFG_MAP_TEMP_STATUS.name = "status";
                 WEBCFG_MAP_TEMP_STATUS.length = strlen( "status" );
-                WebConfigLog("The tmp name is %s\n",temp_data->status);
+                WebConfigLog("The tmp status is %s\n",temp_data->status);
                 __msgpack_pack_string_nvp( &pk, &WEBCFG_MAP_TEMP_STATUS, temp_data->status );
+
+		struct webcfg_token WEBCFG_MAP_TEMP_ERROR_DETAILS;
+
+                WEBCFG_MAP_TEMP_ERROR_DETAILS.name = "error_details";
+                WEBCFG_MAP_TEMP_ERROR_DETAILS.length = strlen( "error_details" );
+                WebConfigLog("The tmp error_details is %s\n",temp_data->error_details);
+                __msgpack_pack_string_nvp( &pk, &WEBCFG_MAP_TEMP_ERROR_DETAILS, temp_data->error_details );
 
                 temp_data = temp_data->next;
 

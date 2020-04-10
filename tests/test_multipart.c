@@ -23,6 +23,7 @@
 #include "../src/webcfg_multipart.h"
 #include "../src/webcfg_helpers.h"
 #include "../src/webcfg_db.h"
+#include "../src/webcfg_notify.h"
 #include <msgpack.h>
 #include <curl/curl.h>
 #include <base64.h>
@@ -139,6 +140,7 @@ void test_multipart()
 		printf("\nProvide config URL as argument\n");
 		return;
 	}
+	initWebConfigNotifyTask();
 	processWebconfgSync(status);
 }
 
@@ -148,39 +150,15 @@ void add_suites( CU_pSuite *suite )
     CU_add_test( *suite, "Full", test_multipart);
 }
 
-void initWebConfigNotifyTask();
-
-void addWebConfigNotifyMsg(webconfig_tmp_data_t* webcfg_data, char *transaction_uuid);
-
 /*----------------------------------------------------------------------------*/
 /*                             External Functions                             */
 /*----------------------------------------------------------------------------*/
 int main( int argc, char *argv[] )
 {
-	//unsigned rv = 1;
-	//CU_pSuite suite = NULL;
+	unsigned rv = 1;
+	CU_pSuite suite = NULL;
 	// int len=0;
 	printf("argc %d \n", argc );
-
-char *transaction_uuid;
-webconfig_tmp_data_t *webcfg_data;
-
-printf("argc  %d \n", argc );
-webcfg_data=(webconfig_tmp_data_t*)malloc(sizeof(webconfig_tmp_data_t));
-	webcfg_data->name=strdup(argv[1]);
-	webcfg_data->version =123456789;
-	webcfg_data->status=strdup(argv[3]);
-transaction_uuid =strdup(argv[4]);
-
-	printf("webcfg_data.name:%s\n", webcfg_data->name); 
-	printf("webcfg_data.version:%u\n",webcfg_data->version);
-	printf("webcfg_data.status:%s\n", webcfg_data->status);
-printf("transaction_uuid:%s\n",transaction_uuid);
-
-initWebConfigNotifyTask();
-addWebConfigNotifyMsg(webcfg_data,transaction_uuid);
-
-#if 0
 	if(argv[1] !=NULL)
 	{
 		url = strdup(argv[1]);
@@ -213,6 +191,5 @@ addWebConfigNotifyMsg(webcfg_data,transaction_uuid);
 
 	}
 	return rv;
-#endif
 }
 
