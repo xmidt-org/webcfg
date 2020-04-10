@@ -55,6 +55,7 @@ typedef struct{
         char * name;
         uint32_t version;
         char * status;
+	char * error_details;
 }blob_data_t;
 
 typedef struct{

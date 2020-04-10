@@ -125,7 +125,7 @@ ssize_t webcfgdb_blob_pack(webconfig_db_data_t *webcfgdb, webconfig_tmp_data_t *
        {
 	    while(db_data != NULL) //1 element
 	    {
-                msgpack_pack_map( &pk, 3); //name, version,status
+                msgpack_pack_map( &pk, 4); //name, version,status, error_details
 
 	        struct webcfg_token WEBCFG_MAP_BLOB_NAME;
 
@@ -146,6 +146,12 @@ ssize_t webcfgdb_blob_pack(webconfig_db_data_t *webcfgdb, webconfig_tmp_data_t *
                 WEBCFG_MAP_BLOB_STATUS.name = "status";
                 WEBCFG_MAP_BLOB_STATUS.length = strlen( "status" );
                 __msgpack_pack_string_nvp( &pk, &WEBCFG_MAP_BLOB_STATUS, "success" );
+
+		struct webcfg_token WEBCFG_MAP_BLOB_ERROR_DETAILS;
+
+                WEBCFG_MAP_BLOB_ERROR_DETAILS.name = "error_details";
+                WEBCFG_MAP_BLOB_ERROR_DETAILS.length = strlen( "error_details" );
+                __msgpack_pack_string_nvp( &pk, &WEBCFG_MAP_BLOB_ERROR_DETAILS, "none" );
 
                 db_data = db_data->next;
 

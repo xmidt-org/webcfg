@@ -598,7 +598,7 @@ char * get_DB_BLOB_base64()
 int process_webcfgdbblobparams( blob_data_t *e, msgpack_object_map *map )
 {
     int left = map->size;
-    uint8_t objects_left = 0x03;
+    uint8_t objects_left = 0x0f;
     msgpack_object_kv *p;
 
     p = map->ptr;
@@ -621,8 +621,8 @@ int process_webcfgdbblobparams( blob_data_t *e, msgpack_object_map *map )
                         e->version = (uint32_t) p->val.via.u64;
 			//WebConfigLog("e->version is %lu\n", (long)e->version);
                     }
-                    objects_left &= ~(1 << 1);
-		    //WebConfigLog("objects_left after datatype %d\n", objects_left);
+                    objects_left &= ~(1 << 0);
+		    //WebConfigLog("objects_left after version %d\n", objects_left);
                 }
                 
             }
@@ -632,15 +632,22 @@ int process_webcfgdbblobparams( blob_data_t *e, msgpack_object_map *map )
                 {
                     e->name = strndup( p->val.via.str.ptr, p->val.via.str.size );
 		    //WebConfigLog("e->name is %s\n", e->name);
-                    objects_left &= ~(1 << 2);
+                    objects_left &= ~(1 << 1);
 		    //WebConfigLog("objects_left after name %d\n", objects_left);
                 }
                 else if(0 == match(p, "status") )
                 {
                      e->status = strndup( p->val.via.str.ptr, p->val.via.str.size );
 		     //WebConfigLog("e->status is %s\n", e->status);
-                     objects_left &= ~(1 << 0);
-                } 
+                     objects_left &= ~(1 << 2);
+                }
+				else if(0 == match(p, "error_details") )
+                {
+                     e->error_details = strndup( p->val.via.str.ptr, p->val.via.str.size );
+		     WebConfigLog("e->error_details is %s\n", e->error_details);
+                     objects_left &= ~(1 << 3);
+		     WebConfigLog("objects_left after error_details %d\n", objects_left);
+                }
             }
         }
         p++;
