@@ -424,9 +424,6 @@ WEBCFG_STATUS processMsgpackSubdoc(multipart_t *mp, char *transaction_id)
 
 	for(m = 0 ; m<((int)mp->entries_count)-1; m++)
 	{       
-                webconfig_db_data_t * webcfgdb = NULL;
-                webcfgdb = (webconfig_db_data_t *) malloc (sizeof(webconfig_db_data_t));
-
 		WebConfigLog("mp->entries[%d].name_space %s\n", m, mp->entries[m].name_space);
 		WebConfigLog("mp->entries[%d].etag %lu\n" ,m,  (long)mp->entries[m].etag);
 		WebConfigLog("mp->entries[%d].data %s\n" ,m,  mp->entries[m].data);
@@ -493,15 +490,9 @@ WEBCFG_STATUS processMsgpackSubdoc(multipart_t *mp, char *transaction_id)
 					{
 						WebConfigLog("updateTmpList failed\n");
 					}
+					checkDBList(mp->entries[m].name_space,mp->entries[m].etag);
 
-					webcfgdb->name = mp->entries[m].name_space;
-					webcfgdb->version = mp->entries[m].etag;
-					webcfgdb->next = NULL;
 					success_count++;
-
-					WebConfigLog("webcfgdb->name in process is %s\n",webcfgdb->name);
-					WebConfigLog("webcfgdb->version in process is %lu\n",(long)webcfgdb->version);
-					addToDBList(webcfgdb);
 
 					WebConfigLog("The mp->entries_count %d\n",(int)mp->entries_count);
 					WebConfigLog("The count %d\n",success_count);

@@ -351,6 +351,43 @@ WEBCFG_STATUS addToTmpList( multipart_t *mp)
 	return retStatus;
 }
 
+
+void checkDBList(char *docname, uint32_t version)
+{
+	webconfig_db_data_t * webcfgdb = NULL;
+	webcfgdb = (webconfig_db_data_t *) malloc (sizeof(webconfig_db_data_t));
+
+	if(updateDBlist(docname, version) != WEBCFG_SUCCESS)
+	{
+		webcfgdb->name = docname;
+		webcfgdb->version = version;
+		webcfgdb->next = NULL;
+
+		addToDBList(webcfgdb);
+	}
+	WebConfigLog("webcfgdb->name in process is %s\n",webcfgdb->name);
+	WebConfigLog("webcfgdb->version in process is %lu\n",(long)webcfgdb->version);
+}
+
+WEBCFG_STATUS updateDBlist(char *docname, uint32_t version)
+{
+	webconfig_db_data_t *webcfgdb = NULL;
+	webcfgdb = get_global_db_node();
+
+	//Traverse through doc list & update required doc
+	while (NULL != webcfgdb)
+	{
+		WebConfigLog("node is pointing to webcfgdb->name %s \n",webcfgdb->name);
+		if( strcmp(docname, webcfgdb->name) == 0)
+		{
+			webcfgdb->version = version;
+			WebConfigLog("-->>webcfgdb %s is updated to version %lu\n", docname, (long)webcfgdb->version);
+			return WEBCFG_SUCCESS;
+		}
+		webcfgdb= webcfgdb->next;
+	}
+	return WEBCFG_FAILURE;
+}
 //update version, status for each doc
 WEBCFG_STATUS updateTmpList(char *docname, uint32_t version, char *status, char *error_details)
 {
@@ -572,8 +609,12 @@ void addToDBList(webconfig_db_data_t *webcfgdb)
 char * get_DB_BLOB_base64()
 {
     char* b64buffer =  NULL;
+    char * decodeMsg = NULL;
+    size_t k ;
     blob_t * db_blob = get_DB_BLOB();
     size_t encodeSize = -1;
+    size_t size =0;
+    size_t decodeMsgSize =0;
 
     if(db_blob != NULL)
     {
@@ -583,7 +624,35 @@ char * get_DB_BLOB_base64()
         b64buffer = malloc(encodeSize + 1);
         b64_encode((uint8_t *)db_blob->data, db_blob->len, (uint8_t *)b64buffer);
         b64buffer[encodeSize] = '\0' ;
-        WebConfigLog("b64buffer is %s\n", b64buffer);
+
+	//Start of b64 decoding
+	WebConfigLog("----Start of b64 decoding----\n");
+	decodeMsgSize = b64_get_decoded_buffer_size(strlen(b64buffer));
+	WebConfigLog("expected b64 decoded msg size : %ld bytes\n",decodeMsgSize);
+
+	decodeMsg = (char *) malloc(sizeof(char) * decodeMsgSize);
+
+	size = b64_decode( (const uint8_t *)b64buffer, strlen(b64buffer), (uint8_t *)decodeMsg );
+
+	WebConfigLog("base64 decoded data containing %zu bytes\n",size);
+
+	blob_struct_t *bd = NULL;
+	bd = ( blob_struct_t * ) malloc( sizeof( blob_struct_t ) );
+	bd = decodeBlobData((void *)decodeMsg, size);
+	WebConfigLog("Size of webcfgdbblob %ld\n", (size_t)bd);
+	if(bd != NULL)
+	{
+		for(k = 0;k< bd->entries_count ; k++)
+		{
+			WebConfigLog("bd->entries[%zu].name %s\n", k, bd->entries[k].name);
+			WebConfigLog("bd->entries[%zu].version %lu\n" ,k,  (long)bd->entries[k].version);
+			WebConfigLog("bd->entries[%zu].status %s\n", k, bd->entries[k].status);
+			WebConfigLog("bd->entries[%zu].error_details %s\n", k, bd->entries[k].error_details);
+		}
+
+	}
+	webcfgdbblob_destroy(bd);
+
         WebConfigLog("---------- End of Base64 Encode -------------\n");
      }
      else
