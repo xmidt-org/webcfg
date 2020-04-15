@@ -354,19 +354,19 @@ WEBCFG_STATUS addToTmpList( multipart_t *mp)
 
 void checkDBList(char *docname, uint32_t version)
 {
-	webconfig_db_data_t * webcfgdb = NULL;
-	webcfgdb = (webconfig_db_data_t *) malloc (sizeof(webconfig_db_data_t));
-
 	if(updateDBlist(docname, version) != WEBCFG_SUCCESS)
 	{
+		webconfig_db_data_t * webcfgdb = NULL;
+		webcfgdb = (webconfig_db_data_t *) malloc (sizeof(webconfig_db_data_t));
+
 		webcfgdb->name = docname;
 		webcfgdb->version = version;
 		webcfgdb->next = NULL;
 
 		addToDBList(webcfgdb);
+		WebConfigLog("webcfgdb->name added to DB %s\n",webcfgdb->name);
+		WebConfigLog("webcfgdb->version added to %lu\n",(long)webcfgdb->version);
 	}
-	WebConfigLog("webcfgdb->name in process is %s\n",webcfgdb->name);
-	WebConfigLog("webcfgdb->version in process is %lu\n",(long)webcfgdb->version);
 }
 
 WEBCFG_STATUS updateDBlist(char *docname, uint32_t version)
@@ -377,7 +377,7 @@ WEBCFG_STATUS updateDBlist(char *docname, uint32_t version)
 	//Traverse through doc list & update required doc
 	while (NULL != webcfgdb)
 	{
-		WebConfigLog("node is pointing to webcfgdb->name %s \n",webcfgdb->name);
+		WebConfigLog("node is pointing to webcfgdb->name %s, docname %s, dblen %d, doclen %d \n",webcfgdb->name, docname, strlen(webcfgdb->name), strlen(docname));
 		if( strcmp(docname, webcfgdb->name) == 0)
 		{
 			webcfgdb->version = version;
@@ -588,9 +588,9 @@ void addToDBList(webconfig_db_data_t *webcfgdb)
       if(webcfgdb_data == NULL)
       {
           webcfgdb_data = webcfgdb;
-          WebConfigLog("Producer added webcfgdb\n");
           success_doc_count++;
-          webcfgdb = NULL;
+	  WebConfigLog("Producer added webcfgdb->name %s, webcfg->version %lu, success_doc_count %d\n",webcfgdb->name, webcfgdb->version, success_doc_count);
+          //webcfgdb = NULL;
       }
       else
       {
@@ -602,7 +602,7 @@ void addToDBList(webconfig_db_data_t *webcfgdb)
           }
           temp->next = webcfgdb;
           success_doc_count++;
-         
+          WebConfigLog("Producer added webcfgdb->name %s, webcfg->version %lu, success_doc_count %d\n",webcfgdb->name, webcfgdb->version, success_doc_count);
       }
 }
 
