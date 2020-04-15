@@ -290,101 +290,107 @@ WEBCFG_STATUS parseMultipartDocument(void *config_data, char *ct , size_t data_s
 	if(boundary !=NULL)
 	{
 		boundary_len= strlen(boundary);
-	}
+		line_boundary  = (char *)malloc(sizeof(char) * (boundary_len +5));
+		snprintf(line_boundary,boundary_len+5,"--%s\r\n",boundary);
+		WebConfigLog( "line_boundary %s, len %zu\n", line_boundary, strlen(line_boundary) );
 
-	line_boundary  = (char *)malloc(sizeof(char) * (boundary_len +5));
-	snprintf(line_boundary,boundary_len+5,"--%s\r\n",boundary);
-	WebConfigLog( "line_boundary %s, len %zu\n", line_boundary, strlen(line_boundary) );
+		last_line_boundary  = (char *)malloc(sizeof(char) * (boundary_len + 5));
+		snprintf(last_line_boundary,boundary_len+5,"--%s--",boundary);
+		WebConfigLog( "last_line_boundary %s, len %zu\n", last_line_boundary, strlen(last_line_boundary) );
+		// Use --boundary to split
+		str_body = malloc(sizeof(char) * data_size + 1);
+		str_body = memcpy(str_body, config_data, data_size + 1);
+		int num_of_parts = 0;
+		char *ptr_lb=str_body;
+		char *ptr_lb1=str_body;
+		char *ptr_count = str_body;
+		int index1=0, index2 =0;
 
-	last_line_boundary  = (char *)malloc(sizeof(char) * (boundary_len + 5));
-	snprintf(last_line_boundary,boundary_len+5,"--%s--",boundary);
-	WebConfigLog( "last_line_boundary %s, len %zu\n", last_line_boundary, strlen(last_line_boundary) );
-	// Use --boundary to split
-	str_body = malloc(sizeof(char) * data_size + 1);
-	str_body = memcpy(str_body, config_data, data_size + 1);
-	int num_of_parts = 0;
-	char *ptr_lb=str_body;
-	char *ptr_lb1=str_body;
-	char *ptr_count = str_body;
-	int index1=0, index2 =0 ;
-
-	/* For Subdocs count */
-	while((ptr_count - str_body) < (int)data_size )
-	{
-		if(0 == memcmp(ptr_count, last_line_boundary, strlen(last_line_boundary)))
+		/* For Subdocs count */
+		while((ptr_count - str_body) < (int)data_size )
 		{
-			num_of_parts++;
-			break;
-		}
-		else if(0 == memcmp(ptr_count, line_boundary, strlen(line_boundary)))
-		{
-			num_of_parts++;
-		}
-		ptr_count++;
-	}
-	WebConfigLog("Size of the docs is :%d\n", (num_of_parts-1));
-	/* For Subdocs count */
-
-	mp = (multipart_t *) malloc (sizeof(multipart_t));
-	mp->entries_count = (size_t)num_of_parts;
-	mp->entries = (multipartdocs_t *) malloc(sizeof(multipartdocs_t )*(mp->entries_count-1) );
-	memset( mp->entries, 0, sizeof(multipartdocs_t)*(mp->entries_count-1));
-        //WebConfigLog("Header Etag is: %s\n",g_ETAG);
-	///Scanning each lines with \n as delimiter
-	while((ptr_lb - str_body) < (int)data_size)
-	{
-		if(0 == memcmp(ptr_lb, last_line_boundary, strlen(last_line_boundary)))
-		{
-			WebConfigLog("last line boundary \n");
-			break;
-		}
-		if (0 == memcmp(ptr_lb, "-", 1) && 0 == memcmp(ptr_lb, line_boundary, strlen(line_boundary)))
-		{
-			ptr_lb = ptr_lb+(strlen(line_boundary));
-			num_of_parts = 1;
-			while(0 != num_of_parts % 2)
+			ptr_count = memchr(ptr_count, '-', data_size - (ptr_count - str_body));
+			if(0 == memcmp(ptr_count, last_line_boundary, strlen(last_line_boundary)))
 			{
-				ptr_lb = memchr(ptr_lb, '\n', data_size - (ptr_lb - str_body));
-				// printf("printing newline: %ld\n",ptr_lb-str_body);
-				ptr_lb1 = memchr(ptr_lb+1, '\n', data_size - (ptr_lb - str_body));
-				// printf("printing newline2: %ld\n",ptr_lb1-str_body);
-				if(0 != memcmp(ptr_lb1-1, "\r",1 )){
-				ptr_lb1 = memchr(ptr_lb1+1, '\n', data_size - (ptr_lb - str_body));
-				}
-				index2 = ptr_lb1-str_body;
-				index1 = ptr_lb-str_body;
-				parse_multipart(str_body+index1+1,index2 - index1 - 2, &mp->entries[count],&subdocbytes);
-				ptr_lb++;
+				num_of_parts++;
+				break;
+			}
+			else if(0 == memcmp(ptr_count, line_boundary, strlen(line_boundary)))
+			{
+				num_of_parts++;
+			}
+			ptr_count++;
+		}
+		WebConfigLog("Size of the docs is :%d\n", (num_of_parts-1));
+		/* For Subdocs count */
 
-				if(0 == memcmp(ptr_lb, last_line_boundary, strlen(last_line_boundary)))
+		mp = (multipart_t *) malloc (sizeof(multipart_t));
+		mp->entries_count = (size_t)num_of_parts;
+		mp->entries = (multipartdocs_t *) malloc(sizeof(multipartdocs_t )*(mp->entries_count-1) );
+		memset( mp->entries, 0, sizeof(multipartdocs_t)*(mp->entries_count-1));
+		//WebConfigLog("Header Etag is: %s\n",g_ETAG);
+		///Scanning each lines with \n as delimiter
+		while((ptr_lb - str_body) < (int)data_size)
+		{
+			ptr_lb = memchr(ptr_lb, '-', data_size - (ptr_lb - str_body));
+			if(0 == memcmp(ptr_lb, last_line_boundary, strlen(last_line_boundary)))
+			{
+				WebConfigLog("last line boundary \n");
+				break;
+			}
+			if(0 == memcmp(ptr_lb, line_boundary, strlen(line_boundary)))
+			{
+				ptr_lb = ptr_lb+(strlen(line_boundary));
+				num_of_parts = 1;
+				while(0 != num_of_parts % 2)
 				{
-					WebConfigLog("last line boundary inside \n");
-					break;
-				}
-				if(0 == memcmp(ptr_lb1+1, "-", 1) && 0 == memcmp(ptr_lb1+1, line_boundary, strlen(line_boundary)))
-				{
-					WebConfigLog(" line boundary inside \n");
-					num_of_parts++;
-					count++;
+					ptr_lb = memchr(ptr_lb, '\n', data_size - (ptr_lb - str_body));
+					// printf("printing newline: %ld\n",ptr_lb-str_body);
+					ptr_lb1 = memchr(ptr_lb+1, '\n', data_size - (ptr_lb - str_body));
+					// printf("printing newline2: %ld\n",ptr_lb1-str_body);
+					if(0 != memcmp(ptr_lb1-1, "\r",1 )){
+					ptr_lb1 = memchr(ptr_lb1+1, '\n', data_size - (ptr_lb - str_body));
+					}
+					index2 = ptr_lb1-str_body;
+					index1 = ptr_lb-str_body;
+					parse_multipart(str_body+index1+1,index2 - index1 - 2, &mp->entries[count],&subdocbytes);
+					ptr_lb++;
+
+					if(0 == memcmp(ptr_lb, last_line_boundary, strlen(last_line_boundary)))
+					{
+						WebConfigLog("last line boundary inside \n");
+						break;
+					}
+					if(0 == memcmp(ptr_lb1+1, "-", 1) && 0 == memcmp(ptr_lb1+1, line_boundary, strlen(line_boundary)))
+					{
+						WebConfigLog(" line boundary inside \n");
+						num_of_parts++;
+						count++;
+					}
 				}
 			}
+			else
+			{
+				ptr_lb++;
+			}
+		}
+		status = processMsgpackSubdoc(mp, trans_uuid);
+		if(status ==0)
+		{
+			WebConfigLog("processMsgpackSubdoc success\n");
+			return WEBCFG_SUCCESS;
 		}
 		else
 		{
-			ptr_lb++;
+			WebConfigLog("processMsgpackSubdoc failed\n");
 		}
+		return WEBCFG_FAILURE;
 	}
-	status = processMsgpackSubdoc(mp, trans_uuid);
-	if(status ==0)
-	{
-		WebConfigLog("processMsgpackSubdoc success\n");
-		return WEBCFG_SUCCESS;
-	}
-	else
-	{
-		WebConfigLog("processMsgpackSubdoc failed\n");	
-	}
-	return WEBCFG_FAILURE;
+    else
+    {
+		WebConfigLog("Multipart Boundary is NULL\n");
+		return WEBCFG_FAILURE;
+    }
 }
 
 WEBCFG_STATUS processMsgpackSubdoc(multipart_t *mp, char *transaction_id)
@@ -1213,11 +1219,11 @@ void parse_multipart(char *ptr, int no_of_bytes, multipartdocs_t *m, int *no_of_
 	void * mulsubdoc;
 
 	/*for storing respective values */
-	if(0 == strncasecmp(ptr,"Namespace",strlen("Namespace")-1))
+	if(0 == strncasecmp(ptr,"Namespace",strlen("Namespace")))
 	{
                 m->name_space = strndup(ptr+(strlen("Namespace: ")),no_of_bytes-((strlen("Namespace: "))));
 	}
-	else if(0 == strncasecmp(ptr,"Etag",strlen("Etag")-1))
+	else if(0 == strncasecmp(ptr,"Etag",strlen("Etag")))
 	{
                 char * temp = strndup(ptr+(strlen("Etag: ")),no_of_bytes-((strlen("Etag: "))));
                 m->etag = strtoul(temp,0,0);
