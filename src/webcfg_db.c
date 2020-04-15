@@ -377,7 +377,7 @@ WEBCFG_STATUS updateDBlist(char *docname, uint32_t version)
 	//Traverse through doc list & update required doc
 	while (NULL != webcfgdb)
 	{
-		WebConfigLog("node is pointing to webcfgdb->name %s, docname %s, dblen %d, doclen %d \n",webcfgdb->name, docname, strlen(webcfgdb->name), strlen(docname));
+		WebConfigLog("node is pointing to webcfgdb->name %s, docname %s, dblen %zu, doclen %zu \n",webcfgdb->name, docname, strlen(webcfgdb->name), strlen(docname));
 		if( strcmp(docname, webcfgdb->name) == 0)
 		{
 			webcfgdb->version = version;
@@ -589,7 +589,7 @@ void addToDBList(webconfig_db_data_t *webcfgdb)
       {
           webcfgdb_data = webcfgdb;
           success_doc_count++;
-	  WebConfigLog("Producer added webcfgdb->name %s, webcfg->version %lu, success_doc_count %d\n",webcfgdb->name, webcfgdb->version, success_doc_count);
+	  WebConfigLog("Producer added webcfgdb->name %s, webcfg->version %d, success_doc_count %d\n",webcfgdb->name, webcfgdb->version, success_doc_count);
           //webcfgdb = NULL;
       }
       else
@@ -602,7 +602,7 @@ void addToDBList(webconfig_db_data_t *webcfgdb)
           }
           temp->next = webcfgdb;
           success_doc_count++;
-          WebConfigLog("Producer added webcfgdb->name %s, webcfg->version %lu, success_doc_count %d\n",webcfgdb->name, webcfgdb->version, success_doc_count);
+          WebConfigLog("Producer added webcfgdb->name %s, webcfg->version %d, success_doc_count %d\n",webcfgdb->name, webcfgdb->version, success_doc_count);
       }
 }
 
