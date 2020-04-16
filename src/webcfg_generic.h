@@ -73,6 +73,4 @@ void setValues(const param_t paramVal[], const unsigned int paramCount, const in
  */
 void sendNotification(char *payload, char *source, char *destination);
 
-/* Returns logger file name */
-const char *fetch_generic_file(void);
 #endif
