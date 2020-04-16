@@ -99,6 +99,7 @@ WEBCFG_STATUS webcfg_http_request(char **configData, int r_count, int status, lo
 	char docList[512] = {'\0'};
 	char configURL[256] = { 0 };
 	char c[] = "{mac}";
+	int rv = 0;
 
 	int content_res=0;
 	struct token_data data;
@@ -136,6 +137,9 @@ WEBCFG_STATUS webcfg_http_request(char **configData, int r_count, int status, lo
 		else
 		{
 			WebConfigLog("Failed to get configURL\n");
+			WEBCFG_FREE(data.data);
+			curl_slist_free_all(headers_list);
+			curl_easy_cleanup(curl);
 			return WEBCFG_FAILURE;
 		}
 		WebConfigLog("ConfigURL fetched is %s\n", webConfigURL);
@@ -146,6 +150,7 @@ WEBCFG_STATUS webcfg_http_request(char **configData, int r_count, int status, lo
 		{
 			WebConfigLog("docList is %s\n", docList);
 			snprintf(syncURL, MAX_BUF_SIZE, "%s?group_id=%s", webConfigURL, docList);
+			WEBCFG_FREE(webConfigURL);
 			WebConfigLog("syncURL is %s\n", syncURL);
 			webConfigURL =strdup( syncURL);
 		}
@@ -158,6 +163,9 @@ WEBCFG_STATUS webcfg_http_request(char **configData, int r_count, int status, lo
 		else
 		{
 			WebConfigLog("Failed to get webconfig configURL\n");
+			WEBCFG_FREE(data.data);
+			curl_slist_free_all(headers_list);
+			curl_easy_cleanup(curl);
 			return WEBCFG_FAILURE;
 		}
 		curl_easy_setopt(curl, CURLOPT_TIMEOUT, CURL_TIMEOUT_SEC);
@@ -252,9 +260,16 @@ WEBCFG_STATUS webcfg_http_request(char **configData, int r_count, int status, lo
 						*configData=data.data;
 						*dataSize = data.size;
 						WebConfigLog("Data size is %d\n",(int)data.size);
+						rv = 1;
 					}
 				}
 			}
+		}
+		if(rv != 1)
+		{
+			WebConfigLog("Free data\n");
+			WEBCFG_FREE(data.data);
+			WebConfigLog("After free data\n");
 		}
 		curl_easy_cleanup(curl);
 		return WEBCFG_SUCCESS;
@@ -1085,10 +1100,14 @@ void createCurlHeader( struct curl_slist *list, struct curl_slist **header_list,
 
 	if(syncTransID !=NULL)
 	{
-		if(ForceSyncDoc && strlen(syncTransID)>0)
+		if(ForceSyncDoc !=NULL)
 		{
-			WebConfigLog("updating transaction_uuid with force syncTransID\n");
-			transaction_uuid = strdup(syncTransID);
+			if (strlen(syncTransID)>0)
+			{
+				WebConfigLog("updating transaction_uuid with force syncTransID\n");
+				transaction_uuid = strdup(syncTransID);
+			}
+			WEBCFG_FREE(ForceSyncDoc);
 		}
 		WEBCFG_FREE(syncTransID);
 	}

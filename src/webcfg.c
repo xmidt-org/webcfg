@@ -225,6 +225,7 @@ void processWebconfgSync(int status)
 		else
 		{
 			WebConfigLog("Failed to get webConfigData from cloud\n");
+			WEBCFG_FREE(transaction_uuid);
 		}
 		WebConfigLog("webcfg_http_request BACKOFF_SLEEP_DELAY_SEC is %d seconds\n", BACKOFF_SLEEP_DELAY_SEC);
 		sleep(BACKOFF_SLEEP_DELAY_SEC);
@@ -244,6 +245,7 @@ int handlehttpResponse(long response_code, char *webConfigData, int retry_count,
 	if(response_code == 304)
 	{
 		WebConfigLog("webConfig is in sync with cloud. response_code:%ld\n", response_code);
+		WEBCFG_FREE(transaction_uuid);
 		return 1;
 	}
 	else if(response_code == 200)
@@ -276,6 +278,7 @@ int handlehttpResponse(long response_code, char *webConfigData, int retry_count,
 	else if(response_code == 204)
 	{
 		WebConfigLog("No configuration available for this device. response_code:%ld\n", response_code);
+		WEBCFG_FREE(transaction_uuid);
 		return 1;
 	}
 	else if(response_code == 403)
@@ -295,6 +298,7 @@ int handlehttpResponse(long response_code, char *webConfigData, int retry_count,
 	if((response_code !=403) && (first_digit == 4)) //4xx
 	{
 		WebConfigLog("Action not supported. response_code:%ld\n", response_code);
+		WEBCFG_FREE(transaction_uuid);
 		return 1;
 	}
 	else //5xx & all other errors
@@ -303,6 +307,7 @@ int handlehttpResponse(long response_code, char *webConfigData, int retry_count,
 		if(retry_count == 3 && !err)
 		{
 			WebcfgDebug("3 retry attempts\n");
+			WEBCFG_FREE(transaction_uuid);
 			return 0;
 		}
 		WEBCFG_FREE(transaction_uuid);

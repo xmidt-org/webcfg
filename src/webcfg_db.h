@@ -80,6 +80,7 @@ typedef struct{
  */
 
 void webcfgdbblob_destroy( blob_struct_t *bd );
+void webcfgdb_destroy( webconfig_db_data_t *pm );
 const char* webcfgdbblob_strerror( int errnum );
 blob_struct_t* decodeBlobData(const void * buf, size_t len);
 
