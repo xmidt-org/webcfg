@@ -64,7 +64,7 @@ void getAuthToken()
 	if( strlen(WEBPA_READ_HEADER) !=0 && strlen(WEBPA_CREATE_HEADER) !=0)
 	{
                 get_deviceMAC();
-                WebConfigLog("deviceMAC: %s\n",get_deviceMAC());
+                WebcfgInfo("deviceMAC: %s\n",get_deviceMAC());
 
 		if( get_deviceMAC() != NULL && strlen(get_deviceMAC()) !=0 )
 		{
@@ -74,7 +74,7 @@ void getAuthToken()
 		                if(serial_number !=NULL)
 		                {
 					strncpy(serialNum ,serial_number, sizeof(serialNum)-1);
-					WebConfigLog("serialNum: %s\n", serialNum);
+					WebcfgInfo("serialNum: %s\n", serialNum);
 					WEBCFG_FREE(serial_number);
 		                }
 			}
@@ -84,33 +84,33 @@ void getAuthToken()
 				execute_token_script(output, WEBPA_READ_HEADER, sizeof(output), get_deviceMAC(), serialNum);
 				if ((strlen(output) == 0))
 				{
-					WebConfigLog("Unable to get auth token\n");
+					WebcfgError("Unable to get auth token\n");
 				}
 				else if(strcmp(output,"ERROR")==0)
 				{
-					WebConfigLog("Failed to read token from %s. Proceeding to create new token.\n",WEBPA_READ_HEADER);
+					WebcfgInfo("Failed to read token from %s. Proceeding to create new token.\n",WEBPA_READ_HEADER);
 					//Call create/acquisition script
 					createNewAuthToken(webpa_auth_token, sizeof(webpa_auth_token), get_deviceMAC(), serialNum );
 				}
 				else
 				{
-					WebConfigLog("update webpa_auth_token in success case\n");
+					WebcfgInfo("update webpa_auth_token in success case\n");
 					webcfgStrncpy(webpa_auth_token, output, sizeof(webpa_auth_token));
 				}
 			}
 			else
 			{
-				WebConfigLog("serialNum is NULL, failed to fetch auth token\n");
+				WebcfgError("serialNum is NULL, failed to fetch auth token\n");
 			}
 		}
 		else
 		{
-			WebConfigLog("deviceMAC is NULL, failed to fetch auth token\n");
+			WebcfgError("deviceMAC is NULL, failed to fetch auth token\n");
 		}
 	}
 	else
 	{
-		WebConfigLog("Both read and write file are NULL \n");
+		WebcfgError("Both read and write file are NULL \n");
 	}
 }
 
@@ -131,7 +131,7 @@ void createNewAuthToken(char *newToken, size_t len, char *hw_mac, char* hw_seria
 	}
 	else
 	{
-		WebConfigLog("Failed to create new token\n");
+		WebcfgError("Failed to create new token\n");
 	}
 }
 
@@ -159,7 +159,7 @@ void execute_token_script(char *token, char *name, size_t len, char *mac, char *
         }
         else
         {
-            WebConfigLog ("File %s open error\n", name);
+            WebcfgError ("File %s open error\n", name);
         }
     }
 }

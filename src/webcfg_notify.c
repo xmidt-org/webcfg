@@ -56,15 +56,14 @@ pthread_t get_global_notify_threadid()
 void initWebConfigNotifyTask()
 {
 	int err = 0;
-	WebConfigLog("Inside initWebConfigNotifyTask\n");
 	err = pthread_create(&NotificationThreadId, NULL, processWebConfgNotification, NULL);
 	if (err != 0)
 	{
-		WebConfigLog("Error creating Webconfig Notification thread :[%s]\n", strerror(err));
+		WebcfgError("Error creating Webconfig Notification thread :[%s]\n", strerror(err));
 	}
 	else
 	{
-		WebConfigLog("Webconfig Notification thread created Successfully\n");
+		WebcfgInfo("Webconfig Notification thread created Successfully\n");
 	}
 
 }
@@ -106,7 +105,7 @@ void addWebConfgNotifyMsg(char *docname, uint32_t version, char *status, char *e
 			args->transaction_uuid = strdup(transaction_uuid);
 		}
 
-		WebConfigLog("args->name:%s,args->application_status:%s,args->error_details:%s,args->version:%s,args->transaction_uuid:%s\n",args->name,args->application_status, args->error_details, args->version, args->transaction_uuid );
+		WebcfgDebug("args->name:%s,args->application_status:%s,args->error_details:%s,args->version:%s,args->transaction_uuid:%s\n",args->name,args->application_status, args->error_details, args->version, args->transaction_uuid );
 
 		args->next=NULL;
 
@@ -115,10 +114,10 @@ void addWebConfgNotifyMsg(char *docname, uint32_t version, char *status, char *e
 		if(notifyMsgQ == NULL)
 		{
 			notifyMsgQ = args;
-			WebConfigLog("Producer added notify message\n");
+			WebcfgDebug("Producer added notify message\n");
 			pthread_cond_signal(&notify_con);
 			pthread_mutex_unlock (&notify_mut);
-			WebConfigLog("mutex unlock in notify producer thread\n");
+			WebcfgDebug("mutex unlock in notify producer thread\n");
 		}
 		else
 		{
@@ -133,7 +132,7 @@ void addWebConfgNotifyMsg(char *docname, uint32_t version, char *status, char *e
 	}
 	else
 	{
-	    WebConfigLog("failure in allocation for notify message\n");
+	    WebcfgError("failure in allocation for notify message\n");
 	}
 }
 
@@ -150,22 +149,22 @@ void* processWebConfgNotification()
 	while(1)
 	{
 		pthread_mutex_lock (&notify_mut);
-		WebConfigLog("mutex lock in notify consumer thread\n");
+		WebcfgDebug("mutex lock in notify consumer thread\n");
 		if(notifyMsgQ != NULL)
 		{
 			notify_params_t *msg = notifyMsgQ;
 			notifyMsgQ = notifyMsgQ->next;
 			pthread_mutex_unlock (&notify_mut);
-			WebConfigLog("mutex unlock in notify consumer thread\n");
+			WebcfgDebug("mutex unlock in notify consumer thread\n");
 
 			if((get_deviceMAC() !=NULL) && (strlen(get_deviceMAC()) == 0))
 			{
-				WebConfigLog("deviceMAC is NULL, failed to send Webconfig Notification\n");
+				WebcfgError("deviceMAC is NULL, failed to send Webconfig Notification\n");
 			}
 			else
 			{
 				snprintf(device_id, sizeof(device_id), "mac:%s", get_deviceMAC());
-				WebConfigLog("webconfig Device_id %s\n", device_id);
+				WebcfgDebug("webconfig Device_id %s\n", device_id);
 
 				notifyPayload = cJSON_CreateObject();
 
@@ -190,14 +189,14 @@ void* processWebConfgNotification()
 				}
 
 				snprintf(dest,sizeof(dest),"event:subdoc-report/%s/%s/status",msg->name,device_id);
-				WebConfigLog("dest is %s\n", dest);
+				WebcfgInfo("dest is %s\n", dest);
 
 				if (stringifiedNotifyPayload != NULL && strlen(device_id) != 0)
 				{
 					source = (char*) malloc(sizeof(char) * sizeof(device_id));
 					strncpy(source, device_id, sizeof(device_id));
-					WebConfigLog("source is %s\n", source);
-					WebConfigLog("stringifiedNotifyPayload is %s\n", stringifiedNotifyPayload);
+					WebcfgDebug("source is %s\n", source);
+					WebcfgInfo("stringifiedNotifyPayload is %s\n", stringifiedNotifyPayload);
 					//stringifiedNotifyPayload, source to be freed by sendNotification
 					sendNotification(stringifiedNotifyPayload, source, dest);
 				}
@@ -211,10 +210,10 @@ void* processWebConfgNotification()
 		}
 		else
 		{
-			WebConfigLog("Before pthread cond wait in notify thread\n");
+			WebcfgDebug("Before pthread cond wait in notify thread\n");
 			pthread_cond_wait(&notify_con, &notify_mut);
 			pthread_mutex_unlock (&notify_mut);
-			WebConfigLog("mutex unlock in notify thread after cond wait\n");
+			WebcfgDebug("mutex unlock in notify thread after cond wait\n");
 		}
 	}
 	return NULL;

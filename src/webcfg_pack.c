@@ -92,9 +92,9 @@ ssize_t webcfgdb_blob_pack(webconfig_db_data_t *webcfgdb, webconfig_tmp_data_t *
 
     while(db_data != NULL)
     {
-        //printf("The db name is %s\n",db_data->name);
+        //WebcfgDebug("The db name is %s\n",db_data->name);
         db_data = db_data->next;
-        //printf("The pack count of DB_count calc is %d\n",db_count );
+        //WebcfgDebug("The pack count of DB_count calc is %d\n",db_count );
         db_count++;
     }
 
@@ -117,9 +117,9 @@ ssize_t webcfgdb_blob_pack(webconfig_db_data_t *webcfgdb, webconfig_tmp_data_t *
         __msgpack_pack_string( &pk, WEBCFG_BLOB_PARAMETERS.name, WEBCFG_BLOB_PARAMETERS.length );
 	msgpack_pack_array( &pk, (db_count + tmp_count) );
 
-        WebConfigLog("The pack count of DB_count is %d\n",db_count );
-        WebConfigLog("The pack count of temp_count is %d\n",tmp_count);
-	WebConfigLog("The pack count of blob is %d\n",(db_count + tmp_count));
+        WebcfgDebug("The pack count of DB_count is %d\n",db_count );
+        WebcfgDebug("The pack count of temp_count is %d\n",tmp_count);
+	WebcfgDebug("The pack count of blob is %d\n",(db_count + tmp_count));
 
        if(db_data != NULL)
        {
@@ -138,7 +138,7 @@ ssize_t webcfgdb_blob_pack(webconfig_db_data_t *webcfgdb, webconfig_tmp_data_t *
                 WEBCFG_MAP_BLOB_VERSION.name = "version";
                 WEBCFG_MAP_BLOB_VERSION.length = strlen( "version" );
 	        __msgpack_pack_string( &pk, WEBCFG_MAP_BLOB_VERSION.name, WEBCFG_MAP_BLOB_VERSION.length);
-                //printf("The db version is %ld\n",(long)db_data->version);
+                //WebcfgDebug("The db version is %ld\n",(long)db_data->version);
                 msgpack_pack_uint64(&pk,(uint32_t) db_data->version);
 
                 struct webcfg_token WEBCFG_MAP_BLOB_STATUS;
@@ -168,7 +168,7 @@ ssize_t webcfgdb_blob_pack(webconfig_db_data_t *webcfgdb, webconfig_tmp_data_t *
 
                 WEBCFG_MAP_TEMP_NAME.name = "name";
                 WEBCFG_MAP_TEMP_NAME.length = strlen( "name" );
-                WebConfigLog("The tmp name is %s\n",temp_data->name);
+                WebcfgDebug("The tmp name is %s\n",temp_data->name);
                 __msgpack_pack_string_nvp( &pk, &WEBCFG_MAP_TEMP_NAME, temp_data->name );
 
 	        struct webcfg_token WEBCFG_MAP_TEMP_VERSION;
@@ -176,21 +176,21 @@ ssize_t webcfgdb_blob_pack(webconfig_db_data_t *webcfgdb, webconfig_tmp_data_t *
                 WEBCFG_MAP_TEMP_VERSION.name = "version";
                 WEBCFG_MAP_TEMP_VERSION.length = strlen( "version" );
 	        __msgpack_pack_string( &pk, WEBCFG_MAP_TEMP_VERSION.name, WEBCFG_MAP_TEMP_VERSION.length);
-                //WebConfigLog("The tmp version is %ld\n",(long)temp_data->version);
+                //WebcfgDebug("The tmp version is %ld\n",(long)temp_data->version);
 		msgpack_pack_uint64(&pk,(uint32_t) temp_data->version);
 
                 struct webcfg_token WEBCFG_MAP_TEMP_STATUS;
 
                 WEBCFG_MAP_TEMP_STATUS.name = "status";
                 WEBCFG_MAP_TEMP_STATUS.length = strlen( "status" );
-                WebConfigLog("The tmp status is %s\n",temp_data->status);
+                WebcfgDebug("The tmp status is %s\n",temp_data->status);
                 __msgpack_pack_string_nvp( &pk, &WEBCFG_MAP_TEMP_STATUS, temp_data->status );
 
 		struct webcfg_token WEBCFG_MAP_TEMP_ERROR_DETAILS;
 
                 WEBCFG_MAP_TEMP_ERROR_DETAILS.name = "error_details";
                 WEBCFG_MAP_TEMP_ERROR_DETAILS.length = strlen( "error_details" );
-                WebConfigLog("The tmp error_details is %s\n",temp_data->error_details);
+                WebcfgDebug("The tmp error_details is %s\n",temp_data->error_details);
                 __msgpack_pack_string_nvp( &pk, &WEBCFG_MAP_TEMP_ERROR_DETAILS, temp_data->error_details );
 
                 temp_data = temp_data->next;
@@ -198,7 +198,7 @@ ssize_t webcfgdb_blob_pack(webconfig_db_data_t *webcfgdb, webconfig_tmp_data_t *
 	    }
        }
     } else {
-        WebConfigLog("parameters is NULL\n" );
+        WebcfgError("parameters is NULL\n" );
         return rv;
     }
 
@@ -207,7 +207,7 @@ ssize_t webcfgdb_blob_pack(webconfig_db_data_t *webcfgdb, webconfig_tmp_data_t *
 
         if( NULL != *data ) {
             memcpy( *data, sbuf.data, sbuf.size );
-	    //printf("sbuf.data is %s sbuf.size %ld\n", sbuf.data, sbuf.size);
+	    //WebcfgDebug("sbuf.data is %s sbuf.size %ld\n", sbuf.data, sbuf.size);
             rv = sbuf.size;
         }
     }
@@ -231,7 +231,7 @@ ssize_t webcfgdb_pack( webconfig_db_data_t *packData, void **data, size_t count 
         __msgpack_pack_string( &pk, WEBCFG_DB_PARAMETERS.name, WEBCFG_DB_PARAMETERS.length );
 	msgpack_pack_array( &pk, count );
         
-	WebConfigLog("The pack count is %zu\n",count);
+	WebcfgDebug("The pack count is %zu\n",count);
     
     webconfig_db_data_t *temp = packData;
 
@@ -250,7 +250,7 @@ ssize_t webcfgdb_pack( webconfig_db_data_t *packData, void **data, size_t count 
             WEBCFG_MAP_VERSION.name = "version";
             WEBCFG_MAP_VERSION.length = strlen( "version" );
 	    __msgpack_pack_string( &pk, WEBCFG_MAP_VERSION.name, WEBCFG_MAP_VERSION.length);
-            //printf("The version is %ld\n",(long)temp->version);
+            //WebcfgDebug("The version is %ld\n",(long)temp->version);
             msgpack_pack_uint64(&pk,(uint32_t) temp->version);
             
             temp = temp->next;
@@ -258,7 +258,7 @@ ssize_t webcfgdb_pack( webconfig_db_data_t *packData, void **data, size_t count 
 	}
 
     } else {
-        WebConfigLog("parameters is NULL\n" );
+        WebcfgError("parameters is NULL\n" );
         return rv;
     }
 
@@ -267,7 +267,7 @@ ssize_t webcfgdb_pack( webconfig_db_data_t *packData, void **data, size_t count 
 
         if( NULL != *data ) {
             memcpy( *data, sbuf.data, sbuf.size );
-	    //printf("sbuf.data is %s sbuf.size %ld\n", sbuf.data, sbuf.size);
+	    //WebcfgDebug("sbuf.data is %s sbuf.size %ld\n", sbuf.data, sbuf.size);
             rv = sbuf.size;
         }
     }

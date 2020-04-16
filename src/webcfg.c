@@ -63,11 +63,11 @@ void initWebConfigMultipartTask(unsigned long status)
 	err = pthread_create(&threadId, NULL, WebConfigMultipartTask, (void *) status);
 	if (err != 0) 
 	{
-		WebConfigLog("Error creating WebConfigMultipartTask thread :[%s]\n", strerror(err));
+		WebcfgError("Error creating WebConfigMultipartTask thread :[%s]\n", strerror(err));
 	}
 	else
 	{
-		WebConfigLog("WebConfigMultipartTask Thread created Successfully.\n");
+		WebcfgInfo("WebConfigMultipartTask Thread created Successfully.\n");
 	}
 }
 
@@ -79,27 +79,24 @@ void *WebConfigMultipartTask(void *status)
 	int forced_sync=0;
         int Status = 0;
 	Status = (unsigned long)status;
-	WebConfigLog("Status is %d\n", Status);
 
 	//start webconfig notification thread.
 	initWebConfigNotifyTask();
-	WebConfigLog("initDB %s\n", WEBCFG_DB_FILE);
+	WebcfgInfo("initDB %s\n", WEBCFG_DB_FILE);
 
 	initDB(WEBCFG_DB_FILE);
 	while(1)
 	{
 		if(forced_sync)
 		{
-			WebConfigLog("Triggered Forced sync\n");
+			WebcfgInfo("Triggered Forced sync\n");
 			processWebconfgSync((int)Status);
-			WebConfigLog("reset forced_sync after sync\n");
+			WebcfgInfo("reset forced_sync after sync\n");
 			forced_sync = 0;
-			WebConfigLog("reset ForceSyncCheck after sync\n");
 			setForceSync("", "", 0);
 		}
 		else
 		{
-			WebConfigLog("B4 processWebconfgSync\n");
 			processWebconfgSync((int)Status);
 		}
 
@@ -107,7 +104,7 @@ void *WebConfigMultipartTask(void *status)
 
 		if (g_shutdown)
 		{
-			WebConfigLog("g_shutdown is %d, proceeding to kill webconfig thread\n", g_shutdown);
+			WebcfgInfo("g_shutdown is %d, proceeding to kill webconfig thread\n", g_shutdown);
 			pthread_mutex_unlock (&sync_mutex);
 			break;
 		}
@@ -122,28 +119,28 @@ void *WebConfigMultipartTask(void *status)
 
 			// Identify ForceSync based on docname
 			getForceSync(&ForceSyncDoc, &ForceSyncTransID);
-			WebConfigLog("ForceSyncDoc %s ForceSyncTransID. %s\n", ForceSyncDoc, ForceSyncTransID);
+			WebcfgDebug("ForceSyncDoc %s ForceSyncTransID. %s\n", ForceSyncDoc, ForceSyncTransID);
 			if(ForceSyncTransID !=NULL)
 			{
 				if((ForceSyncDoc != NULL) && strlen(ForceSyncDoc)>0)
 				{
 					forced_sync = 1;
-					WebConfigLog("Received signal interrupt to Force Sync\n");
+					WebcfgInfo("Received signal interrupt to Force Sync\n");
 					WEBCFG_FREE(ForceSyncDoc);
 					WEBCFG_FREE(ForceSyncTransID);
 				}
 				else
 				{
-					WebConfigLog("ForceSyncDoc is NULL\n");
+					WebcfgError("ForceSyncDoc is NULL\n");
 					WEBCFG_FREE(ForceSyncTransID);
 				}
 			}
 
-			WebConfigLog("forced_sync is %d\n", forced_sync);
+			WebcfgDebug("forced_sync is %d\n", forced_sync);
 		}
 		else if(g_shutdown)
 		{
-			WebConfigLog("Received signal interrupt to RFC disable. g_shutdown is %d, proceeding to kill webconfig thread\n", g_shutdown);
+			WebcfgInfo("Received signal interrupt to RFC disable. g_shutdown is %d, proceeding to kill webconfig thread\n", g_shutdown);
 			pthread_mutex_unlock (&sync_mutex);
 			break;
 		}
@@ -155,14 +152,14 @@ void *WebConfigMultipartTask(void *status)
 		ret = pthread_join (get_global_notify_threadid(), NULL);
 		if(ret ==0)
 		{
-			WebConfigLog("pthread_join returns success\n");
+			WebcfgInfo("pthread_join returns success\n");
 		}
 		else
 		{
-			WebConfigLog("Error joining thread\n");
+			WebcfgError("Error joining thread\n");
 		}
 	}
-	WebConfigLog("B4 pthread_exit\n");
+	WebcfgInfo("B4 pthread_exit\n");
 	pthread_exit(0);
 	WebcfgDebug("After pthread_exit\n");
 	return NULL;
@@ -202,35 +199,34 @@ void processWebconfgSync(int status)
 	char ct[256] = {0};
 	size_t dataSize=0;
 
-	WebConfigLog("========= Start of processWebconfgSync =============\n");
+	WebcfgDebug("========= Start of processWebconfgSync =============\n");
 	while(1)
 	{
 		if(retry_count >3)
 		{
-			WebConfigLog("retry_count has reached max limit. Exiting.\n");
+			WebcfgInfo("retry_count has reached max limit. Exiting.\n");
 			retry_count=0;
 			break;
 		}
-		WebConfigLog("processWebconfgSync. status is %d\n", status );
 		configRet = webcfg_http_request(&webConfigData, r_count, status, &res_code, &transaction_uuid, ct, &dataSize);
 		if(configRet == 0)
 		{
 			rv = handlehttpResponse(res_code, webConfigData, retry_count, transaction_uuid, ct, dataSize);
 			if(rv ==1)
 			{
-				WebConfigLog("No retries are required. Exiting..\n");
+				WebcfgInfo("No retries are required. Exiting..\n");
 				break;
 			}
 		}
 		else
 		{
-			WebConfigLog("Failed to get webConfigData from cloud\n");
+			WebcfgError("Failed to get webConfigData from cloud\n");
 			WEBCFG_FREE(transaction_uuid);
 		}
-		WebConfigLog("webcfg_http_request BACKOFF_SLEEP_DELAY_SEC is %d seconds\n", BACKOFF_SLEEP_DELAY_SEC);
+		WebcfgInfo("webcfg_http_request BACKOFF_SLEEP_DELAY_SEC is %d seconds\n", BACKOFF_SLEEP_DELAY_SEC);
 		sleep(BACKOFF_SLEEP_DELAY_SEC);
 		retry_count++;
-		WebConfigLog("Webconfig retry_count is %d\n", retry_count);
+		WebcfgInfo("Webconfig retry_count is %d\n", retry_count);
 	}
 	WebcfgDebug("========= End of processWebconfgSync =============\n");
 	return;
@@ -244,66 +240,65 @@ int handlehttpResponse(long response_code, char *webConfigData, int retry_count,
 
 	if(response_code == 304)
 	{
-		WebConfigLog("webConfig is in sync with cloud. response_code:%ld\n", response_code);
+		WebcfgInfo("webConfig is in sync with cloud. response_code:%ld\n", response_code);
 		WEBCFG_FREE(transaction_uuid);
 		return 1;
 	}
 	else if(response_code == 200)
 	{
-		WebConfigLog("webConfig is not in sync with cloud. response_code:%ld\n", response_code);
+		WebcfgInfo("webConfig is not in sync with cloud. response_code:%ld\n", response_code);
 
 		if(webConfigData !=NULL)
 		{
 			WebcfgDebug("webConfigData fetched successfully\n");
-			WebConfigLog("parseMultipartDocument\n");
-			WebConfigLog("transaction_uuid is %s\n", transaction_uuid);
+			WebcfgDebug("parseMultipartDocument\n");
 			msgpack_status = parseMultipartDocument(webConfigData, ct, dataSize, transaction_uuid);
 
 			if(msgpack_status == WEBCFG_SUCCESS)
 			{
-				WebConfigLog("parseMultipartDocument success\n");
+				WebcfgInfo("webConfigData applied successfully\n");
 				return 1;
 			}
 			else
 			{
-				WebConfigLog("Failure in parseMultipartDocument\n");
+				WebcfgError("Failed to apply webConfigData\n");
 				return 1;
 			}
 		}
 		else
 		{
-			WebConfigLog("webConfigData is empty, need to retry\n");
+			WebcfgError("webConfigData is empty, need to retry\n");
 		}
 	}
 	else if(response_code == 204)
 	{
-		WebConfigLog("No configuration available for this device. response_code:%ld\n", response_code);
+		WebcfgInfo("No configuration available for this device. response_code:%ld\n", response_code);
 		WEBCFG_FREE(transaction_uuid);
 		return 1;
 	}
 	else if(response_code == 403)
 	{
-		WebConfigLog("Token is expired, fetch new token. response_code:%ld\n", response_code);
+		WebcfgError("Token is expired, fetch new token. response_code:%ld\n", response_code);
 		createNewAuthToken(get_global_auth_token(), sizeof(get_global_auth_token()), get_deviceMAC(), get_global_serialNum() );
 		WebcfgDebug("createNewAuthToken done in 403 case\n");
 		err = 1;
 	}
 	else if(response_code == 429)
 	{
-		WebConfigLog("No action required from client. response_code:%ld\n", response_code);
+		WebcfgInfo("No action required from client. response_code:%ld\n", response_code);
 		WEBCFG_FREE(transaction_uuid);
 		return 1;
 	}
 	first_digit = (int)(response_code / pow(10, (int)log10(response_code)));
 	if((response_code !=403) && (first_digit == 4)) //4xx
 	{
-		WebConfigLog("Action not supported. response_code:%ld\n", response_code);
+		WebcfgInfo("Action not supported. response_code:%ld\n", response_code);
 		WEBCFG_FREE(transaction_uuid);
 		return 1;
 	}
 	else //5xx & all other errors
 	{
-		WebConfigLog("Error code returned, need to retry. response_code:%ld\n", response_code);
+		WebcfgError("Error code returned, need to retry. response_code:%ld\n", response_code);
 		if(retry_count == 3 && !err)
 		{
 			WebcfgDebug("3 retry attempts\n");

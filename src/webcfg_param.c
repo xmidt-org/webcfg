@@ -128,15 +128,12 @@ int process_params( wparam_t *e, msgpack_object_map *map )
             if( MSGPACK_OBJECT_POSITIVE_INTEGER == p->val.type ) {
                 if( 0 == match(p, "dataType") ) {
                     if( UINT16_MAX < p->val.via.u64 ) {
-			//printf("e->type is %d\n", e->type);
                         errno = PM_INVALID_DATATYPE;
                         return -1;
                     } else {
                         e->type = (uint16_t) p->val.via.u64;
-			//printf("e->type is %d\n", e->type);
                     }
                     objects_left &= ~(1 << 0);
-		    //printf("objects_left after datatype %d\n", objects_left);
                 }
                 else if(0 == match(p, "notify_attribute"))
                 {
@@ -145,21 +142,18 @@ int process_params( wparam_t *e, msgpack_object_map *map )
             } else if( MSGPACK_OBJECT_STR == p->val.type ) {
                 if( 0 == match(p, "name") ) {
                     e->name = strndup( p->val.via.str.ptr, p->val.via.str.size );
-		    //printf("e->name is %s\n", e->name);
                     objects_left &= ~(1 << 1);
-		    //printf("objects_left after name %d\n", objects_left);
                 }
 		if( 0 == match(p, "value") ) {
                     e->value = strndup( p->val.via.str.ptr, p->val.via.str.size );
 		    e->value_size =strlen(e->value);
 		    if((uint32_t)e->value_size != (uint32_t)p->val.via.str.size)
 		    {
-			WebConfigLog("blob size update\n");
+			WebcfgInfo("blob size update\n");
 		    e->value = (char*)p->val.via.str.ptr;
 		    e->value_size =(uint32_t) p->val.via.str.size;
 		    }
                     objects_left &= ~(1 << 2);
-		    //printf("objects_left after value %d\n", objects_left);
                 }
 	
             }
@@ -177,7 +171,6 @@ int process_params( wparam_t *e, msgpack_object_map *map )
 
 int process_webcfgparam( webcfgparam_t *pm, msgpack_object *obj )
 {
-	//printf(" process_webcfgparam \n");
     msgpack_object_array *array = &obj->via.array;
     if( 0 < array->size ) {
         size_t i;
@@ -196,7 +189,7 @@ int process_webcfgparam( webcfgparam_t *pm, msgpack_object *obj )
                 return -1;
             }
             if( 0 != process_params(&pm->entries[i], &array->ptr[i].via.map) ) {
-		//printf("process_params failed\n");
+		WebcfgError("process_params failed\n");
                 return -1;
             }
         }
