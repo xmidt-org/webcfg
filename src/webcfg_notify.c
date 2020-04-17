@@ -200,13 +200,9 @@ void* processWebConfgNotification()
 					//stringifiedNotifyPayload, source to be freed by sendNotification
 					sendNotification(stringifiedNotifyPayload, source, dest);
 				}
-				if(msg != NULL)
-				{
 					free_notify_params_struct(msg);
-					msg = NULL;
-				}
-			}
-			pthread_mutex_unlock (&notify_mut);
+					msg = NULL;				
+			}			
 		}
 		else
 		{

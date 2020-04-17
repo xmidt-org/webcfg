@@ -74,6 +74,7 @@ int process_webcfgdbblobparams( blob_data_t *e, msgpack_object_map *map );
 WEBCFG_STATUS initDB(char * db_file_path )
 {
      FILE *fp;
+     size_t sz;
      char *data;
      size_t len;
      int ch_count=0;
@@ -90,9 +91,22 @@ WEBCFG_STATUS initDB(char * db_file_path )
      
      fseek(fp, 0, SEEK_END);
      ch_count = ftell(fp);
+     if (ch_count == (int)-1)
+    {
+        WebcfgError("fread failed.\n");
+	fclose(fp);
+        return WEBCFG_FAILURE;
+    }
      fseek(fp, 0, SEEK_SET);
      data = (char *) malloc(sizeof(char) * (ch_count + 1));
-     fread(data, 1, ch_count,fp);
+     sz = fread(data, 1, ch_count,fp);
+     if (sz == (size_t)-1) 
+	{	
+		fclose(fp);
+		WebcfgError("fread failed.\n");
+		WEBCFG_FREE(data);
+		return WEBCFG_FAILURE;
+	}
      len = ch_count;
      fclose(fp);
 
@@ -610,6 +624,7 @@ int process_webcfgdb( webconfig_db_data_t *wd, msgpack_object *obj )
             if( 0 != process_webcfgdbparams(wd, &array->ptr[i].via.map) )
             {
 		WebcfgError("process_webcfgdbparam failed\n");
+		WEBCFG_FREE(wd);
                 return -1;
             }
             else

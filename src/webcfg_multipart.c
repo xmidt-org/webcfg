@@ -126,7 +126,7 @@ WEBCFG_STATUS webcfg_http_request(char **configData, int r_count, int status, lo
 		}
 		//loadInitURLFromFile(&webConfigURL);
 		Get_Webconfig_URL(configURL);
-		if(configURL !=NULL && (strlen(configURL)>0))
+		if(strlen(configURL)>0)
 		{
 			//Replace {mac} string from default init url with actual deviceMAC
 			WebcfgDebug("replaceMacWord to actual device mac\n");
@@ -157,7 +157,7 @@ WEBCFG_STATUS webcfg_http_request(char **configData, int r_count, int status, lo
 		if(webConfigURL !=NULL)
 		{
 			WebcfgInfo("Webconfig root ConfigURL is %s\n", webConfigURL);
-			curl_easy_setopt(curl, CURLOPT_URL, webConfigURL );
+			res = curl_easy_setopt(curl, CURLOPT_URL, webConfigURL );
 		}
 		else
 		{
@@ -167,7 +167,7 @@ WEBCFG_STATUS webcfg_http_request(char **configData, int r_count, int status, lo
 			curl_easy_cleanup(curl);
 			return WEBCFG_FAILURE;
 		}
-		curl_easy_setopt(curl, CURLOPT_TIMEOUT, CURL_TIMEOUT_SEC);
+		res = curl_easy_setopt(curl, CURLOPT_TIMEOUT, CURL_TIMEOUT_SEC);
 		WebcfgDebug("fetching interface from device.properties\n");
 		if(strlen(g_interface) == 0)
 		{
@@ -183,44 +183,44 @@ WEBCFG_STATUS webcfg_http_request(char **configData, int r_count, int status, lo
 		if(strlen(g_interface) > 0)
 		{
 			WebcfgDebug("setting interface %s\n", g_interface);
-			curl_easy_setopt(curl, CURLOPT_INTERFACE, g_interface);
+			res = curl_easy_setopt(curl, CURLOPT_INTERFACE, g_interface);
 		}
 
 		// set callback for writing received data
 		dataVal = &data;
-		curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, writer_callback_fn);
-		curl_easy_setopt(curl, CURLOPT_WRITEDATA, dataVal);
+		res = curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, writer_callback_fn);
+		res = curl_easy_setopt(curl, CURLOPT_WRITEDATA, dataVal);
 
-		curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers_list);
+		res = curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers_list);
 
-		curl_easy_setopt(curl, CURLOPT_HEADERFUNCTION, headr_callback);
+		res = curl_easy_setopt(curl, CURLOPT_HEADERFUNCTION, headr_callback);
 
 		// setting curl resolve option as default mode.
 		//If any failure, retry with v4 first and then v6 mode.
 		if(r_count == 1)
 		{
 			WebcfgInfo("curl Ip resolve option set as V4 mode\n");
-			curl_easy_setopt(curl, CURLOPT_IPRESOLVE, CURL_IPRESOLVE_V4);
+			res = curl_easy_setopt(curl, CURLOPT_IPRESOLVE, CURL_IPRESOLVE_V4);
 		}
 		else if(r_count == 2)
 		{
 			WebcfgInfo("curl Ip resolve option set as V6 mode\n");
-			curl_easy_setopt(curl, CURLOPT_IPRESOLVE, CURL_IPRESOLVE_V6);
+			res = curl_easy_setopt(curl, CURLOPT_IPRESOLVE, CURL_IPRESOLVE_V6);
 		}
 		else
 		{
 			WebcfgInfo("curl Ip resolve option set as default mode\n");
-			curl_easy_setopt(curl, CURLOPT_IPRESOLVE, CURL_IPRESOLVE_WHATEVER);
+			res = curl_easy_setopt(curl, CURLOPT_IPRESOLVE, CURL_IPRESOLVE_WHATEVER);
 		}
-		curl_easy_setopt(curl, CURLOPT_CAINFO, CA_CERT_PATH);
+		res = curl_easy_setopt(curl, CURLOPT_CAINFO, CA_CERT_PATH);
 		// disconnect if it is failed to validate server's cert
-		curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 1L);
+		res = curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 1L);
 		// Verify the certificate's name against host
-  		curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 2L);
+  		res = curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 2L);
 		// To use TLS version 1.2 or later
-  		curl_easy_setopt(curl, CURLOPT_SSLVERSION, CURL_SSLVERSION_TLSv1_2);
+  		res = curl_easy_setopt(curl, CURLOPT_SSLVERSION, CURL_SSLVERSION_TLSv1_2);
 		// To follow HTTP 3xx redirections
-  		curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
+  		res = curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
 		// Perform the request, res will get the return code
 		res = curl_easy_perform(curl);
 		curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &response_code);
@@ -812,6 +812,7 @@ void loadInitURLFromFile(char **url)
 int readFromFile(char *filename, char **data, int *len)
 {
 	FILE *fp;
+	size_t sz;
 	int ch_count = 0;
 	fp = fopen(filename, "r+");
 	if (fp == NULL)
@@ -823,7 +824,14 @@ int readFromFile(char *filename, char **data, int *len)
 	ch_count = ftell(fp);
 	fseek(fp, 0, SEEK_SET);
 	*data = (char *) malloc(sizeof(char) * (ch_count + 1));
-	fread(*data, 1, ch_count-1,fp);
+	sz = fread(*data, 1, ch_count-1,fp);
+	if (!sz) 
+	{	
+		fclose(fp);
+		WebcfgError("fread failed.\n");
+		WEBCFG_FREE(*data);
+		return WEBCFG_FAILURE;
+	}
 	*len = ch_count;
 	(*data)[ch_count] ='\0';
 	fclose(fp);
@@ -964,7 +972,7 @@ void createCurlHeader( struct curl_slist *list, struct curl_slist **header_list,
 	if(version_header !=NULL)
 	{
 		getConfigVersionList(version);
-		snprintf(version_header, MAX_BUF_SIZE, "IF-NONE-MATCH:%s", ((NULL != version && (strlen(version)!=0)) ? version : "NONE"));
+		snprintf(version_header, MAX_BUF_SIZE, "IF-NONE-MATCH:%s", ((strlen(version)!=0) ? version : "NONE"));
 		WebcfgInfo("version_header formed %s\n", version_header);
 		list = curl_slist_append(list, version_header);
 		WEBCFG_FREE(version_header);
