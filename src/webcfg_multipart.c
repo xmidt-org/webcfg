@@ -599,8 +599,7 @@ WEBCFG_STATUS processMsgpackSubdoc(multipart_t *mp, char *transaction_id)
 
 		while(temp1 )
 		{
-			WebcfgInfo("wd->entries[%lu].name %s\n", success_count-j, temp1->name);
-			WebcfgInfo("wd->entries[%lu].version %lu\n" ,success_count-j,  (long)temp1->version);
+			WebcfgInfo("DB wd->entries[%lu].name: %s, version: %lu\n", success_count-j, temp1->name, (long)temp1->version);
 			j--;
 			temp1 = temp1->next;
 		}

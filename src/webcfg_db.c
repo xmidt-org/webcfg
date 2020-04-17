@@ -684,10 +684,7 @@ char * get_DB_BLOB_base64()
 		{
 			for(k = 0;k< bd->entries_count ; k++)
 			{
-				WebcfgInfo("bd->entries[%zu].name %s\n", k, bd->entries[k].name);
-				WebcfgInfo("bd->entries[%zu].version %lu\n" ,k,  (long)bd->entries[k].version);
-				WebcfgInfo("bd->entries[%zu].status %s\n", k, bd->entries[k].status);
-				WebcfgInfo("bd->entries[%zu].error_details %s\n", k, bd->entries[k].error_details);
+				WebcfgInfo("Blob bd->entries[%zu].name %s, version: %lu, status: %s, error_details: %s\n", k, bd->entries[k].name, (long)bd->entries[k].version, bd->entries[k].status, bd->entries[k].error_details );
 			}
 
 		}
