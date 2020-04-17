@@ -221,7 +221,7 @@ void processWebconfgSync(int status)
 		else
 		{
 			WebcfgError("Failed to get webConfigData from cloud\n");
-			WEBCFG_FREE(transaction_uuid);
+			//WEBCFG_FREE(transaction_uuid);
 		}
 		WebcfgInfo("webcfg_http_request BACKOFF_SLEEP_DELAY_SEC is %d seconds\n", BACKOFF_SLEEP_DELAY_SEC);
 		sleep(BACKOFF_SLEEP_DELAY_SEC);
@@ -279,7 +279,7 @@ int handlehttpResponse(long response_code, char *webConfigData, int retry_count,
 	else if(response_code == 403)
 	{
 		WebcfgError("Token is expired, fetch new token. response_code:%ld\n", response_code);
-		createNewAuthToken(get_global_auth_token(), sizeof(get_global_auth_token()), get_deviceMAC(), get_global_serialNum() );
+		createNewAuthToken(get_global_auth_token(), TOKEN_SIZE, get_deviceMAC(), get_global_serialNum() );
 		WebcfgDebug("createNewAuthToken done in 403 case\n");
 		err = 1;
 	}
