@@ -17,8 +17,8 @@
 #include <string.h>
 #include <msgpack.h>
 
-#include "helpers.h"
-
+#include "webcfg_helpers.h"
+#include "webcfg_log.h"
 /*----------------------------------------------------------------------------*/
 /*                                   Macros                                   */
 /*----------------------------------------------------------------------------*/
@@ -51,7 +51,6 @@ void* helper_convert( const void *buf, size_t len,
                       destroy_fn_t destroy )
 {
     void *p = malloc( struct_size );
-
     if( NULL == p ) {
         errno = HELPERS_OUT_OF_MEMORY;
     } else {
@@ -66,6 +65,10 @@ void* helper_convert( const void *buf, size_t len,
 
             /* The outermost wrapper MUST be a map. */
             mp_rv = msgpack_unpack_next( &msg, (const char*) buf, len, &offset );
+	    //msgpack_object obj = msg.data;
+	    //msgpack_object_print(stdout, obj);
+	    //WebcfgDebug("\nMSGPACK_OBJECT_MAP is %d  msg.data.type %d\n", MSGPACK_OBJECT_MAP, msg.data.type);
+
             if( (MSGPACK_UNPACK_SUCCESS == mp_rv) && (0 != offset) &&
                 (MSGPACK_OBJECT_MAP == msg.data.type) )
             {
@@ -96,6 +99,7 @@ void* helper_convert( const void *buf, size_t len,
 
     return p;
 }
+
 
 /*----------------------------------------------------------------------------*/
 /*                             Internal functions                             */

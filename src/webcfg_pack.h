@@ -13,10 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#ifndef __WEBCFG_PACK_H__
+#define __WEBCFG_PACK_H__
 
-#include <stdarg.h>
-#include <stdbool.h>
 #include <stdint.h>
+#include "webcfg_db.h"
+
 
 /*----------------------------------------------------------------------------*/
 /*                                   Macros                                   */
@@ -26,24 +28,24 @@
 /*----------------------------------------------------------------------------*/
 /*                               Data Structures                              */
 /*----------------------------------------------------------------------------*/
-/* none */
+struct data {
+    char *name;
+    char *value;
+    int notify_attribute;
+    uint16_t type;
+};
 
-/*----------------------------------------------------------------------------*/
-/*                            File Scoped Variables                           */
-/*----------------------------------------------------------------------------*/
-/* none */
-
-/*----------------------------------------------------------------------------*/
-/*                             Function Prototypes                            */
-/*----------------------------------------------------------------------------*/
-/* none */
+typedef struct data_struct {
+    size_t count;
+    struct data *data_items;
+} data_t;
 
 /*----------------------------------------------------------------------------*/
 /*                             External Functions                             */
 /*----------------------------------------------------------------------------*/
-/* none */
 
-/*----------------------------------------------------------------------------*/
-/*                             Internal functions                             */
-/*----------------------------------------------------------------------------*/
-/* none */
+ssize_t webcfgdb_blob_pack(webconfig_db_data_t *webcfgdb, webconfig_tmp_data_t * webcfgtemp, void **data);
+ssize_t webcfgdb_pack( webconfig_db_data_t *packData, void **data, size_t count );
+
+
+#endif

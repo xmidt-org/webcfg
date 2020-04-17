@@ -13,24 +13,26 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef HTTP_HEADERS_H
-#define HTTP_HEADERS_H
+#ifndef WEBCFGNOTIFY_H
+#define WEBCFGNOTIFY_H
 
-#include <curl/curl.h>
-#include <stdarg.h>
+#include <stdint.h>
+#include "cJSON.h"
+#include "webcfg_log.h"
+#include "webcfg.h"
+#include "webcfg_db.h"
 
-/**
- *  Convert a printf() formatted argument list into a curl header.
- *
- *  @return 0 on success or error otherwise
- */
-int append_header( struct curl_slist **l, const char *format, ... );
+typedef struct _notify_params
+{
+	char * name;
+	char * application_status;
+	char * version;
+	char * error_details;
+	char * transaction_uuid;
+	struct _notify_params *next;
+} notify_params_t;
 
-/**
- *  The va_list version of append_header().
- *
- *  @return 0 on success or error otherwise
- */
-int vappend_header( struct curl_slist **l, const char *format, va_list ap );
-
+void initWebConfigNotifyTask();
+pthread_t get_global_notify_threadid();
+void addWebConfgNotifyMsg(char *docname, uint32_t version, char *status, char *error_details, char *transaction_uuid);
 #endif

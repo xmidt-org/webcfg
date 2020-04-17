@@ -19,7 +19,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdlib.h>
-
+#include <msgpack.h>
 /*----------------------------------------------------------------------------*/
 /*                                   Macros                                   */
 /*----------------------------------------------------------------------------*/
@@ -66,5 +66,6 @@ void* helper_convert( const void *buf, size_t len,
                       msgpack_object_type expect_type, bool optional,
                       process_fn_t process,
                       destroy_fn_t destroy );
+
 
 #endif

@@ -17,97 +17,40 @@
 #define __WEBCFG_H__
 
 #include <stdint.h>
-
-#include "all.h"
-
+#include <string.h>
+#include <stdbool.h>
 /*----------------------------------------------------------------------------*/
 /*                                   Macros                                   */
 /*----------------------------------------------------------------------------*/
-/* none */
+#define MAX_BUF_SIZE	           256
+#define MAX_PARAMETERNAME_LENGTH       512
+#define BACKOFF_SLEEP_DELAY_SEC 	    10
 
+#define WEBCFG_FREE(__x__) if(__x__ != NULL) { free((void*)(__x__)); __x__ = NULL;} else {printf("Trying to free null pointer\n");}
 /*----------------------------------------------------------------------------*/
 /*                               Data Structures                              */
 /*----------------------------------------------------------------------------*/
-/**
- *  update_config_fn is a pointer to the function to call when there is a new
- *  configuration to apply.
- *
- *  @note The memory given to the callback should be cleaned up via a call to
- *        webcfg_free().  Otherwise memory leaks will happen.
- *
- *  @param  new_cfg is the new configuration to apply
- *
- *  @return 0 if the operation was a success, error otherwise
- */
-typedef int (*update_config_fn)( const all_t *new_cfg, void *user_data );
-
-/**
- *  Called to get the authorization blob needed to connect.
- *
- *  @note The memory given to the caller shall be free()d when the caller is
- *        done with it.
- *
- *  @return the string if the operation was a success, NULL otherwise
- */
-typedef char* (*get_auth_fn)( void *user_data );
-
-
-struct webcfg_opts {
-    const char *url;
-    const char *interface;
-    const char *ca_cert_path;
-    const char *firmware;
-
-    const char *tmp_path;
-    const char *durable_path;
-
-    uint32_t boot_unixtime;
-    uint32_t ready_unixtime;
-
-    void *user_data;
-
-    update_config_fn update_config;
-    get_auth_fn      get_auth;
-};
-
+typedef enum
+{
+    WEBCFG_SUCCESS = 0,
+    WEBCFG_FAILURE
+} WEBCFG_STATUS;
 /*----------------------------------------------------------------------------*/
 /*                             External Functions                             */
 /*----------------------------------------------------------------------------*/
+bool get_global_shutdown();
+void set_global_shutdown(bool shutdown);
+pthread_cond_t *get_global_sync_condition(void);
+pthread_mutex_t *get_global_sync_mutex(void);
 
-/**
- *  Initialize the library.
- *
- *  @param opts the configuration options to abide by
- *
- *  @return 0 if the operation was a success, error otherwise
- */
-int webcfg_init( struct webcfg_opts *opts );
+void initWebConfigMultipartTask(unsigned long status);
+void processWebconfgSync(int Status);
+WEBCFG_STATUS webcfg_http_request(char **configData, int r_count, int status, long *code, char **transaction_id,char* contentType, size_t* dataSize);
 
+void webcfgStrncpy(char *destStr, const char *srcStr, size_t destSize);
 
-/**
- *  Shuts down and cleans up after the library.
- *
- *  @note the `user_data` is not freed.
- */
-void webcfg_shutdown( void );
-
-
-/**
- *  Called with an update for the actual configuration present.
- *
- *  @param cfg the configuration applied
- *
- *  @return 0 if the operation was a success, error otherwise
- */
-int webcfg_update_actual( const all_t *cfg );
-
-
-/**
- *  webcfg_free frees and releases all the resources associated with the
- *  all_t structure.
- *
- *  @param cfg the config structure to free
- */
-void webcfg_free( all_t *cfg );
+char* get_global_auth_token();
+void getCurrent_Time(struct timespec *timer);
+long timeVal_Diff(struct timespec *starttime, struct timespec *finishtime);
 
 #endif

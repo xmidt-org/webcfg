@@ -13,39 +13,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __ALL_H__
-#define __ALL_H__
+#ifndef WEBCFGAUTH_H
+#define WEBCFGAUTH_H
 
 #include <stdint.h>
-#include <stdlib.h>
-#include "dhcp.h"
-#include "envelope.h"
-#include "firewall.h"
-#include "gre.h"
-#include "portmapping.h"
-#include "wifi.h"
-#include "xdns.h"
+#include <curl/curl.h>
+#include "webcfg_log.h"
+#include "webcfg.h"
 
-typedef struct {
-    envelope_t *full_envelope;
+#define WEBPA_READ_HEADER             "/etc/parodus/parodus_read_file.sh"
+#define WEBPA_CREATE_HEADER           "/etc/parodus/parodus_create_file.sh"
+#define TOKEN_SIZE                    4096
 
-    envelope_t *dhcp_envelope;
-    dhcp_t *dhcp;
-
-    envelope_t *firewall_envelope;
-    firewall_t *firewall;
-
-    envelope_t *gre_envelope;
-    gre_t *gre;
-
-    envelope_t *portmapping_envelope;
-    portmapping_t *portmapping;
-
-    envelope_t *wifi_envelope;
-    wifi_t *wifi;
-
-    envelope_t *xdns_envelope;
-    xdns_t *xdns;
-} all_t;
+void getAuthToken();
+void createNewAuthToken(char *newToken, size_t len, char *hw_mac, char* hw_serial_number);
+char* get_global_auth_token();
+char* get_global_serialNum();
 
 #endif
