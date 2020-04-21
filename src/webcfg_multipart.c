@@ -33,6 +33,7 @@
 #define WEBPA_READ_HEADER          "/etc/parodus/parodus_read_file.sh"
 #define WEBPA_CREATE_HEADER        "/etc/parodus/parodus_create_file.sh"
 #define CCSP_CRASH_STATUS_CODE      192
+
 /*----------------------------------------------------------------------------*/
 /*                               Data Structures                              */
 /*----------------------------------------------------------------------------*/
@@ -459,14 +460,27 @@ WEBCFG_STATUS processMsgpackSubdoc(multipart_t *mp, char *transaction_id)
 			memset(reqParam,0,(sizeof(param_t) * paramCount));
 
 			WebcfgDebug("paramCount is %d\n", paramCount);
-
+			
 			for (i = 0; i < paramCount; i++) 
 			{
                                 if(pm->entries[i].value != NULL)
                                 {
+				if(0 == strncasecmp(mp->entries[m].name_space,"privatessid",strlen("privatessid")))
+				{
+					char *temp_blob = NULL;
+					
+					writebase64ToDBFile(WEBCFG_BASE64DB_FILE, pm->entries[i].value);			
+					temp_blob = base64blobdecoder(WEBCFG_BASE64DB_FILE);
+					reqParam[i].name = strdup(pm->entries[i].name);
+				    	reqParam[i].value = strdup(temp_blob);
+				    	reqParam[i].type = pm->entries[i].type;
+				}
+				else
+				{
 				    reqParam[i].name = strdup(pm->entries[i].name);
 				    reqParam[i].value = strdup(pm->entries[i].value);
 				    reqParam[i].type = pm->entries[i].type;
+				}
                                 }
 				WebcfgInfo("Request:> param[%d].name = %s\n",i,reqParam[i].name);
 				WebcfgDebug("Request:> param[%d].value = %s\n",i,reqParam[i].value);

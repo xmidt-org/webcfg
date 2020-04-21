@@ -30,6 +30,7 @@
 #else
 #define WEBCFG_DB_FILE 	    "/tmp/webconfig_db.bin"
 #endif
+#define WEBCFG_BASE64DB_FILE "/tmp/wifi_base64.bin"
 /*----------------------------------------------------------------------------*/
 /*                               Data Structures                              */
 /*----------------------------------------------------------------------------*/
@@ -117,6 +118,10 @@ char * get_DB_BLOB_base64();
 void checkDBList(char *docname, uint32_t version);
 
 WEBCFG_STATUS updateDBlist(char *docname, uint32_t version);
+
+int writebase64ToDBFile(char *base64_file_path, char *data);
+
+char * base64blobdecoder(char *base64_file_path );
 
 /**
  *  This function converts a msgpack buffer into an webconfig_db_t structure
