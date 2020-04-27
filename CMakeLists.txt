@@ -77,8 +77,8 @@ add_dependencies(libtrower-base64 trower-base64)
 #-------------------------------------------------------------------------------
 ExternalProject_Add(wdmp-c
     PREFIX ${CMAKE_CURRENT_BINARY_DIR}/_prefix/wdmp-c
-    GIT_REPOSITORY https://github.com/guruchandru/wdmp-c.git
-    GIT_TAG "origin/webcfg_blob"
+    GIT_REPOSITORY https://github.com/Comcast/wdmp-c.git
+    GIT_TAG "1923121ab991a38f99d26f18df5c603c7982a9fb"
     CMAKE_ARGS += -DCMAKE_INSTALL_PREFIX=${INSTALL_DIR}
                   -DBUILD_TESTING=OFF
 )
