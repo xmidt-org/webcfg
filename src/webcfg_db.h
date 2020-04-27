@@ -30,7 +30,7 @@
 #else
 #define WEBCFG_DB_FILE 	    "/tmp/webconfig_db.bin"
 #endif
-#define WEBCFG_BASE64DB_FILE "/tmp/wifi_base64.bin"
+
 /*----------------------------------------------------------------------------*/
 /*                               Data Structures                              */
 /*----------------------------------------------------------------------------*/
