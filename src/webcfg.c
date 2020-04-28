@@ -89,9 +89,9 @@ void *WebConfigMultipartTask(void *status)
 	{
 		if(forced_sync)
 		{
-			WebcfgInfo("Triggered Forced sync\n");
+			WebcfgDebug("Triggered Forced sync\n");
 			processWebconfgSync((int)Status);
-			WebcfgInfo("reset forced_sync after sync\n");
+			WebcfgDebug("reset forced_sync after sync\n");
 			forced_sync = 0;
 			setForceSync("", "", 0);
 		}
@@ -125,7 +125,7 @@ void *WebConfigMultipartTask(void *status)
 				if((ForceSyncDoc != NULL) && strlen(ForceSyncDoc)>0)
 				{
 					forced_sync = 1;
-					WebcfgInfo("Received signal interrupt to Force Sync\n");
+					WebcfgDebug("Received signal interrupt to Force Sync\n");
 					WEBCFG_FREE(ForceSyncDoc);
 					WEBCFG_FREE(ForceSyncTransID);
 				}
@@ -261,7 +261,7 @@ int handlehttpResponse(long response_code, char *webConfigData, int retry_count,
 			}
 			else
 			{
-				WebcfgError("Failed to apply webConfigData\n");
+				WebcfgError("Failed to apply root webConfigData received from server\n");
 				return 1;
 			}
 		}

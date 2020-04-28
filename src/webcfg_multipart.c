@@ -352,14 +352,11 @@ WEBCFG_STATUS parseMultipartDocument(void *config_data, char *ct , size_t data_s
 			}
 			if(0 == memcmp(ptr_lb, line_boundary, strlen(line_boundary)))
 			{
-				ptr_lb = ptr_lb+(strlen(line_boundary));
+				ptr_lb = ptr_lb+(strlen(line_boundary))-1;
 				num_of_parts = 1;
 				while(0 != num_of_parts % 2)
 				{
-					ptr_lb = memchr(ptr_lb, '\n', data_size - (ptr_lb - str_body));
-					// printf("printing newline: %ld\n",ptr_lb-str_body);
 					ptr_lb1 = memchr(ptr_lb+1, '\n', data_size - (ptr_lb - str_body));
-					// printf("printing newline2: %ld\n",ptr_lb1-str_body);
 					if(0 != memcmp(ptr_lb1-1, "\r",1 )){
 					ptr_lb1 = memchr(ptr_lb1+1, '\n', data_size - (ptr_lb - str_body));
 					}
@@ -367,7 +364,6 @@ WEBCFG_STATUS parseMultipartDocument(void *config_data, char *ct , size_t data_s
 					index1 = ptr_lb-str_body;
 					parse_multipart(str_body+index1+1,index2 - index1 - 2, &mp->entries[count]);
 					ptr_lb++;
-
 					if(0 == memcmp(ptr_lb, last_line_boundary, strlen(last_line_boundary)))
 					{
 						WebcfgDebug("last line boundary inside \n");
@@ -379,7 +375,8 @@ WEBCFG_STATUS parseMultipartDocument(void *config_data, char *ct , size_t data_s
 						num_of_parts++;
 						count++;
 					}
-				}
+					ptr_lb = memchr(ptr_lb, '\n', data_size - (ptr_lb - str_body));
+}
 			}
 			else
 			{
@@ -397,7 +394,7 @@ WEBCFG_STATUS parseMultipartDocument(void *config_data, char *ct , size_t data_s
 		}
 		else
 		{
-			WebcfgError("processMsgpackSubdoc failed\n");
+			WebcfgError("processMsgpackSubdoc failed,as all the docs are not applied\n");
 		}
 		return WEBCFG_FAILURE;
 	}
@@ -481,7 +478,7 @@ WEBCFG_STATUS processMsgpackSubdoc(multipart_t *mp, char *transaction_id)
 				    reqParam[i].type = pm->entries[i].type;
 				}
                                 }
-				WebcfgInfo("Request:> param[%d].name = %s\n",i,reqParam[i].name);
+				WebcfgInfo("Request:> param[%d].name = %s, type = %d\n",i,reqParam[i].name,reqParam[i].type);
 				WebcfgDebug("Request:> param[%d].value = %s\n",i,reqParam[i].value);
 				WebcfgDebug("Request:> param[%d].type = %d\n",i,reqParam[i].type);
 			}
@@ -616,7 +613,7 @@ WEBCFG_STATUS processMsgpackSubdoc(multipart_t *mp, char *transaction_id)
 			j--;
 			temp1 = temp1->next;
 		}
-		WebcfgInfo("addNewDocEntry\n");
+		WebcfgDebug("addNewDocEntry\n");
 		addNewDocEntry(get_successDocCount());
 	}
 
@@ -1242,8 +1239,22 @@ void multipart_destroy( multipart_t *m )
 
 void parse_multipart(char *ptr, int no_of_bytes, multipartdocs_t *m)
 {
+	char *Content_type = NULL;
 	/*for storing respective values */
-	if(0 == strncasecmp(ptr,"Namespace",strlen("Namespace")))
+	if(0 == strncmp(ptr,"Content-type: ",strlen("Content-type")))
+	{
+		Content_type = strndup(ptr+(strlen("Content-type: ")),no_of_bytes-((strlen("Content-type: "))));
+		if(strncmp(Content_type, "application/msgpack",strlen("application/msgpack")) !=0)
+					{
+						WebcfgInfo("Content-type not msgpack %s\n",Content_type);
+						WebcfgError("Content-type not msgpack,prevent msgpack decode for this subdoc\n");
+					}
+					else
+					{
+						WebcfgInfo("Content-type received 'application/msgpack':%s\n",Content_type);
+					}
+	}
+	else if(0 == strncasecmp(ptr,"Namespace",strlen("Namespace")))
 	{
                 m->name_space = strndup(ptr+(strlen("Namespace: ")),no_of_bytes-((strlen("Namespace: "))));
 	}
