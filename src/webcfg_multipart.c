@@ -465,21 +465,22 @@ WEBCFG_STATUS processMsgpackSubdoc(multipart_t *mp, char *transaction_id)
 			{
                                 if(pm->entries[i].value != NULL)
                                 {
-				 if(pm->entries[i].type == WDMP_BLOB)
-				{
-					char *temp_blob = NULL;					
-					
-					temp_blob = base64blobencoder(pm->entries[i].value, pm->entries[i].value_size);
-					reqParam[i].name = strdup(pm->entries[i].name);
-				    	reqParam[i].value = strdup(temp_blob);
-				    	reqParam[i].type = pm->entries[i].type;
-				}
-				else
-				{
-				    reqParam[i].name = strdup(pm->entries[i].name);
-				    reqParam[i].value = strdup(pm->entries[i].value);
-				    reqParam[i].type = pm->entries[i].type;
-				}
+					if(pm->entries[i].type == WDMP_BLOB)
+					{
+						char *temp_blob = NULL;
+
+						temp_blob = base64blobencoder(pm->entries[i].value, pm->entries[i].value_size);
+						reqParam[i].name = strdup(pm->entries[i].name);
+						reqParam[i].value = strdup(temp_blob);
+						WEBCFG_FREE(temp_blob);
+						reqParam[i].type = WDMP_BASE64;
+					}
+					else
+					{
+						reqParam[i].name = strdup(pm->entries[i].name);
+						reqParam[i].value = strdup(pm->entries[i].value);
+						reqParam[i].type = pm->entries[i].type;
+					}
                                 }
 				WebcfgInfo("Request:> param[%d].name = %s\n",i,reqParam[i].name);
 				WebcfgDebug("Request:> param[%d].value = %s\n",i,reqParam[i].value);
@@ -1331,8 +1332,14 @@ void reqParam_destroy( int paramCnt, param_t *reqObj )
 	{
 		for (i = 0; i < paramCnt; i++)
 		{
-			free(reqObj[i].name);
-			free(reqObj[i].value);
+			if(reqObj[i].name)
+			{
+				free(reqObj[i].name);
+			}
+			if(reqObj[i].value)
+			{
+				free(reqObj[i].value);
+			}
 		}
 		free(reqObj);
 	}
