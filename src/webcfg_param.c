@@ -151,7 +151,8 @@ int process_params( wparam_t *e, msgpack_object_map *map )
 			e->value = memcpy(e->value, p->val.via.str.ptr, p->val.via.str.size+1 );
 			e->value[p->val.via.str.size] = '\0';
 
-			e->value_size =(uint32_t) p->val.via.str.size+1;
+			e->value_size =(uint32_t) p->val.via.str.size;
+			WebcfgDebug("e->value_size is %lu\n", (long)e->value_size);
 			objects_left &= ~(1 << 2);
                 }
 	
