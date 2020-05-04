@@ -19,5 +19,28 @@
 #include <stdint.h>
 #include "webcfg.h"
 
+typedef struct _event_data
+{
+	char * data;
+	struct _event_data *next;
+} event_data_t;
 
+
+typedef struct _event_params
+{
+	char *subdoc_name;
+	uint16_t trans_id;
+	uint32_t version;
+	int ack;
+	int nack;
+	uint32_t timeout;
+	char *process_name;
+	uint16_t err_code;
+	char *failure_reason;
+} event_params_t;
+
+
+void initErrorHandlingTask();
+
+void registerWebcfgEvent();
 #endif

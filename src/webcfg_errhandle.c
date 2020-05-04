@@ -21,6 +21,7 @@
 #include <pthread.h>
 #include <cJSON.h>
 #include <unistd.h>
+#include "webcfg_errhandle.h"
 /*----------------------------------------------------------------------------*/
 /*                                   Macros                                   */
 /*----------------------------------------------------------------------------*/
@@ -32,23 +33,22 @@
 /*                            File Scoped Variables                           */
 /*----------------------------------------------------------------------------*/
 static pthread_t ErrThreadId=0;
-pthread_mutex_t error_mut=PTHREAD_MUTEX_INITIALIZER;
-pthread_cond_t error_con=PTHREAD_COND_INITIALIZER;
+pthread_mutex_t event_mut=PTHREAD_MUTEX_INITIALIZER;
+pthread_cond_t event_con=PTHREAD_COND_INITIALIZER;
+event_data_t *eventDataQ = NULL;
 /*----------------------------------------------------------------------------*/
 /*                             Function Prototypes                            */
 /*----------------------------------------------------------------------------*/
 void* blobErrorHandler();
-/*----------------------------------------------------------------------------*/
-/*                             External Functions                             */
-/*----------------------------------------------------------------------------*/
+int parseEventData();
+int processSubdocEvents();
+void WebConfigEventCallback(char *Info, void* user_data);
+int checkWebcfgTimer();
+int addToEventQueue(char *buf);
 
 /*----------------------------------------------------------------------------*/
 /*                             External Functions                             */
 /*----------------------------------------------------------------------------*/
-pthread_t get_global_notify_threadid()
-{
-    return ErrThreadId;
-}
 
 //Performs Webconfig blob error handling
 void initErrorHandlingTask()
@@ -71,14 +71,21 @@ void* blobErrorHandler()
 {
 	pthread_detach(pthread_self());
 
+	WebcfgInfo("registerWebcfgEvent\n");
 	registerWebcfgEvent();
 
+	/* Testing purpose. Remove this once event reg callbck is implemented. */
+	char data[128] = {0};
+	snprintf(data,sizeof(data),"%s,%hu,%u,ACK,%u","portforwarding",123,210666,120);
+	WebcfgInfo("data is %s\n", data);
+	WebConfigEventCallback(data, NULL);
 	return NULL;
 }
 
 //TODO:
-static void registerWebcfgEvent()
+void registerWebcfgEvent()
 {
+#ifdef BUILD_YOCTO //should we move this as override fn for rdkb?
 	CcspBaseIf_Register_Event(bus_handle, NULL, "webconfigSignal");
 
 		CcspBaseIf_SetCallback2
@@ -88,38 +95,172 @@ static void registerWebcfgEvent()
 		WebConfigEventCallback,
 		NULL
 		);
+#endif
 }
 
-//TODO:
-//Call back function to be executed webconfigSignal signal is received from component.
-static void WebConfigEventCallback(char Info, void* user_data)
+//Call back function to be executed when webconfigSignal signal is received from component.
+void WebConfigEventCallback(char *Info, void* user_data)
 {
-	WalInfo("Received webconfig event signal Info %s\n", Info);
-	processSubdocEvents(Info);
+	WebcfgInfo("Received webconfig event signal Info %s user_data %s\n", Info, (char*) user_data);
+
+	addToEventQueue(Info);
+
+	processSubdocEvents(); //add this as new consumer thread
 }
 
-//Function to parse and process the sub doc event data received from component.
-int processSubdocEvents(char *blobInfo)
+//Producer adds event data to queue
+int addToEventQueue(char *buf)
 {
-	parseEventData();
-	checkWebcfgTimer();
+	event_data_t *Data;
+
+	WebcfgInfo ("Add data to event queue\n");
+        Data = (event_data_t *)malloc(sizeof(event_data_t));
+
+	if(Data)
+        {
+            Data->data =buf;
+            Data->next=NULL;
+            pthread_mutex_lock (&event_mut);
+            //Producer adds the event data into queue
+            if(eventDataQ == NULL)
+            {
+                eventDataQ = Data;
+
+                WebcfgInfo("Producer added Data\n");
+                pthread_cond_signal(&event_con);
+                pthread_mutex_unlock (&event_mut);
+                WebcfgInfo("mutex unlock in producer event thread\n");
+            }
+            else
+            {
+                event_data_t *temp = eventDataQ;
+                while(temp->next)
+                {
+                    temp = temp->next;
+                }
+                temp->next = Data;
+                pthread_mutex_unlock (&event_mut);
+            }
+        }
+        else
+        {
+            WebcfgError("failure in allocation for event data\n");
+        }
+
+	return 0;
 }
 
-//extract comma separated values for subdoc name, version, ACK, NACK, timeout, trans id
-void parseEventData()
+//Consumer to parse and process the sub doc event data.
+int processSubdocEvents()
 {
+	event_params_t *eventParam = NULL;
+	int rv = WEBCFG_FAILURE;
+
+	while(1)
+	{
+		pthread_mutex_lock (&event_mut);
+		WebcfgInfo("mutex lock in event consumer thread\n");
+		if(eventDataQ != NULL)
+		{
+			event_data_t *Data = eventDataQ;
+			eventDataQ = eventDataQ->next;
+			pthread_mutex_unlock (&event_mut);
+			WebcfgInfo("mutex unlock in event consumer thread\n");
+
+			WebcfgInfo("Data->data %s\n", Data->data);
+			rv = parseEventData(Data->data, &eventParam);
+			if(rv == WEBCFG_SUCCESS)
+			{
+
+				//TODO: Use uint32_t eventParam->trans_id. Add new blob params if any.
+				addWebConfgNotifyMsg(eventParam->subdoc_name, eventParam->version, "success", "none", "123");
+
+				//add and update DB , tmp lists based on success/failure acks. :TODO
+
+				checkWebcfgTimer();
+			}
+			else
+			{
+				WebcfgError("Failed to parse event Data\n");
+				return WEBCFG_FAILURE;
+			}
+			//WEBCFG_FREE(Data);
+		}
+		else
+		{
+			WebcfgInfo("Before pthread cond wait in event consumer thread\n");
+			pthread_cond_wait(&event_con, &event_mut);
+			pthread_mutex_unlock (&event_mut);
+			WebcfgInfo("mutex unlock in event consumer thread after cond wait\n");
+		}
+	}
+	return WEBCFG_SUCCESS;
+}
+
+//Extract values from comma separated string and add to event_params_t structure.
+int parseEventData(char* str, event_params_t **val)
+{
+	event_params_t *param = NULL;
+	char *tmpStr =  NULL;
+	char * trans_id = NULL;
+	char *version = NULL;
+	char * ack;
+	char * timeout;
+
+	if(str !=NULL)
+	{
+		param = (event_params_t *)malloc(sizeof(event_params_t));
+		if(param)
+		{
+			memset(param, 0, sizeof(event_params_t));
+		        tmpStr = strdup(str);
+			//WEBCFG_FREE(str);
+
+		        param->subdoc_name = strsep(&tmpStr, ",");
+		        trans_id = strsep(&tmpStr,",");
+		        version = strsep(&tmpStr,",");
+		        ack = strsep(&tmpStr,",");
+		        timeout = strsep(&tmpStr, ",");
+
+			WebcfgInfo("convert string to uint type\n");
+			if(trans_id !=NULL)
+			{
+				param->trans_id = strtoul(trans_id,NULL,0);
+			}
+
+			if(version !=NULL)
+			{
+				param->version = strtoul(version,NULL,0);
+			}
+
+			if(ack !=NULL)
+			{
+				param->ack = atoi(ack);
+			}
+
+			if(timeout !=NULL)
+			{
+				param->timeout = strtoul(timeout,NULL,0);
+			}
+
+			WebcfgInfo("param->subdoc_name %s param->trans_id %lu param->version %lu param->ack %d param->timeout %lu\n", param->subdoc_name, (long)param->trans_id, (long)param->version, param->ack, (long)param->timeout);
+			*val = param;
+			return WEBCFG_SUCCESS;
+		}
+	}
+	return WEBCFG_FAILURE;
 
 }
 
 //checks subdoc timeouts
 int checkWebcfgTimer()
 {
-	pthread_mutex_lock (&periodicsync_mutex);
+	/*int value = 0;
 	gettimeofday(&tp, NULL);
 	ts.tv_sec = tp.tv_sec;
 	ts.tv_nsec = tp.tv_usec * 1000;
-	ts.tv_sec += value;
+	ts.tv_sec += value;*/
 
-	
+	return 0;
 
 }
