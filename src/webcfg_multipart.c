@@ -1245,14 +1245,15 @@ void parse_multipart(char *ptr, int no_of_bytes, multipartdocs_t *m)
 	{
 		Content_type = strndup(ptr+(strlen("Content-type: ")),no_of_bytes-((strlen("Content-type: "))));
 		if(strncmp(Content_type, "application/msgpack",strlen("application/msgpack")) !=0)
-					{
-						WebcfgInfo("Content-type not msgpack %s\n",Content_type);
-						WebcfgError("Content-type not msgpack,prevent msgpack decode for this subdoc\n");
-					}
-					else
-					{
-						WebcfgInfo("Content-type received 'application/msgpack':%s\n",Content_type);
-					}
+		{
+			WebcfgInfo("Content-type not msgpack: %s\n",Content_type);
+			WebcfgError("Content-type not msgpack, prevent msgpack decode for this subdoc\n");
+		}
+		else
+		{
+			WebcfgInfo("Content-type received: %s\n",Content_type);
+		}
+		WEBCFG_FREE(Content_type);
 	}
 	else if(0 == strncasecmp(ptr,"Namespace",strlen("Namespace")))
 	{
