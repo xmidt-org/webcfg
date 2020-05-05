@@ -144,12 +144,12 @@ WEBCFG_STATUS generateBlob()
 
     if(webcfgdb_blob)
     {
-	WebcfgInfo("Delete existing webcfgdb_blob.\n");
+	WebcfgDebug("Delete existing webcfgdb_blob.\n");
 	WEBCFG_FREE(webcfgdb_blob->data);
 	WEBCFG_FREE(webcfgdb_blob);
 	webcfgdb_blob = NULL;
     }
-    WebcfgInfo("Generate new blob\n");
+    WebcfgDebug("Generate new blob\n");
     if(webcfgdb_data != NULL || g_head != NULL)
     {
         webcfgdbBlobPackSize = webcfgdb_blob_pack(webcfgdb_data, g_head, &data);
@@ -423,7 +423,7 @@ WEBCFG_STATUS updateDBlist(char *docname, uint32_t version)
 		if( strcmp(docname, webcfgdb->name) == 0)
 		{
 			webcfgdb->version = version;
-			WebcfgInfo("webcfgdb %s is updated to version %lu\n", docname, (long)webcfgdb->version);
+			WebcfgDebug("webcfgdb %s is updated to version %lu\n", docname, (long)webcfgdb->version);
 			return WEBCFG_SUCCESS;
 		}
 		webcfgdb= webcfgdb->next;
@@ -474,7 +474,7 @@ WEBCFG_STATUS deleteFromTmpList(char* doc_name)
 		WebcfgError("Invalid value for doc\n");
 		return WEBCFG_FAILURE;
 	}
-	WebcfgInfo("doc to be deleted: %s\n", doc_name);
+	WebcfgDebug("doc to be deleted: %s\n", doc_name);
 
 	prev_node = NULL;
 	curr_node = g_head ;
@@ -824,8 +824,7 @@ char * base64blobencoder(char * blob_data, size_t blob_size )
 	char* b64buffer =  NULL;
 	size_t encodeSize = -1;
    	WebcfgDebug("Data is %s\n", blob_data);
-     	
-	WebcfgDebug("-----------Start of Base64 Encode ------------\n");
+     	WebcfgDebug("-----------Start of Base64 Encode ------------\n");
         encodeSize = b64_get_encoded_buffer_size(blob_size);
         WebcfgDebug("encodeSize is %zu\n", encodeSize);
         b64buffer = malloc(encodeSize + 1);
