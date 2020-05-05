@@ -21,7 +21,8 @@
 #include <pthread.h>
 #include <cJSON.h>
 #include <unistd.h>
-#include "webcfg_errhandle.h"
+#include "webcfg_event.h"
+#include "webcfg_db.h"
 /*----------------------------------------------------------------------------*/
 /*                                   Macros                                   */
 /*----------------------------------------------------------------------------*/
@@ -32,80 +33,101 @@
 /*----------------------------------------------------------------------------*/
 /*                            File Scoped Variables                           */
 /*----------------------------------------------------------------------------*/
-static pthread_t ErrThreadId=0;
+static pthread_t EventThreadId=0;
+static pthread_t processThreadId = 0;
 pthread_mutex_t event_mut=PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t event_con=PTHREAD_COND_INITIALIZER;
 event_data_t *eventDataQ = NULL;
+#ifdef BUILD_YOCTO
+void *bus_handle = NULL;
+char* component_id = "ccsp.webconfid";
+#endif
 /*----------------------------------------------------------------------------*/
 /*                             Function Prototypes                            */
 /*----------------------------------------------------------------------------*/
-void* blobErrorHandler();
+void* blobEventHandler();
 int parseEventData();
-int processSubdocEvents();
-void WebConfigEventCallback(char *Info, void* user_data);
+void* processSubdocEvents();
+
 int checkWebcfgTimer();
 int addToEventQueue(char *buf);
+void sendSuccessNotification(char *name, uint32_t version);
 
 /*----------------------------------------------------------------------------*/
 /*                             External Functions                             */
 /*----------------------------------------------------------------------------*/
 
-//Performs Webconfig blob error handling
-void initErrorHandlingTask()
+//Webcfg thread listens for blob events from respective components.
+void initEventHandlingTask()
 {
 	int err = 0;
-	err = pthread_create(&ErrThreadId, NULL, blobErrorHandler, NULL);
+	err = pthread_create(&EventThreadId, NULL, blobEventHandler, NULL);
 	if (err != 0)
 	{
-		WebcfgError("Error creating Webconfig error handling thread :[%s]\n", strerror(err));
+		WebcfgError("Error creating Webconfig event handling thread :[%s]\n", strerror(err));
 	}
 	else
 	{
-		WebcfgInfo("Webconfig error handling thread created Successfully\n");
+		WebcfgInfo("Webconfig event handling thread created Successfully\n");
 	}
 
 }
 
-//webconfig thread waiting for BLOB events from each component.
-void* blobErrorHandler()
+void* blobEventHandler()
 {
 	pthread_detach(pthread_self());
 
 	WebcfgInfo("registerWebcfgEvent\n");
-	registerWebcfgEvent();
+	registerWebcfgEvent(webcfgCallback);
 
 	/* Testing purpose. Remove this once event reg callbck is implemented. */
-	char data[128] = {0};
-	snprintf(data,sizeof(data),"%s,%hu,%u,ACK,%u","portforwarding",123,210666,120);
+	/*char data[128] = {0};
+	snprintf(data,sizeof(data),"%s,%hu,%u,ACK,%u","portforwarding",123,210666,0);
 	WebcfgInfo("data is %s\n", data);
-	WebConfigEventCallback(data, NULL);
+	webcfgCallback(data, NULL);*/
 	return NULL;
 }
 
-//TODO:
-void registerWebcfgEvent()
+void registerWebcfgEvent(WebConfigEventCallback webcfgEventCB)
 {
 #ifdef BUILD_YOCTO //should we move this as override fn for rdkb?
-	CcspBaseIf_Register_Event(bus_handle, NULL, "webconfigSignal");
 
-		CcspBaseIf_SetCallback2
-		(
-		bus_handle,
-		"webconfigSignal",
-		WebConfigEventCallback,
-		NULL
-		);
+	int ret = 0;
+	char *pCfg = CCSP_MSG_BUS_CFG;
+
+	ret = CCSP_Message_Bus_Init(component_id, pCfg, &bus_handle,
+	(CCSP_MESSAGE_BUS_MALLOC) Ansc_AllocateMemory_Callback, Ansc_FreeMemory_Callback);
+	if (ret == -1)
+	{
+		WebcfgInfo("Message bus init failed\n");
+	}
+
+	CcspBaseIf_SetCallback2(bus_handle, "webconfigSignal",
+            webcfgEventCB, NULL);
+
+	ret = CcspBaseIf_Register_Event(bus_handle, NULL, "webconfigSignal");
+	if (ret != CCSP_Message_Bus_OK)
+	{
+		WebcfgInfo("CcspBaseIf_Register_Event failed\n");
+	}
+	else
+	{
+		WebcfgInfo("Registration with CCSP Bus is success, waiting for events from components\n");
+	}
 #endif
+	WebcfgInfo("webcfgEventCB %s\n", (char*)webcfgEventCB);
 }
 
 //Call back function to be executed when webconfigSignal signal is received from component.
-void WebConfigEventCallback(char *Info, void* user_data)
+void webcfgCallback(char *Info, void* user_data)
 {
 	WebcfgInfo("Received webconfig event signal Info %s user_data %s\n", Info, (char*) user_data);
+	
+	char *buff = NULL;
+	buff = strdup(Info);
+	addToEventQueue(buff);
 
-	addToEventQueue(Info);
-
-	processSubdocEvents(); //add this as new consumer thread
+	WebcfgInfo("After addToEventQueue\n");
 }
 
 //Producer adds event data to queue
@@ -121,7 +143,6 @@ int addToEventQueue(char *buf)
             Data->data =buf;
             Data->next=NULL;
             pthread_mutex_lock (&event_mut);
-            //Producer adds the event data into queue
             if(eventDataQ == NULL)
             {
                 eventDataQ = Data;
@@ -150,8 +171,25 @@ int addToEventQueue(char *buf)
 	return 0;
 }
 
-//Consumer to parse and process the sub doc event data.
-int processSubdocEvents()
+
+//Webcfg consumer thread to process the events.
+void processWebcfgEvents()
+{
+	int err = 0;
+	err = pthread_create(&processThreadId, NULL, processSubdocEvents, NULL);
+	if (err != 0)
+	{
+		WebcfgError("Error creating processWebcfgEvents thread :[%s]\n", strerror(err));
+	}
+	else
+	{
+		WebcfgInfo("processWebcfgEvents thread created Successfully\n");
+	}
+
+}
+
+//Parse and process sub doc event data.
+void* processSubdocEvents()
 {
 	event_params_t *eventParam = NULL;
 	int rv = WEBCFG_FAILURE;
@@ -167,22 +205,39 @@ int processSubdocEvents()
 			pthread_mutex_unlock (&event_mut);
 			WebcfgInfo("mutex unlock in event consumer thread\n");
 
-			WebcfgInfo("Data->data %s\n", Data->data);
+			WebcfgInfo("Data->data is %s\n", Data->data);
 			rv = parseEventData(Data->data, &eventParam);
 			if(rv == WEBCFG_SUCCESS)
 			{
+				if ((strcmp(eventParam->status, "ACK")==0) && (eventParam->timeout == 0))
+				{
+					WebcfgInfo("ACK event. doc apply success, proceed to add to DB\n");
+					
+					//add to DB and tmp lists based on success ack.
+					WebcfgInfo("AddToDB subdoc_name %s version %lu\n", eventParam->subdoc_name, (long)eventParam->version);
+					checkDBList(eventParam->subdoc_name,eventParam->version);
 
-				//TODO: Use uint32_t eventParam->trans_id. Add new blob params if any.
-				addWebConfgNotifyMsg(eventParam->subdoc_name, eventParam->version, "success", "none", "123");
+					sendSuccessNotification(eventParam->subdoc_name, eventParam->version);
 
-				//add and update DB , tmp lists based on success/failure acks. :TODO
-
-				checkWebcfgTimer();
+				}
+				else if ((strcmp(eventParam->status, "NACK")==0) && (eventParam->timeout == 0)) 
+				{
+					WebcfgInfo("NACK event. doc apply failed, need to retry\n");
+					addWebConfgNotifyMsg(eventParam->subdoc_name, eventParam->version, "failed", "failed_reason", "123");
+				}
+				else if (eventParam->timeout != 0)
+				{
+					WebcfgInfo("Timeout event. doc apply need time, start timer.\n");
+					checkWebcfgTimer();
+				}
+				else
+				{
+					WebcfgInfo("Crash event. Component restarted after crash, re-send blob.\n");
+				}
 			}
 			else
 			{
 				WebcfgError("Failed to parse event Data\n");
-				return WEBCFG_FAILURE;
 			}
 			//WEBCFG_FREE(Data);
 		}
@@ -194,7 +249,7 @@ int processSubdocEvents()
 			WebcfgInfo("mutex unlock in event consumer thread after cond wait\n");
 		}
 	}
-	return WEBCFG_SUCCESS;
+	return NULL;
 }
 
 //Extract values from comma separated string and add to event_params_t structure.
@@ -204,8 +259,7 @@ int parseEventData(char* str, event_params_t **val)
 	char *tmpStr =  NULL;
 	char * trans_id = NULL;
 	char *version = NULL;
-	char * ack;
-	char * timeout;
+	char * timeout =NULL;
 
 	if(str !=NULL)
 	{
@@ -219,7 +273,7 @@ int parseEventData(char* str, event_params_t **val)
 		        param->subdoc_name = strsep(&tmpStr, ",");
 		        trans_id = strsep(&tmpStr,",");
 		        version = strsep(&tmpStr,",");
-		        ack = strsep(&tmpStr,",");
+		        param->status = strsep(&tmpStr,",");
 		        timeout = strsep(&tmpStr, ",");
 
 			WebcfgInfo("convert string to uint type\n");
@@ -233,22 +287,51 @@ int parseEventData(char* str, event_params_t **val)
 				param->version = strtoul(version,NULL,0);
 			}
 
-			if(ack !=NULL)
+			/*if(ack !=NULL)
 			{
 				param->ack = atoi(ack);
-			}
+			}*/
 
 			if(timeout !=NULL)
 			{
 				param->timeout = strtoul(timeout,NULL,0);
 			}
 
-			WebcfgInfo("param->subdoc_name %s param->trans_id %lu param->version %lu param->ack %d param->timeout %lu\n", param->subdoc_name, (long)param->trans_id, (long)param->version, param->ack, (long)param->timeout);
+			WebcfgInfo("param->subdoc_name %s param->trans_id %lu param->version %lu param->status %s param->timeout %lu\n", param->subdoc_name, (long)param->trans_id, (long)param->version, param->status, (long)param->timeout);
 			*val = param;
 			return WEBCFG_SUCCESS;
 		}
 	}
 	return WEBCFG_FAILURE;
+
+}
+
+//Update Tmp list and send success notification to cloud .
+void sendSuccessNotification(char *name, uint32_t version)
+{
+	WEBCFG_STATUS uStatus=1, dStatus=1;
+
+	uStatus = updateTmpList(name, version, "success", "none");
+	if(uStatus == WEBCFG_SUCCESS)
+	{
+		WebcfgInfo("B4 addWebConfgNotifyMsg\n"); 
+		addWebConfgNotifyMsg(name, version, "success", "none", "123"); //TODO: Add trans id and new blob params if any.
+
+		WebcfgInfo("deleteFromTmpList as doc is applied\n");
+		dStatus = deleteFromTmpList(name);
+		if(dStatus == WEBCFG_SUCCESS)
+		{
+			WebcfgInfo("blob deleteFromTmpList success\n");
+		}
+		else
+		{
+			WebcfgError("blob deleteFromTmpList failed\n");
+		}
+	}
+	else
+	{
+		WebcfgError("blob updateTmpList failed\n");
+	}
 
 }
 
@@ -261,6 +344,12 @@ int checkWebcfgTimer()
 	ts.tv_nsec = tp.tv_usec * 1000;
 	ts.tv_sec += value;*/
 
+	//if(time > timeout ) //time expire
+	//{
+		WebcfgInfo("Timer expired. doc apply failed\n");
+	//}
 	return 0;
 
 }
+
+

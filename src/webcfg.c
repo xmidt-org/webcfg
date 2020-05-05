@@ -30,7 +30,7 @@
 #include <wdmp-c.h>
 #include <base64.h>
 #include "webcfg_db.h"
-#include "webcfg_errhandle.h"
+#include "webcfg_event.h"
 /*----------------------------------------------------------------------------*/
 /*                                   Macros                                   */
 /*----------------------------------------------------------------------------*/
@@ -84,7 +84,9 @@ void *WebConfigMultipartTask(void *status)
 	//start webconfig notification thread.
 	initWebConfigNotifyTask();
 
-	initErrorHandlingTask();
+	initEventHandlingTask();
+
+	processWebcfgEvents();
 	WebcfgInfo("initDB %s\n", WEBCFG_DB_FILE);
 
 	initDB(WEBCFG_DB_FILE);

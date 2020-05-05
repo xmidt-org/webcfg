@@ -22,6 +22,7 @@
 #include "webcfg_generic.h"
 #include "webcfg_db.h"
 #include "webcfg_notify.h"
+#include "webcfg_event.h"
 #include <uuid/uuid.h>
 /*----------------------------------------------------------------------------*/
 /*                                   Macros                                   */
@@ -495,8 +496,11 @@ WEBCFG_STATUS processMsgpackSubdoc(multipart_t *mp, char *transaction_id)
 				if(ret == WDMP_SUCCESS)
 				{
 					WebcfgInfo("setValues success. ccspStatus : %d\n", ccspStatus);
-
-					WebcfgDebug("update doc status for %s\n", mp->entries[m].name_space);
+					WebcfgInfo("reqParam[0].type is %d WDMP_BASE64 %d\n", reqParam[0].type, WDMP_BASE64);
+					if(reqParam[0].type  != WDMP_BASE64)
+					{
+						WebcfgInfo("scalar doc failure\n");
+					WebcfgInfo("update doc status for %s\n", mp->entries[m].name_space);
 					uStatus = updateTmpList(mp->entries[m].name_space, mp->entries[m].etag, "success", "none");
 					if(uStatus == WEBCFG_SUCCESS)
 					{
@@ -523,12 +527,12 @@ WEBCFG_STATUS processMsgpackSubdoc(multipart_t *mp, char *transaction_id)
 						WebcfgError("updateTmpList failed\n");
 					}
 					checkDBList(mp->entries[m].name_space,mp->entries[m].etag);
-
+					}
 					success_count++;
 
 					WebcfgDebug("The mp->entries_count %d\n",(int)mp->entries_count);
 					WebcfgDebug("The count %d\n",success_count);
-					if(success_count ==(int) mp->entries_count-1)
+					if(success_count ==(int) mp->entries_count-1) //TODO: move this root update to new fn
 					{
 						char * temp = strdup(g_ETAG);
 						webconfig_db_data_t * webcfgdb = NULL;
@@ -565,6 +569,9 @@ WEBCFG_STATUS processMsgpackSubdoc(multipart_t *mp, char *transaction_id)
 				{
 					WebcfgInfo("setValues Failed. ccspStatus : %d\n", ccspStatus);
 
+					if(reqParam[0].type != WDMP_BASE64)
+					{
+						WebcfgInfo("scalar doc failure\n");
 					//Update error_details to tmp list and send failure notification to cloud.
 					uStatus = WEBCFG_FAILURE;
 					if(ccspStatus == CCSP_CRASH_STATUS_CODE)
@@ -586,6 +593,7 @@ WEBCFG_STATUS processMsgpackSubdoc(multipart_t *mp, char *transaction_id)
 					else
 					{
 						WebcfgError("updateTmpList failed for error_details\n");
+					}
 					}
 					print_tmp_doc_list(mp->entries_count);
 				}

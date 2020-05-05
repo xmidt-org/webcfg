@@ -31,8 +31,7 @@ typedef struct _event_params
 	char *subdoc_name;
 	uint16_t trans_id;
 	uint32_t version;
-	int ack;
-	int nack;
+	char* status;
 	uint32_t timeout;
 	char *process_name;
 	uint16_t err_code;
@@ -40,7 +39,10 @@ typedef struct _event_params
 } event_params_t;
 
 
-void initErrorHandlingTask();
+void initEventHandlingTask();
+void processWebcfgEvents();
 
-void registerWebcfgEvent();
+typedef void (*WebConfigEventCallback)(char* Info, void *user_data);
+void registerWebcfgEvent(WebConfigEventCallback webcfgEventCB);
+void webcfgCallback(char *Info, void* user_data);
 #endif

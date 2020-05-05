@@ -28,7 +28,7 @@
 #include <curl/curl.h>
 #include <base64.h>
 #include "../src/webcfg_generic.h"
-#include "../src/webcfg_errhandle.h"
+#include "../src/webcfg_event.h"
 #define FILE_URL "/tmp/webcfg_url"
 
 #define UNUSED(x) (void )(x)
@@ -143,7 +143,8 @@ void test_multipart()
 		return;
 	}
 	initWebConfigNotifyTask();
-	initErrorHandlingTask();
+	processWebcfgEvents();
+	initEventHandlingTask();
 	processWebconfgSync(status);
 }
 
