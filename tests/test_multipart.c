@@ -133,6 +133,12 @@ int Set_Webconfig_URL( char *pString)
 	return 0;
 }
 
+int registerWebcfgEvent(WebConfigEventCallback webcfgEventCB)
+{
+	UNUSED(webcfgEventCB);
+	return 0;
+}
+
 void test_multipart()
 {
 	unsigned long status = 0;

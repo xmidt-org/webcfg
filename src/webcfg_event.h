@@ -25,7 +25,6 @@ typedef struct _event_data
 	struct _event_data *next;
 } event_data_t;
 
-
 typedef struct _event_params
 {
 	char *subdoc_name;
@@ -39,10 +38,14 @@ typedef struct _event_params
 } event_params_t;
 
 
+typedef struct {
+  int running;
+  struct timespec start_time;
+  struct timespec end_time;
+} expire_timer_t;
+
 void initEventHandlingTask();
 void processWebcfgEvents();
 
-typedef void (*WebConfigEventCallback)(char* Info, void *user_data);
-void registerWebcfgEvent(WebConfigEventCallback webcfgEventCB);
 void webcfgCallback(char *Info, void* user_data);
 #endif

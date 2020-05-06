@@ -499,7 +499,7 @@ WEBCFG_STATUS processMsgpackSubdoc(multipart_t *mp, char *transaction_id)
 					WebcfgInfo("reqParam[0].type is %d WDMP_BASE64 %d\n", reqParam[0].type, WDMP_BASE64);
 					if(reqParam[0].type  != WDMP_BASE64)
 					{
-						WebcfgInfo("scalar doc failure\n");
+						WebcfgInfo("scalar doc success\n");
 					WebcfgInfo("update doc status for %s\n", mp->entries[m].name_space);
 					uStatus = updateTmpList(mp->entries[m].name_space, mp->entries[m].etag, "success", "none");
 					if(uStatus == WEBCFG_SUCCESS)

@@ -38,10 +38,7 @@ static pthread_t processThreadId = 0;
 pthread_mutex_t event_mut=PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t event_con=PTHREAD_COND_INITIALIZER;
 event_data_t *eventDataQ = NULL;
-#ifdef BUILD_YOCTO
-void *bus_handle = NULL;
-char* component_id = "ccsp.webconfid";
-#endif
+expire_timer_t *event_timer;
 /*----------------------------------------------------------------------------*/
 /*                             Function Prototypes                            */
 /*----------------------------------------------------------------------------*/
@@ -52,7 +49,8 @@ void* processSubdocEvents();
 int checkWebcfgTimer();
 int addToEventQueue(char *buf);
 void sendSuccessNotification(char *name, uint32_t version);
-
+int startWebcfgTimer();
+int stopWebcfgTimer();
 /*----------------------------------------------------------------------------*/
 /*                             External Functions                             */
 /*----------------------------------------------------------------------------*/
@@ -77,45 +75,19 @@ void* blobEventHandler()
 {
 	pthread_detach(pthread_self());
 
-	WebcfgInfo("registerWebcfgEvent\n");
-	registerWebcfgEvent(webcfgCallback);
-
-	/* Testing purpose. Remove this once event reg callbck is implemented. */
-	/*char data[128] = {0};
-	snprintf(data,sizeof(data),"%s,%hu,%u,ACK,%u","portforwarding",123,210666,0);
-	WebcfgInfo("data is %s\n", data);
-	webcfgCallback(data, NULL);*/
-	return NULL;
-}
-
-void registerWebcfgEvent(WebConfigEventCallback webcfgEventCB)
-{
-#ifdef BUILD_YOCTO //should we move this as override fn for rdkb?
-
 	int ret = 0;
-	char *pCfg = CCSP_MSG_BUS_CFG;
-
-	ret = CCSP_Message_Bus_Init(component_id, pCfg, &bus_handle,
-	(CCSP_MESSAGE_BUS_MALLOC) Ansc_AllocateMemory_Callback, Ansc_FreeMemory_Callback);
-	if (ret == -1)
+	WebcfgInfo("registerWebcfgEvent\n");
+	ret = registerWebcfgEvent(webcfgCallback);
+	if(ret)
 	{
-		WebcfgInfo("Message bus init failed\n");
-	}
-
-	CcspBaseIf_SetCallback2(bus_handle, "webconfigSignal",
-            webcfgEventCB, NULL);
-
-	ret = CcspBaseIf_Register_Event(bus_handle, NULL, "webconfigSignal");
-	if (ret != CCSP_Message_Bus_OK)
-	{
-		WebcfgInfo("CcspBaseIf_Register_Event failed\n");
+		WebcfgInfo("registerWebcfgEvent success\n");
 	}
 	else
 	{
-		WebcfgInfo("Registration with CCSP Bus is success, waiting for events from components\n");
+		WebcfgError("registerWebcfgEvent failed\n");
 	}
-#endif
-	WebcfgInfo("webcfgEventCB %s\n", (char*)webcfgEventCB);
+
+	return NULL;
 }
 
 //Call back function to be executed when webconfigSignal signal is received from component.
@@ -213,6 +185,8 @@ void* processSubdocEvents()
 				{
 					WebcfgInfo("ACK event. doc apply success, proceed to add to DB\n");
 					
+					WebcfgInfo("stop Timer\n");
+					stopWebcfgTimer();
 					//add to DB and tmp lists based on success ack.
 					WebcfgInfo("AddToDB subdoc_name %s version %lu\n", eventParam->subdoc_name, (long)eventParam->version);
 					checkDBList(eventParam->subdoc_name,eventParam->version);
@@ -223,12 +197,16 @@ void* processSubdocEvents()
 				else if ((strcmp(eventParam->status, "NACK")==0) && (eventParam->timeout == 0)) 
 				{
 					WebcfgInfo("NACK event. doc apply failed, need to retry\n");
+					WebcfgInfo("stop Timer ..\n");
+					stopWebcfgTimer();
+					//TODO: tmp update
 					addWebConfgNotifyMsg(eventParam->subdoc_name, eventParam->version, "failed", "failed_reason", "123");
 				}
 				else if (eventParam->timeout != 0)
 				{
 					WebcfgInfo("Timeout event. doc apply need time, start timer.\n");
-					checkWebcfgTimer();
+					startWebcfgTimer();
+					WebcfgInfo("After startWebcfgTimer\n");
 				}
 				else
 				{
@@ -287,11 +265,6 @@ int parseEventData(char* str, event_params_t **val)
 				param->version = strtoul(version,NULL,0);
 			}
 
-			/*if(ack !=NULL)
-			{
-				param->ack = atoi(ack);
-			}*/
-
 			if(timeout !=NULL)
 			{
 				param->timeout = strtoul(timeout,NULL,0);
@@ -335,21 +308,92 @@ void sendSuccessNotification(char *name, uint32_t version)
 
 }
 
-//checks subdoc timeouts
-int checkWebcfgTimer()
+//start internal timer when timeout value is received
+int startWebcfgTimer()
 {
-	/*int value = 0;
-	gettimeofday(&tp, NULL);
-	ts.tv_sec = tp.tv_sec;
-	ts.tv_nsec = tp.tv_usec * 1000;
-	ts.tv_sec += value;*/
-
-	//if(time > timeout ) //time expire
-	//{
-		WebcfgInfo("Timer expired. doc apply failed\n");
-	//}
-	return 0;
-
+	event_timer = malloc(sizeof(expire_timer_t));
+	if(event_timer)
+	{
+		memset(event_timer, 0, sizeof(expire_timer_t));
+		event_timer->running = false;
+		if (!event_timer->running)
+		{
+			getCurrent_Time(&event_timer->start_time);
+			event_timer->running = true;
+			WebcfgInfo("started webcfg internal timer\n");
+			return true;
+		}
+		else
+		{
+			WebcfgError("Timer is already running!!\n");
+		}
+	}
+	WebcfgError("Failed in startWebcfgTimer\n");
+	return false;
 }
 
 
+//stop internal timer when ack/nack events received
+int stopWebcfgTimer()
+{
+	if(event_timer)
+	{
+		if (event_timer->running)
+		{
+			WebcfgInfo("stopWebcfgTimer\n");
+			memset(event_timer, 0, sizeof(expire_timer_t));
+			event_timer->running = false;
+			WebcfgInfo("stopped webcfg internal timer\n");
+			return true;
+		}
+		else
+		{
+			WebcfgError("Timer is not running!!\n");
+		}
+	}
+	WebcfgError("Failed in stopWebcfgTimer\n");
+	return false;
+}
+
+int checkTimerExpired (expire_timer_t *timer, long timeout_ms)
+{
+	long time_diff_ms;
+
+	if (!timer->running)
+	{
+		getCurrent_Time(&timer->start_time);
+		timer->running = true;
+		WebcfgInfo("started webcfg internal timer\n");
+		return false;
+	}
+
+	getCurrent_Time(&timer->end_time);
+	time_diff_ms = timeVal_Diff (&timer->start_time, &timer->end_time);
+	WebcfgInfo("checking timeout difference:%ld sec timeout value:%ld sec\n", (time_diff_ms/1000), (timeout_ms/1000));
+	if(time_diff_ms >= timeout_ms)
+	{
+		WebcfgError("Internal timer with %ld sec expired, doc apply failed\n", (timeout_ms/1000));
+		return true;
+	}
+	return false;
+}
+
+//Checks subdoc timeout expired or not.
+//add new timer_expire event and retry. :TODO
+int checkWebcfgTimer()
+{
+	expire_timer_t *event_timer;
+	event_timer = malloc(sizeof(expire_timer_t));
+	event_timer->running = false;
+
+	if (checkTimerExpired (event_timer, 120*60*1000))
+	{
+		WebcfgError("Timer expired. No event received in 120s\n");
+	}
+	else
+	{
+		WebcfgInfo("Timer is not expired. within window\n");
+		sleep(20);
+	}
+	return 0;
+}
