@@ -91,7 +91,7 @@ void* blobEventHandler()
 	/* Loop to check timer expiry. When timer is not running, loop is active but wont check expiry until next timer starts. */
 	while(1)
 	{
-		if (checkTimerExpired (event_timer, (event_timer->timeout)*1000))
+		if ((event_timer !=NULL) && (checkTimerExpired (event_timer, (event_timer->timeout)*1000)))
 		{
 			WebcfgError("Timer expired. No event received in %lu seconds\n", (long)event_timer->timeout);
 			//reset timer. Generate internal timer_expiry event with new trans_id to retry. TODO
@@ -182,6 +182,7 @@ void* processSubdocEvents()
 {
 	event_params_t *eventParam = NULL;
 	int rv = WEBCFG_FAILURE;
+	WEBCFG_STATUS uStatus = WEBCFG_FAILURE;
 
 	while(1)
 	{
@@ -207,7 +208,14 @@ void* processSubdocEvents()
 					//add to DB and tmp lists based on success ack.
 					WebcfgInfo("AddToDB subdoc_name %s version %lu\n", eventParam->subdoc_name, (long)eventParam->version);
 					checkDBList(eventParam->subdoc_name,eventParam->version);
-
+					WebcfgInfo("blob addNewDocEntry to DB\n");
+					addNewDocEntry(get_successDocCount());
+					if(checkRootUpdate() == WEBCFG_SUCCESS)
+					{
+						WebcfgInfo("updateRootVersionToDB\n");
+						updateRootVersionToDB();
+					}
+					WebcfgInfo("B4 sendSuccessNotification.\n");
 					sendSuccessNotification(eventParam->subdoc_name, eventParam->version);
 
 				}
@@ -216,8 +224,13 @@ void* processSubdocEvents()
 					WebcfgInfo("NACK event. doc apply failed, need to retry\n");
 					WebcfgInfo("stop Timer ..\n");
 					stopWebcfgTimer();
-					//TODO: tmp update
-					addWebConfgNotifyMsg(eventParam->subdoc_name, eventParam->version, "failed", "failed_reason", "123");
+					WebcfgInfo("updateTmpList\n");
+					uStatus = updateTmpList(eventParam->subdoc_name, eventParam->version, "failed", "doc_rejected");
+					if(uStatus !=WEBCFG_SUCCESS)
+					{
+						WebcfgError("Failed in updateTmpList for NACK\n");
+					}
+					addWebConfgNotifyMsg(eventParam->subdoc_name, eventParam->version, "failed", "doc_rejected", "123");
 				}
 				else if (eventParam->timeout != 0)
 				{
@@ -384,8 +397,6 @@ int checkTimerExpired (expire_timer_t *timer, long timeout_ms)
 
 	if (!timer->running)
 	{
-		//getCurrent_Time(&timer->start_time);
-		//timer->running = true;
 		return false;
 	}
 

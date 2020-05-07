@@ -124,7 +124,7 @@ WEBCFG_STATUS addNewDocEntry(size_t count)
      size_t webcfgdbPackSize = -1;
      void* data = NULL;
  
-     WebcfgDebug("size of subdoc %ld\n", (size_t)count);
+     WebcfgInfo("DB docs count %ld\n", (size_t)count);
      webcfgdbPackSize = webcfgdb_pack(webcfgdb_data, &data, count);
      WebcfgDebug("size of webcfgdbPackSize %ld\n", webcfgdbPackSize);
      WebcfgInfo("writeToDBFile %s\n", WEBCFG_DB_FILE);
@@ -423,7 +423,7 @@ WEBCFG_STATUS updateDBlist(char *docname, uint32_t version)
 		if( strcmp(docname, webcfgdb->name) == 0)
 		{
 			webcfgdb->version = version;
-			WebcfgDebug("webcfgdb %s is updated to version %lu\n", docname, (long)webcfgdb->version);
+			WebcfgInfo("webcfgdb %s is updated to version %lu\n", docname, (long)webcfgdb->version);
 			return WEBCFG_SUCCESS;
 		}
 		webcfgdb= webcfgdb->next;
@@ -474,7 +474,7 @@ WEBCFG_STATUS deleteFromTmpList(char* doc_name)
 		WebcfgError("Invalid value for doc\n");
 		return WEBCFG_FAILURE;
 	}
-	WebcfgDebug("doc to be deleted: %s\n", doc_name);
+	WebcfgInfo("doc to be deleted: %s\n", doc_name);
 
 	prev_node = NULL;
 	curr_node = g_head ;

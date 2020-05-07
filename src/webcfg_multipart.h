@@ -48,4 +48,6 @@ void getConfigDocList(char *docList);
 void print_tmp_doc_list(size_t mp_count);
 void loadInitURLFromFile(char **url);
 uint32_t get_global_root();
+WEBCFG_STATUS checkRootUpdate();
+void updateRootVersionToDB();
 #endif

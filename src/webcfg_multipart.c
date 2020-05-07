@@ -529,7 +529,7 @@ WEBCFG_STATUS processMsgpackSubdoc(multipart_t *mp, char *transaction_id)
 
 					WebcfgDebug("The mp->entries_count %d\n",(int)mp->entries_count);
 					WebcfgDebug("The count %d\n",success_count);
-					if(success_count ==(int) mp->entries_count-1) //TODO: move this root update to new fn
+					if(success_count ==(int) mp->entries_count-1)
 					{
 						char * temp = strdup(g_ETAG);
 						uint32_t version=0;
@@ -1359,3 +1359,73 @@ void reqParam_destroy( int paramCnt, param_t *reqObj )
 	}
 }
 
+//Update root version to DB when tmp list has one element root.
+WEBCFG_STATUS checkRootUpdate()
+{
+	int count =0;
+	webconfig_tmp_data_t *temp = NULL;
+	temp = get_global_tmp_node();
+
+	while (NULL != temp)
+	{
+		if(count > 1)
+		{
+			WebcfgInfo("tmp list count is %d\n", count);
+			break;
+		}
+		WebcfgInfo("Root check ====> temp->name %s\n", temp->name);
+		if( strcmp("root", temp->name) != 0)
+		{
+			WebcfgInfo("Found root in tmp list\n");
+			count = count+1;
+		}
+		else
+		{
+			count = 1;
+		}
+		temp= temp->next;
+	}
+
+	if(count == 1)
+	{
+		WebcfgInfo("root DB update is required\n");
+		return WEBCFG_SUCCESS;
+	}
+	else
+	{
+		WebcfgInfo("root DB update is not required\n");
+	}
+	return WEBCFG_FAILURE;
+}
+
+//Update root version to DB.
+void updateRootVersionToDB()
+{
+	WEBCFG_STATUS dStatus =0;
+	char * temp = strdup(g_ETAG);
+	uint32_t version=0;
+
+	if(temp)
+	{
+		version = strtoul(temp,NULL,0);
+		WEBCFG_FREE(temp);
+	}
+	if(version != 0)
+	{
+		checkDBList("root",version);
+	}
+
+	WebcfgInfo("The Etag is %lu\n",(long)version );
+	//Delete tmp queue root as all docs are applied
+	WebcfgInfo("Delete tmp queue root as all docs are applied\n");
+	WebcfgInfo("root version to delete is %lu\n", (long)version);
+	dStatus = deleteFromTmpList("root");
+	if(dStatus == 0)
+	{
+		WebcfgInfo("Delete tmp queue root is success\n");
+	}
+	else
+	{
+		WebcfgError("Delete tmp queue root is failed\n");
+	}
+}
