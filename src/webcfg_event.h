@@ -42,6 +42,7 @@ typedef struct {
   int running;
   struct timespec start_time;
   struct timespec end_time;
+  uint32_t timeout;
 } expire_timer_t;
 
 void initEventHandlingTask();

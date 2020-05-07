@@ -38,7 +38,7 @@ static pthread_t processThreadId = 0;
 pthread_mutex_t event_mut=PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t event_con=PTHREAD_COND_INITIALIZER;
 event_data_t *eventDataQ = NULL;
-expire_timer_t *event_timer;
+expire_timer_t *event_timer = NULL;
 /*----------------------------------------------------------------------------*/
 /*                             Function Prototypes                            */
 /*----------------------------------------------------------------------------*/
@@ -49,8 +49,9 @@ void* processSubdocEvents();
 int checkWebcfgTimer();
 int addToEventQueue(char *buf);
 void sendSuccessNotification(char *name, uint32_t version);
-int startWebcfgTimer();
+int startWebcfgTimer(uint32_t timeout);
 int stopWebcfgTimer();
+int checkTimerExpired (expire_timer_t *timer, long timeout_ms);
 /*----------------------------------------------------------------------------*/
 /*                             External Functions                             */
 /*----------------------------------------------------------------------------*/
@@ -87,15 +88,31 @@ void* blobEventHandler()
 		WebcfgError("registerWebcfgEvent failed\n");
 	}
 
+	/* Loop to check timer expiry. When timer is not running, loop is active but wont check expiry until next timer starts. */
+	while(1)
+	{
+		if (checkTimerExpired (event_timer, (event_timer->timeout)*1000))
+		{
+			WebcfgError("Timer expired. No event received in %lu seconds\n", (long)event_timer->timeout);
+			//reset timer. Generate internal timer_expiry event with new trans_id to retry. TODO
+			memset(event_timer, 0, sizeof(expire_timer_t));
+			event_timer->running = false;
+		}
+		else
+		{
+			WebcfgInfo("Waiting at timer loop of 30s\n");
+			sleep(30);
+		}
+	}
 	return NULL;
 }
 
 //Call back function to be executed when webconfigSignal signal is received from component.
 void webcfgCallback(char *Info, void* user_data)
 {
+	char *buff = NULL;
 	WebcfgInfo("Received webconfig event signal Info %s user_data %s\n", Info, (char*) user_data);
 	
-	char *buff = NULL;
 	buff = strdup(Info);
 	addToEventQueue(buff);
 
@@ -205,7 +222,7 @@ void* processSubdocEvents()
 				else if (eventParam->timeout != 0)
 				{
 					WebcfgInfo("Timeout event. doc apply need time, start timer.\n");
-					startWebcfgTimer();
+					startWebcfgTimer(eventParam->timeout);
 					WebcfgInfo("After startWebcfgTimer\n");
 				}
 				else
@@ -309,7 +326,7 @@ void sendSuccessNotification(char *name, uint32_t version)
 }
 
 //start internal timer when timeout value is received
-int startWebcfgTimer()
+int startWebcfgTimer(uint32_t timeout)
 {
 	event_timer = malloc(sizeof(expire_timer_t));
 	if(event_timer)
@@ -320,7 +337,9 @@ int startWebcfgTimer()
 		{
 			getCurrent_Time(&event_timer->start_time);
 			event_timer->running = true;
+			event_timer->timeout = timeout;
 			WebcfgInfo("started webcfg internal timer\n");
+			WebcfgInfo("event_timer->timeout %lu\n", (long)event_timer->timeout);
 			return true;
 		}
 		else
@@ -351,7 +370,6 @@ int stopWebcfgTimer()
 			WebcfgError("Timer is not running!!\n");
 		}
 	}
-	WebcfgError("Failed in stopWebcfgTimer\n");
 	return false;
 }
 
@@ -359,11 +377,15 @@ int checkTimerExpired (expire_timer_t *timer, long timeout_ms)
 {
 	long time_diff_ms;
 
+	if(timer == NULL)
+	{
+		return false;
+	}
+
 	if (!timer->running)
 	{
-		getCurrent_Time(&timer->start_time);
-		timer->running = true;
-		WebcfgInfo("started webcfg internal timer\n");
+		//getCurrent_Time(&timer->start_time);
+		//timer->running = true;
 		return false;
 	}
 
@@ -376,24 +398,4 @@ int checkTimerExpired (expire_timer_t *timer, long timeout_ms)
 		return true;
 	}
 	return false;
-}
-
-//Checks subdoc timeout expired or not.
-//add new timer_expire event and retry. :TODO
-int checkWebcfgTimer()
-{
-	expire_timer_t *event_timer;
-	event_timer = malloc(sizeof(expire_timer_t));
-	event_timer->running = false;
-
-	if (checkTimerExpired (event_timer, 120*60*1000))
-	{
-		WebcfgError("Timer expired. No event received in 120s\n");
-	}
-	else
-	{
-		WebcfgInfo("Timer is not expired. within window\n");
-		sleep(20);
-	}
-	return 0;
 }
