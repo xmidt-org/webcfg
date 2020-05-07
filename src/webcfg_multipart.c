@@ -22,6 +22,7 @@
 #include "webcfg_generic.h"
 #include "webcfg_db.h"
 #include "webcfg_notify.h"
+#include "webcfg_blob.h"
 #include <uuid/uuid.h>
 /*----------------------------------------------------------------------------*/
 /*                                   Macros                                   */
@@ -464,13 +465,12 @@ WEBCFG_STATUS processMsgpackSubdoc(multipart_t *mp, char *transaction_id)
                                 {
 					if(pm->entries[i].type == WDMP_BLOB)
 					{
-						char *temp_blob = NULL;
-
-						temp_blob = base64blobencoder(pm->entries[i].value, pm->entries[i].value_size);
+						char *appended_doc = NULL;
+						appended_doc = webcfg_appendeddoc( mp->entries[m].name_space, mp->entries[m].etag, pm->entries[i].value, pm->entries[i].value_size);
 						reqParam[i].name = strdup(pm->entries[i].name);
-						reqParam[i].value = strdup(temp_blob);
-						WEBCFG_FREE(temp_blob);
+						reqParam[i].value = strdup(appended_doc);
 						reqParam[i].type = WDMP_BASE64;
+						WEBCFG_FREE(appended_doc);
 					}
 					else
 					{
