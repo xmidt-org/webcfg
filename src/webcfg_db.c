@@ -73,10 +73,10 @@ int process_webcfgdbblobparams( blob_data_t *e, msgpack_object_map *map );
 //To initialize the DB when DB file is present
 WEBCFG_STATUS initDB(char * db_file_path )
 {
-     FILE *fp;
-     size_t sz;
-     char *data;
-     size_t len;
+     FILE *fp = NULL;
+     size_t sz = 0;
+     char *data = NULL;
+     size_t len = 0;
      int ch_count=0;
      webconfig_db_data_t* dm = NULL;
 
@@ -92,13 +92,20 @@ WEBCFG_STATUS initDB(char * db_file_path )
      fseek(fp, 0, SEEK_END);
      ch_count = ftell(fp);
      if (ch_count == (int)-1)
-    {
-        WebcfgError("fread failed.\n");
-	fclose(fp);
-        return WEBCFG_FAILURE;
-    }
+     {
+         WebcfgError("fread failed.\n");
+	 fclose(fp);
+         return WEBCFG_FAILURE;
+     }
      fseek(fp, 0, SEEK_SET);
      data = (char *) malloc(sizeof(char) * (ch_count + 1));
+     if(NULL == data)
+     {
+         WebcfgError("Memory allocation for data failed.\n");
+         fclose(fp);
+         return WEBCFG_FAILURE;
+     }
+     memset(data,0,(ch_count + 1));
      sz = fread(data, 1, ch_count,fp);
      if (sz == (size_t)-1) 
 	{	
@@ -111,7 +118,15 @@ WEBCFG_STATUS initDB(char * db_file_path )
      fclose(fp);
 
      dm = decodeData((void *)data, len);
-     webcfgdb_destroy (dm );
+     if(NULL == dm)
+     {
+	 WebcfgError("Msgpack decode failed\n");
+         return WEBCFG_FAILURE;
+     }
+     else
+     {
+         webcfgdb_destroy (dm );
+     }
      WEBCFG_FREE(data);
      generateBlob();
      return WEBCFG_SUCCESS;
@@ -126,9 +141,9 @@ WEBCFG_STATUS addNewDocEntry(size_t count)
  
      WebcfgDebug("size of subdoc %ld\n", (size_t)count);
      webcfgdbPackSize = webcfgdb_pack(webcfgdb_data, &data, count);
-     WebcfgDebug("size of webcfgdbPackSize %ld\n", webcfgdbPackSize);
+     WebcfgInfo("size of webcfgdbPackSize %ld\n", webcfgdbPackSize);
      WebcfgInfo("writeToDBFile %s\n", WEBCFG_DB_FILE);
-     writeToDBFile(WEBCFG_DB_FILE,(char *)data);
+     writeToDBFile(WEBCFG_DB_FILE,(char *)data,webcfgdbPackSize);
      if(data)
      {
 	WEBCFG_FREE(data);
@@ -154,12 +169,21 @@ WEBCFG_STATUS generateBlob()
     {
         webcfgdbBlobPackSize = webcfgdb_blob_pack(webcfgdb_data, g_head, &data);
         webcfgdb_blob = (blob_t *)malloc(sizeof(blob_t));
-        webcfgdb_blob->data = (char *)data;
-        webcfgdb_blob->len  = webcfgdbBlobPackSize;
+        if(webcfgdb_blob != NULL)
+        {
+            memset( webcfgdb_blob, 0, sizeof( blob_t ) );
 
-        WebcfgDebug("The webcfgdbBlobPackSize is : %ld\n",webcfgdb_blob->len);
-        //WebcfgDebug("The value of blob is %s\n",webcfgdb_blob->data);
-        return WEBCFG_SUCCESS;
+            webcfgdb_blob->data = (char *)data;
+            webcfgdb_blob->len  = webcfgdbBlobPackSize;
+
+            WebcfgDebug("The webcfgdbBlobPackSize is : %ld\n",webcfgdb_blob->len);
+            return WEBCFG_SUCCESS;
+        }
+        else
+        {
+            WebcfgError("Failed in memory allocation for webcfgdb_blob\n");
+            return WEBCFG_FAILURE;
+        }
     }
     else
     {
@@ -168,7 +192,7 @@ WEBCFG_STATUS generateBlob()
     }
 }
 
-int writeToDBFile(char *db_file_path, char *data)
+int writeToDBFile(char *db_file_path, char *data, size_t size)
 {
 	FILE *fp;
 	fp = fopen(db_file_path , "w+");
@@ -179,7 +203,7 @@ int writeToDBFile(char *db_file_path, char *data)
 	}
 	if(data !=NULL)
 	{
-		fwrite(data, strlen(data), 1, fp);
+		fwrite(data, size, 1, fp);
 		fclose(fp);
 		return 1;
 	}
@@ -401,13 +425,21 @@ void checkDBList(char *docname, uint32_t version)
 	{
 		webconfig_db_data_t * webcfgdb = NULL;
 		webcfgdb = (webconfig_db_data_t *) malloc (sizeof(webconfig_db_data_t));
+		if(webcfgdb != NULL)
+		{
+			memset( webcfgdb, 0, sizeof( webconfig_db_data_t ) );
 
-		webcfgdb->name = strdup(docname);
-		webcfgdb->version = version;
-		webcfgdb->next = NULL;
+			webcfgdb->name = strdup(docname);
+			webcfgdb->version = version;
+			webcfgdb->next = NULL;
 
-		addToDBList(webcfgdb);
-		WebcfgInfo("webcfgdb->name added to DB %s webcfgdb->version %lu\n",webcfgdb->name, (long)webcfgdb->version);
+			addToDBList(webcfgdb);
+			WebcfgInfo("webcfgdb->name added to DB %s webcfgdb->version %lu\n",webcfgdb->name, (long)webcfgdb->version);
+		}
+		else
+		{
+			WebcfgError("Failed in memory allocation for webcfgdb\n");
+		}
 	}
 }
 
@@ -603,6 +635,12 @@ int process_webcfgdbparams( webconfig_db_data_t *e, msgpack_object_map *map )
 
 int process_webcfgdb( webconfig_db_data_t *wd, msgpack_object *obj )
 {
+    if(NULL == obj)
+    {
+	WebcfgError("Msgpack decode obj NULL\n");
+        return -1;
+    }
+
     msgpack_object_array *array = &obj->via.array;
     if( 0 < array->size )
     {
@@ -614,7 +652,15 @@ int process_webcfgdb( webconfig_db_data_t *wd, msgpack_object *obj )
         WebcfgDebug("entries_count %zu\n",entries_count);
         for( i = 0; i < entries_count; i++ )
         {
-            wd = (webconfig_db_data_t *) malloc (sizeof(webconfig_db_data_t));   
+            wd = (webconfig_db_data_t *) malloc (sizeof(webconfig_db_data_t));
+            if(NULL == wd)
+            {
+                WebcfgError("Failed in memory allocation for wd\n");
+                return -1;
+            }
+
+            memset( wd, 0, sizeof( webconfig_db_data_t ) );
+
             if( MSGPACK_OBJECT_MAP != array->ptr[i].type )
             {
                 errno = WD_INVALID_WD_OBJECT;
@@ -677,17 +723,22 @@ char * get_DB_BLOB_base64()
         encodeSize = b64_get_encoded_buffer_size( db_blob->len );
         WebcfgDebug("encodeSize is %zu\n", encodeSize);
         b64buffer = malloc(encodeSize + 1);
-        b64_encode((uint8_t *)db_blob->data, db_blob->len, (uint8_t *)b64buffer);
-        b64buffer[encodeSize] = '\0' ;
+        if(b64buffer != NULL)
+        {
+            memset( b64buffer, 0, sizeof( encodeSize )+1 );
 
-	//Start of b64 decoding for debug purpose
-	WebcfgDebug("----Start of b64 decoding----\n");
-	decodeMsgSize = b64_get_decoded_buffer_size(strlen(b64buffer));
-	WebcfgDebug("expected b64 decoded msg size : %ld bytes\n",decodeMsgSize);
+            b64_encode((uint8_t *)db_blob->data, db_blob->len, (uint8_t *)b64buffer);
+            b64buffer[encodeSize] = '\0' ;
 
-	decodeMsg = (char *) malloc(sizeof(char) * decodeMsgSize);
-	if(decodeMsg)
-	{
+	    //Start of b64 decoding for debug purpose
+	    WebcfgDebug("----Start of b64 decoding----\n");
+	    decodeMsgSize = b64_get_decoded_buffer_size(strlen(b64buffer));
+	    WebcfgDebug("expected b64 decoded msg size : %ld bytes\n",decodeMsgSize);
+
+	    decodeMsg = (char *) malloc(sizeof(char) * decodeMsgSize);
+	    if(decodeMsg)
+	    {
+		memset( decodeMsg, 0, sizeof(char) *  decodeMsgSize );
 		size = b64_decode( (const uint8_t *)b64buffer, strlen(b64buffer), (uint8_t *)decodeMsg );
 
 		WebcfgInfo("base64 decoded data containing %zu bytes\n",size);
@@ -705,9 +756,10 @@ char * get_DB_BLOB_base64()
 		}
 		webcfgdbblob_destroy(bd);
 		WEBCFG_FREE(decodeMsg);
-	}
+	    }
 
-        WebcfgDebug("---------- End of Base64 decode -------------\n");
+            WebcfgDebug("---------- End of Base64 decode -------------\n");
+        }
      }
      else
      {
@@ -828,8 +880,13 @@ char * base64blobencoder(char * blob_data, size_t blob_size )
         encodeSize = b64_get_encoded_buffer_size(blob_size);
         WebcfgDebug("encodeSize is %zu\n", encodeSize);
         b64buffer = malloc(encodeSize + 1);
-       	b64_encode((uint8_t *)blob_data, blob_size, (uint8_t *)b64buffer); 
-        b64buffer[encodeSize] = '\0' ;
+        if(b64buffer != NULL)
+        {
+            memset( b64buffer, 0, sizeof( encodeSize )+1 );
+
+            b64_encode((uint8_t *)blob_data, blob_size, (uint8_t *)b64buffer);
+            b64buffer[encodeSize] = '\0' ;
+        }
 	return b64buffer;
 }
 
