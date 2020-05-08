@@ -51,7 +51,7 @@ int addToEventQueue(char *buf);
 void sendSuccessNotification(char *name, uint32_t version);
 int startWebcfgTimer(uint32_t timeout);
 int stopWebcfgTimer();
-int checkTimerExpired (expire_timer_t *timer, long timeout_ms);
+int checkTimerExpired (expire_timer_t *timer);
 /*----------------------------------------------------------------------------*/
 /*                             External Functions                             */
 /*----------------------------------------------------------------------------*/
@@ -91,7 +91,7 @@ void* blobEventHandler()
 	/* Loop to check timer expiry. When timer is not running, loop is active but wont check expiry until next timer starts. */
 	while(1)
 	{
-		if ((event_timer !=NULL) && (checkTimerExpired (event_timer, (event_timer->timeout)*1000)))
+		if (checkTimerExpired (event_timer))
 		{
 			WebcfgError("Timer expired. No event received in %lu seconds\n", (long)event_timer->timeout);
 			//reset timer. Generate internal timer_expiry event with new trans_id to retry. TODO
@@ -100,8 +100,8 @@ void* blobEventHandler()
 		}
 		else
 		{
-			WebcfgInfo("Waiting at timer loop of 30s\n");
-			sleep(30);
+			WebcfgInfo("Waiting at timer loop of 5s\n");
+			sleep(5);
 		}
 	}
 	return NULL;
@@ -205,19 +205,21 @@ void* processSubdocEvents()
 					
 					WebcfgInfo("stop Timer\n");
 					stopWebcfgTimer();
-					//add to DB and tmp lists based on success ack.
+					//add to DB, update tmp list and notification based on success ack.
+
+					WebcfgInfo("B4 sendSuccessNotification.\n");
+					sendSuccessNotification(eventParam->subdoc_name, eventParam->version);
 					WebcfgInfo("AddToDB subdoc_name %s version %lu\n", eventParam->subdoc_name, (long)eventParam->version);
 					checkDBList(eventParam->subdoc_name,eventParam->version);
-					WebcfgInfo("blob addNewDocEntry to DB\n");
-					addNewDocEntry(get_successDocCount());
+					WebcfgInfo("checkRootUpdate\n");
 					if(checkRootUpdate() == WEBCFG_SUCCESS)
 					{
 						WebcfgInfo("updateRootVersionToDB\n");
 						updateRootVersionToDB();
 					}
-					WebcfgInfo("B4 sendSuccessNotification.\n");
-					sendSuccessNotification(eventParam->subdoc_name, eventParam->version);
-
+					WebcfgInfo("blob addNewDocEntry to DB\n");
+					addNewDocEntry(get_successDocCount());
+					WebcfgInfo("After blob addNewDocEntry to DB\n");
 				}
 				else if ((strcmp(eventParam->status, "NACK")==0) && (eventParam->timeout == 0)) 
 				{
@@ -348,7 +350,6 @@ int startWebcfgTimer(uint32_t timeout)
 		event_timer->running = false;
 		if (!event_timer->running)
 		{
-			getCurrent_Time(&event_timer->start_time);
 			event_timer->running = true;
 			event_timer->timeout = timeout;
 			WebcfgInfo("started webcfg internal timer\n");
@@ -386,10 +387,9 @@ int stopWebcfgTimer()
 	return false;
 }
 
-int checkTimerExpired (expire_timer_t *timer, long timeout_ms)
+//check timer expiry by decrementing timeout by 5 for 5s sleep.
+int checkTimerExpired (expire_timer_t *timer)
 {
-	long time_diff_ms;
-
 	if(timer == NULL)
 	{
 		return false;
@@ -400,13 +400,11 @@ int checkTimerExpired (expire_timer_t *timer, long timeout_ms)
 		return false;
 	}
 
-	getCurrent_Time(&timer->end_time);
-	time_diff_ms = timeVal_Diff (&timer->start_time, &timer->end_time);
-	WebcfgInfo("checking timeout difference:%ld sec timeout value:%ld sec\n", (time_diff_ms/1000), (timeout_ms/1000));
-	if(time_diff_ms >= timeout_ms)
+	if(timer->timeout == 0)
 	{
-		WebcfgError("Internal timer with %ld sec expired, doc apply failed\n", (timeout_ms/1000));
+		WebcfgError("Internal timer with %ld sec expired, doc apply failed\n", (long)timer->timeout);
 		return true;
 	}
+	timer->timeout = timer->timeout - 5;
 	return false;
 }
