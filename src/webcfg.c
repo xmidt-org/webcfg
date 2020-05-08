@@ -89,9 +89,9 @@ void *WebConfigMultipartTask(void *status)
 	{
 		if(forced_sync)
 		{
-			WebcfgDebug("Triggered Forced sync\n");
+			WebcfgInfo("Triggered Forced sync\n");
 			processWebconfgSync((int)Status);
-			WebcfgDebug("reset forced_sync after sync\n");
+			WebcfgInfo("reset forced_sync after sync\n");
 			forced_sync = 0;
 			setForceSync("", "", 0);
 		}

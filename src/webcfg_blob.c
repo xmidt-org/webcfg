@@ -114,7 +114,7 @@ ssize_t webcfg_pack_appenddoc(const appenddoc_t *appenddocData,void **data)
     }
     else 
     {    
-        printf("parameters is NULL\n" );
+        WebcfgInfo("parameters is NULL\n" );
         return rv;
     } 
 
@@ -125,7 +125,7 @@ ssize_t webcfg_pack_appenddoc(const appenddoc_t *appenddocData,void **data)
         if( NULL != *data ) 
         {
             memcpy( *data, sbuf.data, sbuf.size );
-	    printf("sbuf.data of appenddoc is %s sbuf.size %zu\n", sbuf.data, sbuf.size);
+	    WebcfgInfo("sbuf.data of appenddoc is %s sbuf.size %zu\n", sbuf.data, sbuf.size);
             rv = sbuf.size;
         }
     }
@@ -154,21 +154,21 @@ static int alterMap( char * buf )
     //Extract 1st byte from binary stream which holds type and map size
     unsigned char *byte = ( unsigned char * )( &( buf[0] ) ) ;
     int mapSize;
-    printf("First byte in hex : %x\n", 0xff & *byte );
+    WebcfgInfo("First byte in hex : %x\n", 0xff & *byte );
     //Calculate map size
     mapSize = ( 0xff & *byte ) % 0x10;
-    printf("Map size is :%d\n", mapSize );
+    WebcfgInfo("Map size is :%d\n", mapSize );
 
     if( mapSize == 15 )
     {
-        printf("Msgpack Map (fixmap) is already at its MAX size i.e. 15\n" );
+        WebcfgInfo("Msgpack Map (fixmap) is already at its MAX size i.e. 15\n" );
         return -1;
     }
 
     *byte = *byte + METADATA_MAP_SIZE;
     mapSize = ( 0xff & *byte ) % 0x10;
-    printf("New Map size : %d\n", mapSize );
-    printf("First byte in hex : %x\n", 0xff & *byte );
+    WebcfgInfo("New Map size : %d\n", mapSize );
+    WebcfgInfo("First byte in hex : %x\n", 0xff & *byte );
     //Update 1st byte with new MAP size
     buf[0] = *byte;
     return 0;
@@ -207,7 +207,7 @@ size_t appendEncodedData( void **appendData, void *encodedBuffer, size_t encoded
 	}
 	else
 	{
-		printf("Memory allocation failed\n" );
+		WebcfgInfo("Memory allocation failed\n" );
 	}
     return -1;
 }
@@ -226,23 +226,23 @@ char * webcfg_appendeddoc(char * subdoc_name, uint32_t version, char * blob_data
     {   
         memset(appenddata, 0, sizeof(appenddoc_t));
 	
-	printf("The version is : %lu",(long)version);
+	WebcfgInfo("The version is : %lu",(long)version);
         appenddata->subdoc_name = strdup(subdoc_name);
         appenddata->version = version;
         appenddata->transaction_id = generateTransactionId(1001,3000);
     }
 
-    printf("Append Doc \n");
+    WebcfgInfo("Append Doc \n");
     appenddocPackSize = webcfg_pack_appenddoc(appenddata, &appenddocdata);
-    printf("appenddocPackSize is %zu\n", appenddocPackSize);
-    printf("data packed is %s\n", (char*)appenddocdata);
+    WebcfgInfo("appenddocPackSize is %zu\n", appenddocPackSize);
+    WebcfgInfo("data packed is %s\n", (char*)appenddocdata);
  
     free(appenddata->subdoc_name);
     free(appenddata);
 
-    printf("---------------------------------------------------------------\n");
+    WebcfgInfo("---------------------------------------------------------------\n");
     embeddeddocPackSize = appendEncodedData(&embeddeddocdata, (void *)blob_data, blob_size, appenddocdata, appenddocPackSize);
-    printf("embeddeddocPackSize is %zu\n", embeddeddocPackSize);
+    WebcfgInfo("embeddeddocPackSize is %zu\n", embeddeddocPackSize);
     WebcfgInfo("The embedded doc data is %s\n",(char*)embeddeddocdata);
 
     finaldocdata = base64blobencoder((char *)embeddeddocdata, embeddeddocPackSize);

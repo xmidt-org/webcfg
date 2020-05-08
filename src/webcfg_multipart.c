@@ -19,6 +19,7 @@
 #include "webcfg_param.h"
 #include "webcfg_log.h"
 #include "webcfg_auth.h"
+#include "webcfg_db.h"
 #include "webcfg_generic.h"
 #include "webcfg_db.h"
 #include "webcfg_notify.h"
@@ -35,6 +36,7 @@
 #define WEBPA_CREATE_HEADER        "/etc/parodus/parodus_create_file.sh"
 #define CCSP_CRASH_STATUS_CODE      192
 #define ATOMIC_SET_WEBCONFIG	    3
+#define WEBCFG_PORTFORWARDING_FILE "/tmp/webcfg_portforwarding"      
 /*----------------------------------------------------------------------------*/
 /*                               Data Structures                              */
 /*----------------------------------------------------------------------------*/
@@ -468,7 +470,13 @@ WEBCFG_STATUS processMsgpackSubdoc(multipart_t *mp, char *transaction_id)
 						char *appended_doc = NULL;
 						appended_doc = webcfg_appendeddoc( mp->entries[m].name_space, mp->entries[m].etag, pm->entries[i].value, pm->entries[i].value_size);
 						reqParam[i].name = strdup(pm->entries[i].name);
+						WebcfgInfo("%zu appended_doc\n", strlen(appended_doc));
 						reqParam[i].value = strdup(appended_doc);
+						if(0 == strncasecmp(mp->entries[m].name_space,"portforwarding",strlen("portforwarding")))
+						{
+							WebcfgInfo("portforwarding value to File %s\n", WEBCFG_PORTFORWARDING_FILE);
+				writebase64ToDBFile(WEBCFG_PORTFORWARDING_FILE, reqParam[i].value);
+						}
 						reqParam[i].type = WDMP_BASE64;
 						WEBCFG_FREE(appended_doc);
 					}
