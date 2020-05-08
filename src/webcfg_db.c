@@ -126,9 +126,9 @@ WEBCFG_STATUS addNewDocEntry(size_t count)
  
      WebcfgInfo("DB docs count %ld\n", (size_t)count);
      webcfgdbPackSize = webcfgdb_pack(webcfgdb_data, &data, count);
-     WebcfgDebug("size of webcfgdbPackSize %ld\n", webcfgdbPackSize);
+     WebcfgInfo("size of webcfgdbPackSize %ld\n", webcfgdbPackSize);
      WebcfgInfo("writeToDBFile %s\n", WEBCFG_DB_FILE);
-     writeToDBFile(WEBCFG_DB_FILE,(char *)data);
+     writeToDBFile(WEBCFG_DB_FILE,(char *)data, webcfgdbPackSize);
      if(data)
      {
 	WEBCFG_FREE(data);
@@ -168,7 +168,7 @@ WEBCFG_STATUS generateBlob()
     }
 }
 
-int writeToDBFile(char *db_file_path, char *data)
+int writeToDBFile(char *db_file_path, char *data, size_t size)
 {
 	FILE *fp;
 	fp = fopen(db_file_path , "w+");
@@ -179,7 +179,8 @@ int writeToDBFile(char *db_file_path, char *data)
 	}
 	if(data !=NULL)
 	{
-		fwrite(data, strlen(data), 1, fp);
+		WebcfgInfo("size B4 fwrite %ld\n", size);
+		fwrite(data, size, 1, fp);
 		fclose(fp);
 		return 1;
 	}
