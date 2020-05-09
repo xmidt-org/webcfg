@@ -103,14 +103,14 @@ ssize_t webcfg_pack_appenddoc(const appenddoc_t *appenddocData,void **data)
         APPENDDOC_MAP_VERSION.name = "version";
         APPENDDOC_MAP_VERSION.length = strlen( "version" );
         __msgpack_pack_string( &pk, APPENDDOC_MAP_VERSION.name, APPENDDOC_MAP_VERSION.length );
-        msgpack_pack_int(&pk,appenddocData->version);
+        msgpack_pack_uint32(&pk,appenddocData->version);
 
         struct webcfg_token APPENDDOC_MAP_TRANSACTION_ID;
              
         APPENDDOC_MAP_TRANSACTION_ID.name = "transaction_id";
         APPENDDOC_MAP_TRANSACTION_ID.length = strlen( "transaction_id" );
         __msgpack_pack_string( &pk, APPENDDOC_MAP_TRANSACTION_ID.name, APPENDDOC_MAP_TRANSACTION_ID.length );
-        msgpack_pack_int(&pk, appenddocData->transaction_id);
+        msgpack_pack_uint16(&pk, appenddocData->transaction_id);
     }
     else 
     {    
