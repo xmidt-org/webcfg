@@ -41,6 +41,8 @@ typedef struct _event_params
 typedef struct {
   int running;
   uint32_t timeout;
+  char *subdoc_name;
+  uint16_t txid;
 } expire_timer_t;
 
 void initEventHandlingTask();

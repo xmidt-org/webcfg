@@ -49,9 +49,10 @@ void* processSubdocEvents();
 int checkWebcfgTimer();
 int addToEventQueue(char *buf);
 void sendSuccessNotification(char *name, uint32_t version);
-int startWebcfgTimer(uint32_t timeout);
-int stopWebcfgTimer();
+int startWebcfgTimer(char *name, uint16_t transID, uint32_t timeout);
+int stopWebcfgTimer(char *name, uint16_t trans_id);
 int checkTimerExpired (expire_timer_t *timer);
+void createTimerExpiryEvent();
 /*----------------------------------------------------------------------------*/
 /*                             External Functions                             */
 /*----------------------------------------------------------------------------*/
@@ -93,10 +94,13 @@ void* blobEventHandler()
 	{
 		if (checkTimerExpired (event_timer))
 		{
-			WebcfgError("Timer expired. No event received in %lu seconds\n", (long)event_timer->timeout);
-			//reset timer. Generate internal timer_expiry event with new trans_id to retry. TODO
+			WebcfgError("Timer expired. No event received within timeout period\n");
+			//reset timer. Generate internal timer_expiry event with new trans_id to retry.
 			memset(event_timer, 0, sizeof(expire_timer_t));
 			event_timer->running = false;
+
+			createTimerExpiryEvent();
+			WebcfgInfo("After createTimerExpiryEvent\n");
 		}
 		else
 		{
@@ -204,7 +208,7 @@ void* processSubdocEvents()
 					WebcfgInfo("ACK event. doc apply success, proceed to add to DB\n");
 					
 					WebcfgInfo("stop Timer\n");
-					stopWebcfgTimer();
+					stopWebcfgTimer(eventParam->subdoc_name, eventParam->trans_id);
 					//add to DB, update tmp list and notification based on success ack.
 
 					WebcfgInfo("B4 sendSuccessNotification.\n");
@@ -225,7 +229,7 @@ void* processSubdocEvents()
 				{
 					WebcfgInfo("NACK event. doc apply failed, need to retry\n");
 					WebcfgInfo("stop Timer ..\n");
-					stopWebcfgTimer();
+					stopWebcfgTimer(eventParam->subdoc_name, eventParam->trans_id);
 					WebcfgInfo("updateTmpList\n");
 					uStatus = updateTmpList(eventParam->subdoc_name, eventParam->version, "failed", "doc_rejected");
 					if(uStatus !=WEBCFG_SUCCESS)
@@ -238,7 +242,7 @@ void* processSubdocEvents()
 				else if (eventParam->timeout != 0)
 				{
 					WebcfgInfo("Timeout event. doc apply need time, start timer.\n");
-					startWebcfgTimer(eventParam->timeout);
+					startWebcfgTimer(eventParam->subdoc_name, eventParam->trans_id, eventParam->timeout);
 					WebcfgInfo("After startWebcfgTimer\n");
 				}
 				else
@@ -312,6 +316,28 @@ int parseEventData(char* str, event_params_t **val)
 
 }
 
+
+//To generate internal timer expire event and add to event queue.
+void createTimerExpiryEvent()
+{
+	char *expiry_event_data = NULL;
+	char data[128] = {0}; //Do we need addEventList as a linked list here to handle multiple docs?
+
+	//updateEventList();
+	snprintf(data,sizeof(data),"%s,%hu,%u,EXPIRE,%u","event_timer->subdoc_name",323,215566,120);
+	expiry_event_data = strdup(data);
+	WebcfgInfo("expiry_event_data formed %s\n", expiry_event_data);
+	if(expiry_event_data)
+	{
+		addToEventQueue(expiry_event_data);
+		WebcfgInfo("Added timer expiry to event queue\n");
+	}
+	else
+	{
+		WebcfgError("Failed to generate timer expiry event\n");
+	}
+}
+
 //Update Tmp list and send success notification to cloud .
 void sendSuccessNotification(char *name, uint32_t version)
 {
@@ -342,7 +368,7 @@ void sendSuccessNotification(char *name, uint32_t version)
 }
 
 //start internal timer when timeout value is received
-int startWebcfgTimer(uint32_t timeout)
+int startWebcfgTimer(char *name, uint16_t transID, uint32_t timeout)
 {
 	event_timer = malloc(sizeof(expire_timer_t));
 	if(event_timer)
@@ -352,6 +378,8 @@ int startWebcfgTimer(uint32_t timeout)
 		if (!event_timer->running)
 		{
 			event_timer->running = true;
+			event_timer->subdoc_name = strdup(name);
+			event_timer->txid = transID;
 			event_timer->timeout = timeout;
 			WebcfgInfo("started webcfg internal timer\n");
 			WebcfgInfo("event_timer->timeout %lu\n", (long)event_timer->timeout);
@@ -368,15 +396,20 @@ int startWebcfgTimer(uint32_t timeout)
 
 
 //stop internal timer when ack/nack events received
-int stopWebcfgTimer()
+int stopWebcfgTimer(char *name, uint16_t trans_id)
 {
 	if(event_timer)
 	{
 		if (event_timer->running)
 		{
 			WebcfgInfo("stopWebcfgTimer\n");
-			memset(event_timer, 0, sizeof(expire_timer_t));
-			event_timer->running = false;
+			if((strcmp(event_timer->subdoc_name, name) == 0) && (event_timer->txid== trans_id))
+			{
+				memset(event_timer, 0, sizeof(expire_timer_t));
+				event_timer->running = false;
+				WEBCFG_FREE(event_timer->subdoc_name);
+				event_timer->txid = 0;
+			}
 			WebcfgInfo("stopped webcfg internal timer\n");
 			return true;
 		}
