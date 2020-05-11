@@ -54,6 +54,12 @@ static char g_FirmwareVersion[64]={'\0'};
 static char g_bootTime[64]={'\0'};
 static char g_productClass[64]={'\0'};
 static char g_ModelName[64]={'\0'};
+static char g_transID[64]={'\0'};
+
+char * get_global_transID(void)
+{
+    return g_transID;
+}
 /*----------------------------------------------------------------------------*/
 /*                             Function Prototypes                            */
 /*----------------------------------------------------------------------------*/
@@ -426,6 +432,9 @@ WEBCFG_STATUS processMsgpackSubdoc(multipart_t *mp, char *transaction_id)
 	{
 		trans_id = strdup(transaction_id);
 		WEBCFG_FREE(transaction_id);
+
+		strncpy(g_transID, trans_id, sizeof(g_transID)-1);
+		WebcfgInfo("g_transID is %s\n", g_transID);
 	}
         
 	WebcfgDebug("Add mp entries to tmp list\n");

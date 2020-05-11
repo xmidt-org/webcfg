@@ -50,4 +50,5 @@ void loadInitURLFromFile(char **url);
 uint32_t get_global_root();
 WEBCFG_STATUS checkRootUpdate();
 void updateRootVersionToDB();
+char * get_global_transID(void);
 #endif

@@ -232,7 +232,8 @@ void* processSubdocEvents()
 					{
 						WebcfgError("Failed in updateTmpList for NACK\n");
 					}
-					addWebConfgNotifyMsg(eventParam->subdoc_name, eventParam->version, "failed", "doc_rejected", "123");
+					WebcfgInfo("get_global_transID is %s\n", get_global_transID());
+					addWebConfgNotifyMsg(eventParam->subdoc_name, eventParam->version, "failed", "doc_rejected", get_global_transID());
 				}
 				else if (eventParam->timeout != 0)
 				{
@@ -319,8 +320,8 @@ void sendSuccessNotification(char *name, uint32_t version)
 	uStatus = updateTmpList(name, version, "success", "none");
 	if(uStatus == WEBCFG_SUCCESS)
 	{
-		WebcfgInfo("B4 addWebConfgNotifyMsg\n"); 
-		addWebConfgNotifyMsg(name, version, "success", "none", "123"); //TODO: Add trans id and new blob params if any.
+		WebcfgInfo("B4 notify get_global_transID is %s\n", get_global_transID());
+		addWebConfgNotifyMsg(name, version, "success", "none", get_global_transID()); //TODO: Add new blob params if any.
 
 		WebcfgInfo("deleteFromTmpList as doc is applied\n");
 		dStatus = deleteFromTmpList(name);
