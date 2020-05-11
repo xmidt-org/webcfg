@@ -56,4 +56,6 @@ char * webcfg_appendeddoc(char * subdoc_name, uint32_t version, char * blob_data
 
 uint16_t generateTransactionId(int min, int max);
 
+int writeToFileData(char *db_file_path, char *data, size_t size);
+
 #endif

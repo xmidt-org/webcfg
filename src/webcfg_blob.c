@@ -29,7 +29,7 @@
 /*                                   Macros                                   */
 /*----------------------------------------------------------------------------*/
 #define METADATA_MAP_SIZE                3
-
+#define APPEND_FILE                     "/tmp/append_data.bin"
 /*----------------------------------------------------------------------------*/
 /*                               Data Structures                              */
 /*----------------------------------------------------------------------------*/
@@ -245,6 +245,7 @@ char * webcfg_appendeddoc(char * subdoc_name, uint32_t version, char * blob_data
     WebcfgInfo("embeddeddocPackSize is %zu\n", embeddeddocPackSize);
     WebcfgInfo("The embedded doc data is %s\n",(char*)embeddeddocdata);
 
+    writeToFileData(APPEND_FILE, (char*)embeddeddocdata, embeddeddocPackSize);
     finaldocdata = base64blobencoder((char *)embeddeddocdata, embeddeddocPackSize);
     WebcfgInfo("The encoded append doc is %s\n",finaldocdata);
     return finaldocdata;
@@ -256,3 +257,27 @@ uint16_t generateTransactionId(int min, int max)
     return (uint16_t)((rand() % 
            (max - min + 1)) + min);
 }
+
+int writeToFileData(char *db_file_path, char *data, size_t size)
+{
+	FILE *fp;
+	fp = fopen(db_file_path , "w+");
+	if (fp == NULL)
+	{
+		WebcfgError("Failed to open file in db %s\n", db_file_path );
+		return 0;
+	}
+	if(data !=NULL)
+	{
+		fwrite(data, size, 1, fp);
+		fclose(fp);
+		return 1;
+	}
+	else
+	{
+		WebcfgError("WriteToJson failed, Data is NULL\n");
+		fclose(fp);
+		return 0;
+	}
+}
+
