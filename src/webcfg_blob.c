@@ -60,7 +60,7 @@ static void __msgpack_pack_string_nvp( msgpack_packer *pk,
                                        const struct webcfg_token *token,
                                        const char *val );
 
-static int alterMap( char * buf );
+static int alterMapData( char * buf );
 
 static void __msgpack_pack_string( msgpack_packer *pk, const void *string, size_t n )
 {
@@ -143,13 +143,13 @@ ssize_t webcfg_pack_appenddoc(const appenddoc_t *appenddocData,void **data)
 
 
 /**
- * @brief alterMap function to change MAP size of encoded msgpack object.
+ * @brief alterMapData function to change MAP size of encoded msgpack object.
  *
  * @param[in] encodedBuffer msgpack object
  * @param[out] return 0 in success or less than 1 in failure case
  */
 
-static int alterMap( char * buf )
+static int alterMapData( char * buf )
 {
     //Extract 1st byte from binary stream which holds type and map size
     unsigned char *byte = ( unsigned char * )( &( buf[0] ) ) ;
@@ -198,7 +198,7 @@ size_t appendEncodedData( void **appendData, void *encodedBuffer, size_t encoded
 		//Append 2nd encoded buf with 1st encoded buf
 		memcpy( *appendData + ( encodedSize ), metadataPack, metadataSize );
 		//Alter MAP
-		int ret = alterMap( ( char * ) * appendData );
+		int ret = alterMapData( ( char * ) * appendData );
 
 		if( ret ) {
 		    return -1;
