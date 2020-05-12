@@ -64,6 +64,7 @@ static int alterMapData( char * buf );
 
 static void __msgpack_pack_string( msgpack_packer *pk, const void *string, size_t n )
 {
+    WebcfgInfo("in __msgpack_pack_string \n");
     msgpack_pack_str( pk, n );
     msgpack_pack_str_body( pk, string, n );
 }
@@ -89,7 +90,7 @@ ssize_t webcfg_pack_appenddoc(const appenddoc_t *appenddocData,void **data)
     msgpack_packer_init( &pk, &sbuf, msgpack_sbuffer_write );
     msgpack_zone mempool;
     msgpack_object deserialized;
-
+    WebcfgInfo("in webcfg_pack_appenddoc \n");	
     if( appenddocData != NULL )
     {
         struct webcfg_token APPENDDOC_MAP_SUBDOC_NAME;
@@ -154,6 +155,7 @@ static int alterMapData( char * buf )
     //Extract 1st byte from binary stream which holds type and map size
     unsigned char *byte = ( unsigned char * )( &( buf[0] ) ) ;
     int mapSize;
+    WebcfgInfo("in alterMapData\n");
     WebcfgInfo("First byte in hex : %x\n", 0xff & *byte );
     //Calculate map size
     mapSize = ( 0xff & *byte ) % 0x10;
@@ -175,9 +177,9 @@ static int alterMapData( char * buf )
 }
 
 /**
- * @brief appendEncodedData function to append two encoded buffer and change MAP size accordingly.
+ * @brief appendWebcfgEncodedData function to append two encoded buffer and change MAP size accordingly.
  * 
- * @note appendEncodedData function allocates memory for buffer, caller needs to free the buffer(appendData)in
+ * @note appendWebcfgEncodedData function allocates memory for buffer, caller needs to free the buffer(appendData)in
  * both success or failure case. use wrp_free_struct() for free
  *
  * @param[in] encodedBuffer msgpack object (first buffer)
@@ -188,9 +190,10 @@ static int alterMapData( char * buf )
  * @return  appended total buffer size or less than 1 in failure case
  */
 
-size_t appendEncodedData( void **appendData, void *encodedBuffer, size_t encodedSize, void *metadataPack, size_t metadataSize )
+size_t appendWebcfgEncodedData( void **appendData, void *encodedBuffer, size_t encodedSize, void *metadataPack, size_t metadataSize )
 {
     //Allocate size for final buffer
+    WebcfgInfo("start  appendWebcfgEncodedData \n");
     *appendData = ( void * )malloc( sizeof( char * ) * ( encodedSize + metadataSize ) );
 	if(*appendData != NULL)
 	{
@@ -198,8 +201,9 @@ size_t appendEncodedData( void **appendData, void *encodedBuffer, size_t encoded
 		//Append 2nd encoded buf with 1st encoded buf
 		memcpy( *appendData + ( encodedSize ), metadataPack, metadataSize );
 		//Alter MAP
+		WebcfgInfo("appendWebcfgEncodedData function before alterMapData\n");
 		int ret = alterMapData( ( char * ) * appendData );
-
+		WebcfgInfo("The value of ret in alterMapData  %d\n",ret);
 		if( ret ) {
 		    return -1;
 		}
@@ -209,6 +213,7 @@ size_t appendEncodedData( void **appendData, void *encodedBuffer, size_t encoded
 	{
 		WebcfgInfo("Memory allocation failed\n" );
 	}
+   WebcfgInfo("end  appendWebcfgEncodedData \n");
     return -1;
 }
 
@@ -241,7 +246,7 @@ char * webcfg_appendeddoc(char * subdoc_name, uint32_t version, char * blob_data
     free(appenddata);
 
     WebcfgInfo("---------------------------------------------------------------\n");
-    embeddeddocPackSize = appendEncodedData(&embeddeddocdata, (void *)blob_data, blob_size, appenddocdata, appenddocPackSize);
+    embeddeddocPackSize = appendWebcfgEncodedData(&embeddeddocdata, (void *)blob_data, blob_size, appenddocdata, appenddocPackSize);
     WebcfgInfo("embeddeddocPackSize is %zu\n", embeddeddocPackSize);
     WebcfgInfo("The embedded doc data is %s\n",(char*)embeddeddocdata);
 
