@@ -121,11 +121,12 @@ ssize_t webcfg_pack_appenddoc(const appenddoc_t *appenddocData,void **data)
     if( sbuf.data ) 
     {
         *data = ( char * ) malloc( sizeof( char ) * sbuf.size );
+	memset(*data,0,sbuf.size);
 
         if( NULL != *data ) 
         {
             memcpy( *data, sbuf.data, sbuf.size );
-	    WebcfgInfo("sbuf.data of appenddoc is %s sbuf.size %zu\n", sbuf.data, sbuf.size);
+	    WebcfgInfo("sbuf.size of appenddoc is %zu\n", sbuf.size);
             rv = sbuf.size;
         }
     }
@@ -149,7 +150,7 @@ ssize_t webcfg_pack_appenddoc(const appenddoc_t *appenddocData,void **data)
  * @param[out] return 0 in success or less than 1 in failure case
  */
 
-static int alterMapData( char * buf )
+static int alterMapData( char *buf )
 {
     //Extract 1st byte from binary stream which holds type and map size
     unsigned char *byte = ( unsigned char * )( &( buf[0] ) ) ;
@@ -188,22 +189,25 @@ static int alterMapData( char * buf )
  * @return  appended total buffer size or less than 1 in failure case
  */
 
-size_t appendEncodedData( void **appendData, void *encodedBuffer, size_t encodedSize, void *metadataPack, size_t metadataSize )
+size_t appendEncodedData( void *appendData, void *encodedBuffer, size_t encodedSize, void *metadataPack, size_t metadataSize )
 {
-    //Allocate size for final buffer
-    *appendData = ( void * )malloc( sizeof( char * ) * ( encodedSize + metadataSize ) );
-	if(*appendData != NULL)
+	WebcfgInfo("Inside appendEncodedData function\n" );
+	//Allocate size for final buffer
+	if(appendData != NULL)
 	{
-		memcpy( *appendData, encodedBuffer, encodedSize );
+		memcpy( appendData, encodedBuffer, encodedSize );
+		WebcfgInfo("appendEncodedData total length %zu\n", ( encodedSize + metadataSize + 1));
 		//Append 2nd encoded buf with 1st encoded buf
-		memcpy( *appendData + ( encodedSize ), metadataPack, metadataSize );
+		memcpy( appendData + ( encodedSize )+1, metadataPack, metadataSize );
 		//Alter MAP
-		int ret = alterMapData( ( char * ) * appendData );
+		WebcfgInfo("Before alterMapData\n" );
+		int ret = alterMapData( ( char *) (appendData) );
+		WebcfgInfo("After alterMapData\n" );
 
 		if( ret ) {
 		    return -1;
 		}
-		return ( encodedSize + metadataSize );
+		return ( encodedSize + metadataSize +1 );
 	}
 	else
 	{
@@ -219,14 +223,15 @@ char * webcfg_appendeddoc(char * subdoc_name, uint32_t version, char * blob_data
     size_t embeddeddocPackSize = -1;
     void *appenddocdata = NULL;
     void *embeddeddocdata = NULL;
-    char * finaldocdata = NULL;
+    char *finaldocdata = NULL;
+    char *fileName = NULL;
 
     appenddata = (appenddoc_t *) malloc(sizeof(appenddoc_t ));
     if(appenddata != NULL)
     {   
         memset(appenddata, 0, sizeof(appenddoc_t));
 	
-	WebcfgInfo("The version is : %lu",(long)version);
+	WebcfgInfo("The version is : %lu\n",(long)version);
         appenddata->subdoc_name = strdup(subdoc_name);
         appenddata->version = version;
         appenddata->transaction_id = generateTransactionId(1001,3000);
@@ -235,19 +240,26 @@ char * webcfg_appendeddoc(char * subdoc_name, uint32_t version, char * blob_data
     WebcfgInfo("Append Doc \n");
     appenddocPackSize = webcfg_pack_appenddoc(appenddata, &appenddocdata);
     WebcfgInfo("appenddocPackSize is %zu\n", appenddocPackSize);
-    WebcfgInfo("data packed is %s\n", (char*)appenddocdata);
+    WebcfgDebug("data packed is %s\n", (char*)appenddocdata);
  
     free(appenddata->subdoc_name);
     free(appenddata);
 
     WebcfgInfo("---------------------------------------------------------------\n");
-    embeddeddocPackSize = appendEncodedData(&embeddeddocdata, (void *)blob_data, blob_size, appenddocdata, appenddocPackSize);
+    embeddeddocdata = ( void * )malloc( sizeof( char * ) * ( blob_size + appenddocPackSize + 1) );
+    memset(embeddeddocdata,0, ( blob_size + appenddocPackSize + 1));
+    embeddeddocPackSize = appendEncodedData(embeddeddocdata, (void *)blob_data, blob_size, appenddocdata, appenddocPackSize);
     WebcfgInfo("embeddeddocPackSize is %zu\n", embeddeddocPackSize);
     WebcfgInfo("The embedded doc data is %s\n",(char*)embeddeddocdata);
 
-    writeToFileData(APPEND_FILE, (char*)embeddeddocdata, embeddeddocPackSize);
+    fileName = malloc(sizeof(char) * 32);
+    snprintf(fileName,32,"/tmp/%s.bin",subdoc_name);
+    writeToFileData(fileName, (char*)embeddeddocdata, embeddeddocPackSize);
     finaldocdata = base64blobencoder((char *)embeddeddocdata, embeddeddocPackSize);
+    
     WebcfgInfo("The encoded append doc is %s\n",finaldocdata);
+    snprintf(fileName,32,"/tmp/b64_%s.txt",subdoc_name);
+    writeToFileData(fileName, (char*)embeddeddocdata, embeddeddocPackSize);
     return finaldocdata;
 }
 

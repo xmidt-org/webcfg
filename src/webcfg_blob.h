@@ -50,7 +50,7 @@ typedef struct appenddoc_struct{
 ssize_t webcfg_pack_appenddoc(const appenddoc_t *appenddocData,void **data);
 
 
-size_t appendEncodedData( void **appendData, void *encodedBuffer, size_t encodedSize, void *metadataPack, size_t metadataSize );
+size_t appendEncodedData( void *appendData, void *encodedBuffer, size_t encodedSize, void *metadataPack, size_t metadataSize );
 
 char * webcfg_appendeddoc(char * subdoc_name, uint32_t version, char * blob_data, size_t blob_size);
 
