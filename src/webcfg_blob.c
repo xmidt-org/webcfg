@@ -29,7 +29,6 @@
 /*                                   Macros                                   */
 /*----------------------------------------------------------------------------*/
 #define METADATA_MAP_SIZE                3
-#define APPEND_FILE                     "/tmp/append_data.bin"
 /*----------------------------------------------------------------------------*/
 /*                               Data Structures                              */
 /*----------------------------------------------------------------------------*/
@@ -64,7 +63,6 @@ static int alterMapData( char * buf );
 
 static void __msgpack_pack_string( msgpack_packer *pk, const void *string, size_t n )
 {
-    WebcfgInfo("in __msgpack_pack_string \n");
     msgpack_pack_str( pk, n );
     msgpack_pack_str_body( pk, string, n );
 }
@@ -90,7 +88,6 @@ ssize_t webcfg_pack_appenddoc(const appenddoc_t *appenddocData,void **data)
     msgpack_packer_init( &pk, &sbuf, msgpack_sbuffer_write );
     msgpack_zone mempool;
     msgpack_object deserialized;
-    WebcfgInfo("in webcfg_pack_appenddoc \n");	
     if( appenddocData != NULL )
     {
         struct webcfg_token APPENDDOC_MAP_SUBDOC_NAME;
@@ -115,7 +112,7 @@ ssize_t webcfg_pack_appenddoc(const appenddoc_t *appenddocData,void **data)
     }
     else 
     {    
-        WebcfgInfo("parameters is NULL\n" );
+        WebcfgError("Doc append data is NULL\n" );
         return rv;
     } 
 
@@ -126,7 +123,7 @@ ssize_t webcfg_pack_appenddoc(const appenddoc_t *appenddocData,void **data)
         if( NULL != *data ) 
         {
             memcpy( *data, sbuf.data, sbuf.size );
-	    WebcfgInfo("sbuf.data of appenddoc is %s sbuf.size %zu\n", sbuf.data, sbuf.size);
+	    WebcfgDebug("sbuf.data of appenddoc is %s sbuf.size %zu\n", sbuf.data, sbuf.size);
             rv = sbuf.size;
         }
     }
@@ -155,22 +152,20 @@ static int alterMapData( char * buf )
     //Extract 1st byte from binary stream which holds type and map size
     unsigned char *byte = ( unsigned char * )( &( buf[0] ) ) ;
     int mapSize;
-    WebcfgInfo("in alterMapData\n");
-    WebcfgInfo("First byte in hex : %x\n", 0xff & *byte );
+    WebcfgDebug("First byte in hex : %x\n", 0xff & *byte );
     //Calculate map size
     mapSize = ( 0xff & *byte ) % 0x10;
-    WebcfgInfo("Map size is :%d\n", mapSize );
 
     if( mapSize == 15 )
     {
-        WebcfgInfo("Msgpack Map (fixmap) is already at its MAX size i.e. 15\n" );
+        WebcfgError("Msgpack Map (fixmap) is already at its MAX size i.e. 15\n" );
         return -1;
     }
 
     *byte = *byte + METADATA_MAP_SIZE;
     mapSize = ( 0xff & *byte ) % 0x10;
     WebcfgInfo("New Map size : %d\n", mapSize );
-    WebcfgInfo("First byte in hex : %x\n", 0xff & *byte );
+    WebcfgDebug("First byte in hex : %x\n", 0xff & *byte );
     //Update 1st byte with new MAP size
     buf[0] = *byte;
     return 0;
@@ -193,7 +188,6 @@ static int alterMapData( char * buf )
 size_t appendWebcfgEncodedData( void **appendData, void *encodedBuffer, size_t encodedSize, void *metadataPack, size_t metadataSize )
 {
     //Allocate size for final buffer
-    WebcfgInfo("start  appendWebcfgEncodedData \n");
     *appendData = ( void * )malloc( sizeof( char * ) * ( encodedSize + metadataSize ) );
 	if(*appendData != NULL)
 	{
@@ -201,9 +195,8 @@ size_t appendWebcfgEncodedData( void **appendData, void *encodedBuffer, size_t e
 		//Append 2nd encoded buf with 1st encoded buf
 		memcpy( *appendData + ( encodedSize ), metadataPack, metadataSize );
 		//Alter MAP
-		WebcfgInfo("appendWebcfgEncodedData function before alterMapData\n");
 		int ret = alterMapData( ( char * ) * appendData );
-		WebcfgInfo("The value of ret in alterMapData  %d\n",ret);
+		WebcfgDebug("The value of ret in alterMapData  %d\n",ret);
 		if( ret ) {
 		    return -1;
 		}
@@ -211,9 +204,8 @@ size_t appendWebcfgEncodedData( void **appendData, void *encodedBuffer, size_t e
 	}
 	else
 	{
-		WebcfgInfo("Memory allocation failed\n" );
+		WebcfgError("Memory allocation failed\n" );
 	}
-   WebcfgInfo("end  appendWebcfgEncodedData \n");
     return -1;
 }
 
@@ -230,29 +222,25 @@ char * webcfg_appendeddoc(char * subdoc_name, uint32_t version, char * blob_data
     if(appenddata != NULL)
     {   
         memset(appenddata, 0, sizeof(appenddoc_t));
-	
-	WebcfgInfo("The version is : %lu",(long)version);
+
         appenddata->subdoc_name = strdup(subdoc_name);
         appenddata->version = version;
-        appenddata->transaction_id = generateTransactionId(1001,3000);
+        appenddata->transaction_id = generateTransactionId(1001,9999);
+	WebcfgInfo("subdoc_name: %s, version: %lu, transaction_id: %hu\n", subdoc_name, (unsigned long)version, appenddata->transaction_id);
     }
 
-    WebcfgInfo("Append Doc \n");
     appenddocPackSize = webcfg_pack_appenddoc(appenddata, &appenddocdata);
-    WebcfgInfo("appenddocPackSize is %zu\n", appenddocPackSize);
-    WebcfgInfo("data packed is %s\n", (char*)appenddocdata);
+    WebcfgDebug("data packed is %s\n", (char*)appenddocdata);
  
     free(appenddata->subdoc_name);
     free(appenddata);
 
-    WebcfgInfo("---------------------------------------------------------------\n");
     embeddeddocPackSize = appendWebcfgEncodedData(&embeddeddocdata, (void *)blob_data, blob_size, appenddocdata, appenddocPackSize);
-    WebcfgInfo("embeddeddocPackSize is %zu\n", embeddeddocPackSize);
-    WebcfgInfo("The embedded doc data is %s\n",(char*)embeddeddocdata);
+    WebcfgInfo("appenddocPackSize: %zu, blobSize: %zu, embeddeddocPackSize: %zu\n", appenddocPackSize, blob_size, embeddeddocPackSize);
+    WebcfgDebug("The embedded doc data is %s\n",(char*)embeddeddocdata);
 
-    writeToFileData(APPEND_FILE, (char*)embeddeddocdata, embeddeddocPackSize);
     finaldocdata = base64blobencoder((char *)embeddeddocdata, embeddeddocPackSize);
-    WebcfgInfo("The encoded append doc is %s\n",finaldocdata);
+    WebcfgDebug("The encoded append doc is %s\n",finaldocdata);
     return finaldocdata;
 }
 
