@@ -40,11 +40,11 @@ typedef struct _event_params
 
 typedef struct expire_timer_list
 {
-  int running;
-  uint32_t timeout;
-  char *subdoc_name;
-  uint16_t txid;
-  struct expire_timer_list *next;
+	int running;
+	uint32_t timeout;
+	char *subdoc_name;
+	uint16_t txid;
+	struct expire_timer_list *next;
 } expire_timer_t;
 
 void initEventHandlingTask();
