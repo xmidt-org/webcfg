@@ -19,9 +19,11 @@
 #include "webcfg_param.h"
 #include "webcfg_log.h"
 #include "webcfg_auth.h"
+#include "webcfg_db.h"
 #include "webcfg_generic.h"
 #include "webcfg_db.h"
 #include "webcfg_notify.h"
+#include "webcfg_blob.h"
 #include "webcfg_event.h"
 #include <uuid/uuid.h>
 /*----------------------------------------------------------------------------*/
@@ -477,13 +479,13 @@ WEBCFG_STATUS processMsgpackSubdoc(char *transaction_id)
                                 {
 					if(pm->entries[i].type == WDMP_BLOB)
 					{
-						char *temp_blob = NULL;
-
-						temp_blob = base64blobencoder(pm->entries[i].value, pm->entries[i].value_size);
+						char *appended_doc = NULL;
+						appended_doc = webcfg_appendeddoc( mp->entries[m].name_space, mp->entries[m].etag, pm->entries[i].value, pm->entries[i].value_size);
 						reqParam[i].name = strdup(pm->entries[i].name);
-						reqParam[i].value = strdup(temp_blob);
-						WEBCFG_FREE(temp_blob);
+						WebcfgInfo("appended_doc length: %zu\n", strlen(appended_doc));
+						reqParam[i].value = strdup(appended_doc);
 						reqParam[i].type = WDMP_BASE64;
+						WEBCFG_FREE(appended_doc);
 					}
 					else
 					{
