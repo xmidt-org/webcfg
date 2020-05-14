@@ -234,33 +234,46 @@ char * webcfg_appendeddoc(char * subdoc_name, uint32_t version, char * blob_data
 	WebcfgInfo("The version is : %lu",(long)version);
         appenddata->subdoc_name = strdup(subdoc_name);
         appenddata->version = version;
-        appenddata->transaction_id = generateTransactionId(1001,3000);
+        appenddata->transaction_id = generateTransactionId();
+	WebcfgInfo("Append Doc \n");
+	appenddocPackSize = webcfg_pack_appenddoc(appenddata, &appenddocdata);
+	WebcfgInfo("appenddocPackSize is %zu\n", appenddocPackSize);
+	WebcfgInfo("data packed is %s\n", (char*)appenddocdata);
+
+	WEBCFG_FREE(appenddata->subdoc_name);
+	WEBCFG_FREE(appenddata);
+
+	WebcfgInfo("---------------------------------------------------------------\n");
+	embeddeddocPackSize = appendWebcfgEncodedData(&embeddeddocdata, (void *)blob_data, blob_size, appenddocdata, appenddocPackSize);
+	WebcfgInfo("embeddeddocPackSize is %zu\n", embeddeddocPackSize);
+	WebcfgInfo("The embedded doc data is %s\n",(char*)embeddeddocdata);
+
+	writeToFileData(APPEND_FILE, (char*)embeddeddocdata, embeddeddocPackSize);
+	finaldocdata = base64blobencoder((char *)embeddeddocdata, embeddeddocPackSize);
+	WebcfgInfo("The encoded append doc is %s\n",finaldocdata);
     }
-
-    WebcfgInfo("Append Doc \n");
-    appenddocPackSize = webcfg_pack_appenddoc(appenddata, &appenddocdata);
-    WebcfgInfo("appenddocPackSize is %zu\n", appenddocPackSize);
-    WebcfgInfo("data packed is %s\n", (char*)appenddocdata);
- 
-    free(appenddata->subdoc_name);
-    free(appenddata);
-
-    WebcfgInfo("---------------------------------------------------------------\n");
-    embeddeddocPackSize = appendWebcfgEncodedData(&embeddeddocdata, (void *)blob_data, blob_size, appenddocdata, appenddocPackSize);
-    WebcfgInfo("embeddeddocPackSize is %zu\n", embeddeddocPackSize);
-    WebcfgInfo("The embedded doc data is %s\n",(char*)embeddeddocdata);
-
-    writeToFileData(APPEND_FILE, (char*)embeddeddocdata, embeddeddocPackSize);
-    finaldocdata = base64blobencoder((char *)embeddeddocdata, embeddeddocPackSize);
-    WebcfgInfo("The encoded append doc is %s\n",finaldocdata);
+    
     return finaldocdata;
 }
 
-uint16_t generateTransactionId(int min, int max)
+uint16_t generateTransactionId()
 {
-    srand(time(0));
-    return (uint16_t)((rand() % 
-           (max - min + 1)) + min);
+    FILE *fp;
+	uint16_t random_key,sz;
+	fp = fopen("/dev/urandom", "r");
+	if (fp == NULL){
+    		return 0;
+    	}    	
+	sz = fread(&random_key, sizeof(random_key), 1, fp);
+	if (!sz)
+	{	
+		fclose(fp);
+		WebcfgError("fread failed.\n");
+		return 0;
+	}
+	WebcfgInfo("generateTransactionId\n %d",random_key);
+	fclose(fp);		
+	return(random_key);
 }
 
 int writeToFileData(char *db_file_path, char *data, size_t size)
