@@ -19,6 +19,7 @@
 #include <stdint.h>
 #include <curl/curl.h>
 #include "webcfg.h"
+#include <wdmp-c.h>
 
 #define WEBCFG_FREE(__x__) if(__x__ != NULL) { free((void*)(__x__)); __x__ = NULL;} else {printf("Trying to free null pointer\n");}
 
@@ -28,6 +29,7 @@
 #define DEVICE_PROPS_FILE       "/tmp/device.properties"
 #endif
 
+#define ATOMIC_SET_WEBCONFIG	    3
 typedef struct
 {
     uint32_t  etag;
@@ -51,4 +53,6 @@ uint32_t get_global_root();
 WEBCFG_STATUS checkRootUpdate();
 void updateRootVersionToDB();
 char * get_global_transID(void);
+multipart_t * get_global_mp(void);
+void reqParam_destroy( int paramCnt, param_t *reqObj );
 #endif

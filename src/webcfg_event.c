@@ -23,6 +23,7 @@
 #include <unistd.h>
 #include "webcfg_event.h"
 #include "webcfg_db.h"
+#include "webcfg_param.h"
 /*----------------------------------------------------------------------------*/
 /*                                   Macros                                   */
 /*----------------------------------------------------------------------------*/
@@ -57,6 +58,7 @@ void createTimerExpiryEvent(char *docName, uint16_t transid);
 WEBCFG_STATUS updateTimerList(int status, char *docname, uint16_t transid, uint32_t timeout);
 WEBCFG_STATUS deleteFromTimerList(char* doc_name);
 uint16_t generateTransactionId(int min, int max);
+WEBCFG_STATUS checkDBVersion(char *docname, uint32_t version);
 /*----------------------------------------------------------------------------*/
 /*                             External Functions                             */
 /*----------------------------------------------------------------------------*/
@@ -205,6 +207,7 @@ void* processSubdocEvents()
 	int rv = WEBCFG_FAILURE;
 	WEBCFG_STATUS uStatus = WEBCFG_FAILURE;
 	WEBCFG_STATUS ts = WEBCFG_FAILURE;
+	WEBCFG_STATUS rs = WEBCFG_FAILURE;
 
 	while(1)
 	{
@@ -221,10 +224,11 @@ void* processSubdocEvents()
 			rv = parseEventData(Data->data, &eventParam);
 			if(rv == WEBCFG_SUCCESS)
 			{
-				if ((strcmp(eventParam->status, "ACK")==0) && (eventParam->timeout == 0))
+				WebcfgInfo("Event detection\n");
+				if (((eventParam->status !=NULL)&&(strcmp(eventParam->status, "ACK")==0)) && (eventParam->timeout == 0))
 				{
 					WebcfgInfo("ACK event. doc apply success, proceed to add to DB\n");
-
+					//check version for ack, nack is it required?
 					ts = stopWebcfgTimer(eventParam->subdoc_name, eventParam->trans_id);
 					if(ts == WEBCFG_SUCCESS)
 					{
@@ -243,9 +247,9 @@ void* processSubdocEvents()
 						WebcfgInfo("After blob addNewDocEntry to DB\n");
 					}
 				}
-				else if ((strcmp(eventParam->status, "NACK")==0) && (eventParam->timeout == 0)) 
+				else if (((eventParam->status !=NULL)&&(strcmp(eventParam->status, "NACK")==0)) && (eventParam->timeout == 0))
 				{
-					WebcfgInfo("NACK event. doc apply failed, need to retry\n");
+					WebcfgError("NACK event. doc apply failed for %s\n", eventParam->subdoc_name);
 					stopWebcfgTimer(eventParam->subdoc_name, eventParam->trans_id);
 					if(ts == WEBCFG_SUCCESS)
 					{
@@ -258,12 +262,21 @@ void* processSubdocEvents()
 						addWebConfgNotifyMsg(eventParam->subdoc_name, eventParam->version, "failed", "doc_rejected", get_global_transID());
 					}
 				}
-				else if (strcmp(eventParam->status, "EXPIRE")==0)
+				else if ((eventParam->status !=NULL)&&(strcmp(eventParam->status, "EXPIRE")==0))
 				{
 					WebcfgInfo("EXPIRE event. doc apply timeout expired, need to retry\n");
 					WebcfgDebug("get_global_transID is %s\n", get_global_transID());
 					addWebConfgNotifyMsg(eventParam->subdoc_name, eventParam->version, "failed", "pending", get_global_transID());
-					//setValues(eventParam->subdoc_name); TODO:
+					WebcfgInfo("retryEventSubdoc for EXPIRE case\n");
+					retryEventSubdoc(eventParam->subdoc_name);
+					if(rs == WEBCFG_SUCCESS)
+					{
+						WebcfgInfo("retryEventSubdoc success\n");
+					}
+					else
+					{
+						WebcfgError("retryEventSubdoc failed\n");
+					}
 				}
 				else if (eventParam->timeout != 0)
 				{
@@ -274,6 +287,24 @@ void* processSubdocEvents()
 				else
 				{
 					WebcfgInfo("Crash event. Component restarted after crash, re-send blob.\n");
+					//If version in event and DB are not matching, re-send blob to retry.
+					if(checkDBVersion(eventParam->subdoc_name, eventParam->version) !=WEBCFG_SUCCESS)
+					{
+						WebcfgInfo("setValues retry for subdoc_name %s\n", eventParam->subdoc_name);
+						rs = retryEventSubdoc(eventParam->subdoc_name);
+						if(rs == WEBCFG_SUCCESS)
+						{
+							WebcfgInfo("retryEventSubdoc success\n");
+						}
+						else
+						{
+							WebcfgError("retryEventSubdoc failed\n");
+						}
+					}
+					else
+					{
+						WebcfgInfo("DB and event version are same, retry is not required\n");
+					}
 				}
 			}
 			else
@@ -604,4 +635,117 @@ uint16_t generateTransactionId(int min, int max)
     WebcfgInfo("In generateTransactionId\n");
     return (uint16_t)((rand() %
            (max - min + 1)) + min);
+}
+
+WEBCFG_STATUS retryEventSubdoc(char *eventDoc)
+{
+	int i =0, m=0;
+	WEBCFG_STATUS rv = WEBCFG_FAILURE;
+	param_t *reqParam = NULL;
+	WDMP_STATUS ret = WDMP_FAILURE;
+	int ccspStatus=0;
+	int paramCount = 0;
+	webcfgparam_t *pm = NULL;
+	multipart_t *gmp = NULL;
+
+	gmp = get_global_mp();
+
+	for(m = 0 ; m<((int)gmp->entries_count)-1; m++)
+	{
+		WebcfgInfo("eventDoc %s len %lu\n", eventDoc, strlen(eventDoc));
+		if(strncmp(gmp->entries[m].name_space, eventDoc, strlen(eventDoc) == 0))
+		{
+			WebcfgInfo("gmp->entries[%d].name_space %s\n", m, gmp->entries[m].name_space);
+			WebcfgInfo("gmp->entries[%d].etag %lu\n" ,m,  (long)gmp->entries[m].etag);
+			WebcfgDebug("gmp->entries[%d].data %s\n" ,m,  gmp->entries[m].data);
+
+			WebcfgDebug("gmp->entries[%d].data_size is %zu\n", m,gmp->entries[m].data_size);
+
+			WebcfgInfo("--------------decode root doc-------------\n");
+			pm = webcfgparam_convert( gmp->entries[m].data, gmp->entries[m].data_size+1 );
+			if ( NULL != pm)
+			{
+				paramCount = (int)pm->entries_count;
+
+				reqParam = (param_t *) malloc(sizeof(param_t) * paramCount);
+				memset(reqParam,0,(sizeof(param_t) * paramCount));
+
+				WebcfgInfo("paramCount is %d\n", paramCount);
+				for (i = 0; i < paramCount; i++)
+				{
+			                if(pm->entries[i].value != NULL)
+			                {
+						if(pm->entries[i].type == WDMP_BLOB)
+						{
+							char *temp_blob = NULL;
+							WebcfgInfo("B4 base64blobencoder\n");
+							temp_blob = base64blobencoder(pm->entries[i].value, pm->entries[i].value_size);
+							reqParam[i].name = strdup(pm->entries[i].name);
+							reqParam[i].value = strdup(temp_blob);
+							WEBCFG_FREE(temp_blob);
+							reqParam[i].type = WDMP_BASE64;
+						}
+						else
+						{
+							WebcfgError("blob type is wrong\n");
+						}
+			                }
+					WebcfgInfo("Request:> param[%d].name = %s, type = %d\n",i,reqParam[i].name,reqParam[i].type);
+					WebcfgInfo("Request:> param[%d].value = %s\n",i,reqParam[i].value);
+					WebcfgInfo("Request:> param[%d].type = %d\n",i,reqParam[i].type);
+				}
+
+				WebcfgInfo("Proceed to setValues..\n");
+				if(reqParam !=NULL)
+				{
+					WebcfgInfo("retryEventSubdoc WebConfig SET Request\n");
+					setValues(reqParam, paramCount, ATOMIC_SET_WEBCONFIG, NULL, NULL, &ret, &ccspStatus);
+					if(ret == WDMP_SUCCESS)
+					{
+						WebcfgInfo("retryEventSubdoc setValues success. ccspStatus : %d\n", ccspStatus);
+						rv = WEBCFG_SUCCESS;
+					}
+				}
+				else
+				{
+					WebcfgInfo("retryEventSubdoc setValues Failed. ccspStatus : %d\n", ccspStatus);
+				}
+				if(NULL != reqParam)
+				{
+					WebcfgInfo("reqParam_destroy\n");
+					reqParam_destroy(paramCount, reqParam);
+				}
+			}
+			WebcfgInfo("webcfgparam_destroy\n");
+			webcfgparam_destroy( pm );
+		}
+		else
+		{
+			WebcfgError("--------------decode root doc failed-------------\n");
+		}
+	}
+	WebcfgInfo("retryEventSubdoc rv %d\n", rv);
+	return rv;
+}
+
+WEBCFG_STATUS checkDBVersion(char *docname, uint32_t version)
+{
+	webconfig_db_data_t *webcfgdb = NULL;
+	webcfgdb = get_global_db_node();
+
+	//Traverse through doc list & check version for required doc
+	while (NULL != webcfgdb)
+	{
+		WebcfgInfo("node is pointing to webcfgdb->name %s, docname %s, webcfgdb->version %lu, version %lu \n",webcfgdb->name, docname, (long)webcfgdb->version, (long)version);
+		if( strcmp(docname, webcfgdb->name) == 0)
+		{
+			if(webcfgdb->version == version)
+			{
+				WebcfgInfo("webcfgdb version is same for doc %s\n", docname);
+				return WEBCFG_SUCCESS;
+			}
+		}
+		webcfgdb= webcfgdb->next;
+	}
+	return WEBCFG_FAILURE;
 }

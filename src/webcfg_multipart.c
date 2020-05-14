@@ -34,7 +34,6 @@
 #define WEBPA_READ_HEADER          "/etc/parodus/parodus_read_file.sh"
 #define WEBPA_CREATE_HEADER        "/etc/parodus/parodus_create_file.sh"
 #define CCSP_CRASH_STATUS_CODE      192
-#define ATOMIC_SET_WEBCONFIG	    3
 /*----------------------------------------------------------------------------*/
 /*                               Data Structures                              */
 /*----------------------------------------------------------------------------*/
@@ -55,10 +54,15 @@ static char g_bootTime[64]={'\0'};
 static char g_productClass[64]={'\0'};
 static char g_ModelName[64]={'\0'};
 static char g_transID[64]={'\0'};
-
+multipart_t *mp = NULL;
 char * get_global_transID(void)
 {
     return g_transID;
+}
+
+multipart_t * get_global_mp(void)
+{
+    return mp;
 }
 /*----------------------------------------------------------------------------*/
 /*                             Function Prototypes                            */
@@ -71,12 +75,11 @@ void parse_multipart(char *ptr, int no_of_bytes, multipartdocs_t *m);
 void multipart_destroy( multipart_t *m );
 void addToDBList(webconfig_db_data_t *webcfgdb);
 char* generate_trans_uuid();
-WEBCFG_STATUS processMsgpackSubdoc(multipart_t *mp, char *transaction_id);
+WEBCFG_STATUS processMsgpackSubdoc(char *transaction_id);
 void loadInitURLFromFile(char **url);
 static void get_webCfg_interface(char **interface);
 void get_root_version(uint32_t *rt_version);
 char *replaceMacWord(const char *s, const char *macW, const char *deviceMACW);
-void reqParam_destroy( int paramCnt, param_t *reqObj );
 /*----------------------------------------------------------------------------*/
 /*                             External Functions                             */
 /*----------------------------------------------------------------------------*/
@@ -293,7 +296,7 @@ WEBCFG_STATUS parseMultipartDocument(void *config_data, char *ct , size_t data_s
 	char *line_boundary = NULL;
 	char *last_line_boundary = NULL;
 	char *str_body = NULL;
-	multipart_t *mp = NULL;
+	//multipart_t *mp = NULL;
 	int boundary_len =0;
 	int count =0;
 	int status =0;
@@ -393,7 +396,7 @@ WEBCFG_STATUS parseMultipartDocument(void *config_data, char *ct , size_t data_s
 		WEBCFG_FREE(str_body);
 		WEBCFG_FREE(line_boundary);
 		WEBCFG_FREE(last_line_boundary);
-		status = processMsgpackSubdoc(mp, trans_uuid);
+		status = processMsgpackSubdoc(trans_uuid);
 		if(status ==0)
 		{
 			WebcfgInfo("processMsgpackSubdoc success\n");
@@ -412,7 +415,7 @@ WEBCFG_STATUS parseMultipartDocument(void *config_data, char *ct , size_t data_s
     }
 }
 
-WEBCFG_STATUS processMsgpackSubdoc(multipart_t *mp, char *transaction_id)
+WEBCFG_STATUS processMsgpackSubdoc(char *transaction_id)
 {
 	int i =0, m=0;
 	WEBCFG_STATUS rv = WEBCFG_FAILURE;
@@ -424,8 +427,8 @@ WEBCFG_STATUS processMsgpackSubdoc(multipart_t *mp, char *transaction_id)
 	int success_count = 0;
 	WEBCFG_STATUS addStatus =0;
 	WEBCFG_STATUS uStatus = 0, dStatus =0;
-	char * blob_data = NULL;
-        size_t blob_len = -1 ;
+	//char * blob_data = NULL;
+        //size_t blob_len = -1 ;
 	char * trans_id = NULL;
 
 	if(transaction_id !=NULL)
@@ -615,7 +618,7 @@ WEBCFG_STATUS processMsgpackSubdoc(multipart_t *mp, char *transaction_id)
 		}
 	}
 	WEBCFG_FREE(trans_id);
-	multipart_destroy(mp);
+	//multipart_destroy(mp);
         
 	if(success_count) //No DB update when all docs failed.
 	{
@@ -634,7 +637,7 @@ WEBCFG_STATUS processMsgpackSubdoc(multipart_t *mp, char *transaction_id)
 		addNewDocEntry(get_successDocCount());
 	}
 
-	WebcfgDebug("Proceed to generateBlob\n");
+	/*WebcfgDebug("Proceed to generateBlob\n");
 	if(generateBlob() == WEBCFG_SUCCESS)
 	{
 		blob_data = get_DB_BLOB_base64(&blob_len);
@@ -652,11 +655,10 @@ WEBCFG_STATUS processMsgpackSubdoc(multipart_t *mp, char *transaction_id)
 	else
 	{
 		WebcfgError("Failed in Blob generation\n");
-	}
+	}*/
 
 	return rv;
 }
-
 /*----------------------------------------------------------------------------*/
 /*                             Internal functions                             */
 /*----------------------------------------------------------------------------*/

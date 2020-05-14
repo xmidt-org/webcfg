@@ -51,4 +51,5 @@ void initEventHandlingTask();
 void processWebcfgEvents();
 
 void webcfgCallback(char *Info, void* user_data);
+WEBCFG_STATUS retryEventSubdoc(char *eventDoc);
 #endif
