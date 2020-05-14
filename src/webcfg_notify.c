@@ -68,7 +68,7 @@ void initWebConfigNotifyTask()
 
 }
 
-void addWebConfgNotifyMsg(char *docname, uint32_t version, char *status, char *error_details, char *transaction_uuid)
+void addWebConfgNotifyMsg(char *docname, uint32_t version, char *status, char *error_details, char *transaction_uuid, uint32_t timeout)
 {
 	notify_params_t *args = NULL;
 
@@ -88,6 +88,9 @@ void addWebConfgNotifyMsg(char *docname, uint32_t version, char *status, char *e
 			args->application_status = strdup(status);
 		}
 
+		args->timeout = timeout;
+		WebcfgInfo("args->timeout is %lu\n", (long)args->timeout);
+
 		if(error_details != NULL)
 		{
 			args->error_details = strdup(error_details);
@@ -105,7 +108,7 @@ void addWebConfgNotifyMsg(char *docname, uint32_t version, char *status, char *e
 			args->transaction_uuid = strdup(transaction_uuid);
 		}
 
-		WebcfgDebug("args->name:%s,args->application_status:%s,args->error_details:%s,args->version:%s,args->transaction_uuid:%s\n",args->name,args->application_status, args->error_details, args->version, args->transaction_uuid );
+		WebcfgInfo("args->name:%s,args->application_status:%s,args->timeout:%lu,args->error_details:%s,args->version:%s,args->transaction_uuid:%s\n",args->name,args->application_status, (long)args->timeout, args->error_details, args->version, args->transaction_uuid );
 
 		args->next=NULL;
 
@@ -176,6 +179,12 @@ void* processWebConfgNotification()
 					{
 						cJSON_AddStringToObject(notifyPayload,"namespace", (NULL != msg->name && (strlen(msg->name)!=0)) ? msg->name : "unknown");
 						cJSON_AddStringToObject(notifyPayload,"application_status", (NULL != msg->application_status) ? msg->application_status : "unknown");
+						WebcfgInfo("msg->timeout is %lu\n", (long)msg->timeout);
+						if(msg->timeout !=0)
+						{
+							cJSON_AddNumberToObject(notifyPayload,"timeout", msg->timeout);
+							WebcfgInfo("Added timeout to notifyPayload\n");
+						}
 						if((msg->error_details !=NULL) && (strcmp(msg->error_details, "none")!=0))
 						{
 							cJSON_AddStringToObject(notifyPayload,"error_details", (NULL != msg->error_details) ? msg->error_details : "unknown");

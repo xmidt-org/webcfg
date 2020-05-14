@@ -259,14 +259,14 @@ void* processSubdocEvents()
 							WebcfgError("Failed in updateTmpList for NACK\n");
 						}
 						WebcfgDebug("get_global_transID is %s\n", get_global_transID());
-						addWebConfgNotifyMsg(eventParam->subdoc_name, eventParam->version, "failed", "doc_rejected", get_global_transID());
+						addWebConfgNotifyMsg(eventParam->subdoc_name, eventParam->version, "failed", "doc_rejected", get_global_transID(),eventParam->timeout);
 					}
 				}
 				else if ((eventParam->status !=NULL)&&(strcmp(eventParam->status, "EXPIRE")==0))
 				{
 					WebcfgInfo("EXPIRE event. doc apply timeout expired, need to retry\n");
 					WebcfgDebug("get_global_transID is %s\n", get_global_transID());
-					addWebConfgNotifyMsg(eventParam->subdoc_name, eventParam->version, "failed", "pending", get_global_transID());
+					addWebConfgNotifyMsg(eventParam->subdoc_name, eventParam->version, "failed", "pending", get_global_transID(),eventParam->timeout);
 					WebcfgInfo("retryEventSubdoc for EXPIRE case\n");
 					retryEventSubdoc(eventParam->subdoc_name);
 					if(rs == WEBCFG_SUCCESS)
@@ -282,11 +282,15 @@ void* processSubdocEvents()
 				{
 					WebcfgInfo("Timeout event. doc apply need time, start timer.\n");
 					startWebcfgTimer(eventParam->subdoc_name, eventParam->trans_id, eventParam->timeout);
-					WebcfgDebug("After startWebcfgTimer\n");
+					addWebConfgNotifyMsg(eventParam->subdoc_name, eventParam->version, NULL, NULL, get_global_transID(),eventParam->timeout);
+					WebcfgInfo("After timeout notification\n");
 				}
 				else
 				{
 					WebcfgInfo("Crash event. Component restarted after crash, re-send blob.\n");
+					addWebConfgNotifyMsg(eventParam->subdoc_name, eventParam->version, "pending", "process_crash", get_global_transID(),eventParam->timeout);
+					WebcfgInfo("After timeout notification\n");
+
 					//If version in event and DB are not matching, re-send blob to retry.
 					if(checkDBVersion(eventParam->subdoc_name, eventParam->version) !=WEBCFG_SUCCESS)
 					{
@@ -380,7 +384,7 @@ void createTimerExpiryEvent(char *docName, uint16_t transid)
 	char *expiry_event_data = NULL;
 	char data[128] = {0};
 
-	snprintf(data,sizeof(data),"%s,%hu,%u,EXPIRE,%u",docName,transid,335533,0); ////TODO: what is version in EXPIRE event?. is it blob version from mp struct ?
+	snprintf(data,sizeof(data),"%s,%hu,%u,EXPIRE,%u",docName,transid,0,0);
 	expiry_event_data = strdup(data);
 	WebcfgInfo("expiry_event_data formed %s\n", expiry_event_data);
 	if(expiry_event_data)
@@ -402,7 +406,7 @@ void sendSuccessNotification(char *name, uint32_t version)
 	uStatus = updateTmpList(name, version, "success", "none");
 	if(uStatus == WEBCFG_SUCCESS)
 	{
-		addWebConfgNotifyMsg(name, version, "success", "none", get_global_transID()); //TODO: Add new blob params if any.
+		addWebConfgNotifyMsg(name, version, "success", "none", get_global_transID(),0);
 
 		dStatus = deleteFromTmpList(name);
 		if(dStatus == WEBCFG_SUCCESS)
@@ -641,7 +645,6 @@ WEBCFG_STATUS retryEventSubdoc(char *eventDoc)
 	multipart_t *gmp = NULL;
 
 	gmp = get_global_mp();
-	WebcfgInfo("After get_global_mp\n");
 
 	if(gmp ==NULL)
 	{
@@ -651,12 +654,11 @@ WEBCFG_STATUS retryEventSubdoc(char *eventDoc)
 
 	for(m = 0 ; m<((int)gmp->entries_count)-1; m++)
 	{
-		WebcfgInfo("eventDoc %s\n", eventDoc);
-		WebcfgInfo("gmp->entries[%d].name_space %s\n", m, gmp->entries[m].name_space);
-		WebcfgInfo("gmp->entries[%d].etag %lu\n" ,m,  (long)gmp->entries[m].etag);
 		if(strcmp(gmp->entries[m].name_space, eventDoc) == 0)
 		{
-			WebcfgInfo("gmp->entries[%d].data %s\n" ,m,  gmp->entries[m].data);
+			WebcfgInfo("gmp->entries[%d].name_space %s\n", m, gmp->entries[m].name_space);
+			WebcfgInfo("gmp->entries[%d].etag %lu\n" ,m,  (long)gmp->entries[m].etag);
+			WebcfgDebug("gmp->entries[%d].data %s\n" ,m,  gmp->entries[m].data);
 			WebcfgInfo("gmp->entries[%d].data_size is %zu\n", m,gmp->entries[m].data_size);
 
 			WebcfgInfo("--------------decode root doc-------------\n");
@@ -675,17 +677,19 @@ WEBCFG_STATUS retryEventSubdoc(char *eventDoc)
 			                {
 						if(pm->entries[i].type == WDMP_BLOB)
 						{
-							char *temp_blob = NULL;
-							WebcfgInfo("B4 base64blobencoder\n");
-							temp_blob = base64blobencoder(pm->entries[i].value, pm->entries[i].value_size);
+							char *appended_doc = NULL;
+							WebcfgInfo("B4 webcfg_appendeddoc\n");
+							appended_doc = webcfg_appendeddoc( gmp->entries[m].name_space, gmp->entries[m].etag, pm->entries[i].value, pm->entries[i].value_size);
 							reqParam[i].name = strdup(pm->entries[i].name);
-							reqParam[i].value = strdup(temp_blob);
-							WEBCFG_FREE(temp_blob);
+							WebcfgInfo("appended_doc length: %zu\n", strlen(appended_doc));
+							reqParam[i].value = strdup(appended_doc);
 							reqParam[i].type = WDMP_BASE64;
+							WEBCFG_FREE(appended_doc);
+							WebcfgInfo("appended_doc done\n");
 						}
 						else
 						{
-							WebcfgError("blob type is wrong\n");
+							WebcfgError("blob type is incorrect\n");
 						}
 			                }
 					WebcfgInfo("Request:> param[%d].name = %s, type = %d\n",i,reqParam[i].name,reqParam[i].type);
@@ -710,16 +714,20 @@ WEBCFG_STATUS retryEventSubdoc(char *eventDoc)
 					WebcfgInfo("reqParam_destroy\n");
 					reqParam_destroy(paramCount, reqParam);
 				}
+				WebcfgInfo("webcfgparam_destroy\n");
+				webcfgparam_destroy( pm );
 			}
-			WebcfgInfo("webcfgparam_destroy\n");
-			webcfgparam_destroy( pm );
+			else
+			{
+				WebcfgError("--------------decode root doc failed-------------\n");
+			}
+			break;
 		}
 		else
 		{
-			WebcfgError("--------------decode root doc failed-------------\n");
+			WebcfgError("eventDoc %s not found in mp list\n", eventDoc);
 		}
 	}
-	WebcfgInfo("retryEventSubdoc rv %d\n", rv);
 	return rv;
 }
 
@@ -731,7 +739,7 @@ WEBCFG_STATUS checkDBVersion(char *docname, uint32_t version)
 	//Traverse through doc list & check version for required doc
 	while (NULL != webcfgdb)
 	{
-		WebcfgInfo("node is pointing to webcfgdb->name %s, docname %s, webcfgdb->version %lu, version %lu \n",webcfgdb->name, docname, (long)webcfgdb->version, (long)version);
+		WebcfgDebug("node is pointing to webcfgdb->name %s, docname %s, webcfgdb->version %lu, version %lu \n",webcfgdb->name, docname, (long)webcfgdb->version, (long)version);
 		if( strcmp(docname, webcfgdb->name) == 0)
 		{
 			if(webcfgdb->version == version)
