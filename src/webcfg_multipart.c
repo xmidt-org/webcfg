@@ -577,7 +577,7 @@ WEBCFG_STATUS processMsgpackSubdoc(char *transaction_id)
 				}
 				else
 				{
-					WebcfgInfo("setValues Failed. ccspStatus : %d\n", ccspStatus);
+					WebcfgError("setValues Failed. ccspStatus : %d\n", ccspStatus);
 
 					if(reqParam[0].type != WDMP_BASE64)
 					{

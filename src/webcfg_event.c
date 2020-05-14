@@ -24,6 +24,7 @@
 #include "webcfg_event.h"
 #include "webcfg_db.h"
 #include "webcfg_param.h"
+#include "webcfg_blob.h"
 /*----------------------------------------------------------------------------*/
 /*                                   Macros                                   */
 /*----------------------------------------------------------------------------*/
@@ -57,7 +58,6 @@ int checkTimerExpired (char **exp_doc);
 void createTimerExpiryEvent(char *docName, uint16_t transid);
 WEBCFG_STATUS updateTimerList(int status, char *docname, uint16_t transid, uint32_t timeout);
 WEBCFG_STATUS deleteFromTimerList(char* doc_name);
-uint16_t generateTransactionId(int min, int max);
 WEBCFG_STATUS checkDBVersion(char *docname, uint32_t version);
 /*----------------------------------------------------------------------------*/
 /*                             External Functions                             */
@@ -629,14 +629,6 @@ int checkTimerExpired (char **exp_doc)
 	return false;
 }
 
-uint16_t generateTransactionId(int min, int max)
-{
-    srand(time(0));
-    WebcfgInfo("In generateTransactionId\n");
-    return (uint16_t)((rand() %
-           (max - min + 1)) + min);
-}
-
 WEBCFG_STATUS retryEventSubdoc(char *eventDoc)
 {
 	int i =0, m=0;
@@ -649,17 +641,23 @@ WEBCFG_STATUS retryEventSubdoc(char *eventDoc)
 	multipart_t *gmp = NULL;
 
 	gmp = get_global_mp();
+	WebcfgInfo("After get_global_mp\n");
+
+	if(gmp ==NULL)
+	{
+		WebcfgError("Multipart mp cache is NULL\n");
+		return rv;
+	}
 
 	for(m = 0 ; m<((int)gmp->entries_count)-1; m++)
 	{
-		WebcfgInfo("eventDoc %s len %lu\n", eventDoc, strlen(eventDoc));
-		if(strncmp(gmp->entries[m].name_space, eventDoc, strlen(eventDoc) == 0))
+		WebcfgInfo("eventDoc %s\n", eventDoc);
+		WebcfgInfo("gmp->entries[%d].name_space %s\n", m, gmp->entries[m].name_space);
+		WebcfgInfo("gmp->entries[%d].etag %lu\n" ,m,  (long)gmp->entries[m].etag);
+		if(strcmp(gmp->entries[m].name_space, eventDoc) == 0)
 		{
-			WebcfgInfo("gmp->entries[%d].name_space %s\n", m, gmp->entries[m].name_space);
-			WebcfgInfo("gmp->entries[%d].etag %lu\n" ,m,  (long)gmp->entries[m].etag);
-			WebcfgDebug("gmp->entries[%d].data %s\n" ,m,  gmp->entries[m].data);
-
-			WebcfgDebug("gmp->entries[%d].data_size is %zu\n", m,gmp->entries[m].data_size);
+			WebcfgInfo("gmp->entries[%d].data %s\n" ,m,  gmp->entries[m].data);
+			WebcfgInfo("gmp->entries[%d].data_size is %zu\n", m,gmp->entries[m].data_size);
 
 			WebcfgInfo("--------------decode root doc-------------\n");
 			pm = webcfgparam_convert( gmp->entries[m].data, gmp->entries[m].data_size+1 );
@@ -705,13 +703,10 @@ WEBCFG_STATUS retryEventSubdoc(char *eventDoc)
 						WebcfgInfo("retryEventSubdoc setValues success. ccspStatus : %d\n", ccspStatus);
 						rv = WEBCFG_SUCCESS;
 					}
-				}
-				else
-				{
-					WebcfgInfo("retryEventSubdoc setValues Failed. ccspStatus : %d\n", ccspStatus);
-				}
-				if(NULL != reqParam)
-				{
+					else
+					{
+						WebcfgError("retryEventSubdoc setValues Failed. ccspStatus : %d\n", ccspStatus);
+					}
 					WebcfgInfo("reqParam_destroy\n");
 					reqParam_destroy(paramCount, reqParam);
 				}
