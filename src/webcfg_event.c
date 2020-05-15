@@ -267,15 +267,15 @@ void* processSubdocEvents()
 					WebcfgInfo("EXPIRE event. doc apply timeout expired, need to retry\n");
 					WebcfgDebug("get_global_transID is %s\n", get_global_transID());
 					addWebConfgNotifyMsg(eventParam->subdoc_name, eventParam->version, "failed", "pending", get_global_transID(),eventParam->timeout);
-					WebcfgInfo("retryEventSubdoc for EXPIRE case\n");
-					retryEventSubdoc(eventParam->subdoc_name);
+					WebcfgInfo("retryMultipartSubdoc for EXPIRE case\n");
+					retryMultipartSubdoc(eventParam->subdoc_name);
 					if(rs == WEBCFG_SUCCESS)
 					{
-						WebcfgInfo("retryEventSubdoc success\n");
+						WebcfgInfo("retryMultipartSubdoc success\n");
 					}
 					else
 					{
-						WebcfgError("retryEventSubdoc failed\n");
+						WebcfgError("retryMultipartSubdoc failed\n");
 					}
 				}
 				else if (eventParam->timeout != 0)
@@ -295,14 +295,14 @@ void* processSubdocEvents()
 					if(checkDBVersion(eventParam->subdoc_name, eventParam->version) !=WEBCFG_SUCCESS)
 					{
 						WebcfgInfo("setValues retry for subdoc_name %s\n", eventParam->subdoc_name);
-						rs = retryEventSubdoc(eventParam->subdoc_name);
+						rs = retryMultipartSubdoc(eventParam->subdoc_name);
 						if(rs == WEBCFG_SUCCESS)
 						{
-							WebcfgInfo("retryEventSubdoc success\n");
+							WebcfgInfo("retryMultipartSubdoc success\n");
 						}
 						else
 						{
-							WebcfgError("retryEventSubdoc failed\n");
+							WebcfgError("retryMultipartSubdoc failed\n");
 						}
 					}
 					else
@@ -633,7 +633,7 @@ int checkTimerExpired (char **exp_doc)
 	return false;
 }
 
-WEBCFG_STATUS retryEventSubdoc(char *eventDoc)
+WEBCFG_STATUS retryMultipartSubdoc(char *docName)
 {
 	int i =0, m=0;
 	WEBCFG_STATUS rv = WEBCFG_FAILURE;
@@ -654,7 +654,7 @@ WEBCFG_STATUS retryEventSubdoc(char *eventDoc)
 
 	for(m = 0 ; m<((int)gmp->entries_count)-1; m++)
 	{
-		if(strcmp(gmp->entries[m].name_space, eventDoc) == 0)
+		if(strcmp(gmp->entries[m].name_space, docName) == 0)
 		{
 			WebcfgInfo("gmp->entries[%d].name_space %s\n", m, gmp->entries[m].name_space);
 			WebcfgInfo("gmp->entries[%d].etag %lu\n" ,m,  (long)gmp->entries[m].etag);
@@ -700,16 +700,16 @@ WEBCFG_STATUS retryEventSubdoc(char *eventDoc)
 				WebcfgInfo("Proceed to setValues..\n");
 				if(reqParam !=NULL)
 				{
-					WebcfgInfo("retryEventSubdoc WebConfig SET Request\n");
+					WebcfgInfo("retryMultipartSubdoc WebConfig SET Request\n");
 					setValues(reqParam, paramCount, ATOMIC_SET_WEBCONFIG, NULL, NULL, &ret, &ccspStatus);
 					if(ret == WDMP_SUCCESS)
 					{
-						WebcfgInfo("retryEventSubdoc setValues success. ccspStatus : %d\n", ccspStatus);
+						WebcfgInfo("retryMultipartSubdoc setValues success. ccspStatus : %d\n", ccspStatus);
 						rv = WEBCFG_SUCCESS;
 					}
 					else
 					{
-						WebcfgError("retryEventSubdoc setValues Failed. ccspStatus : %d\n", ccspStatus);
+						WebcfgError("retryMultipartSubdoc setValues Failed. ccspStatus : %d\n", ccspStatus);
 					}
 					WebcfgInfo("reqParam_destroy\n");
 					reqParam_destroy(paramCount, reqParam);
@@ -725,7 +725,7 @@ WEBCFG_STATUS retryEventSubdoc(char *eventDoc)
 		}
 		else
 		{
-			WebcfgError("eventDoc %s not found in mp list\n", eventDoc);
+			WebcfgError("docName %s not found in mp list\n", docName);
 		}
 	}
 	return rv;
