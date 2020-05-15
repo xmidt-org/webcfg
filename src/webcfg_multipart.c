@@ -508,7 +508,13 @@ WEBCFG_STATUS processMsgpackSubdoc(char *transaction_id)
 				{
 					WebcfgInfo("setValues success. ccspStatus : %d\n", ccspStatus);
 					WebcfgInfo("reqParam[0].type is %d WDMP_BASE64 %d\n", reqParam[0].type, WDMP_BASE64);
-					if(reqParam[0].type  != WDMP_BASE64)
+					if(reqParam[0].type  == WDMP_BASE64)
+					{
+						//If request type is BLOB, start event handler thread to process various error handling operations based on the events received from components.
+						WebcfgInfo("blob subdoc success, starting initEventHandlingTask\n");
+						initEventHandlingTask();
+					}
+					else
 					{
 						WebcfgInfo("scalar doc success\n");
 					WebcfgInfo("update doc status for %s\n", mp->entries[m].name_space);
@@ -520,7 +526,7 @@ WEBCFG_STATUS processMsgpackSubdoc(char *transaction_id)
 
 						//send success notification to cloud
 						WebcfgDebug("send notify for mp->entries[m].name_space %s\n", mp->entries[m].name_space);
-						addWebConfgNotifyMsg(mp->entries[m].name_space, mp->entries[m].etag, "success", "none", trans_id,0);
+						addWebConfgNotifyMsg(mp->entries[m].name_space, mp->entries[m].etag, "success", "none", trans_id,0, "status");
 						WebcfgDebug("deleteFromTmpList as doc is applied\n");
 						dStatus = deleteFromTmpList(mp->entries[m].name_space);
 						if(dStatus == WEBCFG_SUCCESS)
@@ -539,6 +545,8 @@ WEBCFG_STATUS processMsgpackSubdoc(char *transaction_id)
 					}
 					checkDBList(mp->entries[m].name_space,mp->entries[m].etag);
 					}
+
+
 					success_count++;
 
 					WebcfgDebug("The mp->entries_count %d\n",(int)mp->entries_count);
@@ -588,12 +596,12 @@ WEBCFG_STATUS processMsgpackSubdoc(char *transaction_id)
 					{
 						WebcfgInfo("ccspStatus is crash %d\n", CCSP_CRASH_STATUS_CODE);
 						uStatus = updateTmpList(mp->entries[m].name_space, mp->entries[m].etag, "failed", "crash");
-						addWebConfgNotifyMsg(mp->entries[m].name_space, mp->entries[m].etag, "failed", "crash", trans_id,0);
+						addWebConfgNotifyMsg(mp->entries[m].name_space, mp->entries[m].etag, "failed", "crash", trans_id,0,"status");
 					}
 					else
 					{
 						uStatus = updateTmpList(mp->entries[m].name_space, mp->entries[m].etag, "failed", "doc_rejected");
-						addWebConfgNotifyMsg(mp->entries[m].name_space, mp->entries[m].etag, "failed", "doc_rejected", trans_id,0);
+						addWebConfgNotifyMsg(mp->entries[m].name_space, mp->entries[m].etag, "failed", "doc_rejected", trans_id,0,"status");
 					}
 
 					if(uStatus == WEBCFG_SUCCESS)

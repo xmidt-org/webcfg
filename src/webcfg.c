@@ -84,8 +84,6 @@ void *WebConfigMultipartTask(void *status)
 	//start webconfig notification thread.
 	initWebConfigNotifyTask();
 
-	initEventHandlingTask();
-
 	processWebcfgEvents();
 	WebcfgInfo("initDB %s\n", WEBCFG_DB_FILE);
 

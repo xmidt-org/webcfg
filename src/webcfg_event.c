@@ -259,14 +259,14 @@ void* processSubdocEvents()
 							WebcfgError("Failed in updateTmpList for NACK\n");
 						}
 						WebcfgDebug("get_global_transID is %s\n", get_global_transID());
-						addWebConfgNotifyMsg(eventParam->subdoc_name, eventParam->version, "failed", "doc_rejected", get_global_transID(),eventParam->timeout);
+						addWebConfgNotifyMsg(eventParam->subdoc_name, eventParam->version, "failed", "doc_rejected", get_global_transID(),eventParam->timeout, "status");
 					}
 				}
 				else if ((eventParam->status !=NULL)&&(strcmp(eventParam->status, "EXPIRE")==0))
 				{
 					WebcfgInfo("EXPIRE event. doc apply timeout expired, need to retry\n");
 					WebcfgDebug("get_global_transID is %s\n", get_global_transID());
-					addWebConfgNotifyMsg(eventParam->subdoc_name, eventParam->version, "failed", "pending", get_global_transID(),eventParam->timeout);
+					addWebConfgNotifyMsg(eventParam->subdoc_name, eventParam->version, "pending", "timer_expired", get_global_transID(),eventParam->timeout, "status");
 					WebcfgInfo("retryMultipartSubdoc for EXPIRE case\n");
 					retryMultipartSubdoc(eventParam->subdoc_name);
 					if(rs == WEBCFG_SUCCESS)
@@ -282,14 +282,13 @@ void* processSubdocEvents()
 				{
 					WebcfgInfo("Timeout event. doc apply need time, start timer.\n");
 					startWebcfgTimer(eventParam->subdoc_name, eventParam->trans_id, eventParam->timeout);
-					addWebConfgNotifyMsg(eventParam->subdoc_name, eventParam->version, NULL, NULL, get_global_transID(),eventParam->timeout);
+					addWebConfgNotifyMsg(eventParam->subdoc_name, eventParam->version, "pending", NULL, get_global_transID(),eventParam->timeout, "status");
 					WebcfgInfo("After timeout notification\n");
 				}
 				else
 				{
 					WebcfgInfo("Crash event. Component restarted after crash, re-send blob.\n");
-					addWebConfgNotifyMsg(eventParam->subdoc_name, eventParam->version, "pending", "process_crash", get_global_transID(),eventParam->timeout);
-					WebcfgInfo("After timeout notification\n");
+					addWebConfgNotifyMsg(eventParam->subdoc_name, eventParam->version, "pending", "process_crash", get_global_transID(),eventParam->timeout,"status");
 
 					//If version in event and DB are not matching, re-send blob to retry.
 					if(checkDBVersion(eventParam->subdoc_name, eventParam->version) !=WEBCFG_SUCCESS)
@@ -406,7 +405,7 @@ void sendSuccessNotification(char *name, uint32_t version)
 	uStatus = updateTmpList(name, version, "success", "none");
 	if(uStatus == WEBCFG_SUCCESS)
 	{
-		addWebConfgNotifyMsg(name, version, "success", "none", get_global_transID(),0);
+		addWebConfgNotifyMsg(name, version, "success", NULL, get_global_transID(),0, "ack");
 
 		dStatus = deleteFromTmpList(name);
 		if(dStatus == WEBCFG_SUCCESS)
