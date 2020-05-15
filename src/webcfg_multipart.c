@@ -579,9 +579,9 @@ WEBCFG_STATUS processMsgpackSubdoc(char *transaction_id)
 				{
 					WebcfgError("setValues Failed. ccspStatus : %d\n", ccspStatus);
 
-					if(reqParam[0].type != WDMP_BASE64)
-					{
-						WebcfgInfo("scalar doc failure\n");
+					set_doc_fail(1);
+					WebcfgInfo("the retry flag value is %d\n", get_doc_fail());
+
 					//Update error_details to tmp list and send failure notification to cloud.
 					uStatus = WEBCFG_FAILURE;
 					if(ccspStatus == CCSP_CRASH_STATUS_CODE)
@@ -604,7 +604,7 @@ WEBCFG_STATUS processMsgpackSubdoc(char *transaction_id)
 					{
 						WebcfgError("updateTmpList failed for error_details\n");
 					}
-					}
+					
 					print_tmp_doc_list(mp->entries_count);
 				}
 				if(NULL != reqParam)
@@ -1441,4 +1441,48 @@ void updateRootVersionToDB()
 	{
 		WebcfgError("Delete tmp queue root is failed\n");
 	}
+}
+
+void failedDocsRetry()
+{
+	webconfig_tmp_data_t *temp = NULL;
+	temp = get_global_tmp_node();
+        int i =0;
+	int j =0;
+	int count = 0;
+
+	while (NULL != temp)
+	{
+		if( strcmp(temp->status, "failed") == 0)
+		{
+			count++;
+			
+		}
+		temp= temp->next;
+	}
+
+	temp = get_global_tmp_node();
+        char * subdoc_names[count];
+	while (NULL != temp)
+	{
+		if( strcmp(temp->status, "failed") == 0)
+		{
+			subdoc_names[i] = temp->name;
+			
+		}
+		temp= temp->next;
+		i++;
+	}
+	for(j = 0; j<count ;j++)
+	{
+		if(retryMultipartSubdoc(subdoc_names[j]) == WEBCFG_SUCCESS)
+		{
+			WebcfgInfo("The subdoc %s set is success\n", subdoc_names[j]);
+		}
+		else
+		{
+			WebcfgInfo("The subdoc %s set is failed\n", subdoc_names[j]);
+		}
+	}
+	
 }

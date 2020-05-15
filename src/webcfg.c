@@ -77,8 +77,10 @@ void *WebConfigMultipartTask(void *status)
 	pthread_detach(pthread_self());
 	int ret = 0;
 	int rv=0;
+	int rt = 0;
 	int forced_sync=0;
         int Status = 0;
+	struct timespec ts;
 	Status = (unsigned long)status;
 
 	//start webconfig notification thread.
@@ -113,8 +115,15 @@ void *WebConfigMultipartTask(void *status)
 			pthread_mutex_unlock (&sync_mutex);
 			break;
 		}
-		WebcfgDebug("B4 sync_condition pthread_cond_wait\n");
-		pthread_cond_wait(&sync_condition, &sync_mutex);
+
+		clock_gettime(CLOCK_REALTIME, &ts);
+    		ts.tv_sec += 900;
+
+		WebcfgInfo("B4 sync_condition pthread_cond_timedwait\n");
+		rt = pthread_cond_timedwait(&sync_condition, &sync_mutex, &ts);
+		WebcfgInfo("The retry flag value is %d\n", get_doc_fail());
+		WebcfgInfo("The value of rt %d\n", rt);
+
 		rv =0;
 
 		if(!rv && !g_shutdown)
@@ -148,6 +157,14 @@ void *WebConfigMultipartTask(void *status)
 			WebcfgInfo("Received signal interrupt to RFC disable. g_shutdown is %d, proceeding to kill webconfig thread\n", g_shutdown);
 			pthread_mutex_unlock (&sync_mutex);
 			break;
+		}
+		else if(rt == ETIMEDOUT && get_doc_fail() == 1)
+		{
+			WebcfgInfo("Inside the timedout condition\n");
+			set_doc_fail(0);
+			failedDocsRetry();
+			WebcfgInfo("AFter the failedDocsRetry\n");
+			
 		}
 		pthread_mutex_unlock(&sync_mutex);
 
