@@ -206,7 +206,6 @@ void* processSubdocEvents()
 	event_params_t *eventParam = NULL;
 	int rv = WEBCFG_FAILURE;
 	WEBCFG_STATUS uStatus = WEBCFG_FAILURE;
-	WEBCFG_STATUS ts = WEBCFG_FAILURE;
 	WEBCFG_STATUS rs = WEBCFG_FAILURE;
 
 	while(1)
@@ -228,12 +227,12 @@ void* processSubdocEvents()
 				if (((eventParam->status !=NULL)&&(strcmp(eventParam->status, "ACK")==0)) && (eventParam->timeout == 0))
 				{
 					WebcfgInfo("ACK event. doc apply success, proceed to add to DB\n");
-					//check version for ack, nack is it required?
-					ts = stopWebcfgTimer(eventParam->subdoc_name, eventParam->trans_id);
-					if(ts == WEBCFG_SUCCESS)
+					//If version in event and DB are not matching, re-send blob to retry.
+					if(checkDBVersion(eventParam->subdoc_name, eventParam->version) !=WEBCFG_SUCCESS)
 					{
-						//add to DB, update tmp list and notification based on success ack.
+						stopWebcfgTimer(eventParam->subdoc_name, eventParam->trans_id);
 
+						//add to DB, update tmp list and notification based on success ack.
 						sendSuccessNotification(eventParam->subdoc_name, eventParam->version);
 						WebcfgInfo("AddToDB subdoc_name %s version %lu\n", eventParam->subdoc_name, (long)eventParam->version);
 						checkDBList(eventParam->subdoc_name,eventParam->version);
@@ -250,9 +249,9 @@ void* processSubdocEvents()
 				else if (((eventParam->status !=NULL)&&(strcmp(eventParam->status, "NACK")==0)) && (eventParam->timeout == 0))
 				{
 					WebcfgError("NACK event. doc apply failed for %s\n", eventParam->subdoc_name);
-					stopWebcfgTimer(eventParam->subdoc_name, eventParam->trans_id);
-					if(ts == WEBCFG_SUCCESS)
+					if(checkDBVersion(eventParam->subdoc_name, eventParam->version) !=WEBCFG_SUCCESS)
 					{
+						stopWebcfgTimer(eventParam->subdoc_name, eventParam->trans_id);
 						uStatus = updateTmpList(eventParam->subdoc_name, eventParam->version, "failed", "doc_rejected");
 						if(uStatus !=WEBCFG_SUCCESS)
 						{
@@ -282,7 +281,7 @@ void* processSubdocEvents()
 				{
 					WebcfgInfo("Timeout event. doc apply need time, start timer.\n");
 					startWebcfgTimer(eventParam->subdoc_name, eventParam->trans_id, eventParam->timeout);
-					addWebConfgNotifyMsg(eventParam->subdoc_name, eventParam->version, "pending", NULL, get_global_transID(),eventParam->timeout, "status");
+					addWebConfgNotifyMsg(eventParam->subdoc_name, eventParam->version, "pending", NULL, get_global_transID(),eventParam->timeout, "ack");
 					WebcfgInfo("After timeout notification\n");
 				}
 				else
@@ -405,7 +404,7 @@ void sendSuccessNotification(char *name, uint32_t version)
 	uStatus = updateTmpList(name, version, "success", "none");
 	if(uStatus == WEBCFG_SUCCESS)
 	{
-		addWebConfgNotifyMsg(name, version, "success", NULL, get_global_transID(),0, "ack");
+		addWebConfgNotifyMsg(name, version, "success", NULL, get_global_transID(),0, "status");
 
 		dStatus = deleteFromTmpList(name);
 		if(dStatus == WEBCFG_SUCCESS)
@@ -602,7 +601,6 @@ WEBCFG_STATUS stopWebcfgTimer(char *name, uint16_t trans_id)
 		}
 		temp= temp->next;
 	}
-	WebcfgError("stopWebcfgTimer failed\n");
 	return WEBCFG_FAILURE;
 }
 
