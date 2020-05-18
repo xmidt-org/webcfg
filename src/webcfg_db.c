@@ -369,6 +369,7 @@ WEBCFG_STATUS addToTmpList( multipart_t *mp)
 				new_node->version = get_global_root();
 				new_node->status = strdup("pending");
 				new_node->error_details = strdup("none");
+				new_node->retry_count = 0;
 			}
 			else
 			{
@@ -377,12 +378,14 @@ WEBCFG_STATUS addToTmpList( multipart_t *mp)
 				new_node->version = mp->entries[m-1].etag;
 				new_node->status = strdup("pending");
 				new_node->error_details = strdup("none");
+				new_node->retry_count = 0;
 			}
 
 			WebcfgDebug("new_node->name is %s\n", new_node->name);
 			WebcfgDebug("new_node->version is %lu\n", (long)new_node->version);
 			WebcfgDebug("new_node->status is %s\n", new_node->status);
 			WebcfgDebug("new_node->error_details is %s\n", new_node->error_details);
+			WebcfgInfo("new_node->retry_count is %d\n", new_node->retry_count);
 
 
 			new_node->next=NULL;
@@ -487,7 +490,7 @@ WEBCFG_STATUS updateTmpList(char *docname, uint32_t version, char *status, char 
 				temp->error_details = NULL;
 				temp->error_details = strdup(error_details);
 			}
-			WebcfgInfo("doc %s is updated to version %lu status %s error_details %s\n", docname, (long)temp->version, temp->status, temp->error_details);
+			WebcfgInfo("doc %s is updated to version %lu status %s error_details %s temp->retry_count %d\n", docname, (long)temp->version, temp->status, temp->error_details, temp->retry_count);
 			return WEBCFG_SUCCESS;
 		}
 		temp= temp->next;
@@ -557,7 +560,7 @@ void delete_tmp_doc_list()
     {
         temp = head;
         head = head->next;
-	WebcfgDebug("Delete node--> temp->name %s temp->version %lu temp->status %s temp->error_details %s\n",temp->name, (long)temp->version, temp->status, temp->error_details);
+	WebcfgInfo("Delete node--> temp->name %s temp->version %lu temp->status %s temp->error_details %s temp->retry_count %d\n",temp->name, (long)temp->version, temp->status, temp->error_details, temp->retry_count);
         free(temp);
 	temp = NULL;
     }

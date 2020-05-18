@@ -649,6 +649,12 @@ WEBCFG_STATUS retryMultipartSubdoc(char *docName)
 		return rv;
 	}
 
+	if(checkAndUpdateTmpRetryCount(docName) !=WEBCFG_SUCCESS)
+	{
+		WebcfgError("checkAndUpdateTmpRetryCount failed\n");
+		return rv;
+	}
+
 	for(m = 0 ; m<((int)gmp->entries_count)-1; m++)
 	{
 		if(strcmp(gmp->entries[m].name_space, docName) == 0)
@@ -746,6 +752,31 @@ WEBCFG_STATUS checkDBVersion(char *docname, uint32_t version)
 			}
 		}
 		webcfgdb= webcfgdb->next;
+	}
+	return WEBCFG_FAILURE;
+}
+
+WEBCFG_STATUS checkAndUpdateTmpRetryCount(char *docname)
+{
+	webconfig_tmp_data_t *temp = NULL;
+	temp = get_global_tmp_node();
+
+	//Traverse through doc list & check retry count reached max attempt.
+	while (NULL != temp)
+	{
+		WebcfgInfo("checkAndUpdateTmpRetryCount: temp->name %s, temp->version %lu, temp->retry_count %d\n",temp->name, (long)temp->version, temp->retry_count);
+		if( strcmp(docname, temp->name) == 0)
+		{
+			if(temp->retry_count >= MAX_APPLY_RETRY_COUNT)
+			{
+				WebcfgInfo("Apply retry_count %d has reached max limit for doc %s\n", temp->retry_count, docname);
+				return WEBCFG_FAILURE;
+			}
+			temp->retry_count++;
+			WebcfgInfo("temp->retry_count updated to %d for docname %s\n",temp->retry_count, docname);
+			return WEBCFG_SUCCESS;
+		}
+		temp= temp->next;
 	}
 	return WEBCFG_FAILURE;
 }
