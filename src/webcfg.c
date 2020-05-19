@@ -30,6 +30,7 @@
 #include <wdmp-c.h>
 #include <base64.h>
 #include "webcfg_db.h"
+#include "webcfg_event.h"
 /*----------------------------------------------------------------------------*/
 /*                                   Macros                                   */
 /*----------------------------------------------------------------------------*/
@@ -76,12 +77,19 @@ void *WebConfigMultipartTask(void *status)
 	pthread_detach(pthread_self());
 	int ret = 0;
 	int rv=0;
+	int rt = 0;
 	int forced_sync=0;
         int Status = 0;
+	int retry_flag = 0;
+	struct timespec ts;
 	Status = (unsigned long)status;
 
 	//start webconfig notification thread.
 	initWebConfigNotifyTask();
+
+	initEventHandlingTask();
+
+	processWebcfgEvents();
 	WebcfgInfo("initDB %s\n", WEBCFG_DB_FILE);
 
 	initDB(WEBCFG_DB_FILE);
@@ -108,9 +116,23 @@ void *WebConfigMultipartTask(void *status)
 			pthread_mutex_unlock (&sync_mutex);
 			break;
 		}
-		WebcfgDebug("B4 sync_condition pthread_cond_wait\n");
-		pthread_cond_wait(&sync_condition, &sync_mutex);
-		rv =0;
+
+		retry_flag = get_doc_fail();
+		WebcfgInfo("The retry flag value is %d\n", retry_flag);
+		if (retry_flag == 1)
+		{
+			clock_gettime(CLOCK_REALTIME, &ts);
+	    		ts.tv_sec += 900;
+
+			WebcfgInfo("B4 sync_condition pthread_cond_timedwait\n");
+			rt = pthread_cond_timedwait(&sync_condition, &sync_mutex, &ts);
+			WebcfgInfo("The retry flag value is %d\n", get_doc_fail());
+			WebcfgInfo("The value of rt %d\n", rt);
+		}
+		else 
+		{
+			pthread_cond_wait(&sync_condition, &sync_mutex);
+		}
 
 		if(!rv && !g_shutdown)
 		{
@@ -143,6 +165,14 @@ void *WebConfigMultipartTask(void *status)
 			WebcfgInfo("Received signal interrupt to RFC disable. g_shutdown is %d, proceeding to kill webconfig thread\n", g_shutdown);
 			pthread_mutex_unlock (&sync_mutex);
 			break;
+		}
+		else if(rt == ETIMEDOUT && get_doc_fail() == 1)
+		{
+			WebcfgInfo("Inside the timedout condition\n");
+			set_doc_fail(0);
+			failedDocsRetry();
+			WebcfgInfo("After the failedDocsRetry\n");
+			
 		}
 		pthread_mutex_unlock(&sync_mutex);
 

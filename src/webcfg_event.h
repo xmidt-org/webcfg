@@ -13,27 +13,43 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef WEBCFGNOTIFY_H
-#define WEBCFGNOTIFY_H
+#ifndef ERRHANDLE_H
+#define ERRHANDLE_H
 
 #include <stdint.h>
-#include "cJSON.h"
-#include "webcfg_log.h"
 #include "webcfg.h"
-#include "webcfg_db.h"
 
-typedef struct _notify_params
+typedef struct _event_data
 {
-	char * name;
-	char * application_status;
-	char * version;
-	char * error_details;
-	char * transaction_uuid;
-	uint32_t timeout;
-	struct _notify_params *next;
-} notify_params_t;
+	char * data;
+	struct _event_data *next;
+} event_data_t;
 
-void initWebConfigNotifyTask();
-pthread_t get_global_notify_threadid();
-void addWebConfgNotifyMsg(char *docname, uint32_t version, char *status, char *error_details, char *transaction_uuid, uint32_t timeout);
+typedef struct _event_params
+{
+	char *subdoc_name;
+	uint16_t trans_id;
+	uint32_t version;
+	char* status;
+	uint32_t timeout;
+	char *process_name;
+	uint16_t err_code;
+	char *failure_reason;
+} event_params_t;
+
+
+typedef struct expire_timer_list
+{
+	int running;
+	uint32_t timeout;
+	char *subdoc_name;
+	uint16_t txid;
+	struct expire_timer_list *next;
+} expire_timer_t;
+
+void initEventHandlingTask();
+void processWebcfgEvents();
+
+void webcfgCallback(char *Info, void* user_data);
+WEBCFG_STATUS retryMultipartSubdoc(char *docName);
 #endif

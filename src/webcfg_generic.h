@@ -73,4 +73,7 @@ void setValues(const param_t paramVal[], const unsigned int paramCount, const in
  */
 void sendNotification(char *payload, char *source, char *destination);
 
+typedef void (*WebConfigEventCallback)(char* Info, void *user_data);
+int registerWebcfgEvent(WebConfigEventCallback webcfgEventCB);
+
 #endif

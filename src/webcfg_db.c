@@ -57,6 +57,7 @@ static blob_t * webcfgdb_blob = NULL;
 static webconfig_db_data_t* webcfgdb_data = NULL;
 static int numOfMpDocs = 0;
 static int success_doc_count = 0;
+static int doc_fail_flag = 0;
 /*----------------------------------------------------------------------------*/
 /*                             Function Prototypes                            */
 /*----------------------------------------------------------------------------*/
@@ -139,7 +140,7 @@ WEBCFG_STATUS addNewDocEntry(size_t count)
      size_t webcfgdbPackSize = -1;
      void* data = NULL;
  
-     WebcfgDebug("size of subdoc %ld\n", (size_t)count);
+     WebcfgInfo("DB docs count %ld\n", (size_t)count);
      webcfgdbPackSize = webcfgdb_pack(webcfgdb_data, &data, count);
      WebcfgInfo("size of webcfgdbPackSize %ld\n", webcfgdbPackSize);
      WebcfgInfo("writeToDBFile %s\n", WEBCFG_DB_FILE);
@@ -336,6 +337,16 @@ int get_successDocCount()
     return success_doc_count;
 }
 
+int get_doc_fail()
+{
+    return doc_fail_flag;
+}
+
+void set_doc_fail( int value)
+{
+    doc_fail_flag = value;
+}
+
 blob_t * get_DB_BLOB()
 {
      return webcfgdb_blob;
@@ -455,7 +466,7 @@ WEBCFG_STATUS updateDBlist(char *docname, uint32_t version)
 		if( strcmp(docname, webcfgdb->name) == 0)
 		{
 			webcfgdb->version = version;
-			WebcfgDebug("webcfgdb %s is updated to version %lu\n", docname, (long)webcfgdb->version);
+			WebcfgInfo("webcfgdb %s is updated to version %lu\n", docname, (long)webcfgdb->version);
 			return WEBCFG_SUCCESS;
 		}
 		webcfgdb= webcfgdb->next;
@@ -506,7 +517,7 @@ WEBCFG_STATUS deleteFromTmpList(char* doc_name)
 		WebcfgError("Invalid value for doc\n");
 		return WEBCFG_FAILURE;
 	}
-	WebcfgDebug("doc to be deleted: %s\n", doc_name);
+	WebcfgInfo("doc to be deleted: %s\n", doc_name);
 
 	prev_node = NULL;
 	curr_node = g_head ;

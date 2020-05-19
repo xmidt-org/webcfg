@@ -113,6 +113,10 @@ int get_numOfMpDocs();
 
 int get_successDocCount();
 
+int get_doc_fail();
+
+void set_doc_fail( int value);
+
 char * get_DB_BLOB_base64();
 
 void checkDBList(char *docname, uint32_t version);

@@ -24,6 +24,7 @@
 #include "webcfg_db.h"
 #include "webcfg_notify.h"
 #include "webcfg_blob.h"
+#include "webcfg_event.h"
 #include <uuid/uuid.h>
 /*----------------------------------------------------------------------------*/
 /*                                   Macros                                   */
@@ -35,7 +36,6 @@
 #define WEBPA_READ_HEADER          "/etc/parodus/parodus_read_file.sh"
 #define WEBPA_CREATE_HEADER        "/etc/parodus/parodus_create_file.sh"
 #define CCSP_CRASH_STATUS_CODE      192
-#define ATOMIC_SET_WEBCONFIG	    3      
 /*----------------------------------------------------------------------------*/
 /*                               Data Structures                              */
 /*----------------------------------------------------------------------------*/
@@ -55,6 +55,17 @@ static char g_FirmwareVersion[64]={'\0'};
 static char g_bootTime[64]={'\0'};
 static char g_productClass[64]={'\0'};
 static char g_ModelName[64]={'\0'};
+static char g_transID[64]={'\0'};
+multipart_t *mp = NULL;
+char * get_global_transID(void)
+{
+    return g_transID;
+}
+
+multipart_t * get_global_mp(void)
+{
+    return mp;
+}
 /*----------------------------------------------------------------------------*/
 /*                             Function Prototypes                            */
 /*----------------------------------------------------------------------------*/
@@ -66,12 +77,11 @@ void parse_multipart(char *ptr, int no_of_bytes, multipartdocs_t *m);
 void multipart_destroy( multipart_t *m );
 void addToDBList(webconfig_db_data_t *webcfgdb);
 char* generate_trans_uuid();
-WEBCFG_STATUS processMsgpackSubdoc(multipart_t *mp, char *transaction_id);
+WEBCFG_STATUS processMsgpackSubdoc(char *transaction_id);
 void loadInitURLFromFile(char **url);
 static void get_webCfg_interface(char **interface);
 void get_root_version(uint32_t *rt_version);
 char *replaceMacWord(const char *s, const char *macW, const char *deviceMACW);
-void reqParam_destroy( int paramCnt, param_t *reqObj );
 /*----------------------------------------------------------------------------*/
 /*                             External Functions                             */
 /*----------------------------------------------------------------------------*/
@@ -288,7 +298,7 @@ WEBCFG_STATUS parseMultipartDocument(void *config_data, char *ct , size_t data_s
 	char *line_boundary = NULL;
 	char *last_line_boundary = NULL;
 	char *str_body = NULL;
-	multipart_t *mp = NULL;
+	//multipart_t *mp = NULL;
 	int boundary_len =0;
 	int count =0;
 	int status =0;
@@ -388,7 +398,7 @@ WEBCFG_STATUS parseMultipartDocument(void *config_data, char *ct , size_t data_s
 		WEBCFG_FREE(str_body);
 		WEBCFG_FREE(line_boundary);
 		WEBCFG_FREE(last_line_boundary);
-		status = processMsgpackSubdoc(mp, trans_uuid);
+		status = processMsgpackSubdoc(trans_uuid);
 		if(status ==0)
 		{
 			WebcfgInfo("processMsgpackSubdoc success\n");
@@ -407,7 +417,7 @@ WEBCFG_STATUS parseMultipartDocument(void *config_data, char *ct , size_t data_s
     }
 }
 
-WEBCFG_STATUS processMsgpackSubdoc(multipart_t *mp, char *transaction_id)
+WEBCFG_STATUS processMsgpackSubdoc(char *transaction_id)
 {
 	int i =0, m=0;
 	WEBCFG_STATUS rv = WEBCFG_FAILURE;
@@ -419,14 +429,17 @@ WEBCFG_STATUS processMsgpackSubdoc(multipart_t *mp, char *transaction_id)
 	int success_count = 0;
 	WEBCFG_STATUS addStatus =0;
 	WEBCFG_STATUS uStatus = 0, dStatus =0;
-	char * blob_data = NULL;
-        size_t blob_len = -1 ;
+	//char * blob_data = NULL;
+        //size_t blob_len = -1 ;
 	char * trans_id = NULL;
 
 	if(transaction_id !=NULL)
 	{
 		trans_id = strdup(transaction_id);
 		WEBCFG_FREE(transaction_id);
+
+		strncpy(g_transID, trans_id, sizeof(g_transID)-1);
+		WebcfgInfo("g_transID is %s\n", g_transID);
 	}
         
 	WebcfgDebug("Add mp entries to tmp list\n");
@@ -494,8 +507,11 @@ WEBCFG_STATUS processMsgpackSubdoc(multipart_t *mp, char *transaction_id)
 				if(ret == WDMP_SUCCESS)
 				{
 					WebcfgInfo("setValues success. ccspStatus : %d\n", ccspStatus);
-
-					WebcfgDebug("update doc status for %s\n", mp->entries[m].name_space);
+					WebcfgInfo("reqParam[0].type is %d WDMP_BASE64 %d\n", reqParam[0].type, WDMP_BASE64);
+					if(reqParam[0].type  != WDMP_BASE64)
+					{
+						WebcfgInfo("scalar doc success\n");
+					WebcfgInfo("update doc status for %s\n", mp->entries[m].name_space);
 					uStatus = updateTmpList(mp->entries[m].name_space, mp->entries[m].etag, "success", "none");
 					if(uStatus == WEBCFG_SUCCESS)
 					{
@@ -504,7 +520,7 @@ WEBCFG_STATUS processMsgpackSubdoc(multipart_t *mp, char *transaction_id)
 
 						//send success notification to cloud
 						WebcfgDebug("send notify for mp->entries[m].name_space %s\n", mp->entries[m].name_space);
-						addWebConfgNotifyMsg(mp->entries[m].name_space, mp->entries[m].etag, "success", "none", trans_id);
+						addWebConfgNotifyMsg(mp->entries[m].name_space, mp->entries[m].etag, "success", "none", trans_id,0);
 						WebcfgDebug("deleteFromTmpList as doc is applied\n");
 						dStatus = deleteFromTmpList(mp->entries[m].name_space);
 						if(dStatus == WEBCFG_SUCCESS)
@@ -522,7 +538,7 @@ WEBCFG_STATUS processMsgpackSubdoc(multipart_t *mp, char *transaction_id)
 						WebcfgError("updateTmpList failed\n");
 					}
 					checkDBList(mp->entries[m].name_space,mp->entries[m].etag);
-
+					}
 					success_count++;
 
 					WebcfgDebug("The mp->entries_count %d\n",(int)mp->entries_count);
@@ -561,30 +577,24 @@ WEBCFG_STATUS processMsgpackSubdoc(multipart_t *mp, char *transaction_id)
 				}
 				else
 				{
-					WebcfgInfo("setValues Failed. ccspStatus : %d\n", ccspStatus);
+					WebcfgError("setValues Failed. ccspStatus : %d\n", ccspStatus);
 
 					//Update error_details to tmp list and send failure notification to cloud.
 					uStatus = WEBCFG_FAILURE;
-					if(ccspStatus == CCSP_CRASH_STATUS_CODE)
+					if((ccspStatus == CCSP_CRASH_STATUS_CODE) || (ccspStatus == 204) || (ccspStatus == 191))
 					{
 						WebcfgInfo("ccspStatus is crash %d\n", CCSP_CRASH_STATUS_CODE);
-						uStatus = updateTmpList(mp->entries[m].name_space, mp->entries[m].etag, "failed", "crash");
-						addWebConfgNotifyMsg(mp->entries[m].name_space, mp->entries[m].etag, "failed", "crash", trans_id);
+						uStatus = updateTmpList(mp->entries[m].name_space, mp->entries[m].etag, "failed", "crash_retrying");
+						addWebConfgNotifyMsg(mp->entries[m].name_space, mp->entries[m].etag, "failed", "crash_retrying", trans_id,0);
+						set_doc_fail(1);
+						WebcfgInfo("the retry flag value is %d\n", get_doc_fail());
 					}
 					else
 					{
 						uStatus = updateTmpList(mp->entries[m].name_space, mp->entries[m].etag, "failed", "doc_rejected");
-						addWebConfgNotifyMsg(mp->entries[m].name_space, mp->entries[m].etag, "failed", "doc_rejected", trans_id);
+						addWebConfgNotifyMsg(mp->entries[m].name_space, mp->entries[m].etag, "failed", "doc_rejected", trans_id,0);
 					}
-
-					if(uStatus == WEBCFG_SUCCESS)
-					{
-						WebcfgDebug("updateTmpList success for error_details\n");
-					}
-					else
-					{
-						WebcfgError("updateTmpList failed for error_details\n");
-					}
+					
 					print_tmp_doc_list(mp->entries_count);
 				}
 				if(NULL != reqParam)
@@ -600,7 +610,7 @@ WEBCFG_STATUS processMsgpackSubdoc(multipart_t *mp, char *transaction_id)
 		}
 	}
 	WEBCFG_FREE(trans_id);
-	multipart_destroy(mp);
+	//multipart_destroy(mp);
         
 	if(success_count) //No DB update when all docs failed.
 	{
@@ -619,7 +629,7 @@ WEBCFG_STATUS processMsgpackSubdoc(multipart_t *mp, char *transaction_id)
 		addNewDocEntry(get_successDocCount());
 	}
 
-	WebcfgDebug("Proceed to generateBlob\n");
+	/*WebcfgDebug("Proceed to generateBlob\n");
 	if(generateBlob() == WEBCFG_SUCCESS)
 	{
 		blob_data = get_DB_BLOB_base64(&blob_len);
@@ -637,11 +647,10 @@ WEBCFG_STATUS processMsgpackSubdoc(multipart_t *mp, char *transaction_id)
 	else
 	{
 		WebcfgError("Failed in Blob generation\n");
-	}
+	}*/
 
 	return rv;
 }
-
 /*----------------------------------------------------------------------------*/
 /*                             Internal functions                             */
 /*----------------------------------------------------------------------------*/
@@ -1353,3 +1362,117 @@ void reqParam_destroy( int paramCnt, param_t *reqObj )
 	}
 }
 
+//Update root version to DB when tmp list has one element root.
+WEBCFG_STATUS checkRootUpdate()
+{
+	int count =0;
+	webconfig_tmp_data_t *temp = NULL;
+	temp = get_global_tmp_node();
+
+	while (NULL != temp)
+	{
+		if(count > 1)
+		{
+			WebcfgInfo("tmp list count is %d\n", count);
+			break;
+		}
+		WebcfgInfo("Root check ====> temp->name %s\n", temp->name);
+		if( strcmp("root", temp->name) != 0)
+		{
+			WebcfgInfo("Found root in tmp list\n");
+			count = count+1;
+		}
+		else
+		{
+			count = 1;
+		}
+		temp= temp->next;
+	}
+
+	if(count == 1)
+	{
+		WebcfgInfo("root DB update is required\n");
+		return WEBCFG_SUCCESS;
+	}
+	else
+	{
+		WebcfgInfo("root DB update is not required\n");
+	}
+	return WEBCFG_FAILURE;
+}
+
+//Update root version to DB.
+void updateRootVersionToDB()
+{
+	WEBCFG_STATUS dStatus =0;
+	char * temp = strdup(g_ETAG);
+	uint32_t version=0;
+
+	if(temp)
+	{
+		version = strtoul(temp,NULL,0);
+		WEBCFG_FREE(temp);
+	}
+	if(version != 0)
+	{
+		checkDBList("root",version);
+	}
+
+	WebcfgInfo("The Etag is %lu\n",(long)version );
+	//Delete tmp queue root as all docs are applied
+	WebcfgInfo("Delete tmp queue root as all docs are applied\n");
+	WebcfgInfo("root version to delete is %lu\n", (long)version);
+	dStatus = deleteFromTmpList("root");
+	if(dStatus == 0)
+	{
+		WebcfgInfo("Delete tmp queue root is success\n");
+	}
+	else
+	{
+		WebcfgError("Delete tmp queue root is failed\n");
+	}
+}
+
+void failedDocsRetry()
+{
+	webconfig_tmp_data_t *temp = NULL;
+	temp = get_global_tmp_node();
+        int i =0;
+	int j =0;
+	int count = 0;
+
+	while (NULL != temp)
+	{
+		if( strcmp(temp->status, "failed") == 0)
+		{
+			count++;
+			
+		}
+		temp= temp->next;
+	}
+
+	temp = get_global_tmp_node();
+        char * subdoc_names[count];
+	while (NULL != temp)
+	{
+		if( strcmp(temp->status, "failed") == 0)
+		{
+			subdoc_names[i] = temp->name;
+			
+		}
+		temp= temp->next;
+		i++;
+	}
+	for(j = 0; j<count ;j++)
+	{
+		if(retryMultipartSubdoc(subdoc_names[j]) == WEBCFG_SUCCESS)
+		{
+			WebcfgInfo("The subdoc %s set is success\n", subdoc_names[j]);
+		}
+		else
+		{
+			WebcfgInfo("The subdoc %s set is failed\n", subdoc_names[j]);
+		}
+	}
+	
+}
