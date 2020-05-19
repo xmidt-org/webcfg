@@ -89,7 +89,6 @@ void addWebConfgNotifyMsg(char *docname, uint32_t version, char *status, char *e
 		}
 
 		args->timeout = timeout;
-		WebcfgInfo("args->timeout is %lu\n", (long)args->timeout);
 
 		if(error_details != NULL)
 		{
@@ -113,7 +112,7 @@ void addWebConfgNotifyMsg(char *docname, uint32_t version, char *status, char *e
 			args->type = strdup(type);
 		}
 
-		WebcfgInfo("args->name:%s,args->application_status:%s,args->timeout:%lu,args->error_details:%s,args->version:%s,args->transaction_uuid:%s args->type:%s\n",args->name,args->application_status, (long)args->timeout, args->error_details, args->version, args->transaction_uuid, args->type );
+		WebcfgDebug("args->name:%s,args->application_status:%s,args->timeout:%lu,args->error_details:%s,args->version:%s,args->transaction_uuid:%s args->type:%s\n",args->name,args->application_status, (long)args->timeout, args->error_details, args->version, args->transaction_uuid, args->type );
 
 		args->next=NULL;
 
@@ -187,11 +186,10 @@ void* processWebConfgNotification()
 						{
 							cJSON_AddStringToObject(notifyPayload,"application_status", msg->application_status);
 						}
-						WebcfgInfo("msg->timeout is %lu\n", (long)msg->timeout);
+						WebcfgDebug("msg->timeout is %lu\n", (long)msg->timeout);
 						if(msg->timeout !=0)
 						{
 							cJSON_AddNumberToObject(notifyPayload,"timeout", msg->timeout);
-							WebcfgInfo("Added timeout to notifyPayload\n");
 						}
 						if((msg->error_details !=NULL) && (strcmp(msg->error_details, "none")!=0))
 						{
@@ -259,7 +257,6 @@ void free_notify_params_struct(notify_params_t *param)
 	if(param->type != NULL)
         {
             WEBCFG_FREE(param->type);
-	    WebcfgInfo("param->type free_notify_params_struct\n");
         }
         WEBCFG_FREE(param);
     }

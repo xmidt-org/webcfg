@@ -55,4 +55,5 @@ void processWebcfgEvents();
 void webcfgCallback(char *Info, void* user_data);
 WEBCFG_STATUS retryMultipartSubdoc(char *docName);
 WEBCFG_STATUS checkAndUpdateTmpRetryCount(char *docname);
+uint32_t getDocVersionFromTmpList(char *docname);
 #endif

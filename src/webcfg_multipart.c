@@ -299,7 +299,6 @@ WEBCFG_STATUS parseMultipartDocument(void *config_data, char *ct , size_t data_s
 	char *line_boundary = NULL;
 	char *last_line_boundary = NULL;
 	char *str_body = NULL;
-	//multipart_t *mp = NULL;
 	int boundary_len =0;
 	int count =0;
 	int status =0;
@@ -440,7 +439,7 @@ WEBCFG_STATUS processMsgpackSubdoc(char *transaction_id)
 		WEBCFG_FREE(transaction_id);
 
 		strncpy(g_transID, trans_id, sizeof(g_transID)-1);
-		WebcfgInfo("g_transID is %s\n", g_transID);
+		WebcfgDebug("g_transID is %s\n", g_transID);
 	}
         
 	WebcfgDebug("Add mp entries to tmp list\n");
@@ -510,7 +509,7 @@ WEBCFG_STATUS processMsgpackSubdoc(char *transaction_id)
 					if(ret == WDMP_SUCCESS)
 					{
 						WebcfgInfo("setValues success. ccspStatus : %d\n", ccspStatus);
-						WebcfgInfo("reqParam[0].type is %d WDMP_BASE64 %d\n", reqParam[0].type, WDMP_BASE64);
+						WebcfgDebug("reqParam[0].type is %d WDMP_BASE64 %d\n", reqParam[0].type, WDMP_BASE64);
 						if(reqParam[0].type  == WDMP_BASE64)
 						{
 							//If request type is BLOB, start event handler thread to process various error handling operations based on the events received from components.
@@ -518,13 +517,14 @@ WEBCFG_STATUS processMsgpackSubdoc(char *transaction_id)
 							{
 								WebcfgInfo("blob subdoc success, starting initEventHandlingTask\n");
 								initEventHandlingTask();
+								processWebcfgEvents();
 								eventFlag = 1;
 							}
 						}
 						else
 						{
-							WebcfgInfo("scalar doc success\n");
-						WebcfgInfo("update doc status for %s\n", mp->entries[m].name_space);
+							WebcfgDebug("scalar doc success\n");
+						WebcfgDebug("update doc status for %s\n", mp->entries[m].name_space);
 						uStatus = updateTmpList(mp->entries[m].name_space, mp->entries[m].etag, "success", "none");
 						if(uStatus == WEBCFG_SUCCESS)
 						{
@@ -1404,13 +1404,13 @@ WEBCFG_STATUS checkRootUpdate()
 	{
 		if(count > 1)
 		{
-			WebcfgInfo("tmp list count is %d\n", count);
+			WebcfgDebug("tmp list count is %d\n", count);
 			break;
 		}
-		WebcfgInfo("Root check ====> temp->name %s\n", temp->name);
+		WebcfgDebug("Root check ====> temp->name %s\n", temp->name);
 		if( strcmp("root", temp->name) != 0)
 		{
-			WebcfgInfo("Found root in tmp list\n");
+			WebcfgDebug("Found root in tmp list\n");
 			count = count+1;
 		}
 		else
