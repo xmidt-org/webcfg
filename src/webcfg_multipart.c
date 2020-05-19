@@ -57,6 +57,7 @@ static char g_productClass[64]={'\0'};
 static char g_ModelName[64]={'\0'};
 static char g_transID[64]={'\0'};
 multipart_t *mp = NULL;
+static int eventFlag = 0;
 char * get_global_transID(void)
 {
     return g_transID;
@@ -298,7 +299,6 @@ WEBCFG_STATUS parseMultipartDocument(void *config_data, char *ct , size_t data_s
 	char *line_boundary = NULL;
 	char *last_line_boundary = NULL;
 	char *str_body = NULL;
-	//multipart_t *mp = NULL;
 	int boundary_len =0;
 	int count =0;
 	int status =0;
@@ -439,7 +439,7 @@ WEBCFG_STATUS processMsgpackSubdoc(char *transaction_id)
 		WEBCFG_FREE(transaction_id);
 
 		strncpy(g_transID, trans_id, sizeof(g_transID)-1);
-		WebcfgInfo("g_transID is %s\n", g_transID);
+		WebcfgDebug("g_transID is %s\n", g_transID);
 	}
         
 	WebcfgDebug("Add mp entries to tmp list\n");
@@ -502,101 +502,122 @@ WEBCFG_STATUS processMsgpackSubdoc(char *transaction_id)
 			WebcfgDebug("Proceed to setValues..\n");
 			if(reqParam !=NULL)
 			{
-				WebcfgInfo("WebConfig SET Request\n");
-				setValues(reqParam, paramCount, ATOMIC_SET_WEBCONFIG, NULL, NULL, &ret, &ccspStatus);
-				if(ret == WDMP_SUCCESS)
+				if((checkAndUpdateTmpRetryCount(mp->entries[m].name_space))== WEBCFG_SUCCESS)
 				{
-					WebcfgInfo("setValues success. ccspStatus : %d\n", ccspStatus);
-					WebcfgInfo("reqParam[0].type is %d WDMP_BASE64 %d\n", reqParam[0].type, WDMP_BASE64);
-					if(reqParam[0].type  != WDMP_BASE64)
+					WebcfgInfo("WebConfig SET Request\n");
+					setValues(reqParam, paramCount, ATOMIC_SET_WEBCONFIG, NULL, NULL, &ret, &ccspStatus);
+					if(ret == WDMP_SUCCESS)
 					{
-						WebcfgInfo("scalar doc success\n");
-					WebcfgInfo("update doc status for %s\n", mp->entries[m].name_space);
-					uStatus = updateTmpList(mp->entries[m].name_space, mp->entries[m].etag, "success", "none");
-					if(uStatus == WEBCFG_SUCCESS)
-					{
-						//print_tmp_doc_list(mp->entries_count);
-						WebcfgDebug("updateTmpList success\n");
-
-						//send success notification to cloud
-						WebcfgDebug("send notify for mp->entries[m].name_space %s\n", mp->entries[m].name_space);
-						addWebConfgNotifyMsg(mp->entries[m].name_space, mp->entries[m].etag, "success", "none", trans_id,0);
-						WebcfgDebug("deleteFromTmpList as doc is applied\n");
-						dStatus = deleteFromTmpList(mp->entries[m].name_space);
-						if(dStatus == WEBCFG_SUCCESS)
+						WebcfgInfo("setValues success. ccspStatus : %d\n", ccspStatus);
+						WebcfgDebug("reqParam[0].type is %d WDMP_BASE64 %d\n", reqParam[0].type, WDMP_BASE64);
+						if(reqParam[0].type  == WDMP_BASE64)
 						{
-							WebcfgDebug("deleteFromTmpList success\n");
-							//print_tmp_doc_list(mp->entries_count);
+							//If request type is BLOB, start event handler thread to process various error handling operations based on the events received from components.
+							if(eventFlag == 0)
+							{
+								WebcfgInfo("blob subdoc success, starting initEventHandlingTask\n");
+								initEventHandlingTask();
+								processWebcfgEvents();
+								eventFlag = 1;
+							}
 						}
 						else
 						{
-							WebcfgError("deleteFromTmpList failed\n");
+							WebcfgDebug("scalar doc success\n");
+						WebcfgDebug("update doc status for %s\n", mp->entries[m].name_space);
+						uStatus = updateTmpList(mp->entries[m].name_space, mp->entries[m].etag, "success", "none");
+						if(uStatus == WEBCFG_SUCCESS)
+						{
+							//print_tmp_doc_list(mp->entries_count);
+							WebcfgDebug("updateTmpList success\n");
+
+							//send success notification to cloud
+							WebcfgDebug("send notify for mp->entries[m].name_space %s\n", mp->entries[m].name_space);
+							addWebConfgNotifyMsg(mp->entries[m].name_space, mp->entries[m].etag, "success", "none", trans_id,0, "status");
+							WebcfgDebug("deleteFromTmpList as doc is applied\n");
+							dStatus = deleteFromTmpList(mp->entries[m].name_space);
+							if(dStatus == WEBCFG_SUCCESS)
+							{
+								WebcfgDebug("deleteFromTmpList success\n");
+								//print_tmp_doc_list(mp->entries_count);
+							}
+							else
+							{
+								WebcfgError("deleteFromTmpList failed\n");
+							}
+						}
+						else
+						{
+							WebcfgError("updateTmpList failed\n");
+						}
+						checkDBList(mp->entries[m].name_space,mp->entries[m].etag);
+						}
+
+
+						success_count++;
+
+						WebcfgDebug("The mp->entries_count %d\n",(int)mp->entries_count);
+						WebcfgDebug("The count %d\n",success_count);
+						if(success_count ==(int) mp->entries_count-1)
+						{
+							char * temp = strdup(g_ETAG);
+							uint32_t version=0;
+							if(temp)
+							{
+								version = strtoul(temp,NULL,0);
+								WEBCFG_FREE(temp);
+							}
+							if(version != 0)
+							{
+								checkDBList("root",version);
+								success_count++;
+							}
+
+							WebcfgInfo("The Etag is %lu\n",(long)version );
+							//Delete tmp queue root as all docs are applied
+							WebcfgInfo("Delete tmp queue root as all docs are applied\n");
+							WebcfgDebug("root version to delete is %lu\n", (long)version);
+							dStatus = deleteFromTmpList("root");
+							if(dStatus == 0)
+							{
+								WebcfgDebug("Delete tmp queue root is success\n");
+							}
+							else
+							{
+								WebcfgError("Delete tmp queue root is failed\n");
+							}
+							WebcfgDebug("processMsgpackSubdoc is success as all the docs are applied\n");
+							rv = WEBCFG_SUCCESS;
 						}
 					}
 					else
 					{
-						WebcfgError("updateTmpList failed\n");
-					}
-					checkDBList(mp->entries[m].name_space,mp->entries[m].etag);
-					}
-					success_count++;
+						WebcfgError("setValues Failed. ccspStatus : %d\n", ccspStatus);
 
-					WebcfgDebug("The mp->entries_count %d\n",(int)mp->entries_count);
-					WebcfgDebug("The count %d\n",success_count);
-					if(success_count ==(int) mp->entries_count-1)
-					{
-						char * temp = strdup(g_ETAG);
-						uint32_t version=0;
-						if(temp)
+						//Update error_details to tmp list and send failure notification to cloud.
+						uStatus = WEBCFG_FAILURE;
+						if((ccspStatus == CCSP_CRASH_STATUS_CODE) || (ccspStatus == 204) || (ccspStatus == 191))
 						{
-							version = strtoul(temp,NULL,0);
-							WEBCFG_FREE(temp);
-						}
-						if(version != 0)
-						{
-							checkDBList("root",version);
-                        				success_count++;
-						}
-
-						WebcfgInfo("The Etag is %lu\n",(long)version );
-						//Delete tmp queue root as all docs are applied
-						WebcfgInfo("Delete tmp queue root as all docs are applied\n");
-						WebcfgDebug("root version to delete is %lu\n", (long)version);
-						dStatus = deleteFromTmpList("root");
-						if(dStatus == 0)
-						{
-							WebcfgDebug("Delete tmp queue root is success\n");
+							WebcfgInfo("ccspStatus is crash %d\n", CCSP_CRASH_STATUS_CODE);
+							uStatus = updateTmpList(mp->entries[m].name_space, mp->entries[m].etag, "failed", "crash_retrying");
+							addWebConfgNotifyMsg(mp->entries[m].name_space, mp->entries[m].etag, "failed", "crash_retrying", trans_id,0, "status");
+							set_doc_fail(1);
+							WebcfgInfo("the retry flag value is %d\n", get_doc_fail());
 						}
 						else
 						{
-							WebcfgError("Delete tmp queue root is failed\n");
+							uStatus = updateTmpList(mp->entries[m].name_space, mp->entries[m].etag, "failed", "doc_rejected");
+							addWebConfgNotifyMsg(mp->entries[m].name_space, mp->entries[m].etag, "failed", "doc_rejected", trans_id,0, "status");
 						}
-						WebcfgDebug("processMsgpackSubdoc is success as all the docs are applied\n");
-						rv = WEBCFG_SUCCESS;
+						
+						print_tmp_doc_list(mp->entries_count);
 					}
 				}
 				else
 				{
-					WebcfgError("setValues Failed. ccspStatus : %d\n", ccspStatus);
-
-					//Update error_details to tmp list and send failure notification to cloud.
-					uStatus = WEBCFG_FAILURE;
-					if((ccspStatus == CCSP_CRASH_STATUS_CODE) || (ccspStatus == 204) || (ccspStatus == 191))
-					{
-						WebcfgInfo("ccspStatus is crash %d\n", CCSP_CRASH_STATUS_CODE);
-						uStatus = updateTmpList(mp->entries[m].name_space, mp->entries[m].etag, "failed", "crash_retrying");
-						addWebConfgNotifyMsg(mp->entries[m].name_space, mp->entries[m].etag, "failed", "crash_retrying", trans_id,0);
-						set_doc_fail(1);
-						WebcfgInfo("the retry flag value is %d\n", get_doc_fail());
-					}
-					else
-					{
-						uStatus = updateTmpList(mp->entries[m].name_space, mp->entries[m].etag, "failed", "doc_rejected");
-						addWebConfgNotifyMsg(mp->entries[m].name_space, mp->entries[m].etag, "failed", "doc_rejected", trans_id,0);
-					}
-					
-					print_tmp_doc_list(mp->entries_count);
+					WebcfgError("Update retry count failed for doc %s\n", mp->entries[m].name_space);
 				}
+
 				if(NULL != reqParam)
 				{
 					reqParam_destroy(paramCount, reqParam);
@@ -1373,13 +1394,13 @@ WEBCFG_STATUS checkRootUpdate()
 	{
 		if(count > 1)
 		{
-			WebcfgInfo("tmp list count is %d\n", count);
+			WebcfgDebug("tmp list count is %d\n", count);
 			break;
 		}
-		WebcfgInfo("Root check ====> temp->name %s\n", temp->name);
+		WebcfgDebug("Root check ====> temp->name %s\n", temp->name);
 		if( strcmp("root", temp->name) != 0)
 		{
-			WebcfgInfo("Found root in tmp list\n");
+			WebcfgDebug("Found root in tmp list\n");
 			count = count+1;
 		}
 		else

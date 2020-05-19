@@ -19,6 +19,8 @@
 #include <stdint.h>
 #include "webcfg.h"
 
+#define MAX_APPLY_RETRY_COUNT 3
+
 typedef struct _event_data
 {
 	char * data;
@@ -52,4 +54,6 @@ void processWebcfgEvents();
 
 void webcfgCallback(char *Info, void* user_data);
 WEBCFG_STATUS retryMultipartSubdoc(char *docName);
+WEBCFG_STATUS checkAndUpdateTmpRetryCount(char *docname);
+uint32_t getDocVersionFromTmpList(char *docname);
 #endif

@@ -30,7 +30,6 @@
 #include <wdmp-c.h>
 #include <base64.h>
 #include "webcfg_db.h"
-#include "webcfg_event.h"
 /*----------------------------------------------------------------------------*/
 /*                                   Macros                                   */
 /*----------------------------------------------------------------------------*/
@@ -86,10 +85,6 @@ void *WebConfigMultipartTask(void *status)
 
 	//start webconfig notification thread.
 	initWebConfigNotifyTask();
-
-	initEventHandlingTask();
-
-	processWebcfgEvents();
 	WebcfgInfo("initDB %s\n", WEBCFG_DB_FILE);
 
 	initDB(WEBCFG_DB_FILE);
@@ -134,7 +129,15 @@ void *WebConfigMultipartTask(void *status)
 			pthread_cond_wait(&sync_condition, &sync_mutex);
 		}
 
-		if(!rv && !g_shutdown)
+		if(rt == ETIMEDOUT && get_doc_fail() == 1)
+		{
+			WebcfgInfo("Inside the timedout condition\n");
+			set_doc_fail(0);
+			failedDocsRetry();
+			WebcfgInfo("After the failedDocsRetry\n");
+			rt=0;			
+		}
+		else if(!rv && !g_shutdown)
 		{
 			char *ForceSyncDoc = NULL;
 			char* ForceSyncTransID = NULL;
@@ -166,14 +169,7 @@ void *WebConfigMultipartTask(void *status)
 			pthread_mutex_unlock (&sync_mutex);
 			break;
 		}
-		else if(rt == ETIMEDOUT && get_doc_fail() == 1)
-		{
-			WebcfgInfo("Inside the timedout condition\n");
-			set_doc_fail(0);
-			failedDocsRetry();
-			WebcfgInfo("After the failedDocsRetry\n");
-			
-		}
+		
 		pthread_mutex_unlock(&sync_mutex);
 
 	}
