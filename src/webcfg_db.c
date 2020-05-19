@@ -338,6 +338,11 @@ int get_successDocCount()
 
 blob_t * get_DB_BLOB()
 {
+     WebcfgInfo("Proceed to generateBlob\n");
+     if(generateBlob() != WEBCFG_SUCCESS)
+     {
+	WebcfgError("Failed in Blob generation\n");
+     }
      return webcfgdb_blob;
 }
 
