@@ -42,6 +42,8 @@ typedef struct webconfig_tmp_data
         char * status;
 	char * error_details;
 	int retry_count;
+	uint16_t error_code;
+	uint16_t trans_id;
         struct webconfig_tmp_data *next;
 } webconfig_tmp_data_t;
 
@@ -61,7 +63,7 @@ typedef struct{
         char * name;
         uint32_t version;
         char * status;
-	char * error_details;
+	char * error_details; //TODO: add uint16_t error_code; in blob.
 }blob_data_t;
 
 typedef struct{
@@ -104,7 +106,7 @@ WEBCFG_STATUS addToTmpList( multipart_t *mp);
 
 void addToDBList(webconfig_db_data_t *webcfgdb);
 
-WEBCFG_STATUS updateTmpList(char *docname, uint32_t version, char *status, char *error_details);
+WEBCFG_STATUS updateTmpList(char *docname, uint32_t version, char *status, char *error_details, uint16_t error_code, uint16_t trans_id, int retry);
 
 WEBCFG_STATUS deleteFromTmpList(char* doc_name);
 

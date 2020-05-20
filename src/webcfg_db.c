@@ -374,6 +374,8 @@ WEBCFG_STATUS addToTmpList( multipart_t *mp)
 				new_node->version = get_global_root();
 				new_node->status = strdup("pending");
 				new_node->error_details = strdup("none");
+				new_node->error_code = 0;
+				new_node->trans_id = 0;
 				new_node->retry_count = 0;
 			}
 			else
@@ -383,6 +385,8 @@ WEBCFG_STATUS addToTmpList( multipart_t *mp)
 				new_node->version = mp->entries[m-1].etag;
 				new_node->status = strdup("pending");
 				new_node->error_details = strdup("none");
+				new_node->error_code = 0;
+				new_node->trans_id = 0;
 				new_node->retry_count = 0;
 			}
 
@@ -471,7 +475,7 @@ WEBCFG_STATUS updateDBlist(char *docname, uint32_t version)
 	return WEBCFG_FAILURE;
 }
 //update version, status for each doc
-WEBCFG_STATUS updateTmpList(char *docname, uint32_t version, char *status, char *error_details)
+WEBCFG_STATUS updateTmpList(char *docname, uint32_t version, char *status, char *error_details, uint16_t error_code, uint16_t trans_id, int retry)
 {
 	webconfig_tmp_data_t *temp = NULL;
 	temp = get_global_tmp_node();
@@ -495,9 +499,15 @@ WEBCFG_STATUS updateTmpList(char *docname, uint32_t version, char *status, char 
 				temp->error_details = NULL;
 				temp->error_details = strdup(error_details);
 			}
-			WebcfgInfo("updateTmpList: reset temp->retry_count\n");
-			temp->retry_count = 0;
-			WebcfgInfo("doc %s is updated to version %lu status %s error_details %s temp->retry_count %d\n", docname, (long)temp->version, temp->status, temp->error_details, temp->retry_count);
+			temp->error_code = error_code;
+			temp->trans_id = trans_id;
+			WebcfgInfo("updateTmpList: retry %d\n", retry);
+			if(!retry)
+			{
+				WebcfgInfo("updateTmpList: reset temp->retry_count\n");
+				temp->retry_count = 0;
+			}
+			WebcfgInfo("doc %s is updated to version %lu status %s error_details %s error_code %lu trans_id %lu temp->retry_count %d\n", docname, (long)temp->version, temp->status, temp->error_details, (long)temp->error_code, (long)temp->trans_id, temp->retry_count);
 			return WEBCFG_SUCCESS;
 		}
 		temp= temp->next;
@@ -567,7 +577,7 @@ void delete_tmp_doc_list()
     {
         temp = head;
         head = head->next;
-	WebcfgDebug("Delete node--> temp->name %s temp->version %lu temp->status %s temp->error_details %s temp->retry_count %d\n",temp->name, (long)temp->version, temp->status, temp->error_details, temp->retry_count);
+	WebcfgDebug("Delete node--> temp->name %s temp->version %lu temp->status %s temp->error_details %s temp->error_code %lu temp->trans_id %lu temp->retry_count %d\n",temp->name, (long)temp->version, temp->status, temp->error_details, (long)temp->error_code, (long)temp->trans_id, temp->retry_count);
         free(temp);
 	temp = NULL;
     }
