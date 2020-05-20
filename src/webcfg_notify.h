@@ -27,6 +27,7 @@ typedef struct _notify_params
 	char * name;
 	char * application_status;
 	char * version;
+	uint16_t error_code;
 	char * error_details;
 	char * transaction_uuid;
 	char * type;

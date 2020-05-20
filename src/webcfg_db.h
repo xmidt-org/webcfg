@@ -40,6 +40,7 @@ typedef struct webconfig_tmp_data
         char * name;
         uint32_t version;
         char * status;
+	uint16_t error_code;
 	char * error_details;
 	int retry_count;
         struct webconfig_tmp_data *next;

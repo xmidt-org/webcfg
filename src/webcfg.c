@@ -76,7 +76,6 @@ void *WebConfigMultipartTask(void *status)
 	pthread_detach(pthread_self());
 	int ret = 0;
 	int rv=0;
-	int rt = 0;
 	int forced_sync=0;
         int Status = 0;
 	int retry_flag = 0;
@@ -88,6 +87,9 @@ void *WebConfigMultipartTask(void *status)
 	WebcfgInfo("initDB %s\n", WEBCFG_DB_FILE);
 
 	initDB(WEBCFG_DB_FILE);
+
+	processWebconfgSync((int)Status);
+
 	while(1)
 	{
 		if(forced_sync)
@@ -97,10 +99,6 @@ void *WebConfigMultipartTask(void *status)
 			WebcfgDebug("reset forced_sync after sync\n");
 			forced_sync = 0;
 			setForceSync("", "", 0);
-		}
-		else
-		{
-			processWebconfgSync((int)Status);
 		}
 
 		pthread_mutex_lock (&sync_mutex);
@@ -120,22 +118,21 @@ void *WebConfigMultipartTask(void *status)
 	    		ts.tv_sec += 900;
 
 			WebcfgInfo("B4 sync_condition pthread_cond_timedwait\n");
-			rt = pthread_cond_timedwait(&sync_condition, &sync_mutex, &ts);
+			rv = pthread_cond_timedwait(&sync_condition, &sync_mutex, &ts);
 			WebcfgInfo("The retry flag value is %d\n", get_doc_fail());
-			WebcfgInfo("The value of rt %d\n", rt);
+			WebcfgInfo("The value of rv %d\n", rv);
 		}
 		else 
 		{
-			pthread_cond_wait(&sync_condition, &sync_mutex);
+			rv = pthread_cond_wait(&sync_condition, &sync_mutex);
 		}
 
-		if(rt == ETIMEDOUT && get_doc_fail() == 1)
+		if(rv == ETIMEDOUT && get_doc_fail() == 1)
 		{
 			WebcfgInfo("Inside the timedout condition\n");
 			set_doc_fail(0);
 			failedDocsRetry();
-			WebcfgInfo("After the failedDocsRetry\n");
-			rt=0;			
+			WebcfgInfo("After the failedDocsRetry\n");		
 		}
 		else if(!rv && !g_shutdown)
 		{

@@ -599,6 +599,7 @@ WEBCFG_STATUS processMsgpackSubdoc(char *transaction_id)
 						if((ccspStatus == CCSP_CRASH_STATUS_CODE) || (ccspStatus == 204) || (ccspStatus == 191))
 						{
 							WebcfgInfo("ccspStatus is crash %d\n", CCSP_CRASH_STATUS_CODE);
+							// add error_code in tmp using ccspStatus
 							uStatus = updateTmpList(mp->entries[m].name_space, mp->entries[m].etag, "failed", "crash_retrying");
 							addWebConfgNotifyMsg(mp->entries[m].name_space, mp->entries[m].etag, "failed", "crash_retrying", trans_id,0, "status");
 							set_doc_fail(1);
@@ -1464,36 +1465,17 @@ void failedDocsRetry()
 
 	while (NULL != temp)
 	{
-		if( strcmp(temp->status, "failed") == 0)
+		if((temp->error_code == CCSP_CRASH_STATUS_CODE) || (temp->error_code == 204) || (temp->error_code == 191))
 		{
-			count++;
-			
+			if(retryMultipartSubdoc(subdoc_names[j]) == WEBCFG_SUCCESS)
+			{
+				WebcfgInfo("The subdoc %s set is success\n", subdoc_names[j]);
+			}
+			else
+			{
+				WebcfgInfo("The subdoc %s set is failed\n", subdoc_names[j]);
+			}
 		}
 		temp= temp->next;
 	}
-
-	temp = get_global_tmp_node();
-        char * subdoc_names[count];
-	while (NULL != temp)
-	{
-		if( strcmp(temp->status, "failed") == 0)
-		{
-			subdoc_names[i] = temp->name;
-			
-		}
-		temp= temp->next;
-		i++;
-	}
-	for(j = 0; j<count ;j++)
-	{
-		if(retryMultipartSubdoc(subdoc_names[j]) == WEBCFG_SUCCESS)
-		{
-			WebcfgInfo("The subdoc %s set is success\n", subdoc_names[j]);
-		}
-		else
-		{
-			WebcfgInfo("The subdoc %s set is failed\n", subdoc_names[j]);
-		}
-	}
-	
 }

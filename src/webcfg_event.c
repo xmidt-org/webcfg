@@ -734,6 +734,14 @@ WEBCFG_STATUS retryMultipartSubdoc(char *docName)
 					else
 					{
 						WebcfgError("retryMultipartSubdoc setValues Failed. ccspStatus : %d\n", ccspStatus);
+						if((ccspStatus == CCSP_CRASH_STATUS_CODE) || (ccspStatus == 204) || (ccspStatus == 191))
+						{
+							WebcfgInfo("ccspStatus is crash %d\n", CCSP_CRASH_STATUS_CODE);
+							// update error_code with ccspStatus
+							//uStatus = updateTmpList(mp->entries[m].name_space, mp->entries[m].etag, "failed", "crash_retrying");
+							set_doc_fail(1);
+							WebcfgInfo("the retry flag value is %d\n", get_doc_fail());
+						}
 					}
 					WebcfgDebug("reqParam_destroy\n");
 					reqParam_destroy(paramCount, reqParam);
