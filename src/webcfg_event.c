@@ -207,7 +207,6 @@ void* processSubdocEvents()
 {
 	event_params_t *eventParam = NULL;
 	int rv = WEBCFG_FAILURE;
-	WEBCFG_STATUS uStatus = WEBCFG_FAILURE;
 	WEBCFG_STATUS rs = WEBCFG_FAILURE;
 	uint32_t docVersion = 0;
 	char err_details[512] = {0};
@@ -267,11 +266,7 @@ void* processSubdocEvents()
 							stopWebcfgTimer(eventParam->subdoc_name, eventParam->trans_id);
 							snprintf(err_details, sizeof(err_details),"NACK:%s,%s",((NULL != eventParam->process_name) ? eventParam->process_name : "unknown"), ((NULL != eventParam->failure_reason) ? eventParam->failure_reason : "unknown"));
 							WebcfgError("err_details : %s, err_code : %lu\n", err_details, (long) eventParam->err_code);
-							uStatus = updateTmpList(eventParam->subdoc_name, eventParam->version, "failed", err_details, eventParam->err_code, eventParam->trans_id, 0);
-							if(uStatus !=WEBCFG_SUCCESS)
-							{
-								WebcfgError("Failed in updateTmpList for NACK\n");
-							}
+							updateTmpList(eventParam->subdoc_name, eventParam->version, "failed", err_details, eventParam->err_code, eventParam->trans_id, 0);
 							WebcfgInfo("get_global_transID is %s\n", get_global_transID());
 							addWebConfgNotifyMsg(eventParam->subdoc_name, eventParam->version, "failed", err_details, get_global_transID(),eventParam->timeout, "status", eventParam->err_code);
 							WebcfgInfo("After NACK notify\n");
@@ -465,28 +460,9 @@ void createTimerExpiryEvent(char *docName, uint16_t transid)
 //Update Tmp list and send success notification to cloud .
 void sendSuccessNotification(char *name, uint32_t version, uint16_t txid)
 {
-	WEBCFG_STATUS uStatus=1, dStatus=1;
-
-	uStatus = updateTmpList(name, version, "success", "none", 100, txid, 0);
-	if(uStatus == WEBCFG_SUCCESS)
-	{
-		addWebConfgNotifyMsg(name, version, "success", NULL, get_global_transID(),0, "status",0);
-
-		dStatus = deleteFromTmpList(name);
-		if(dStatus == WEBCFG_SUCCESS)
-		{
-			WebcfgDebug("blob deleteFromTmpList success\n");
-		}
-		else
-		{
-			WebcfgError("blob deleteFromTmpList failed\n");
-		}
-	}
-	else
-	{
-		WebcfgError("blob updateTmpList failed\n");
-	}
-
+	updateTmpList(name, version, "success", "none", 100, txid, 0);
+	addWebConfgNotifyMsg(name, version, "success", NULL, get_global_transID(),0, "status",0);
+	deleteFromTmpList(name);
 }
 
 //start internal timer for required doc when timeout value is received
@@ -704,7 +680,6 @@ WEBCFG_STATUS retryMultipartSubdoc(char *docName)
 	WEBCFG_STATUS rv = WEBCFG_FAILURE;
 	param_t *reqParam = NULL;
 	WDMP_STATUS ret = WDMP_FAILURE;
-	WEBCFG_STATUS uStatus = WEBCFG_FAILURE;
 	int ccspStatus=0;
 	int paramCount = 0;
 	uint16_t doc_transId = 0;
@@ -779,15 +754,7 @@ WEBCFG_STATUS retryMultipartSubdoc(char *docName)
 					if(ret == WDMP_SUCCESS)
 					{
 						WebcfgInfo("retryMultipartSubdoc setValues success. ccspStatus : %d\n", ccspStatus);
-						uStatus = updateTmpList(gmp->entries[m].name_space, gmp->entries[m].etag, "pending", "failed_retrying", ccspStatus, doc_transId, 1); //TODO: error details mapping as per ccspStatus
-						if(uStatus == WEBCFG_SUCCESS)
-						{
-							WebcfgInfo("updateTmpList success during retry\n");
-						}
-						else
-						{
-							WebcfgError("updateTmpList failed during retry\n");
-						}
+						updateTmpList(gmp->entries[m].name_space, gmp->entries[m].etag, "pending", "failed_retrying", ccspStatus, doc_transId, 1); //TODO: error details mapping as per ccspStatus
 						rv = WEBCFG_SUCCESS;
 					}
 					else
@@ -796,28 +763,18 @@ WEBCFG_STATUS retryMultipartSubdoc(char *docName)
 						if((ccspStatus == 192) || (ccspStatus == 204) || (ccspStatus == 191))
 						{
 							WebcfgInfo("ccspStatus is crash %d\n", ccspStatus);
-							uStatus = updateTmpList(gmp->entries[m].name_space, gmp->entries[m].etag, "pending", "failed_retrying", ccspStatus, doc_transId, 1);
+							updateTmpList(gmp->entries[m].name_space, gmp->entries[m].etag, "pending", "failed_retrying", ccspStatus, doc_transId, 1);
 							set_doc_fail(1);
 							WebcfgInfo("the retry flag value is %d\n", get_doc_fail());
 						}
 						else
 						{
-							uStatus = updateTmpList(gmp->entries[m].name_space, gmp->entries[m].etag, "failed", "doc_rejected", ccspStatus, doc_transId, 0); //TODO: error details mapping as per webpa ccspStatus
+							updateTmpList(gmp->entries[m].name_space, gmp->entries[m].etag, "failed", "doc_rejected", ccspStatus, doc_transId, 0); //TODO: error details mapping as per webpa ccspStatus
 							//addWebConfgNotifyMsg(gmp->entries[m].name_space, gmp->entries[m].etag, "failed", "doc_rejected", doc_transId,0, "status", ccspStatus);
 						}
-						if(uStatus == WEBCFG_SUCCESS)
-						{
-							WebcfgInfo("updateTmpList success during retry\n");
-						}
-						else
-						{
-							WebcfgError("updateTmpList failed during retry\n");
-						}
 					}
-					WebcfgDebug("reqParam_destroy\n");
 					reqParam_destroy(paramCount, reqParam);
 				}
-				WebcfgDebug("webcfgparam_destroy\n");
 				webcfgparam_destroy( pm );
 			}
 			else

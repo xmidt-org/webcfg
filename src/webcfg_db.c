@@ -523,6 +523,7 @@ WEBCFG_STATUS updateTmpList(char *docname, uint32_t version, char *status, char 
 		}
 		temp= temp->next;
 	}
+	WebcfgError("updateTmpList failed as doc %s is not in tmp list\n", docname);
 	return WEBCFG_FAILURE;
 }
 
