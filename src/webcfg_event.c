@@ -321,6 +321,7 @@ void* processSubdocEvents()
 				else
 				{
 					WebcfgInfo("Crash event. Component restarted after crash, re-send blob.\n");
+					uint32_t tmpVersion = 0;
 					if(eventParam->version !=0)
 					{
 						docVersion = eventParam->version;
@@ -329,26 +330,68 @@ void* processSubdocEvents()
 					{
 						docVersion = getDocVersionFromTmpList(eventParam->subdoc_name);
 					}
-					WebcfgDebug("docVersion is %lu\n", (long) docVersion);
-					addWebConfgNotifyMsg(eventParam->subdoc_name, docVersion, "pending", "process_crash", get_global_transID(),eventParam->timeout,"status",0);//TODO: no notfn. Modify with tmp version chck.
+					WebcfgInfo("docVersion is %hu\n", docVersion);
 
-					//If version in event and DB are not matching, re-send blob to retry.
+					//If version in event and tmp are not matching, re-send blob to retry.
 					if(checkDBVersion(eventParam->subdoc_name, eventParam->version) !=WEBCFG_SUCCESS)
 					{
-						WebcfgInfo("retryMultipartSubdoc for CRASH case\n");
-						rs = retryMultipartSubdoc(eventParam->subdoc_name);
-						if(rs == WEBCFG_SUCCESS)
+						WebcfgInfo("DB and event version are not same, check tmp list\n");
+						tmpVersion = getDocVersionFromTmpList(eventParam->subdoc_name);
+						if(tmpVersion != eventParam->version)
 						{
-							WebcfgInfo("retryMultipartSubdoc success\n");
+							WebcfgInfo("tmp list has new version %hu for doc %s, retry\n", tmpVersion, eventParam->subdoc_name);
+							addWebConfgNotifyMsg(eventParam->subdoc_name, docVersion, "failed", "failed_retrying", get_global_transID(),eventParam->timeout,"status",0);
+							rs = retryMultipartSubdoc(eventParam->subdoc_name);
+							if(rs == WEBCFG_SUCCESS)
+							{
+								WebcfgInfo("retryMultipartSubdoc success\n");
+							}
+							else
+							{
+								WebcfgError("retryMultipartSubdoc failed\n");
+							}
 						}
 						else
 						{
-							WebcfgError("retryMultipartSubdoc failed\n");
+							//already in tmp latest version,send success notify, updateDB
+							WebcfgInfo("tmp version %hu same as event version %hu\n",tmpVersion, eventParam->version); 
+							sendSuccessNotification(eventParam->subdoc_name, eventParam->version, eventParam->trans_id);
+							WebcfgInfo("AddToDB subdoc_name %s version %lu\n", eventParam->subdoc_name, (long)eventParam->version);
+							checkDBList(eventParam->subdoc_name,eventParam->version);
+							WebcfgInfo("checkRootUpdate\n");
+							if(checkRootUpdate() == WEBCFG_SUCCESS)
+							{
+								WebcfgInfo("updateRootVersionToDB\n");
+								updateRootVersionToDB();
+							}
+							addNewDocEntry(get_successDocCount());
+							WebcfgInfo("After blob addNewDocEntry to DB\n");
 						}
 					}
 					else
 					{
-						WebcfgInfo("DB and event version are same, retry is not required\n");
+						WebcfgInfo("DB and event version are same, check tmp list\n");
+						tmpVersion = getDocVersionFromTmpList(eventParam->subdoc_name);
+						if(tmpVersion != eventParam->version)
+						{
+							WebcfgInfo("tmp list has new version %hu for doc %s, retry\n", tmpVersion, eventParam->subdoc_name);
+							addWebConfgNotifyMsg(eventParam->subdoc_name, docVersion, "failed", "failed_retrying", get_global_transID(),eventParam->timeout,"status",0);
+							//retry with latest tmp version
+							rs = retryMultipartSubdoc(eventParam->subdoc_name);
+							//wait for ACK to send success notification and Update DB
+							if(rs == WEBCFG_SUCCESS)
+							{
+								WebcfgInfo("retryMultipartSubdoc success\n");
+							}
+							else
+							{
+								WebcfgError("retryMultipartSubdoc failed\n");
+							}
+						}
+						else
+						{
+							WebcfgInfo("Already in latest version, no need to retry\n");
+						}
 					}
 				}
 			}
@@ -461,7 +504,7 @@ void createTimerExpiryEvent(char *docName, uint16_t transid)
 void sendSuccessNotification(char *name, uint32_t version, uint16_t txid)
 {
 	updateTmpList(name, version, "success", "none", 100, txid, 0);
-	addWebConfgNotifyMsg(name, version, "success", NULL, get_global_transID(),0, "status",0);
+	addWebConfgNotifyMsg(name, version, "success", "none", get_global_transID(),0, "status",0);
 	deleteFromTmpList(name);
 }
 
@@ -804,7 +847,7 @@ WEBCFG_STATUS checkDBVersion(char *docname, uint32_t version)
 		{
 			if(webcfgdb->version == version)
 			{
-				WebcfgInfo("webcfgdb version is same for doc %s\n", docname);
+				WebcfgInfo("webcfgdb version %hu is same for doc %s\n", webcfgdb->version, docname);
 				return WEBCFG_SUCCESS;
 			}
 		}
@@ -827,6 +870,8 @@ WEBCFG_STATUS checkAndUpdateTmpRetryCount(char *docname)
 			if(temp->retry_count >= MAX_APPLY_RETRY_COUNT)
 			{
 				WebcfgInfo("Apply retry_count %d has reached max limit for doc %s\n", temp->retry_count, docname);
+				//send max retry notification to cloud.
+				addWebConfgNotifyMsg(temp->name, temp->version, "failed", "max_retry_reached", get_global_transID(),0,"status",0);
 				return WEBCFG_FAILURE;
 			}
 			temp->retry_count++;
