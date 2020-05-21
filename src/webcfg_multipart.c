@@ -600,18 +600,21 @@ WEBCFG_STATUS processMsgpackSubdoc(char *transaction_id)
 
 						//Update error_details to tmp list and send failure notification to cloud.
 						uStatus = WEBCFG_FAILURE;
-						if(ccspStatus == CCSP_CRASH_STATUS_CODE)
+						if((ccspStatus == CCSP_CRASH_STATUS_CODE) || (ccspStatus == 204) || (ccspStatus == 191))
 						{
 							WebcfgInfo("ccspStatus is crash %d\n", CCSP_CRASH_STATUS_CODE);
-							uStatus = updateTmpList(mp->entries[m].name_space, mp->entries[m].etag, "failed", "crash", ccspStatus, doc_transId, 1); //TODO: error details mapping as per webpa ccspStatus
-							addWebConfgNotifyMsg(mp->entries[m].name_space, mp->entries[m].etag, "failed", "crash", trans_id,0,"status",0);
+							uStatus = updateTmpList(mp->entries[m].name_space, mp->entries[m].etag, "failed", "crash_retrying", ccspStatus, doc_transId, 1); //TODO: error details mapping as per webpa ccspStatus
+							addWebConfgNotifyMsg(mp->entries[m].name_space, mp->entries[m].etag, "failed", "crash_retrying", trans_id,0,"status",ccspStatus);
+							
+							set_doc_fail(1);
+							WebcfgInfo("the retry flag value is %d\n", get_doc_fail());
 						}
 						else
 						{
-							uStatus = updateTmpList(mp->entries[m].name_space, mp->entries[m].etag, "failed", "doc_rejected", ccspStatus, doc_transId, 1);
-							addWebConfgNotifyMsg(mp->entries[m].name_space, mp->entries[m].etag, "failed", "doc_rejected", trans_id,0,"status",0);
+							uStatus = updateTmpList(mp->entries[m].name_space, mp->entries[m].etag, "failed", "doc_rejected", ccspStatus, doc_transId, 0); //TODO: error details mapping as per webpa ccspStatus
+							addWebConfgNotifyMsg(mp->entries[m].name_space, mp->entries[m].etag, "failed", "doc_rejected", trans_id,0, "status", ccspStatus);
 						}
-
+						
 						if(uStatus == WEBCFG_SUCCESS)
 						{
 							WebcfgDebug("updateTmpList success for error_details\n");
@@ -1461,5 +1464,27 @@ void updateRootVersionToDB()
 	else
 	{
 		WebcfgError("Delete tmp queue root is failed\n");
+	}
+}
+
+void failedDocsRetry()
+{
+	webconfig_tmp_data_t *temp = NULL;
+	temp = get_global_tmp_node();
+
+	while (NULL != temp)
+	{
+		if((temp->error_code == CCSP_CRASH_STATUS_CODE) || (temp->error_code == 204) || (temp->error_code == 191))
+		{
+			if(retryMultipartSubdoc(temp->name) == WEBCFG_SUCCESS)
+			{
+				WebcfgInfo("The subdoc %s set is success\n", temp->name);
+			}
+			else
+			{
+				WebcfgInfo("The subdoc %s set is failed\n", temp->name);
+			}
+		}
+		temp= temp->next;
 	}
 }

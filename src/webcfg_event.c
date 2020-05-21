@@ -793,7 +793,18 @@ WEBCFG_STATUS retryMultipartSubdoc(char *docName)
 					else
 					{
 						WebcfgError("retryMultipartSubdoc setValues Failed. ccspStatus : %d\n", ccspStatus);
-						uStatus = updateTmpList(gmp->entries[m].name_space, gmp->entries[m].etag, "pending", "failed_retrying", ccspStatus, doc_transId, 1);
+						if((ccspStatus == 192) || (ccspStatus == 204) || (ccspStatus == 191))
+						{
+							WebcfgInfo("ccspStatus is crash %d\n", ccspStatus);
+							uStatus = updateTmpList(gmp->entries[m].name_space, gmp->entries[m].etag, "pending", "failed_retrying", ccspStatus, doc_transId, 1);
+							set_doc_fail(1);
+							WebcfgInfo("the retry flag value is %d\n", get_doc_fail());
+						}
+						else
+						{
+							uStatus = updateTmpList(gmp->entries[m].name_space, gmp->entries[m].etag, "failed", "doc_rejected", ccspStatus, doc_transId, 0); //TODO: error details mapping as per webpa ccspStatus
+							//addWebConfgNotifyMsg(gmp->entries[m].name_space, gmp->entries[m].etag, "failed", "doc_rejected", doc_transId,0, "status", ccspStatus);
+						}
 						if(uStatus == WEBCFG_SUCCESS)
 						{
 							WebcfgInfo("updateTmpList success during retry\n");

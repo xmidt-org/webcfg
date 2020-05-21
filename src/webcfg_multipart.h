@@ -55,4 +55,5 @@ void updateRootVersionToDB();
 char * get_global_transID(void);
 multipart_t * get_global_mp(void);
 void reqParam_destroy( int paramCnt, param_t *reqObj );
+void failedDocsRetry();
 #endif

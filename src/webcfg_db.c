@@ -57,6 +57,7 @@ static blob_t * webcfgdb_blob = NULL;
 static webconfig_db_data_t* webcfgdb_data = NULL;
 static int numOfMpDocs = 0;
 static int success_doc_count = 0;
+static int doc_fail_flag = 0;
 /*----------------------------------------------------------------------------*/
 /*                             Function Prototypes                            */
 /*----------------------------------------------------------------------------*/
@@ -334,6 +335,16 @@ int get_numOfMpDocs()
 int get_successDocCount()
 {
     return success_doc_count;
+}
+
+int get_doc_fail()
+{
+    return doc_fail_flag;
+}
+
+void set_doc_fail( int value)
+{
+    doc_fail_flag = value;
 }
 
 blob_t * get_DB_BLOB()
