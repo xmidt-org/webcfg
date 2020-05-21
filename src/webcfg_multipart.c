@@ -481,14 +481,14 @@ WEBCFG_STATUS processMsgpackSubdoc(char *transaction_id)
 					{
 						char *appended_doc = NULL;
 						appended_doc = webcfg_appendeddoc( mp->entries[m].name_space, mp->entries[m].etag, pm->entries[i].value, pm->entries[i].value_size, &doc_transId);
-						WebcfgInfo("webcfg_appendeddoc doc_transId : %hu\n", doc_transId);
+						WebcfgDebug("webcfg_appendeddoc doc_transId : %hu\n", doc_transId);
 						reqParam[i].name = strdup(pm->entries[i].name);
 						WebcfgInfo("appended_doc length: %zu\n", strlen(appended_doc));
 						reqParam[i].value = strdup(appended_doc);
 						reqParam[i].type = WDMP_BASE64;
 						WEBCFG_FREE(appended_doc);
 						//Update doc trans_id to validate events.
-						WebcfgInfo("Update doc trans_id to validate events.\n");
+						WebcfgDebug("Update doc trans_id to validate events.\n");
 						updateTmpList(mp->entries[m].name_space, mp->entries[m].etag, "pending", "none", ccspStatus, doc_transId, 0);
 					}
 					else
@@ -619,7 +619,7 @@ WEBCFG_STATUS processMsgpackSubdoc(char *transaction_id)
 			j--;
 			temp1 = temp1->next;
 		}
-		WebcfgInfo("addNewDocEntry\n");
+		WebcfgDebug("addNewDocEntry\n");
 		addNewDocEntry(get_successDocCount());
 	}
 

@@ -512,10 +512,10 @@ WEBCFG_STATUS updateTmpList(char *docname, uint32_t version, char *status, char 
 			}
 			temp->error_code = error_code;
 			temp->trans_id = trans_id;
-			WebcfgInfo("updateTmpList: retry %d\n", retry);
+			WebcfgDebug("updateTmpList: retry %d\n", retry);
 			if(!retry)
 			{
-				WebcfgInfo("updateTmpList: reset temp->retry_count\n");
+				WebcfgDebug("updateTmpList: reset temp->retry_count\n");
 				temp->retry_count = 0;
 			}
 			WebcfgInfo("doc %s is updated to version %lu status %s error_details %s error_code %lu trans_id %lu temp->retry_count %d\n", docname, (long)temp->version, temp->status, temp->error_details, (long)temp->error_code, (long)temp->trans_id, temp->retry_count);

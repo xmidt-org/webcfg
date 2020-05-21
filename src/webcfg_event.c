@@ -248,7 +248,6 @@ void* processSubdocEvents()
 								updateRootVersionToDB();
 							}
 							addNewDocEntry(get_successDocCount());
-							WebcfgDebug("After blob addNewDocEntry to DB\n");
 						}
 						else
 						{
@@ -269,7 +268,6 @@ void* processSubdocEvents()
 							updateTmpList(eventParam->subdoc_name, eventParam->version, "failed", err_details, eventParam->err_code, eventParam->trans_id, 0);
 							WebcfgInfo("get_global_transID is %s\n", get_global_transID());
 							addWebConfgNotifyMsg(eventParam->subdoc_name, eventParam->version, "failed", err_details, get_global_transID(),eventParam->timeout, "status", eventParam->err_code);
-							WebcfgInfo("After NACK notify\n");
 						}
 						else
 						{
@@ -295,7 +293,7 @@ void* processSubdocEvents()
 					rs = retryMultipartSubdoc(eventParam->subdoc_name);
 					if(rs == WEBCFG_SUCCESS)
 					{
-						WebcfgInfo("retryMultipartSubdoc success\n");
+						WebcfgDebug("retryMultipartSubdoc success\n");
 					}
 					else
 					{
@@ -330,7 +328,7 @@ void* processSubdocEvents()
 					{
 						docVersion = getDocVersionFromTmpList(eventParam->subdoc_name);
 					}
-					WebcfgInfo("docVersion is %lu\n", (long)docVersion);
+					WebcfgDebug("docVersion is %lu\n", (long)docVersion);
 
 					//If version in event and tmp are not matching, re-send blob to retry.
 					if(checkDBVersion(eventParam->subdoc_name, eventParam->version) !=WEBCFG_SUCCESS)
@@ -344,7 +342,7 @@ void* processSubdocEvents()
 							rs = retryMultipartSubdoc(eventParam->subdoc_name);
 							if(rs == WEBCFG_SUCCESS)
 							{
-								WebcfgInfo("retryMultipartSubdoc success\n");
+								WebcfgDebug("retryMultipartSubdoc success\n");
 							}
 							else
 							{
@@ -358,14 +356,13 @@ void* processSubdocEvents()
 							sendSuccessNotification(eventParam->subdoc_name, eventParam->version, eventParam->trans_id);
 							WebcfgInfo("AddToDB subdoc_name %s version %lu\n", eventParam->subdoc_name, (long)eventParam->version);
 							checkDBList(eventParam->subdoc_name,eventParam->version);
-							WebcfgInfo("checkRootUpdate\n");
+							WebcfgDebug("checkRootUpdate\n");
 							if(checkRootUpdate() == WEBCFG_SUCCESS)
 							{
-								WebcfgInfo("updateRootVersionToDB\n");
+								WebcfgDebug("updateRootVersionToDB\n");
 								updateRootVersionToDB();
 							}
 							addNewDocEntry(get_successDocCount());
-							WebcfgInfo("After blob addNewDocEntry to DB\n");
 						}
 					}
 					else
@@ -381,7 +378,7 @@ void* processSubdocEvents()
 							//wait for ACK to send success notification and Update DB
 							if(rs == WEBCFG_SUCCESS)
 							{
-								WebcfgInfo("retryMultipartSubdoc success\n");
+								WebcfgDebug("retryMultipartSubdoc success\n");
 							}
 							else
 							{
@@ -446,7 +443,7 @@ int parseEventData(char* str, event_params_t **val)
 				WebcfgInfo("process_name %s err_code %s failure_reason %s\n", param->process_name, err_code, param->failure_reason);
 			}
 
-			WebcfgInfo("convert string to uint type\n");
+			WebcfgDebug("convert string to uint type\n");
 			if(trans_id !=NULL)
 			{
 				param->trans_id = strtoul(trans_id,NULL,0);
@@ -917,7 +914,7 @@ WEBCFG_STATUS validateEvent(char *docname, uint16_t txid)
 	//Traverse through doc list & fetch version for required doc.
 	while (NULL != temp)
 	{
-		WebcfgInfo("validateEvent: temp->name %s, temp->trans_id %hu\n",temp->name, temp->trans_id);
+		WebcfgDebug("validateEvent: temp->name %s, temp->trans_id %hu\n",temp->name, temp->trans_id);
 		if( strcmp(docname, temp->name) == 0)
 		{
 			if(txid == temp->trans_id)

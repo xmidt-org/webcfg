@@ -114,7 +114,7 @@ void addWebConfgNotifyMsg(char *docname, uint32_t version, char *status, char *e
 
 		args->error_code = error_code;
 
-		WebcfgInfo("args->name:%s,args->application_status:%s,args->timeout:%lu,args->error_details:%s,args->version:%s,args->transaction_uuid:%s,args->type:%s,args->error_code:%lu\n",args->name,args->application_status, (long)args->timeout, args->error_details, args->version, args->transaction_uuid, args->type, (long)args->error_code );
+		WebcfgDebug("args->name:%s,args->application_status:%s,args->timeout:%lu,args->error_details:%s,args->version:%s,args->transaction_uuid:%s,args->type:%s,args->error_code:%lu\n",args->name,args->application_status, (long)args->timeout, args->error_details, args->version, args->transaction_uuid, args->type, (long)args->error_code );
 
 		args->next=NULL;
 
@@ -193,7 +193,7 @@ void* processWebConfgNotification()
 						{
 							cJSON_AddNumberToObject(notifyPayload,"timeout", msg->timeout);
 						}
-						WebcfgInfo("msg->error_code is %lu\n", (long)msg->error_code);
+						WebcfgDebug("msg->error_code is %lu\n", (long)msg->error_code);
 						if(msg->error_code !=0)
 						{
 							cJSON_AddNumberToObject(notifyPayload,"error_code", msg->error_code);
