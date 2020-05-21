@@ -51,7 +51,7 @@ void* processSubdocEvents();
 
 int checkWebcfgTimer();
 int addToEventQueue(char *buf);
-void sendSuccessNotification(char *name, uint32_t version);
+void sendSuccessNotification(char *name, uint32_t version, uint16_t txid);
 WEBCFG_STATUS startWebcfgTimer(char *name, uint16_t transID, uint32_t timeout);
 WEBCFG_STATUS stopWebcfgTimer(char *name, uint16_t trans_id);
 int checkTimerExpired (char **exp_doc);
@@ -59,6 +59,7 @@ void createTimerExpiryEvent(char *docName, uint16_t transid);
 WEBCFG_STATUS updateTimerList(int status, char *docname, uint16_t transid, uint32_t timeout);
 WEBCFG_STATUS deleteFromTimerList(char* doc_name);
 WEBCFG_STATUS checkDBVersion(char *docname, uint32_t version);
+WEBCFG_STATUS validateEvent(char *docname, uint16_t txid);
 /*----------------------------------------------------------------------------*/
 /*                             External Functions                             */
 /*----------------------------------------------------------------------------*/
@@ -209,6 +210,7 @@ void* processSubdocEvents()
 	WEBCFG_STATUS uStatus = WEBCFG_FAILURE;
 	WEBCFG_STATUS rs = WEBCFG_FAILURE;
 	uint32_t docVersion = 0;
+	char err_details[512] = {0};
 
 	while(1)
 	{
@@ -229,38 +231,55 @@ void* processSubdocEvents()
 				if (((eventParam->status !=NULL)&&(strcmp(eventParam->status, "ACK")==0)) && (eventParam->timeout == 0))
 				{
 					WebcfgInfo("ACK event. doc apply success, proceed to add to DB\n");
-					//If version in event and DB are not matching, re-send blob to retry.
-					if(checkDBVersion(eventParam->subdoc_name, eventParam->version) !=WEBCFG_SUCCESS)
+					if( validateEvent(eventParam->subdoc_name, eventParam->trans_id) == WEBCFG_SUCCESS)
 					{
-						stopWebcfgTimer(eventParam->subdoc_name, eventParam->trans_id);
-
-						//add to DB, update tmp list and notification based on success ack.
-						sendSuccessNotification(eventParam->subdoc_name, eventParam->version);
-						WebcfgInfo("AddToDB subdoc_name %s version %lu\n", eventParam->subdoc_name, (long)eventParam->version);
-						checkDBList(eventParam->subdoc_name,eventParam->version);
-						WebcfgDebug("checkRootUpdate\n");
-						if(checkRootUpdate() == WEBCFG_SUCCESS)
+						//version in event &tmp are not same indicates latest doc is not yet applied
+						if((getDocVersionFromTmpList(eventParam->subdoc_name))== eventParam->version)
 						{
-							WebcfgDebug("updateRootVersionToDB\n");
-							updateRootVersionToDB();
+							stopWebcfgTimer(eventParam->subdoc_name, eventParam->trans_id);
+
+							//add to DB, update tmp list and notification based on success ack.
+							sendSuccessNotification(eventParam->subdoc_name, eventParam->version, eventParam->trans_id);
+							WebcfgInfo("AddToDB subdoc_name %s version %lu\n", eventParam->subdoc_name, (long)eventParam->version);
+							checkDBList(eventParam->subdoc_name,eventParam->version);
+							WebcfgDebug("checkRootUpdate\n");
+							if(checkRootUpdate() == WEBCFG_SUCCESS)
+							{
+								WebcfgDebug("updateRootVersionToDB\n");
+								updateRootVersionToDB();
+							}
+							addNewDocEntry(get_successDocCount());
+							WebcfgDebug("After blob addNewDocEntry to DB\n");
 						}
-						addNewDocEntry(get_successDocCount());
-						WebcfgDebug("After blob addNewDocEntry to DB\n");
+						else
+						{
+							WebcfgError("ACK event version and tmp cache version are not same\n");
+						}
 					}
 				}
 				else if (((eventParam->status !=NULL)&&(strcmp(eventParam->status, "NACK")==0)) && (eventParam->timeout == 0))
 				{
 					WebcfgError("NACK event. doc apply failed for %s\n", eventParam->subdoc_name);
-					if(checkDBVersion(eventParam->subdoc_name, eventParam->version) !=WEBCFG_SUCCESS)
+					if( validateEvent(eventParam->subdoc_name, eventParam->trans_id) == WEBCFG_SUCCESS)
 					{
-						stopWebcfgTimer(eventParam->subdoc_name, eventParam->trans_id);
-						uStatus = updateTmpList(eventParam->subdoc_name, eventParam->version, "failed", "doc_rejected");
-						if(uStatus !=WEBCFG_SUCCESS)
+						if((getDocVersionFromTmpList(eventParam->subdoc_name))== eventParam->version)
 						{
-							WebcfgError("Failed in updateTmpList for NACK\n");
+							stopWebcfgTimer(eventParam->subdoc_name, eventParam->trans_id);
+							snprintf(err_details, sizeof(err_details),"NACK:%s,%s",((NULL != eventParam->process_name) ? eventParam->process_name : "unknown"), ((NULL != eventParam->failure_reason) ? eventParam->failure_reason : "unknown"));
+							WebcfgError("err_details : %s, err_code : %lu\n", err_details, (long) eventParam->err_code);
+							uStatus = updateTmpList(eventParam->subdoc_name, eventParam->version, "failed", err_details, eventParam->err_code, eventParam->trans_id, 0);
+							if(uStatus !=WEBCFG_SUCCESS)
+							{
+								WebcfgError("Failed in updateTmpList for NACK\n");
+							}
+							WebcfgInfo("get_global_transID is %s\n", get_global_transID());
+							addWebConfgNotifyMsg(eventParam->subdoc_name, eventParam->version, "failed", err_details, get_global_transID(),eventParam->timeout, "status", eventParam->err_code);
+							WebcfgInfo("After NACK notify\n");
 						}
-						WebcfgDebug("get_global_transID is %s\n", get_global_transID());
-						addWebConfgNotifyMsg(eventParam->subdoc_name, eventParam->version, "failed", "doc_rejected", get_global_transID(),eventParam->timeout, "status");
+						else
+						{
+							WebcfgError("NACK event version and tmp cache version are not same\n");
+						}
 					}
 				}
 				else if ((eventParam->status !=NULL)&&(strcmp(eventParam->status, "EXPIRE")==0))
@@ -276,7 +295,7 @@ void* processSubdocEvents()
 						docVersion = getDocVersionFromTmpList(eventParam->subdoc_name);
 					}
 					WebcfgDebug("docVersion %lu\n", (long) docVersion);
-					addWebConfgNotifyMsg(eventParam->subdoc_name, docVersion, "pending", "timer_expired", get_global_transID(),eventParam->timeout, "status");
+					addWebConfgNotifyMsg(eventParam->subdoc_name, docVersion, "pending", "timer_expired", get_global_transID(),eventParam->timeout, "status", 0);
 					WebcfgInfo("retryMultipartSubdoc for EXPIRE case\n");
 					rs = retryMultipartSubdoc(eventParam->subdoc_name);
 					if(rs == WEBCFG_SUCCESS)
@@ -291,8 +310,18 @@ void* processSubdocEvents()
 				else if (eventParam->timeout != 0)
 				{
 					WebcfgInfo("Timeout event. doc apply need time, start timer.\n");
-					startWebcfgTimer(eventParam->subdoc_name, eventParam->trans_id, eventParam->timeout);
-					addWebConfgNotifyMsg(eventParam->subdoc_name, eventParam->version, "pending", NULL, get_global_transID(),eventParam->timeout, "ack");
+					if( validateEvent(eventParam->subdoc_name, eventParam->trans_id) == WEBCFG_SUCCESS)
+					{
+						if((getDocVersionFromTmpList(eventParam->subdoc_name))== eventParam->version)
+						{
+							startWebcfgTimer(eventParam->subdoc_name, eventParam->trans_id, eventParam->timeout);
+							addWebConfgNotifyMsg(eventParam->subdoc_name, eventParam->version, "pending", NULL, get_global_transID(),eventParam->timeout, "ack", 0);
+						}
+						else
+						{
+							WebcfgError("Timeout event version and tmp cache version are not same\n");
+						}
+					}
 				}
 				else
 				{
@@ -306,7 +335,7 @@ void* processSubdocEvents()
 						docVersion = getDocVersionFromTmpList(eventParam->subdoc_name);
 					}
 					WebcfgDebug("docVersion is %lu\n", (long) docVersion);
-					addWebConfgNotifyMsg(eventParam->subdoc_name, docVersion, "pending", "process_crash", get_global_transID(),eventParam->timeout,"status");
+					addWebConfgNotifyMsg(eventParam->subdoc_name, docVersion, "pending", "process_crash", get_global_transID(),eventParam->timeout,"status",0);//TODO: no notfn. Modify with tmp version chck.
 
 					//If version in event and DB are not matching, re-send blob to retry.
 					if(checkDBVersion(eventParam->subdoc_name, eventParam->version) !=WEBCFG_SUCCESS)
@@ -352,7 +381,8 @@ int parseEventData(char* str, event_params_t **val)
 	char *tmpStr =  NULL;
 	char * trans_id = NULL;
 	char *version = NULL;
-	char * timeout =NULL;
+	char * timeout = NULL;
+	char *err_code = NULL;
 
 	if(str !=NULL)
 	{
@@ -361,7 +391,9 @@ int parseEventData(char* str, event_params_t **val)
 		{
 			memset(param, 0, sizeof(event_params_t));
 		        tmpStr = strdup(str);
-			//WEBCFG_FREE(str);
+			WebcfgInfo("B4 free str\n");
+			WEBCFG_FREE(str);
+			WebcfgInfo("free str\n");
 
 		        param->subdoc_name = strsep(&tmpStr, ",");
 		        trans_id = strsep(&tmpStr,",");
@@ -369,7 +401,16 @@ int parseEventData(char* str, event_params_t **val)
 		        param->status = strsep(&tmpStr,",");
 		        timeout = strsep(&tmpStr, ",");
 
-			WebcfgDebug("convert string to uint type\n");
+			if(tmpStr !=NULL)
+			{
+				WebcfgInfo("For NACK event: tmpStr with error_details is %s\n", tmpStr);
+				param->process_name = strsep(&tmpStr, ",");
+				err_code = strsep(&tmpStr, ",");
+				param->failure_reason = strsep(&tmpStr, ",");
+				WebcfgInfo("process_name %s err_code %s failure_reason %s\n", param->process_name, err_code, param->failure_reason);
+			}
+
+			WebcfgInfo("convert string to uint type\n");
 			if(trans_id !=NULL)
 			{
 				param->trans_id = strtoul(trans_id,NULL,0);
@@ -383,6 +424,12 @@ int parseEventData(char* str, event_params_t **val)
 			if(timeout !=NULL)
 			{
 				param->timeout = strtoul(timeout,NULL,0);
+			}
+
+			if(err_code !=NULL)
+			{
+				param->err_code = strtoul(err_code,NULL,0);
+				WebcfgInfo("param->err_code %lu\n", (long)param->err_code);
 			}
 
 			WebcfgInfo("param->subdoc_name %s param->trans_id %lu param->version %lu param->status %s param->timeout %lu\n", param->subdoc_name, (long)param->trans_id, (long)param->version, param->status, (long)param->timeout);
@@ -416,14 +463,14 @@ void createTimerExpiryEvent(char *docName, uint16_t transid)
 }
 
 //Update Tmp list and send success notification to cloud .
-void sendSuccessNotification(char *name, uint32_t version)
+void sendSuccessNotification(char *name, uint32_t version, uint16_t txid)
 {
 	WEBCFG_STATUS uStatus=1, dStatus=1;
 
-	uStatus = updateTmpList(name, version, "success", "none");
+	uStatus = updateTmpList(name, version, "success", "none", 100, txid, 0);
 	if(uStatus == WEBCFG_SUCCESS)
 	{
-		addWebConfgNotifyMsg(name, version, "success", NULL, get_global_transID(),0, "status");
+		addWebConfgNotifyMsg(name, version, "success", NULL, get_global_transID(),0, "status",0);
 
 		dStatus = deleteFromTmpList(name);
 		if(dStatus == WEBCFG_SUCCESS)
@@ -657,8 +704,10 @@ WEBCFG_STATUS retryMultipartSubdoc(char *docName)
 	WEBCFG_STATUS rv = WEBCFG_FAILURE;
 	param_t *reqParam = NULL;
 	WDMP_STATUS ret = WDMP_FAILURE;
+	WEBCFG_STATUS uStatus = WEBCFG_FAILURE;
 	int ccspStatus=0;
 	int paramCount = 0;
+	uint16_t doc_transId = 0;
 	webcfgparam_t *pm = NULL;
 	multipart_t *gmp = NULL;
 
@@ -704,7 +753,8 @@ WEBCFG_STATUS retryMultipartSubdoc(char *docName)
 						{
 							char *appended_doc = NULL;
 							WebcfgDebug("B4 webcfg_appendeddoc\n");
-							appended_doc = webcfg_appendeddoc( gmp->entries[m].name_space, gmp->entries[m].etag, pm->entries[i].value, pm->entries[i].value_size);
+							appended_doc = webcfg_appendeddoc( gmp->entries[m].name_space, gmp->entries[m].etag, pm->entries[i].value, pm->entries[i].value_size, &doc_transId);
+							WebcfgInfo("webcfg_appendeddoc doc_transId is %hu\n", doc_transId);
 							reqParam[i].name = strdup(pm->entries[i].name);
 							WebcfgInfo("appended_doc length: %zu\n", strlen(appended_doc));
 							reqParam[i].value = strdup(appended_doc);
@@ -729,18 +779,39 @@ WEBCFG_STATUS retryMultipartSubdoc(char *docName)
 					if(ret == WDMP_SUCCESS)
 					{
 						WebcfgInfo("retryMultipartSubdoc setValues success. ccspStatus : %d\n", ccspStatus);
+						uStatus = updateTmpList(gmp->entries[m].name_space, gmp->entries[m].etag, "pending", "failed_retrying", ccspStatus, doc_transId, 1); //TODO: error details mapping as per ccspStatus
+						if(uStatus == WEBCFG_SUCCESS)
+						{
+							WebcfgInfo("updateTmpList success during retry\n");
+						}
+						else
+						{
+							WebcfgError("updateTmpList failed during retry\n");
+						}
 						rv = WEBCFG_SUCCESS;
 					}
 					else
 					{
 						WebcfgError("retryMultipartSubdoc setValues Failed. ccspStatus : %d\n", ccspStatus);
-						if((ccspStatus == CCSP_CRASH_STATUS_CODE) || (ccspStatus == 204) || (ccspStatus == 191))
+						if((ccspStatus == 192) || (ccspStatus == 204) || (ccspStatus == 191))
 						{
-							WebcfgInfo("ccspStatus is crash %d\n", CCSP_CRASH_STATUS_CODE);
-							// update error_code with ccspStatus
-							//uStatus = updateTmpList(mp->entries[m].name_space, mp->entries[m].etag, "failed", "crash_retrying");
+							WebcfgInfo("ccspStatus is crash %d\n", ccspStatus);
+							uStatus = updateTmpList(gmp->entries[m].name_space, gmp->entries[m].etag, "pending", "failed_retrying", ccspStatus, doc_transId, 1);
 							set_doc_fail(1);
 							WebcfgInfo("the retry flag value is %d\n", get_doc_fail());
+						}
+						else
+						{
+							uStatus = updateTmpList(gmp->entries[m].name_space, gmp->entries[m].etag, "failed", "doc_rejected", ccspStatus, doc_transId, 0); //TODO: error details mapping as per webpa ccspStatus
+							//addWebConfgNotifyMsg(gmp->entries[m].name_space, gmp->entries[m].etag, "failed", "doc_rejected", doc_transId,0, "status", ccspStatus);
+						}
+						if(uStatus == WEBCFG_SUCCESS)
+						{
+							WebcfgInfo("updateTmpList success during retry\n");
+						}
+						else
+						{
+							WebcfgError("updateTmpList failed during retry\n");
 						}
 					}
 					WebcfgDebug("reqParam_destroy\n");
@@ -827,4 +898,32 @@ uint32_t getDocVersionFromTmpList(char *docname)
 		temp= temp->next;
 	}
 	return 0;
+}
+
+//validate each event based on exact doc txid in tmp list.
+WEBCFG_STATUS validateEvent(char *docname, uint16_t txid)
+{
+	webconfig_tmp_data_t *temp = NULL;
+	temp = get_global_tmp_node();
+
+	//Traverse through doc list & fetch version for required doc.
+	while (NULL != temp)
+	{
+		WebcfgInfo("validateEvent: temp->name %s, temp->trans_id %hu\n",temp->name, temp->trans_id);
+		if( strcmp(docname, temp->name) == 0)
+		{
+			if(txid == temp->trans_id) //TODO: should we merge version check also here?
+			{
+				WebcfgInfo("Valid event. Event txid %hu matches with temp trans_id %hu\n", txid, temp->trans_id);
+				return WEBCFG_SUCCESS;
+			}
+			else
+			{
+				WebcfgError("Not a valid event. Event txid %hu does not match with temp trans_id %hu\n", txid, temp->trans_id);
+				break;
+			}
+		}
+		temp= temp->next;
+	}
+	return WEBCFG_FAILURE;
 }

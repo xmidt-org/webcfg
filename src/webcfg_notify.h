@@ -27,15 +27,15 @@ typedef struct _notify_params
 	char * name;
 	char * application_status;
 	char * version;
-	uint16_t error_code;
 	char * error_details;
 	char * transaction_uuid;
 	char * type;
 	uint32_t timeout;
+	uint16_t error_code;
 	struct _notify_params *next;
 } notify_params_t;
 
 void initWebConfigNotifyTask();
 pthread_t get_global_notify_threadid();
-void addWebConfgNotifyMsg(char *docname, uint32_t version, char *status, char *error_details, char *transaction_uuid, uint32_t timeout,char* type);
+void addWebConfgNotifyMsg(char *docname, uint32_t version, char *status, char *error_details, char *transaction_uuid, uint32_t timeout,char* type, uint16_t error_code);
 #endif

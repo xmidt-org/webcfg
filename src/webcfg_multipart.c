@@ -432,6 +432,7 @@ WEBCFG_STATUS processMsgpackSubdoc(char *transaction_id)
 	//char * blob_data = NULL;
         //size_t blob_len = -1 ;
 	char * trans_id = NULL;
+	uint16_t doc_transId = 0;
 
 	if(transaction_id !=NULL)
 	{
@@ -480,7 +481,8 @@ WEBCFG_STATUS processMsgpackSubdoc(char *transaction_id)
 					if(pm->entries[i].type == WDMP_BLOB)
 					{
 						char *appended_doc = NULL;
-						appended_doc = webcfg_appendeddoc( mp->entries[m].name_space, mp->entries[m].etag, pm->entries[i].value, pm->entries[i].value_size);
+						appended_doc = webcfg_appendeddoc( mp->entries[m].name_space, mp->entries[m].etag, pm->entries[i].value, pm->entries[i].value_size, &doc_transId);
+						WebcfgInfo("webcfg_appendeddoc doc_transId : %hu\n", doc_transId);
 						reqParam[i].name = strdup(pm->entries[i].name);
 						WebcfgInfo("appended_doc length: %zu\n", strlen(appended_doc));
 						reqParam[i].value = strdup(appended_doc);
@@ -520,12 +522,14 @@ WEBCFG_STATUS processMsgpackSubdoc(char *transaction_id)
 								processWebcfgEvents();
 								eventFlag = 1;
 							}
+							//Update doc trans_id to validate events from event thread.
+							uStatus = updateTmpList(mp->entries[m].name_space, mp->entries[m].etag, "pending", "none", ccspStatus, doc_transId, 0);
 						}
 						else
 						{
 							WebcfgDebug("scalar doc success\n");
 						WebcfgDebug("update doc status for %s\n", mp->entries[m].name_space);
-						uStatus = updateTmpList(mp->entries[m].name_space, mp->entries[m].etag, "success", "none");
+						uStatus = updateTmpList(mp->entries[m].name_space, mp->entries[m].etag, "success", "none", ccspStatus, doc_transId, 0);
 						if(uStatus == WEBCFG_SUCCESS)
 						{
 							//print_tmp_doc_list(mp->entries_count);
@@ -533,7 +537,7 @@ WEBCFG_STATUS processMsgpackSubdoc(char *transaction_id)
 
 							//send success notification to cloud
 							WebcfgDebug("send notify for mp->entries[m].name_space %s\n", mp->entries[m].name_space);
-							addWebConfgNotifyMsg(mp->entries[m].name_space, mp->entries[m].etag, "success", "none", trans_id,0, "status");
+							addWebConfgNotifyMsg(mp->entries[m].name_space, mp->entries[m].etag, "success", "none", trans_id,0, "status",0);
 							WebcfgDebug("deleteFromTmpList as doc is applied\n");
 							dStatus = deleteFromTmpList(mp->entries[m].name_space);
 							if(dStatus == WEBCFG_SUCCESS)
@@ -599,18 +603,26 @@ WEBCFG_STATUS processMsgpackSubdoc(char *transaction_id)
 						if((ccspStatus == CCSP_CRASH_STATUS_CODE) || (ccspStatus == 204) || (ccspStatus == 191))
 						{
 							WebcfgInfo("ccspStatus is crash %d\n", CCSP_CRASH_STATUS_CODE);
-							// add error_code in tmp using ccspStatus
-							uStatus = updateTmpList(mp->entries[m].name_space, mp->entries[m].etag, "failed", "crash_retrying");
-							addWebConfgNotifyMsg(mp->entries[m].name_space, mp->entries[m].etag, "failed", "crash_retrying", trans_id,0, "status");
+							uStatus = updateTmpList(mp->entries[m].name_space, mp->entries[m].etag, "failed", "crash_retrying", ccspStatus, doc_transId, 1); //TODO: error details mapping as per webpa ccspStatus
+							addWebConfgNotifyMsg(mp->entries[m].name_space, mp->entries[m].etag, "failed", "crash_retrying", trans_id,0,"status",ccspStatus);
+							
 							set_doc_fail(1);
 							WebcfgInfo("the retry flag value is %d\n", get_doc_fail());
 						}
 						else
 						{
-							uStatus = updateTmpList(mp->entries[m].name_space, mp->entries[m].etag, "failed", "doc_rejected");
-							addWebConfgNotifyMsg(mp->entries[m].name_space, mp->entries[m].etag, "failed", "doc_rejected", trans_id,0, "status");
+							uStatus = updateTmpList(mp->entries[m].name_space, mp->entries[m].etag, "failed", "doc_rejected", ccspStatus, doc_transId, 0); //TODO: error details mapping as per webpa ccspStatus
+							addWebConfgNotifyMsg(mp->entries[m].name_space, mp->entries[m].etag, "failed", "doc_rejected", trans_id,0, "status", ccspStatus);
 						}
 						
+						if(uStatus == WEBCFG_SUCCESS)
+						{
+							WebcfgDebug("updateTmpList success for error_details\n");
+						}
+						else
+						{
+							WebcfgError("updateTmpList failed for error_details\n");
+						}
 						print_tmp_doc_list(mp->entries_count);
 					}
 				}
@@ -1459,21 +1471,18 @@ void failedDocsRetry()
 {
 	webconfig_tmp_data_t *temp = NULL;
 	temp = get_global_tmp_node();
-        int i =0;
-	int j =0;
-	int count = 0;
 
 	while (NULL != temp)
 	{
 		if((temp->error_code == CCSP_CRASH_STATUS_CODE) || (temp->error_code == 204) || (temp->error_code == 191))
 		{
-			if(retryMultipartSubdoc(subdoc_names[j]) == WEBCFG_SUCCESS)
+			if(retryMultipartSubdoc(temp->name) == WEBCFG_SUCCESS)
 			{
-				WebcfgInfo("The subdoc %s set is success\n", subdoc_names[j]);
+				WebcfgInfo("The subdoc %s set is success\n", temp->name);
 			}
 			else
 			{
-				WebcfgInfo("The subdoc %s set is failed\n", subdoc_names[j]);
+				WebcfgInfo("The subdoc %s set is failed\n", temp->name);
 			}
 		}
 		temp= temp->next;
