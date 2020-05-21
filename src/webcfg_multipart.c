@@ -528,7 +528,7 @@ WEBCFG_STATUS processMsgpackSubdoc(char *transaction_id)
 						else
 						{
 							WebcfgDebug("update doc status for %s\n", mp->entries[m].name_space);
-							updateTmpList(mp->entries[m].name_space, mp->entries[m].etag, "success", "none", ccspStatus, doc_transId, 0);
+							updateTmpList(mp->entries[m].name_space, mp->entries[m].etag, "success", "none", ccspStatus, 0, 0);
 							//send success notification to cloud
 							WebcfgDebug("send notify for mp->entries[m].name_space %s\n", mp->entries[m].name_space);
 							addWebConfgNotifyMsg(mp->entries[m].name_space, mp->entries[m].etag, "success", "none", trans_id,0, "status",0);
@@ -572,7 +572,7 @@ WEBCFG_STATUS processMsgpackSubdoc(char *transaction_id)
 						if((ccspStatus == CCSP_CRASH_STATUS_CODE) || (ccspStatus == 204) || (ccspStatus == 191))
 						{
 							WebcfgInfo("ccspStatus is crash %d\n", CCSP_CRASH_STATUS_CODE);
-							updateTmpList(mp->entries[m].name_space, mp->entries[m].etag, "failed", "crash_retrying", ccspStatus, doc_transId, 1); //TODO: error details mapping as per webpa ccspStatus
+							updateTmpList(mp->entries[m].name_space, mp->entries[m].etag, "failed", "crash_retrying", ccspStatus, 0, 1);
 							addWebConfgNotifyMsg(mp->entries[m].name_space, mp->entries[m].etag, "failed", "crash_retrying", trans_id,0,"status",ccspStatus);
 							
 							set_doc_fail(1);
@@ -580,7 +580,7 @@ WEBCFG_STATUS processMsgpackSubdoc(char *transaction_id)
 						}
 						else
 						{
-							updateTmpList(mp->entries[m].name_space, mp->entries[m].etag, "failed", "doc_rejected", ccspStatus, doc_transId, 0); //TODO: error details mapping as per webpa ccspStatus
+							updateTmpList(mp->entries[m].name_space, mp->entries[m].etag, "failed", "doc_rejected", ccspStatus, 0, 0);
 							addWebConfgNotifyMsg(mp->entries[m].name_space, mp->entries[m].etag, "failed", "doc_rejected", trans_id,0, "status", ccspStatus);
 						}
 						print_tmp_doc_list(mp->entries_count);

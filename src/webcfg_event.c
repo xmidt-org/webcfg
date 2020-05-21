@@ -330,7 +330,7 @@ void* processSubdocEvents()
 					{
 						docVersion = getDocVersionFromTmpList(eventParam->subdoc_name);
 					}
-					WebcfgInfo("docVersion is %hu\n", docVersion);
+					WebcfgInfo("docVersion is %lu\n", (long)docVersion);
 
 					//If version in event and tmp are not matching, re-send blob to retry.
 					if(checkDBVersion(eventParam->subdoc_name, eventParam->version) !=WEBCFG_SUCCESS)
@@ -339,7 +339,7 @@ void* processSubdocEvents()
 						tmpVersion = getDocVersionFromTmpList(eventParam->subdoc_name);
 						if(tmpVersion != eventParam->version)
 						{
-							WebcfgInfo("tmp list has new version %hu for doc %s, retry\n", tmpVersion, eventParam->subdoc_name);
+							WebcfgInfo("tmp list has new version %lu for doc %s, retry\n", (long)tmpVersion, eventParam->subdoc_name);
 							addWebConfgNotifyMsg(eventParam->subdoc_name, docVersion, "failed", "failed_retrying", get_global_transID(),eventParam->timeout,"status",0);
 							rs = retryMultipartSubdoc(eventParam->subdoc_name);
 							if(rs == WEBCFG_SUCCESS)
@@ -354,7 +354,7 @@ void* processSubdocEvents()
 						else
 						{
 							//already in tmp latest version,send success notify, updateDB
-							WebcfgInfo("tmp version %hu same as event version %hu\n",tmpVersion, eventParam->version); 
+							WebcfgInfo("tmp version %lu same as event version %lu\n",(long)tmpVersion, (long)eventParam->version); 
 							sendSuccessNotification(eventParam->subdoc_name, eventParam->version, eventParam->trans_id);
 							WebcfgInfo("AddToDB subdoc_name %s version %lu\n", eventParam->subdoc_name, (long)eventParam->version);
 							checkDBList(eventParam->subdoc_name,eventParam->version);
@@ -374,7 +374,7 @@ void* processSubdocEvents()
 						tmpVersion = getDocVersionFromTmpList(eventParam->subdoc_name);
 						if(tmpVersion != eventParam->version)
 						{
-							WebcfgInfo("tmp list has new version %hu for doc %s, retry\n", tmpVersion, eventParam->subdoc_name);
+							WebcfgInfo("tmp list has new version %lu for doc %s, retry\n", (long)tmpVersion, eventParam->subdoc_name);
 							addWebConfgNotifyMsg(eventParam->subdoc_name, docVersion, "failed", "failed_retrying", get_global_transID(),eventParam->timeout,"status",0);
 							//retry with latest tmp version
 							rs = retryMultipartSubdoc(eventParam->subdoc_name);
@@ -429,9 +429,7 @@ int parseEventData(char* str, event_params_t **val)
 		{
 			memset(param, 0, sizeof(event_params_t));
 		        tmpStr = strdup(str);
-			WebcfgInfo("B4 free str\n");
 			WEBCFG_FREE(str);
-			WebcfgInfo("free str\n");
 
 		        param->subdoc_name = strsep(&tmpStr, ",");
 		        trans_id = strsep(&tmpStr,",");
@@ -779,6 +777,9 @@ WEBCFG_STATUS retryMultipartSubdoc(char *docName)
 							reqParam[i].type = WDMP_BASE64;
 							WEBCFG_FREE(appended_doc);
 							WebcfgDebug("appended_doc done\n");
+							WebcfgInfo("Update doc trans_id\n");
+							//update doc_transId only for blob docs, not for scalars.
+							updateTmpList(gmp->entries[m].name_space, gmp->entries[m].etag, "pending", "failed_retrying", ccspStatus, doc_transId, 1);
 						}
 						else
 						{
@@ -797,7 +798,12 @@ WEBCFG_STATUS retryMultipartSubdoc(char *docName)
 					if(ret == WDMP_SUCCESS)
 					{
 						WebcfgInfo("retryMultipartSubdoc setValues success. ccspStatus : %d\n", ccspStatus);
-						updateTmpList(gmp->entries[m].name_space, gmp->entries[m].etag, "pending", "failed_retrying", ccspStatus, doc_transId, 1); //TODO: error details mapping as per ccspStatus
+						if(reqParam[0].type  != WDMP_BASE64)
+						{
+							WebcfgInfo("For scalar docs, update trans_id as 0\n");
+							updateTmpList(gmp->entries[m].name_space, gmp->entries[m].etag, "success", "none", ccspStatus, 0, 0);
+						//TODO: should we send scalar success notfn, delete tmp, updateDB?
+						}
 						rv = WEBCFG_SUCCESS;
 					}
 					else
@@ -806,13 +812,13 @@ WEBCFG_STATUS retryMultipartSubdoc(char *docName)
 						if((ccspStatus == 192) || (ccspStatus == 204) || (ccspStatus == 191))
 						{
 							WebcfgInfo("ccspStatus is crash %d\n", ccspStatus);
-							updateTmpList(gmp->entries[m].name_space, gmp->entries[m].etag, "pending", "failed_retrying", ccspStatus, doc_transId, 1);
+							updateTmpList(gmp->entries[m].name_space, gmp->entries[m].etag, "pending", "failed_retrying", ccspStatus, 0, 1);
 							set_doc_fail(1);
 							WebcfgInfo("the retry flag value is %d\n", get_doc_fail());
 						}
 						else
 						{
-							updateTmpList(gmp->entries[m].name_space, gmp->entries[m].etag, "failed", "doc_rejected", ccspStatus, doc_transId, 0); //TODO: error details mapping as per webpa ccspStatus
+							updateTmpList(gmp->entries[m].name_space, gmp->entries[m].etag, "failed", "doc_rejected", ccspStatus, 0, 0);
 							//addWebConfgNotifyMsg(gmp->entries[m].name_space, gmp->entries[m].etag, "failed", "doc_rejected", doc_transId,0, "status", ccspStatus);
 						}
 					}
@@ -847,7 +853,7 @@ WEBCFG_STATUS checkDBVersion(char *docname, uint32_t version)
 		{
 			if(webcfgdb->version == version)
 			{
-				WebcfgInfo("webcfgdb version %hu is same for doc %s\n", webcfgdb->version, docname);
+				WebcfgInfo("webcfgdb version %lu is same for doc %s\n", (long)webcfgdb->version, docname);
 				return WEBCFG_SUCCESS;
 			}
 		}
@@ -914,7 +920,7 @@ WEBCFG_STATUS validateEvent(char *docname, uint16_t txid)
 		WebcfgInfo("validateEvent: temp->name %s, temp->trans_id %hu\n",temp->name, temp->trans_id);
 		if( strcmp(docname, temp->name) == 0)
 		{
-			if(txid == temp->trans_id) //TODO: should we merge version check also here?
+			if(txid == temp->trans_id)
 			{
 				WebcfgInfo("Valid event. Event txid %hu matches with temp trans_id %hu\n", txid, temp->trans_id);
 				return WEBCFG_SUCCESS;
