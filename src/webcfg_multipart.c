@@ -528,40 +528,38 @@ WEBCFG_STATUS processMsgpackSubdoc(char *transaction_id)
 						else
 						{
 							WebcfgDebug("scalar doc success\n");
-						WebcfgDebug("update doc status for %s\n", mp->entries[m].name_space);
-						uStatus = updateTmpList(mp->entries[m].name_space, mp->entries[m].etag, "success", "none", ccspStatus, doc_transId, 0);
-						if(uStatus == WEBCFG_SUCCESS)
-						{
-							//print_tmp_doc_list(mp->entries_count);
-							WebcfgDebug("updateTmpList success\n");
-
-							//send success notification to cloud
-							WebcfgDebug("send notify for mp->entries[m].name_space %s\n", mp->entries[m].name_space);
-							addWebConfgNotifyMsg(mp->entries[m].name_space, mp->entries[m].etag, "success", "none", trans_id,0, "status",0);
-							WebcfgDebug("deleteFromTmpList as doc is applied\n");
-							dStatus = deleteFromTmpList(mp->entries[m].name_space);
-							if(dStatus == WEBCFG_SUCCESS)
+							WebcfgDebug("update doc status for %s\n", mp->entries[m].name_space);
+							uStatus = updateTmpList(mp->entries[m].name_space, mp->entries[m].etag, "success", "none", ccspStatus, doc_transId, 0);
+							if(uStatus == WEBCFG_SUCCESS)
 							{
-								WebcfgDebug("deleteFromTmpList success\n");
 								//print_tmp_doc_list(mp->entries_count);
+								WebcfgDebug("updateTmpList success\n");
+
+								//send success notification to cloud
+								WebcfgDebug("send notify for mp->entries[m].name_space %s\n", mp->entries[m].name_space);
+								addWebConfgNotifyMsg(mp->entries[m].name_space, mp->entries[m].etag, "success", "none", trans_id,0, "status",0);
+								WebcfgDebug("deleteFromTmpList as doc is applied\n");
+								dStatus = deleteFromTmpList(mp->entries[m].name_space);
+								if(dStatus == WEBCFG_SUCCESS)
+								{
+									WebcfgDebug("deleteFromTmpList success\n");
+									//print_tmp_doc_list(mp->entries_count);
+								}
+								else
+								{
+									WebcfgError("deleteFromTmpList failed\n");
+								}
 							}
 							else
 							{
-								WebcfgError("deleteFromTmpList failed\n");
+								WebcfgError("updateTmpList failed\n");
 							}
+							checkDBList(mp->entries[m].name_space,mp->entries[m].etag);
+							success_count++;
 						}
-						else
-						{
-							WebcfgError("updateTmpList failed\n");
-						}
-						checkDBList(mp->entries[m].name_space,mp->entries[m].etag);
-						}
-
-
-						success_count++;
 
 						WebcfgDebug("The mp->entries_count %d\n",(int)mp->entries_count);
-						WebcfgDebug("The count %d\n",success_count);
+						WebcfgInfo("The count %d\n",success_count);
 						if(success_count ==(int) mp->entries_count-1)
 						{
 							char * temp = strdup(g_ETAG);
@@ -659,7 +657,7 @@ WEBCFG_STATUS processMsgpackSubdoc(char *transaction_id)
 			j--;
 			temp1 = temp1->next;
 		}
-		WebcfgDebug("addNewDocEntry\n");
+		WebcfgInfo("addNewDocEntry\n");
 		addNewDocEntry(get_successDocCount());
 	}
 
