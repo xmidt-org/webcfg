@@ -489,7 +489,7 @@ WEBCFG_STATUS processMsgpackSubdoc(char *transaction_id)
 						WEBCFG_FREE(appended_doc);
 						//Update doc trans_id to validate events.
 						WebcfgDebug("Update doc trans_id to validate events.\n");
-						updateTmpList(mp->entries[m].name_space, mp->entries[m].etag, "pending", "none", ccspStatus, doc_transId, 0);
+						updateTmpList(mp->entries[m].name_space, mp->entries[m].etag, "pending", "none", 0, doc_transId, 0);
 					}
 					else
 					{
@@ -528,7 +528,7 @@ WEBCFG_STATUS processMsgpackSubdoc(char *transaction_id)
 						else
 						{
 							WebcfgDebug("update doc status for %s\n", mp->entries[m].name_space);
-							updateTmpList(mp->entries[m].name_space, mp->entries[m].etag, "success", "none", ccspStatus, 0, 0);
+							updateTmpList(mp->entries[m].name_space, mp->entries[m].etag, "success", "none", 0, 0, 0);
 							//send success notification to cloud
 							WebcfgDebug("send notify for mp->entries[m].name_space %s\n", mp->entries[m].name_space);
 							addWebConfgNotifyMsg(mp->entries[m].name_space, mp->entries[m].etag, "success", "none", trans_id,0, "status",0);

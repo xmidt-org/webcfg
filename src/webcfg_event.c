@@ -498,7 +498,7 @@ void createTimerExpiryEvent(char *docName, uint16_t transid)
 //Update Tmp list and send success notification to cloud .
 void sendSuccessNotification(char *name, uint32_t version, uint16_t txid)
 {
-	updateTmpList(name, version, "success", "none", 100, txid, 0);
+	updateTmpList(name, version, "success", "none", 0, txid, 0);
 	addWebConfgNotifyMsg(name, version, "success", "none", get_global_transID(),0, "status",0);
 	deleteFromTmpList(name);
 }
@@ -798,8 +798,19 @@ WEBCFG_STATUS retryMultipartSubdoc(char *docName)
 						if(reqParam[0].type  != WDMP_BASE64)
 						{
 							WebcfgInfo("For scalar docs, update trans_id as 0\n");
-							updateTmpList(gmp->entries[m].name_space, gmp->entries[m].etag, "success", "none", ccspStatus, 0, 0);
-						//TODO: should we send scalar success notfn, delete tmp, updateDB?
+							updateTmpList(gmp->entries[m].name_space, gmp->entries[m].etag, "success", "none", 0, 0, 0);
+							//send scalar success notification, delete tmp, updateDB
+							addWebConfgNotifyMsg(gmp->entries[m].name_space, gmp->entries[m].etag, "success", "none", get_global_transID(), 0, "status", 0);
+							WebcfgInfo("deleteFromTmpList as scalar doc is applied\n");
+							deleteFromTmpList(gmp->entries[m].name_space);
+							checkDBList(gmp->entries[m].name_space,gmp->entries[m].etag);
+							WebcfgInfo("checkRootUpdate scalar doc case\n");
+							if(checkRootUpdate() == WEBCFG_SUCCESS)
+							{
+								WebcfgInfo("updateRootVersionToDB\n");
+								updateRootVersionToDB();
+							}
+							addNewDocEntry(get_successDocCount());
 						}
 						rv = WEBCFG_SUCCESS;
 					}
@@ -810,13 +821,14 @@ WEBCFG_STATUS retryMultipartSubdoc(char *docName)
 						{
 							WebcfgInfo("ccspStatus is crash %d\n", ccspStatus);
 							updateTmpList(gmp->entries[m].name_space, gmp->entries[m].etag, "pending", "failed_retrying", ccspStatus, 0, 1);
+							addWebConfgNotifyMsg(gmp->entries[m].name_space, gmp->entries[m].etag, "pending", "failed_retrying", get_global_transID(), 0,"status",ccspStatus);
 							set_doc_fail(1);
 							WebcfgInfo("the retry flag value is %d\n", get_doc_fail());
 						}
 						else
 						{
 							updateTmpList(gmp->entries[m].name_space, gmp->entries[m].etag, "failed", "doc_rejected", ccspStatus, 0, 0);
-							//addWebConfgNotifyMsg(gmp->entries[m].name_space, gmp->entries[m].etag, "failed", "doc_rejected", doc_transId,0, "status", ccspStatus);
+							addWebConfgNotifyMsg(gmp->entries[m].name_space, gmp->entries[m].etag, "failed", "doc_rejected", get_global_transID(), 0, "status", ccspStatus);
 						}
 					}
 					reqParam_destroy(paramCount, reqParam);
