@@ -117,7 +117,7 @@ void *WebConfigMultipartTask(void *status)
 			clock_gettime(CLOCK_REALTIME, &ts);
 	    		ts.tv_sec += 900;
 
-			WebcfgInfo("B4 sync_condition pthread_cond_timedwait\n");
+			WebcfgDebug("B4 sync_condition pthread_cond_timedwait\n");
 			rv = pthread_cond_timedwait(&sync_condition, &sync_mutex, &ts);
 			WebcfgInfo("The retry flag value is %d\n", get_doc_fail());
 			WebcfgInfo("The value of rv %d\n", rv);
@@ -129,10 +129,10 @@ void *WebConfigMultipartTask(void *status)
 
 		if(rv == ETIMEDOUT && get_doc_fail() == 1)
 		{
-			WebcfgInfo("Inside the timedout condition\n");
+			WebcfgDebug("Inside the timedout condition\n");
 			set_doc_fail(0);
 			failedDocsRetry();
-			WebcfgInfo("After the failedDocsRetry\n");		
+			WebcfgDebug("After the failedDocsRetry\n");
 		}
 		else if(!rv && !g_shutdown)
 		{

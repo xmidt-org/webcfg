@@ -359,7 +359,7 @@ void set_doc_fail( int value)
 
 blob_t * get_DB_BLOB()
 {
-     WebcfgInfo("Proceed to generateBlob\n");
+     WebcfgDebug("Proceed to generateBlob\n");
      if(generateBlob() != WEBCFG_SUCCESS)
      {
 	WebcfgError("Failed in Blob generation\n");

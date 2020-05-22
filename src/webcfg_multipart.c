@@ -489,7 +489,7 @@ WEBCFG_STATUS processMsgpackSubdoc(char *transaction_id)
 						appended_doc = webcfg_appendeddoc( mp->entries[m].name_space, mp->entries[m].etag, pm->entries[i].value, pm->entries[i].value_size, &doc_transId);
 						WebcfgDebug("webcfg_appendeddoc doc_transId : %hu\n", doc_transId);
 						reqParam[i].name = strdup(pm->entries[i].name);
-						WebcfgInfo("appended_doc length: %zu\n", strlen(appended_doc));
+						WebcfgDebug("appended_doc length: %zu\n", strlen(appended_doc));
 						reqParam[i].value = strdup(appended_doc);
 						reqParam[i].type = WDMP_BASE64;
 						WEBCFG_FREE(appended_doc);
@@ -545,7 +545,7 @@ WEBCFG_STATUS processMsgpackSubdoc(char *transaction_id)
 						}
 
 						WebcfgDebug("The mp->entries_count %d\n",(int)mp->entries_count);
-						WebcfgInfo("The count %d\n",success_count);
+						WebcfgDebug("The count %d\n",success_count);
 						if(success_count ==(int) mp->entries_count-1)
 						{
 							char * temp = strdup(g_ETAG);
@@ -577,7 +577,7 @@ WEBCFG_STATUS processMsgpackSubdoc(char *transaction_id)
 						//Update error_details to tmp list and send failure notification to cloud.
 						if((ccspStatus == CCSP_CRASH_STATUS_CODE) || (ccspStatus == 204) || (ccspStatus == 191))
 						{
-							WebcfgInfo("ccspStatus is crash %d\n", CCSP_CRASH_STATUS_CODE);
+							WebcfgDebug("ccspStatus is %d\n", ccspStatus);
 							updateTmpList(mp->entries[m].name_space, mp->entries[m].etag, "failed", "crash_retrying", ccspStatus, 0, 1);
 							addWebConfgNotifyMsg(mp->entries[m].name_space, mp->entries[m].etag, "failed", "crash_retrying", trans_id,0,"status",ccspStatus);
 							
@@ -1418,10 +1418,10 @@ void updateRootVersionToDB()
 		checkDBList("root",version);
 	}
 
-	WebcfgInfo("The Etag is %lu\n",(long)version );
+	WebcfgDebug("The Etag is %lu\n",(long)version );
 	//Delete tmp queue root as all docs are applied
 	WebcfgInfo("Delete tmp queue root as all docs are applied\n");
-	WebcfgInfo("root version to delete is %lu\n", (long)version);
+	WebcfgDebug("root version to delete is %lu\n", (long)version);
 	dStatus = deleteFromTmpList("root");
 	if(dStatus == 0)
 	{
@@ -1448,7 +1448,7 @@ void failedDocsRetry()
 			}
 			else
 			{
-				WebcfgInfo("The subdoc %s set is failed\n", temp->name);
+				WebcfgError("The subdoc %s set is failed\n", temp->name);
 			}
 		}
 		temp= temp->next;

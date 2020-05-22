@@ -162,7 +162,7 @@ int addToEventQueue(char *buf)
             {
                 eventDataQ = Data;
 
-                WebcfgInfo("Producer added Data\n");
+                WebcfgDebug("Producer added Data\n");
                 pthread_cond_signal(&event_con);
                 pthread_mutex_unlock (&event_mut);
                 WebcfgDebug("mutex unlock in producer event thread\n");
@@ -240,7 +240,7 @@ void* processSubdocEvents()
 
 							//add to DB, update tmp list and notification based on success ack.
 							sendSuccessNotification(eventParam->subdoc_name, eventParam->version, eventParam->trans_id);
-							WebcfgInfo("AddToDB subdoc_name %s version %lu\n", eventParam->subdoc_name, (long)eventParam->version);
+							WebcfgDebug("AddToDB subdoc_name %s version %lu\n", eventParam->subdoc_name, (long)eventParam->version);
 							checkDBList(eventParam->subdoc_name,eventParam->version);
 							WebcfgDebug("checkRootUpdate\n");
 							if(checkRootUpdate() == WEBCFG_SUCCESS)
@@ -265,9 +265,9 @@ void* processSubdocEvents()
 						{
 							stopWebcfgTimer(eventParam->subdoc_name, eventParam->trans_id);
 							snprintf(err_details, sizeof(err_details),"NACK:%s,%s",((NULL != eventParam->process_name) ? eventParam->process_name : "unknown"), ((NULL != eventParam->failure_reason) ? eventParam->failure_reason : "unknown"));
-							WebcfgError("err_details : %s, err_code : %lu\n", err_details, (long) eventParam->err_code);
+							WebcfgDebug("err_details : %s, err_code : %lu\n", err_details, (long) eventParam->err_code);
 							updateTmpList(eventParam->subdoc_name, eventParam->version, "failed", err_details, eventParam->err_code, eventParam->trans_id, 0);
-							WebcfgInfo("get_global_transID is %s\n", get_global_transID());
+							WebcfgDebug("get_global_transID is %s\n", get_global_transID());
 							addWebConfgNotifyMsg(eventParam->subdoc_name, eventParam->version, "failed", err_details, get_global_transID(),eventParam->timeout, "status", eventParam->err_code);
 						}
 						else
@@ -484,7 +484,7 @@ void createTimerExpiryEvent(char *docName, uint16_t transid)
 
 	snprintf(data,sizeof(data),"%s,%hu,%u,EXPIRE,%u",docName,transid,0,0);
 	expiry_event_data = strdup(data);
-	WebcfgInfo("expiry_event_data formed %s\n", expiry_event_data);
+	WebcfgDebug("expiry_event_data formed %s\n", expiry_event_data);
 	if(expiry_event_data)
 	{
 		addToEventQueue(expiry_event_data);
@@ -644,7 +644,7 @@ WEBCFG_STATUS stopWebcfgTimer(char *name, uint16_t trans_id)
 	expire_timer_t *temp = NULL;
 	temp = get_global_timer_node();
 
-	WebcfgInfo("stopWebcfgTimer trans_id %lu\n", (long)trans_id);
+	WebcfgDebug("stopWebcfgTimer trans_id %lu\n", (long)trans_id);
 	//Traverse through doc list & delete required doc timer from list
 	while (NULL != temp)
 	{
@@ -655,7 +655,7 @@ WEBCFG_STATUS stopWebcfgTimer(char *name, uint16_t trans_id)
 			{
 				if( trans_id ==temp->txid)
 				{
-					WebcfgInfo("delete timer for sub doc %s\n", name);
+					WebcfgDebug("delete timer for sub doc %s\n", name);
 					if(deleteFromTimerList(name) == WEBCFG_SUCCESS)
 					{
 						WebcfgInfo("stopped timer for doc %s\n", name);
@@ -697,12 +697,12 @@ int checkTimerExpired (char **exp_doc)
 		WebcfgDebug("checking expiry for temp->subdoc_name %s\n",temp->subdoc_name);
 		if (temp->running)
 		{
-			WebcfgInfo("timer running for doc %s temp->timeout: %d\n",temp->subdoc_name, (int)temp->timeout);
+			WebcfgDebug("timer running for doc %s temp->timeout: %d\n",temp->subdoc_name, (int)temp->timeout);
 			if((int)temp->timeout <= 0)
 			{
 				WebcfgInfo("Timer Expired for doc %s, doc apply failed\n", temp->subdoc_name);
 				*exp_doc = strdup(temp->subdoc_name);
-				WebcfgInfo("*exp_doc is %s\n", *exp_doc);
+				WebcfgDebug("*exp_doc is %s\n", *exp_doc);
 				return true;
 			}
 			temp->timeout = temp->timeout - 5;
@@ -768,14 +768,12 @@ WEBCFG_STATUS retryMultipartSubdoc(char *docName)
 							char *appended_doc = NULL;
 							WebcfgDebug("B4 webcfg_appendeddoc\n");
 							appended_doc = webcfg_appendeddoc( gmp->entries[m].name_space, gmp->entries[m].etag, pm->entries[i].value, pm->entries[i].value_size, &doc_transId);
-							WebcfgInfo("webcfg_appendeddoc doc_transId is %hu\n", doc_transId);
+							WebcfgDebug("webcfg_appendeddoc doc_transId is %hu\n", doc_transId);
 							reqParam[i].name = strdup(pm->entries[i].name);
-							WebcfgInfo("appended_doc length: %zu\n", strlen(appended_doc));
+							WebcfgDebug("appended_doc length: %zu\n", strlen(appended_doc));
 							reqParam[i].value = strdup(appended_doc);
 							reqParam[i].type = WDMP_BASE64;
 							WEBCFG_FREE(appended_doc);
-							WebcfgDebug("appended_doc done\n");
-							WebcfgInfo("Update doc trans_id\n");
 							//update doc_transId only for blob docs, not for scalars.
 							updateTmpList(gmp->entries[m].name_space, gmp->entries[m].etag, "pending", "failed_retrying", ccspStatus, doc_transId, 1);
 						}
@@ -791,24 +789,24 @@ WEBCFG_STATUS retryMultipartSubdoc(char *docName)
 				WebcfgDebug("Proceed to setValues..\n");
 				if(reqParam !=NULL)
 				{
-					WebcfgInfo("retryMultipartSubdoc WebConfig SET Request\n");
+					WebcfgDebug("retryMultipartSubdoc WebConfig SET Request\n");
 					setValues(reqParam, paramCount, ATOMIC_SET_WEBCONFIG, NULL, NULL, &ret, &ccspStatus);
 					if(ret == WDMP_SUCCESS)
 					{
 						WebcfgInfo("retryMultipartSubdoc setValues success. ccspStatus : %d\n", ccspStatus);
 						if(reqParam[0].type  != WDMP_BASE64)
 						{
-							WebcfgInfo("For scalar docs, update trans_id as 0\n");
+							WebcfgDebug("For scalar docs, update trans_id as 0\n");
 							updateTmpList(gmp->entries[m].name_space, gmp->entries[m].etag, "success", "none", 0, 0, 0);
 							//send scalar success notification, delete tmp, updateDB
 							addWebConfgNotifyMsg(gmp->entries[m].name_space, gmp->entries[m].etag, "success", "none", get_global_transID(), 0, "status", 0);
-							WebcfgInfo("deleteFromTmpList as scalar doc is applied\n");
+							WebcfgDebug("deleteFromTmpList as scalar doc is applied\n");
 							deleteFromTmpList(gmp->entries[m].name_space);
 							checkDBList(gmp->entries[m].name_space,gmp->entries[m].etag);
-							WebcfgInfo("checkRootUpdate scalar doc case\n");
+							WebcfgDebug("checkRootUpdate scalar doc case\n");
 							if(checkRootUpdate() == WEBCFG_SUCCESS)
 							{
-								WebcfgInfo("updateRootVersionToDB\n");
+								WebcfgDebug("updateRootVersionToDB\n");
 								updateRootVersionToDB();
 							}
 							addNewDocEntry(get_successDocCount());
@@ -910,7 +908,7 @@ uint32_t getDocVersionFromTmpList(char *docname)
 		WebcfgDebug("getDocVersionFromTmpList: temp->name %s, temp->version %lu\n",temp->name, (long)temp->version);
 		if( strcmp(docname, temp->name) == 0)
 		{
-			WebcfgInfo("return temp->version %lu for docname %s\n", (long)temp->version, docname);
+			WebcfgDebug("return temp->version %lu for docname %s\n", (long)temp->version, docname);
 			return temp->version;
 		}
 		temp= temp->next;

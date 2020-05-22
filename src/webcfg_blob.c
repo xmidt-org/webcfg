@@ -225,9 +225,8 @@ char * webcfg_appendeddoc(char * subdoc_name, uint32_t version, char * blob_data
 
         appenddata->subdoc_name = strdup(subdoc_name);
         appenddata->version = version;
-	WebcfgInfo("B4 blob generateTransactionId\n");
 	*trans_id = generateTransactionId();
-	WebcfgInfo("*trans_id generated is %hu\n", *trans_id);
+	WebcfgDebug("*trans_id generated is %hu\n", *trans_id);
         appenddata->transaction_id = *trans_id;
 	WebcfgInfo("subdoc_name: %s, version: %lu, transaction_id: %hu\n", subdoc_name, (unsigned long)version, appenddata->transaction_id);
 
