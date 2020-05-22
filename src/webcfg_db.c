@@ -782,7 +782,7 @@ char * get_DB_BLOB_base64()
 		{
 			for(k = 0;k< bd->entries_count ; k++)
 			{
-				WebcfgInfo("Blob bd->entries[%zu].name %s, version: %lu, status: %s, error_details: %s\n", k, bd->entries[k].name, (long)bd->entries[k].version, bd->entries[k].status, bd->entries[k].error_details );
+				WebcfgInfo("Blob bd->entries[%zu].name %s, version: %lu, status: %s, error_details: %s, error_code: %d\n", k, bd->entries[k].name, (long)bd->entries[k].version, bd->entries[k].status, bd->entries[k].error_details, bd->entries[k].error_code );
 			}
 
 		}
@@ -819,7 +819,6 @@ int process_webcfgdbblobparams( blob_data_t *e, msgpack_object_map *map )
                 {
                     if( UINT32_MAX < p->val.via.u64 )
                     {
-			//WebcfgDebug("e->type is %d\n", e->type);
                         errno = BD_INVALID_DATATYPE;
                         return -1;
                     }
@@ -830,7 +829,21 @@ int process_webcfgdbblobparams( blob_data_t *e, msgpack_object_map *map )
                     }
                     objects_left &= ~(1 << 0);
                 }
+                else if( 0 == match(p, "error_code"))
+                {
+                    if( UINT32_MAX < p->val.via.u64 )
+                    {
+                        errno = BD_INVALID_DATATYPE;
+                        return -1;
+                    }
+                    else
+                    {
+                        e->error_code = (uint16_t) p->val.via.u64;
+			//WebcfgDebug("e->version is %d\n", e->error_code);
+                    }
+                    objects_left &= ~(1 << 3);
                 
+                }
             }
             else if( MSGPACK_OBJECT_STR == p->val.type )
             {
@@ -838,19 +851,19 @@ int process_webcfgdbblobparams( blob_data_t *e, msgpack_object_map *map )
                 {
                     e->name = strndup( p->val.via.str.ptr, p->val.via.str.size );
 		    //WebcfgDebug("e->name is %s\n", e->name);
-                    objects_left &= ~(1 << 1);
+                    objects_left &= ~(1 << 0);
                 }
                 else if(0 == match(p, "status") )
                 {
                      e->status = strndup( p->val.via.str.ptr, p->val.via.str.size );
 		     //WebcfgDebug("e->status is %s\n", e->status);
-                     objects_left &= ~(1 << 2);
+                     objects_left &= ~(1 << 1);
                 }
 		else if(0 == match(p, "error_details") )
                 {
                      e->error_details = strndup( p->val.via.str.ptr, p->val.via.str.size );
 		     //WebcfgDebug("e->error_details is %s\n", e->error_details);
-                     objects_left &= ~(1 << 3);
+                     objects_left &= ~(1 << 2);
                 }
             }
         }

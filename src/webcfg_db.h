@@ -63,7 +63,8 @@ typedef struct{
         char * name;
         uint32_t version;
         char * status;
-	char * error_details; //TODO: add uint16_t error_code; in blob.
+	char * error_details;
+	uint16_t error_code;
 }blob_data_t;
 
 typedef struct{
@@ -84,8 +85,11 @@ typedef struct{
  */
 
 void webcfgdbblob_destroy( blob_struct_t *bd );
+
 void webcfgdb_destroy( webconfig_db_data_t *pm );
+
 const char* webcfgdbblob_strerror( int errnum );
+
 blob_struct_t* decodeBlobData(const void * buf, size_t len);
 
 WEBCFG_STATUS initDB(char * db_file_path);
