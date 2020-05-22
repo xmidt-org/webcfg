@@ -125,7 +125,7 @@ ssize_t webcfgdb_blob_pack(webconfig_db_data_t *webcfgdb, webconfig_tmp_data_t *
        {
 	    while(db_data != NULL) //1 element
 	    {
-                msgpack_pack_map( &pk, 4); //name, version,status, error_details
+                msgpack_pack_map( &pk, 5); //name, version,status, error_details
 
 	        struct webcfg_token WEBCFG_MAP_BLOB_NAME;
 
@@ -153,6 +153,13 @@ ssize_t webcfgdb_blob_pack(webconfig_db_data_t *webcfgdb, webconfig_tmp_data_t *
                 WEBCFG_MAP_BLOB_ERROR_DETAILS.length = strlen( "error_details" );
                 __msgpack_pack_string_nvp( &pk, &WEBCFG_MAP_BLOB_ERROR_DETAILS, "none" );
 
+	        struct webcfg_token WEBCFG_MAP_BLOB_ERROR_CODE;
+
+                WEBCFG_MAP_BLOB_ERROR_CODE.name = "error_code";
+                WEBCFG_MAP_BLOB_ERROR_CODE.length = strlen( "error_code" );
+	        __msgpack_pack_string( &pk, WEBCFG_MAP_BLOB_ERROR_CODE.name, WEBCFG_MAP_BLOB_ERROR_CODE.length);
+                msgpack_pack_uint64(&pk,0);
+
                 db_data = db_data->next;
 
 	    }
@@ -162,7 +169,7 @@ ssize_t webcfgdb_blob_pack(webconfig_db_data_t *webcfgdb, webconfig_tmp_data_t *
        {
 	    while(temp_data != NULL) //1 element
 	    {
-                msgpack_pack_map( &pk, 4); //name, version
+                msgpack_pack_map( &pk, 5); //name, version
 
 	        struct webcfg_token WEBCFG_MAP_TEMP_NAME;
 
@@ -193,6 +200,13 @@ ssize_t webcfgdb_blob_pack(webconfig_db_data_t *webcfgdb, webconfig_tmp_data_t *
                 WebcfgDebug("The tmp error_details is %s\n",temp_data->error_details);
                 __msgpack_pack_string_nvp( &pk, &WEBCFG_MAP_TEMP_ERROR_DETAILS, temp_data->error_details );
 
+	        struct webcfg_token WEBCFG_MAP_TEMP_ERROR_CODE;
+
+                WEBCFG_MAP_TEMP_ERROR_CODE.name = "error_code";
+                WEBCFG_MAP_TEMP_ERROR_CODE.length = strlen( "error_code" );
+	        __msgpack_pack_string( &pk, WEBCFG_MAP_TEMP_ERROR_CODE.name, WEBCFG_MAP_TEMP_ERROR_CODE.length);
+                msgpack_pack_uint64(&pk,(uint16_t)temp_data->error_code);
+
                 temp_data = temp_data->next;
 
 	    }
@@ -207,7 +221,7 @@ ssize_t webcfgdb_blob_pack(webconfig_db_data_t *webcfgdb, webconfig_tmp_data_t *
 
         if( NULL != *data ) {
             memcpy( *data, sbuf.data, sbuf.size );
-	    //WebcfgDebug("sbuf.data is %s sbuf.size %ld\n", sbuf.data, sbuf.size);
+	    WebcfgDebug("sbuf.data is %s sbuf.size %ld\n", sbuf.data, sbuf.size);
             rv = sbuf.size;
         }
     }

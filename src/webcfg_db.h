@@ -41,6 +41,9 @@ typedef struct webconfig_tmp_data
         uint32_t version;
         char * status;
 	char * error_details;
+	int retry_count;
+	uint16_t error_code;
+	uint16_t trans_id;
         struct webconfig_tmp_data *next;
 } webconfig_tmp_data_t;
 
@@ -61,6 +64,7 @@ typedef struct{
         uint32_t version;
         char * status;
 	char * error_details;
+	uint16_t error_code;
 }blob_data_t;
 
 typedef struct{
@@ -81,8 +85,11 @@ typedef struct{
  */
 
 void webcfgdbblob_destroy( blob_struct_t *bd );
+
 void webcfgdb_destroy( webconfig_db_data_t *pm );
+
 const char* webcfgdbblob_strerror( int errnum );
+
 blob_struct_t* decodeBlobData(const void * buf, size_t len);
 
 WEBCFG_STATUS initDB(char * db_file_path);
@@ -103,7 +110,7 @@ WEBCFG_STATUS addToTmpList( multipart_t *mp);
 
 void addToDBList(webconfig_db_data_t *webcfgdb);
 
-WEBCFG_STATUS updateTmpList(char *docname, uint32_t version, char *status, char *error_details);
+WEBCFG_STATUS updateTmpList(char *docname, uint32_t version, char *status, char *error_details, uint16_t error_code, uint16_t trans_id, int retry);
 
 WEBCFG_STATUS deleteFromTmpList(char* doc_name);
 
@@ -112,6 +119,10 @@ void delete_tmp_doc_list();
 int get_numOfMpDocs();
 
 int get_successDocCount();
+
+int get_doc_fail();
+
+void set_doc_fail( int value);
 
 char * get_DB_BLOB_base64();
 

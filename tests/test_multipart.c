@@ -28,6 +28,7 @@
 #include <curl/curl.h>
 #include <base64.h>
 #include "../src/webcfg_generic.h"
+#include "../src/webcfg_event.h"
 #define FILE_URL "/tmp/webcfg_url"
 
 #define UNUSED(x) (void )(x)
@@ -132,6 +133,12 @@ int Set_Webconfig_URL( char *pString)
 	return 0;
 }
 
+int registerWebcfgEvent(WebConfigEventCallback webcfgEventCB)
+{
+	UNUSED(webcfgEventCB);
+	return 0;
+}
+
 void test_multipart()
 {
 	unsigned long status = 0;
@@ -142,6 +149,8 @@ void test_multipart()
 		return;
 	}
 	initWebConfigNotifyTask();
+	processWebcfgEvents();
+	initEventHandlingTask();
 	processWebconfgSync(status);
 }
 
