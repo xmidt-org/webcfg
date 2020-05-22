@@ -17,7 +17,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <msgpack.h>
-
+#include <pthread.h>
 #include "webcfg_helpers.h"
 #include "webcfg_multipart.h"
 #include "webcfg_param.h"
@@ -55,6 +55,8 @@ enum {
 static webconfig_tmp_data_t * g_head = NULL;
 static blob_t * webcfgdb_blob = NULL;
 static webconfig_db_data_t* webcfgdb_data = NULL;
+pthread_mutex_t webconfig_db_mut=PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t webconfig_tmp_data_mut=PTHREAD_MUTEX_INITIALIZER;
 static int numOfMpDocs = 0;
 static int success_doc_count = 0;
 static int doc_fail_flag = 0;
@@ -319,12 +321,21 @@ const char* webcfgdbparam_strerror( int errnum )
 
 webconfig_db_data_t * get_global_db_node(void)
 {
-    return webcfgdb_data;
+    webconfig_db_data_t* tmp = NULL;
+    pthread_mutex_lock (&webconfig_db_mut);
+    tmp = webcfgdb_data;
+    pthread_mutex_unlock (&webconfig_db_mut);
+    return tmp;
 }
 
 webconfig_tmp_data_t * get_global_tmp_node(void)
 {
-    return g_head;
+    webconfig_tmp_data_t * tmp = NULL;
+    pthread_mutex_lock (&webconfig_tmp_data_mut);
+    tmp = g_head;
+    pthread_mutex_unlock (&webconfig_tmp_data_mut);
+    return tmp;
+}
 }
 
 int get_numOfMpDocs()
@@ -409,10 +420,11 @@ WEBCFG_STATUS addToTmpList( multipart_t *mp)
 
 
 			new_node->next=NULL;
-
+			pthread_mutex_lock (&webconfig_tmp_data_mut);
 			if (g_head == NULL)
 			{
 				g_head = new_node;
+				pthread_mutex_unlock (&webconfig_tmp_data_mut);
 			}
 			else
 			{
@@ -424,6 +436,7 @@ WEBCFG_STATUS addToTmpList( multipart_t *mp)
 					temp=temp->next;
 				}
 				temp->next=new_node;
+				pthread_mutex_unlock (&webconfig_tmp_data_mut);
 			}
 
 			WebcfgDebug("--->>doc %s with version %lu is added to list\n", new_node->name, (long)new_node->version);
@@ -474,14 +487,20 @@ WEBCFG_STATUS updateDBlist(char *docname, uint32_t version)
 	//Traverse through doc list & update required doc
 	while (NULL != webcfgdb)
 	{
+		pthread_mutex_lock (&webconfig_db_mut);
+		WebcfgDebug("mutex_lock in updateDBlist\n");
 		WebcfgDebug("node is pointing to webcfgdb->name %s, docname %s, dblen %zu, doclen %zu \n",webcfgdb->name, docname, strlen(webcfgdb->name), strlen(docname));
 		if( strcmp(docname, webcfgdb->name) == 0)
 		{
 			webcfgdb->version = version;
 			WebcfgDebug("webcfgdb %s is updated to version %lu\n", docname, (long)webcfgdb->version);
+			pthread_mutex_unlock (&webconfig_db_mut);
+			WebcfgDebug("mutex_unlock if docname is webcfgdb name\n");
 			return WEBCFG_SUCCESS;
 		}
 		webcfgdb= webcfgdb->next;
+		pthread_mutex_unlock (&webconfig_db_mut);
+		WebcfgDebug("mutex_unlock in doc name is not webcfgdb name\n");
 	}
 	return WEBCFG_FAILURE;
 }
@@ -495,6 +514,8 @@ WEBCFG_STATUS updateTmpList(char *docname, uint32_t version, char *status, char 
 	while (NULL != temp)
 	{
 		//WebcfgDebug("node is pointing to temp->name %s \n",temp->name);
+		pthread_mutex_lock (&webconfig_tmp_data_mut);
+		WebcfgDebug("mutex_lock in updateTmpList\n");
 		if( strcmp(docname, temp->name) == 0)
 		{
 			temp->version = version;
@@ -519,9 +540,13 @@ WEBCFG_STATUS updateTmpList(char *docname, uint32_t version, char *status, char 
 				temp->retry_count = 0;
 			}
 			WebcfgInfo("doc %s is updated to version %lu status %s error_details %s error_code %lu trans_id %lu temp->retry_count %d\n", docname, (long)temp->version, temp->status, temp->error_details, (long)temp->error_code, (long)temp->trans_id, temp->retry_count);
+			pthread_mutex_unlock (&webconfig_tmp_data_mut);
+			WebcfgDebug("mutex_unlock in current temp details\n");
 			return WEBCFG_SUCCESS;
 		}
 		temp= temp->next;
+		pthread_mutex_unlock (&webconfig_tmp_data_mut);
+		WebcfgDebug("mutex_unlock in updateTmpList\n");
 	}
 	WebcfgError("updateTmpList failed as doc %s is not in tmp list\n", docname);
 	return WEBCFG_FAILURE;
@@ -541,8 +566,9 @@ WEBCFG_STATUS deleteFromTmpList(char* doc_name)
 	WebcfgDebug("doc to be deleted: %s\n", doc_name);
 
 	prev_node = NULL;
+	pthread_mutex_lock (&webconfig_tmp_data_mut);	
 	curr_node = g_head ;
-
+	pthread_mutex_unlock (&webconfig_tmp_data_mut);
 	// Traverse to get the doc to be deleted
 	while( NULL != curr_node )
 	{
@@ -552,7 +578,9 @@ WEBCFG_STATUS deleteFromTmpList(char* doc_name)
 			if( NULL == prev_node )
 			{
 				WebcfgDebug("need to delete first doc\n");
+				pthread_mutex_lock (&webconfig_tmp_data_mut);
 				g_head = curr_node->next;
+				pthread_mutex_unlock (&webconfig_tmp_data_mut);
 			}
 			else
 			{
@@ -593,8 +621,10 @@ void delete_tmp_doc_list()
         free(temp);
 	temp = NULL;
     }
-    g_head = NULL;
-    WebcfgDebug("Deleted all docs from tmp list\n");
+	pthread_mutex_lock (&webconfig_tmp_data_mut);
+    	g_head = NULL;
+	pthread_mutex_unlock (&webconfig_tmp_data_mut);
+    	WebcfgDebug("mutex_unlock Deleted all docs from tmp list\n");
 }
 /*----------------------------------------------------------------------------*/
 /*                             Internal functions                             */
@@ -719,9 +749,11 @@ int process_webcfgdb( webconfig_db_data_t *wd, msgpack_object *obj )
 
 void addToDBList(webconfig_db_data_t *webcfgdb)
 {
+      pthread_mutex_lock (&webconfig_db_mut); 
       if(webcfgdb_data == NULL)
       {
           webcfgdb_data = webcfgdb;
+	  pthread_mutex_unlock (&webconfig_db_mut);
           success_doc_count++;
 	  WebcfgInfo("Producer added webcfgdb->name %s, webcfg->version %lu, success_doc_count %d\n",webcfgdb->name, (long)webcfgdb->version, success_doc_count);
       }
@@ -734,6 +766,7 @@ void addToDBList(webconfig_db_data_t *webcfgdb)
               temp = temp->next;
           }
           temp->next = webcfgdb;
+          pthread_mutex_unlock (&webconfig_db_mut);
           success_doc_count++;
 	  WebcfgInfo("Producer added webcfgdb->name %s, webcfg->version %lu, success_doc_count %d\n",webcfgdb->name, (long)webcfgdb->version, success_doc_count);
       }

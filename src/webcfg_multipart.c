@@ -25,6 +25,7 @@
 #include "webcfg_notify.h"
 #include "webcfg_blob.h"
 #include "webcfg_event.h"
+#include <pthread.h>
 #include <uuid/uuid.h>
 /*----------------------------------------------------------------------------*/
 /*                                   Macros                                   */
@@ -57,6 +58,7 @@ static char g_productClass[64]={'\0'};
 static char g_ModelName[64]={'\0'};
 static char g_transID[64]={'\0'};
 multipart_t *mp = NULL;
+pthread_mutex_t multipart_t_mut =PTHREAD_MUTEX_INITIALIZER;
 static int eventFlag = 0;
 char * get_global_transID(void)
 {
@@ -65,7 +67,11 @@ char * get_global_transID(void)
 
 multipart_t * get_global_mp(void)
 {
-    return mp;
+    multipart_t *tmp = NULL;
+    pthread_mutex_lock (&multipart_t_mut);
+    tmp = mp;
+    pthread_mutex_unlock (&multipart_t_mut);
+    return tmp;
 }
 /*----------------------------------------------------------------------------*/
 /*                             Function Prototypes                            */
