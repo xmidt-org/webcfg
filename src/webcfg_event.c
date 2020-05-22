@@ -63,10 +63,11 @@ WEBCFG_STATUS validateEvent(char *docname, uint16_t txid);
 /*----------------------------------------------------------------------------*/
 /*                             External Functions                             */
 /*----------------------------------------------------------------------------*/
-expire_timer_t * get_global_timer_node(void)
-{
-    return g_timer_head;
-}
+
+expire_timer_t * get_global_timer_node(void)	
+{	
+    return g_timer_head;	
+}	
 
 //Webcfg thread listens for blob events from respective components.
 void initEventHandlingTask()
