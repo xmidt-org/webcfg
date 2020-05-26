@@ -429,6 +429,9 @@ WEBCFG_STATUS processMsgpackSubdoc(char *transaction_id)
 	WEBCFG_STATUS rv = WEBCFG_FAILURE;
 	param_t *reqParam = NULL;
 	WDMP_STATUS ret = WDMP_FAILURE;
+	WDMP_STATUS errd = WDMP_FAILURE;
+	char errDetails[MAX_VALUE_LEN]={0};
+	char result[MAX_VALUE_LEN]={0};
 	int ccspStatus=0;
 	int paramCount = 0;
 	webcfgparam_t *pm;
@@ -572,22 +575,31 @@ WEBCFG_STATUS processMsgpackSubdoc(char *transaction_id)
 					}
 					else
 					{
-						WebcfgError("setValues Failed. ccspStatus : %d\n", ccspStatus);
+						WebcfgInfo("setValues Failed. ccspStatus : %d\n", ccspStatus);
+						errd = mapStatus(ccspStatus);
+						WebcfgDebug("The errd value is %d\n",errd);
+
+						mapWdmpStatusToStatusMessage(errd, errDetails);
+						WebcfgDebug("The errDetails value is %s\n",errDetails);
 
 						//Update error_details to tmp list and send failure notification to cloud.
 						if((ccspStatus == CCSP_CRASH_STATUS_CODE) || (ccspStatus == 204) || (ccspStatus == 191))
 						{
 							WebcfgDebug("ccspStatus is %d\n", ccspStatus);
-							updateTmpList(mp->entries[m].name_space, mp->entries[m].etag, "failed", "crash_retrying", ccspStatus, 0, 1);
-							addWebConfgNotifyMsg(mp->entries[m].name_space, mp->entries[m].etag, "failed", "crash_retrying", trans_id,0,"status",ccspStatus);
+							snprintf(result,MAX_VALUE_LEN,"crash_retrying:%s", errDetails);
+							WebcfgDebug("The result is %s\n",result);
+							updateTmpList(mp->entries[m].name_space, mp->entries[m].etag, "failed", result, ccspStatus, 0, 1);
+							addWebConfgNotifyMsg(mp->entries[m].name_space, mp->entries[m].etag, "failed", result, trans_id,0,"status",ccspStatus);
 							
 							set_doc_fail(1);
 							WebcfgInfo("the retry flag value is %d\n", get_doc_fail());
 						}
 						else
 						{
-							updateTmpList(mp->entries[m].name_space, mp->entries[m].etag, "failed", "doc_rejected", ccspStatus, 0, 0);
-							addWebConfgNotifyMsg(mp->entries[m].name_space, mp->entries[m].etag, "failed", "doc_rejected", trans_id,0, "status", ccspStatus);
+							snprintf(result,MAX_VALUE_LEN,"doc_rejected:%s", errDetails);
+							WebcfgDebug("The result is %s\n",result);
+							updateTmpList(mp->entries[m].name_space, mp->entries[m].etag, "failed", result, ccspStatus, 0, 0);
+							addWebConfgNotifyMsg(mp->entries[m].name_space, mp->entries[m].etag, "failed", result, trans_id,0, "status", ccspStatus);
 						}
 						print_tmp_doc_list(mp->entries_count);
 					}

@@ -30,6 +30,7 @@
 #endif
 
 #define ATOMIC_SET_WEBCONFIG	    3
+#define MAX_VALUE_LEN			128
 typedef struct
 {
     uint32_t  etag;
