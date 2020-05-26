@@ -504,17 +504,18 @@ WEBCFG_STATUS updateDBlist(char *docname, uint32_t version)
 	return WEBCFG_FAILURE;
 }
 //update version, status for each doc
-WEBCFG_STATUS updateTmpList(char *docname, uint32_t version, char *status, char *error_details, uint16_t error_code, uint16_t trans_id, int retry)
+WEBCFG_STATUS updateTmpList(webconfig_tmp_data_t *temp, char *docname, uint32_t version, char *status, char *error_details, uint16_t error_code, uint16_t trans_id, int retry)
 {
-	webconfig_tmp_data_t *temp = NULL;
-	temp = get_global_tmp_node();
+	//webconfig_tmp_data_t *temp = NULL;
+	//temp = get_global_tmp_node();
 
 	//Traverse through doc list & update required doc
-	while (NULL != temp)
+	//while (NULL != temp)
+	if (NULL != temp)
 	{
-		//WebcfgDebug("node is pointing to temp->name %s \n",temp->name);
+		WebcfgInfo("updateTmpList: node is pointing to temp->name %s \n",temp->name);
 		pthread_mutex_lock (&webconfig_tmp_data_mut);
-		WebcfgDebug("mutex_lock in updateTmpList\n");
+		WebcfgInfo("mutex_lock in updateTmpList\n");
 		if( strcmp(docname, temp->name) == 0)
 		{
 			temp->version = version;
@@ -532,20 +533,20 @@ WEBCFG_STATUS updateTmpList(char *docname, uint32_t version, char *status, char 
 			}
 			temp->error_code = error_code;
 			temp->trans_id = trans_id;
-			WebcfgDebug("updateTmpList: retry %d\n", retry);
+			WebcfgInfo("updateTmpList: retry %d\n", retry);
 			if(!retry)
 			{
-				WebcfgDebug("updateTmpList: reset temp->retry_count\n");
+				WebcfgInfo("updateTmpList: reset temp->retry_count\n");
 				temp->retry_count = 0;
 			}
 			WebcfgInfo("doc %s is updated to version %lu status %s error_details %s error_code %lu trans_id %lu temp->retry_count %d\n", docname, (long)temp->version, temp->status, temp->error_details, (long)temp->error_code, (long)temp->trans_id, temp->retry_count);
 			pthread_mutex_unlock (&webconfig_tmp_data_mut);
-			WebcfgDebug("mutex_unlock in current temp details\n");
+			WebcfgInfo("mutex_unlock in current temp details\n");
 			return WEBCFG_SUCCESS;
 		}
-		temp= temp->next;
+		//temp= temp->next;
 		pthread_mutex_unlock (&webconfig_tmp_data_mut);
-		WebcfgDebug("mutex_unlock in updateTmpList\n");
+		WebcfgInfo("mutex_unlock in updateTmpList\n");
 	}
 	WebcfgError("updateTmpList failed as doc %s is not in tmp list\n", docname);
 	return WEBCFG_FAILURE;
@@ -989,3 +990,22 @@ int writebase64ToDBFile(char *base64_file_path, char *data)
 	}
 }
 
+//To get individual subdoc details from tmp cached list.
+webconfig_tmp_data_t * getTmpNode(char *docname)
+{
+	webconfig_tmp_data_t *temp = NULL;
+	temp = get_global_tmp_node();
+
+	//Traverse through doc list & fetch required doc.
+	while (NULL != temp)
+	{
+		WebcfgDebug("getSubdocTmpNode: temp->name %s, temp->version %lu\n",temp->name, (long)temp->version);
+		if( strcmp(docname, temp->name) == 0)
+		{
+			WebcfgInfo("subdoc node : name %s version %lu status %s error_details %s error_code %hu trans_id %hu temp->retry_count %d\n", temp->name, (long)temp->version, temp->status, temp->error_details, temp->error_code, temp->trans_id, temp->retry_count);
+			return temp;
+		}
+		temp= temp->next;
+	}
+	return NULL;
+}

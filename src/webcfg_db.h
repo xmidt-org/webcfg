@@ -110,9 +110,11 @@ WEBCFG_STATUS addToTmpList( multipart_t *mp);
 
 void addToDBList(webconfig_db_data_t *webcfgdb);
 
-WEBCFG_STATUS updateTmpList(char *docname, uint32_t version, char *status, char *error_details, uint16_t error_code, uint16_t trans_id, int retry);
+WEBCFG_STATUS updateTmpList(webconfig_tmp_data_t *temp, char *docname, uint32_t version, char *status, char *error_details, uint16_t error_code, uint16_t trans_id, int retry);
 
 WEBCFG_STATUS deleteFromTmpList(char* doc_name);
+
+webconfig_tmp_data_t * getTmpNode(char *docname);
 
 void delete_tmp_doc_list();
 

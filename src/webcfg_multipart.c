@@ -263,7 +263,7 @@ WEBCFG_STATUS webcfg_http_request(char **configData, int r_count, int status, lo
                         {
 				WebcfgDebug("checking content type\n");
 				content_res = curl_easy_getinfo(curl, CURLINFO_CONTENT_TYPE, &ct);
-				WebcfgDebug("ct is %s, content_res is %d\n", ct, content_res);
+				WebcfgInfo("ct is %s, content_res is %d\n", ct, content_res);
 
 				if(ct !=NULL)
 				{
@@ -467,6 +467,10 @@ WEBCFG_STATUS processMsgpackSubdoc(char *transaction_id)
 		WebcfgDebug("mp->entries[%d].data %s\n" ,m,  mp->entries[m].data);
 
 		WebcfgDebug("mp->entries[%d].data_size is %zu\n", m,mp->entries[m].data_size);
+		webconfig_tmp_data_t * subdoc_node = NULL;
+		subdoc_node = getTmpNode(mp->entries[m].name_space);
+
+		WebcfgInfo("subdoc node >> name %s version %lu status %s error_details %s error_code %hu trans_id %hu temp->retry_count %d\n", subdoc_node->name, (long)subdoc_node->version, subdoc_node->status, subdoc_node->error_details, subdoc_node->error_code, subdoc_node->trans_id, subdoc_node->retry_count);
 
 		WebcfgDebug("--------------decode root doc-------------\n");
 		pm = webcfgparam_convert( mp->entries[m].data, mp->entries[m].data_size+1 );
@@ -495,7 +499,7 @@ WEBCFG_STATUS processMsgpackSubdoc(char *transaction_id)
 						WEBCFG_FREE(appended_doc);
 						//Update doc trans_id to validate events.
 						WebcfgDebug("Update doc trans_id to validate events.\n");
-						updateTmpList(mp->entries[m].name_space, mp->entries[m].etag, "pending", "none", 0, doc_transId, 0);
+						updateTmpList(subdoc_node, mp->entries[m].name_space, mp->entries[m].etag, "pending", "none", 0, doc_transId, 0);
 					}
 					else
 					{
@@ -512,10 +516,11 @@ WEBCFG_STATUS processMsgpackSubdoc(char *transaction_id)
 			WebcfgDebug("Proceed to setValues..\n");
 			if(reqParam !=NULL)
 			{
-				if((checkAndUpdateTmpRetryCount(mp->entries[m].name_space))== WEBCFG_SUCCESS)
+				if((checkAndUpdateTmpRetryCount(subdoc_node, mp->entries[m].name_space))== WEBCFG_SUCCESS)
 				{
 					WebcfgInfo("WebConfig SET Request\n");
 					setValues(reqParam, paramCount, ATOMIC_SET_WEBCONFIG, NULL, NULL, &ret, &ccspStatus);
+					ret = WDMP_SUCCESS;
 					if(ret == WDMP_SUCCESS)
 					{
 						WebcfgInfo("setValues success. ccspStatus : %d\n", ccspStatus);
@@ -534,7 +539,7 @@ WEBCFG_STATUS processMsgpackSubdoc(char *transaction_id)
 						else
 						{
 							WebcfgDebug("update doc status for %s\n", mp->entries[m].name_space);
-							updateTmpList(mp->entries[m].name_space, mp->entries[m].etag, "success", "none", 0, 0, 0);
+							updateTmpList(subdoc_node, mp->entries[m].name_space, mp->entries[m].etag, "success", "none", 0, 0, 0);
 							//send success notification to cloud
 							WebcfgDebug("send notify for mp->entries[m].name_space %s\n", mp->entries[m].name_space);
 							addWebConfgNotifyMsg(mp->entries[m].name_space, mp->entries[m].etag, "success", "none", trans_id,0, "status",0);
@@ -578,7 +583,7 @@ WEBCFG_STATUS processMsgpackSubdoc(char *transaction_id)
 						if((ccspStatus == CCSP_CRASH_STATUS_CODE) || (ccspStatus == 204) || (ccspStatus == 191))
 						{
 							WebcfgDebug("ccspStatus is %d\n", ccspStatus);
-							updateTmpList(mp->entries[m].name_space, mp->entries[m].etag, "failed", "crash_retrying", ccspStatus, 0, 1);
+							updateTmpList(subdoc_node, mp->entries[m].name_space, mp->entries[m].etag, "failed", "crash_retrying", ccspStatus, 0, 1);
 							addWebConfgNotifyMsg(mp->entries[m].name_space, mp->entries[m].etag, "failed", "crash_retrying", trans_id,0,"status",ccspStatus);
 							
 							set_doc_fail(1);
@@ -586,7 +591,7 @@ WEBCFG_STATUS processMsgpackSubdoc(char *transaction_id)
 						}
 						else
 						{
-							updateTmpList(mp->entries[m].name_space, mp->entries[m].etag, "failed", "doc_rejected", ccspStatus, 0, 0);
+							updateTmpList(subdoc_node, mp->entries[m].name_space, mp->entries[m].etag, "failed", "doc_rejected", ccspStatus, 0, 0);
 							addWebConfgNotifyMsg(mp->entries[m].name_space, mp->entries[m].etag, "failed", "doc_rejected", trans_id,0, "status", ccspStatus);
 						}
 						print_tmp_doc_list(mp->entries_count);
@@ -714,7 +719,7 @@ size_t headr_callback(char *buffer, size_t size, size_t nitems)
 			}
 		}
 	}
-	WebcfgDebug("header_callback size %zu\n", size);
+	WebcfgInfo("header_callback size %zu\n", size);
 	return nitems;
 }
 
@@ -980,6 +985,7 @@ void createCurlHeader( struct curl_slist *list, struct curl_slist **header_list,
 	WebcfgInfo("Start of createCurlheader\n");
 	//Fetch auth JWT token from cloud.
 	getAuthToken();
+
 	WebcfgDebug("get_global_auth_token() is %s\n", get_global_auth_token());
 
 	auth_header = (char *) malloc(sizeof(char)*MAX_HEADER_LEN);
@@ -1442,7 +1448,7 @@ void failedDocsRetry()
 	{
 		if((temp->error_code == CCSP_CRASH_STATUS_CODE) || (temp->error_code == 204) || (temp->error_code == 191))
 		{
-			if(retryMultipartSubdoc(temp->name) == WEBCFG_SUCCESS)
+			if(retryMultipartSubdoc(temp, temp->name) == WEBCFG_SUCCESS)
 			{
 				WebcfgInfo("The subdoc %s set is success\n", temp->name);
 			}
