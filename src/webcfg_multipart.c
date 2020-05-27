@@ -520,7 +520,6 @@ WEBCFG_STATUS processMsgpackSubdoc(char *transaction_id)
 				{
 					WebcfgInfo("WebConfig SET Request\n");
 					setValues(reqParam, paramCount, ATOMIC_SET_WEBCONFIG, NULL, NULL, &ret, &ccspStatus);
-					ret = WDMP_SUCCESS;
 					if(ret == WDMP_SUCCESS)
 					{
 						WebcfgInfo("setValues success. ccspStatus : %d\n", ccspStatus);
@@ -1437,6 +1436,9 @@ void updateRootVersionToDB()
 	{
 		WebcfgError("Delete tmp queue root is failed\n");
 	}
+	WebcfgInfo("free mp as all docs and root are updated to DB\n");
+	multipart_destroy(mp);
+	WebcfgInfo("After free mp\n");
 }
 
 void failedDocsRetry()

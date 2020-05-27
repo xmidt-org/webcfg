@@ -115,7 +115,7 @@ void *WebConfigMultipartTask(void *status)
 		if (retry_flag == 1)
 		{
 			clock_gettime(CLOCK_REALTIME, &ts);
-	    		ts.tv_sec += 900;
+			ts.tv_sec += 60;
 
 			WebcfgDebug("B4 sync_condition pthread_cond_timedwait\n");
 			rv = pthread_cond_timedwait(&sync_condition, &sync_mutex, &ts);
