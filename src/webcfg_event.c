@@ -723,6 +723,9 @@ WEBCFG_STATUS retryMultipartSubdoc(webconfig_tmp_data_t *docNode, char *docName)
 	WEBCFG_STATUS rv = WEBCFG_FAILURE;
 	param_t *reqParam = NULL;
 	WDMP_STATUS ret = WDMP_FAILURE;
+	WDMP_STATUS errd = WDMP_FAILURE;
+	char errDetails[MAX_VALUE_LEN]={0};
+	char result[MAX_VALUE_LEN]={0};
 	int ccspStatus=0;
 	int paramCount = 0;
 	uint16_t doc_transId = 0;
@@ -820,18 +823,28 @@ WEBCFG_STATUS retryMultipartSubdoc(webconfig_tmp_data_t *docNode, char *docName)
 					else
 					{
 						WebcfgError("retryMultipartSubdoc setValues Failed. ccspStatus : %d\n", ccspStatus);
+						errd = mapStatus(ccspStatus);
+						WebcfgDebug("The errd value is %d\n",errd);
+
+						mapWdmpStatusToStatusMessage(errd, errDetails);
+						WebcfgDebug("The errDetails value is %s\n",errDetails);
+
 						if((ccspStatus == 192) || (ccspStatus == 204) || (ccspStatus == 191))
 						{
 							WebcfgInfo("ccspStatus is crash %d\n", ccspStatus);
-							updateTmpList(docNode, gmp->entries[m].name_space, gmp->entries[m].etag, "pending", "failed_retrying", ccspStatus, 0, 1);
-							addWebConfgNotifyMsg(gmp->entries[m].name_space, gmp->entries[m].etag, "pending", "failed_retrying", get_global_transID(), 0,"status",ccspStatus);
+							snprintf(result,MAX_VALUE_LEN,"failed_retrying:%s", errDetails);
+							WebcfgDebug("The result is %s\n",result);
+							updateTmpList(docNode, gmp->entries[m].name_space, gmp->entries[m].etag, "pending", result, ccspStatus, 0, 1);
+							addWebConfgNotifyMsg(gmp->entries[m].name_space, gmp->entries[m].etag, "pending", result, get_global_transID(), 0,"status",ccspStatus);
 							set_doc_fail(1);
 							WebcfgInfo("the retry flag value is %d\n", get_doc_fail());
 						}
 						else
 						{
-							updateTmpList(docNode, gmp->entries[m].name_space, gmp->entries[m].etag, "failed", "doc_rejected", ccspStatus, 0, 0);
-							addWebConfgNotifyMsg(gmp->entries[m].name_space, gmp->entries[m].etag, "failed", "doc_rejected", get_global_transID(), 0, "status", ccspStatus);
+							snprintf(result,MAX_VALUE_LEN,"doc_rejected:%s", errDetails);
+							WebcfgDebug("The result is %s\n",result);
+							updateTmpList(docNode, gmp->entries[m].name_space, gmp->entries[m].etag, "failed", result, ccspStatus, 0, 0);
+							addWebConfgNotifyMsg(gmp->entries[m].name_space, gmp->entries[m].etag, "failed", result, get_global_transID(), 0, "status", ccspStatus);
 						}
 					}
 					reqParam_destroy(paramCount, reqParam);
