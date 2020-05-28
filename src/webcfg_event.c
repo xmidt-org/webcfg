@@ -39,6 +39,7 @@ static pthread_t EventThreadId=0;
 static pthread_t processThreadId = 0;
 pthread_mutex_t event_mut=PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t event_con=PTHREAD_COND_INITIALIZER;
+pthread_mutex_t expire_timer_mut=PTHREAD_MUTEX_INITIALIZER;
 event_data_t *eventDataQ = NULL;
 static expire_timer_t * g_timer_head = NULL;
 static int numOfEvents = 0;
@@ -66,8 +67,12 @@ expire_timer_t * getTimerNode(char *docname);
 /*----------------------------------------------------------------------------*/
 
 expire_timer_t * get_global_timer_node(void)	
-{	
-    return g_timer_head;	
+{
+    expire_timer_t * tmp = NULL;
+    pthread_mutex_lock (&expire_timer_mut);
+    tmp = g_timer_head;
+    pthread_mutex_unlock (&expire_timer_mut);
+    return tmp;
 }	
 
 //Webcfg thread listens for blob events from respective components.
@@ -542,9 +547,11 @@ WEBCFG_STATUS startWebcfgTimer(expire_timer_t *timer_node, char *name, uint16_t 
 
 			new_node->next=NULL;
 
+			pthread_mutex_lock (&expire_timer_mut);
 			if (g_timer_head == NULL)
 			{
 				g_timer_head = new_node;
+				pthread_mutex_unlock (&expire_timer_mut);
 			}
 			else
 			{
@@ -556,6 +563,7 @@ WEBCFG_STATUS startWebcfgTimer(expire_timer_t *timer_node, char *name, uint16_t 
 					temp=temp->next;
 				}
 				temp->next=new_node;
+				pthread_mutex_unlock (&expire_timer_mut);
 			}
 
 			WebcfgInfo("new_node->subdoc_name %s new_node->txid %lu new_node->timeout %lu status %d added to list\n", new_node->subdoc_name, (long)new_node->txid, (long)new_node->timeout, new_node->running);
@@ -579,6 +587,7 @@ WEBCFG_STATUS updateTimerList(expire_timer_t *temp, int status, char *docname, u
 		WebcfgDebug("node is pointing to temp->subdoc_name %s \n",temp->subdoc_name);
 		if( strcmp(docname, temp->subdoc_name) == 0)
 		{
+			pthread_mutex_lock (&expire_timer_mut);
 			temp->running = status;
 			temp->txid = transid;
 			temp->timeout = timeout;
@@ -589,6 +598,7 @@ WEBCFG_STATUS updateTimerList(expire_timer_t *temp, int status, char *docname, u
 				temp->subdoc_name = strdup(docname);
 			}
 			WebcfgInfo("doc timer %s is updated with txid %lu timeout %lu\n", docname, (long)temp->txid, (long)temp->timeout);
+			pthread_mutex_unlock (&expire_timer_mut);
 			return WEBCFG_SUCCESS;
 		}
 	}
@@ -610,11 +620,14 @@ WEBCFG_STATUS deleteFromTimerList(char* doc_name)
 	WebcfgInfo("timer doc to be deleted: %s\n", doc_name);
 
 	prev_node = NULL;
+	pthread_mutex_lock (&expire_timer_mut);
 	curr_node = g_timer_head ;
+	pthread_mutex_unlock (&expire_timer_mut);
 
 	// Traverse to get the doc to be deleted
 	while( NULL != curr_node )
 	{
+		pthread_mutex_lock (&expire_timer_mut);
 		if(strcmp(curr_node->subdoc_name, doc_name) == 0)
 		{
 			WebcfgDebug("Found the node to delete\n");
@@ -639,12 +652,13 @@ WEBCFG_STATUS deleteFromTimerList(char* doc_name)
 			WebcfgInfo("Deleted timer successfully and returning..\n");
 			numOfEvents =numOfEvents - 1;
 			WebcfgInfo("numOfEvents after delete is %d\n", numOfEvents);
-
+			pthread_mutex_unlock (&expire_timer_mut);
 			return WEBCFG_SUCCESS;
 		}
 
 		prev_node = curr_node;
 		curr_node = curr_node->next;
+		pthread_mutex_unlock (&expire_timer_mut);
 	}
 	WebcfgError("Could not find the entry to delete from timer list\n");
 	return WEBCFG_FAILURE;
@@ -709,7 +723,9 @@ int checkTimerExpired (char **exp_doc)
 				WebcfgDebug("*exp_doc is %s\n", *exp_doc);
 				return true;
 			}
+			pthread_mutex_lock (&expire_timer_mut);
 			temp->timeout = temp->timeout - 5;
+			pthread_mutex_unlock (&expire_timer_mut);
 			WebcfgInfo("temp->timeout %d for doc %s\n", temp->timeout, temp->subdoc_name);
 		}
 		temp= temp->next;
