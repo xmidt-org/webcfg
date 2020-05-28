@@ -508,9 +508,9 @@ WEBCFG_STATUS updateTmpList(webconfig_tmp_data_t *temp, char *docname, uint32_t 
 {
 	if (NULL != temp)
 	{
-		WebcfgInfo("updateTmpList: node is pointing to temp->name %s \n",temp->name);
+		WebcfgDebug("updateTmpList: node is pointing to temp->name %s \n",temp->name);
 		pthread_mutex_lock (&webconfig_tmp_data_mut);
-		WebcfgInfo("mutex_lock in updateTmpList\n");
+		WebcfgDebug("mutex_lock in updateTmpList\n");
 		if( strcmp(docname, temp->name) == 0)
 		{
 			temp->version = version;
@@ -528,19 +528,19 @@ WEBCFG_STATUS updateTmpList(webconfig_tmp_data_t *temp, char *docname, uint32_t 
 			}
 			temp->error_code = error_code;
 			temp->trans_id = trans_id;
-			WebcfgInfo("updateTmpList: retry %d\n", retry);
+			WebcfgDebug("updateTmpList: retry %d\n", retry);
 			if(!retry)
 			{
-				WebcfgInfo("updateTmpList: reset temp->retry_count\n");
+				WebcfgDebug("updateTmpList: reset temp->retry_count\n");
 				temp->retry_count = 0;
 			}
 			WebcfgInfo("doc %s is updated to version %lu status %s error_details %s error_code %lu trans_id %lu temp->retry_count %d\n", docname, (long)temp->version, temp->status, temp->error_details, (long)temp->error_code, (long)temp->trans_id, temp->retry_count);
 			pthread_mutex_unlock (&webconfig_tmp_data_mut);
-			WebcfgInfo("mutex_unlock in current temp details\n");
+			WebcfgDebug("mutex_unlock in current temp details\n");
 			return WEBCFG_SUCCESS;
 		}
 		pthread_mutex_unlock (&webconfig_tmp_data_mut);
-		WebcfgInfo("mutex_unlock in updateTmpList\n");
+		WebcfgDebug("mutex_unlock in updateTmpList\n");
 	}
 	WebcfgError("updateTmpList failed as doc %s is not in tmp list\n", docname);
 	return WEBCFG_FAILURE;

@@ -473,8 +473,6 @@ WEBCFG_STATUS processMsgpackSubdoc(char *transaction_id)
 		webconfig_tmp_data_t * subdoc_node = NULL;
 		subdoc_node = getTmpNode(mp->entries[m].name_space);
 
-		WebcfgInfo("subdoc node >> name %s version %lu status %s error_details %s error_code %hu trans_id %hu temp->retry_count %d\n", subdoc_node->name, (long)subdoc_node->version, subdoc_node->status, subdoc_node->error_details, subdoc_node->error_code, subdoc_node->trans_id, subdoc_node->retry_count);
-
 		WebcfgDebug("--------------decode root doc-------------\n");
 		pm = webcfgparam_convert( mp->entries[m].data, mp->entries[m].data_size+1 );
 		if ( NULL != pm)
@@ -595,7 +593,7 @@ WEBCFG_STATUS processMsgpackSubdoc(char *transaction_id)
 							updateTmpList(subdoc_node, mp->entries[m].name_space, mp->entries[m].etag, "failed", result, ccspStatus, 0, 1);
 							addWebConfgNotifyMsg(mp->entries[m].name_space, mp->entries[m].etag, "failed", result, trans_id,0,"status",ccspStatus);
 							set_doc_fail(1);
-							WebcfgInfo("the retry flag value is %d\n", get_doc_fail());
+							WebcfgDebug("the retry flag value is %d\n", get_doc_fail());
 						}
 						else
 						{
@@ -604,7 +602,7 @@ WEBCFG_STATUS processMsgpackSubdoc(char *transaction_id)
 							updateTmpList(subdoc_node, mp->entries[m].name_space, mp->entries[m].etag, "failed", result, ccspStatus, 0, 0);
 							addWebConfgNotifyMsg(mp->entries[m].name_space, mp->entries[m].etag, "failed", result, trans_id,0, "status", ccspStatus);
 						}
-						print_tmp_doc_list(mp->entries_count);
+						//print_tmp_doc_list(mp->entries_count);
 					}
 				}
 				else
