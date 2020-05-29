@@ -106,6 +106,8 @@ webconfig_db_data_t * get_global_db_node(void);
 
 webconfig_tmp_data_t * get_global_tmp_node(void);
 
+void set_global_tmp_node(webconfig_tmp_data_t *new);
+
 WEBCFG_STATUS addToTmpList( multipart_t *mp);
 
 void addToDBList(webconfig_db_data_t *webcfgdb);

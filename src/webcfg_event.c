@@ -75,6 +75,18 @@ expire_timer_t * get_global_timer_node(void)
     return tmp;
 }	
 
+void free_event_params_struct(event_params_t *param)
+{
+	if(param != NULL)
+	{
+		WEBCFG_FREE(param->subdoc_name);
+		WEBCFG_FREE(param->status);
+		WEBCFG_FREE(param->process_name);
+		WEBCFG_FREE(param->failure_reason);
+		WEBCFG_FREE(param);
+	}
+}
+
 //Webcfg thread listens for blob events from respective components.
 void initEventHandlingTask()
 {
@@ -111,7 +123,7 @@ void* blobEventHandler()
 	}
 
 	/* Loop to check timer expiry. When timer is not running, loop is active but wont check expiry until next timer starts. */
-	while(1)
+	while(FOREVER())
 	{
 		if (checkTimerExpired (&expired_doc))
 		{
@@ -220,7 +232,7 @@ void* processSubdocEvents()
 	webconfig_tmp_data_t * subdoc_node = NULL;
 	expire_timer_t * doctimer_node = NULL;
 
-	while(1)
+	while(FOREVER())
 	{
 		pthread_mutex_lock (&event_mut);
 		WebcfgDebug("mutex lock in event consumer thread\n");
@@ -402,12 +414,13 @@ void* processSubdocEvents()
 						}
 					}
 				}
+				free_event_params_struct(eventParam);
 			}
 			else
 			{
 				WebcfgError("Failed to parse event Data\n");
 			}
-			//WEBCFG_FREE(Data);
+			WEBCFG_FREE(Data);
 		}
 		else
 		{
@@ -424,11 +437,13 @@ void* processSubdocEvents()
 int parseEventData(char* str, event_params_t **val)
 {
 	event_params_t *param = NULL;
-	char *tmpStr =  NULL;
+	char *tmpStr, *token =  NULL;
 	char * trans_id = NULL;
 	char *version = NULL;
 	char * timeout = NULL;
 	char *err_code = NULL;
+	char *subdoc_name = NULL, *status = NULL;
+	char *process_name = NULL, *failure_reason = NULL;
 
 	if(str !=NULL)
 	{
@@ -436,21 +451,38 @@ int parseEventData(char* str, event_params_t **val)
 		if(param)
 		{
 			memset(param, 0, sizeof(event_params_t));
-		        tmpStr = strdup(str);
+		        token = strdup(str);
+				tmpStr = token;
 			WEBCFG_FREE(str);
 
-		        param->subdoc_name = strsep(&tmpStr, ",");
+		        subdoc_name = strsep(&tmpStr, ",");
+				if(subdoc_name != NULL)
+				{
+					param->subdoc_name = strdup(subdoc_name);
+				}
 		        trans_id = strsep(&tmpStr,",");
 		        version = strsep(&tmpStr,",");
-		        param->status = strsep(&tmpStr,",");
+				status = strsep(&tmpStr,",");
+				if(status != NULL)
+				{
+		        	param->status = strdup(status);
+				}
 		        timeout = strsep(&tmpStr, ",");
 
 			if(tmpStr !=NULL)
 			{
-				WebcfgDebug("For NACK event: tmpStr with error_details is %s\n", tmpStr);
-				param->process_name = strsep(&tmpStr, ",");
+				WebcfgInfo("For NACK event: tmpStr with error_details is %s\n", tmpStr);
+				process_name = strsep(&tmpStr, ",");
+				if(process_name != NULL)
+				{
+					param->process_name = strdup(process_name);
+				}
 				err_code = strsep(&tmpStr, ",");
-				param->failure_reason = strsep(&tmpStr, ",");
+				failure_reason = strsep(&tmpStr, ",");
+				if(failure_reason != NULL)
+				{
+					param->failure_reason = strdup(failure_reason);
+				}
 				WebcfgInfo("process_name %s err_code %s failure_reason %s\n", param->process_name, err_code, param->failure_reason);
 			}
 
@@ -478,8 +510,9 @@ int parseEventData(char* str, event_params_t **val)
 
 			WebcfgInfo("param->subdoc_name %s param->trans_id %lu param->version %lu param->status %s param->timeout %lu\n", param->subdoc_name, (long)param->trans_id, (long)param->version, param->status, (long)param->timeout);
 			*val = param;
+			WEBCFG_FREE(token);
 			return WEBCFG_SUCCESS;
-		}
+		}		
 	}
 	return WEBCFG_FAILURE;
 

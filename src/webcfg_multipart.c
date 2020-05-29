@@ -65,6 +65,11 @@ char * get_global_transID(void)
     return g_transID;
 }
 
+void set_global_transID(char *id)
+{
+	strcpy(g_transID, id);
+}
+
 multipart_t * get_global_mp(void)
 {
     multipart_t *tmp = NULL;
@@ -72,6 +77,11 @@ multipart_t * get_global_mp(void)
     tmp = mp;
     pthread_mutex_unlock (&multipart_t_mut);
     return tmp;
+}
+
+void set_global_mp(multipart_t *new)
+{
+	mp = new;
 }
 /*----------------------------------------------------------------------------*/
 /*                             Function Prototypes                            */
