@@ -239,9 +239,10 @@ char * webcfg_appendeddoc(char * subdoc_name, uint32_t version, char * blob_data
     	embeddeddocPackSize = appendWebcfgEncodedData(&embeddeddocdata, (void *)blob_data, blob_size, appenddocdata, appenddocPackSize);
     	WebcfgInfo("appenddocPackSize: %zu, blobSize: %zu, embeddeddocPackSize: %zu\n", appenddocPackSize, blob_size, embeddeddocPackSize);
     	WebcfgDebug("The embedded doc data is %s\n",(char*)embeddeddocdata);
-
-   	 finaldocdata = base64blobencoder((char *)embeddeddocdata, embeddeddocPackSize);
+	WEBCFG_FREE(appenddocdata);
+   	finaldocdata = base64blobencoder((char *)embeddeddocdata, embeddeddocPackSize);
     	WebcfgDebug("The encoded append doc is %s\n",finaldocdata);
+	WEBCFG_FREE(embeddeddocdata);
     }
     
     return finaldocdata;

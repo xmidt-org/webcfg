@@ -337,6 +337,13 @@ webconfig_tmp_data_t * get_global_tmp_node(void)
     return tmp;
 }
 
+void set_global_tmp_node(webconfig_tmp_data_t *new)
+{
+    pthread_mutex_lock (&webconfig_tmp_data_mut);
+    g_head = new;
+    pthread_mutex_unlock (&webconfig_tmp_data_mut);
+}
+
 int get_numOfMpDocs()
 {
     return numOfMpDocs;
@@ -562,11 +569,9 @@ WEBCFG_STATUS deleteFromTmpList(char* doc_name)
 	prev_node = NULL;
 	pthread_mutex_lock (&webconfig_tmp_data_mut);	
 	curr_node = g_head ;
-	pthread_mutex_unlock (&webconfig_tmp_data_mut);
 	// Traverse to get the doc to be deleted
 	while( NULL != curr_node )
 	{
-		pthread_mutex_lock (&webconfig_tmp_data_mut);
 		if(strcmp(curr_node->name, doc_name) == 0)
 		{
 			WebcfgDebug("Found the node to delete\n");
@@ -596,8 +601,8 @@ WEBCFG_STATUS deleteFromTmpList(char* doc_name)
 
 		prev_node = curr_node;
 		curr_node = curr_node->next;
-		pthread_mutex_unlock (&webconfig_tmp_data_mut);
 	}
+	pthread_mutex_unlock (&webconfig_tmp_data_mut);
 	WebcfgError("Could not find the entry to delete from list\n");
 	return WEBCFG_FAILURE;
 }
