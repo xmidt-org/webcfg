@@ -67,7 +67,7 @@ char * get_global_transID(void)
 
 void set_global_transID(char *id)
 {
-	strcpy(g_transID, id);
+	strncpy(g_transID, id, sizeof(g_transID)-1);
 }
 
 multipart_t * get_global_mp(void)

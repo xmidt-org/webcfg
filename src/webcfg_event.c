@@ -643,12 +643,10 @@ WEBCFG_STATUS deleteFromTimerList(char* doc_name)
 	prev_node = NULL;
 	pthread_mutex_lock (&expire_timer_mut);
 	curr_node = g_timer_head ;
-	pthread_mutex_unlock (&expire_timer_mut);
 
 	// Traverse to get the doc to be deleted
 	while( NULL != curr_node )
 	{
-		pthread_mutex_lock (&expire_timer_mut);
 		if(strcmp(curr_node->subdoc_name, doc_name) == 0)
 		{
 			WebcfgDebug("Found the node to delete\n");
@@ -679,8 +677,8 @@ WEBCFG_STATUS deleteFromTimerList(char* doc_name)
 
 		prev_node = curr_node;
 		curr_node = curr_node->next;
-		pthread_mutex_unlock (&expire_timer_mut);
 	}
+	pthread_mutex_unlock (&expire_timer_mut);
 	WebcfgError("Could not find the entry to delete from timer list\n");
 	return WEBCFG_FAILURE;
 }
