@@ -164,7 +164,7 @@ static int alterMapData( char * buf )
 
     *byte = *byte + METADATA_MAP_SIZE;
     mapSize = ( 0xff & *byte ) % 0x10;
-    WebcfgInfo("New Map size : %d\n", mapSize );
+    WebcfgDebug("New Map size : %d\n", mapSize );
     WebcfgDebug("First byte in hex : %x\n", 0xff & *byte );
     //Update 1st byte with new MAP size
     buf[0] = *byte;

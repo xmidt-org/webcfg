@@ -53,7 +53,7 @@ void initEventHandlingTask();
 void processWebcfgEvents();
 
 void webcfgCallback(char *Info, void* user_data);
-WEBCFG_STATUS retryMultipartSubdoc(char *docName);
-WEBCFG_STATUS checkAndUpdateTmpRetryCount(char *docname);
-uint32_t getDocVersionFromTmpList(char *docname);
+WEBCFG_STATUS retryMultipartSubdoc(webconfig_tmp_data_t *docNode, char *docName);
+WEBCFG_STATUS checkAndUpdateTmpRetryCount(webconfig_tmp_data_t *temp, char *docname);
+uint32_t getDocVersionFromTmpList(webconfig_tmp_data_t *temp, char *docname);
 #endif
