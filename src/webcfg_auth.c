@@ -30,7 +30,7 @@ char serialNum[64]={'\0'};
 /*----------------------------------------------------------------------------*/
 /*                            File Scoped Variables                           */
 /*----------------------------------------------------------------------------*/
-
+static int flag_unk = 0;
 /*----------------------------------------------------------------------------*/
 /*                             Function Prototypes                            */
 /*----------------------------------------------------------------------------*/
@@ -68,15 +68,24 @@ void getAuthToken()
 
 		if( get_deviceMAC() != NULL && strlen(get_deviceMAC()) !=0 )
 		{
-			if(strlen(serialNum) ==0)
+			if((strlen(serialNum) ==0) || flag_unk == 1)
 			{
+				WebcfgInfo("getSerialNumber\n");
 				serial_number = getSerialNumber();
 		                if(serial_number !=NULL)
 		                {
 					strncpy(serialNum ,serial_number, sizeof(serialNum)-1);
 					WebcfgInfo("serialNum: %s\n", serialNum);
 					WEBCFG_FREE(serial_number);
+					flag_unk = 0;
 		                }
+				else
+				{
+					WebcfgError("serialNum is NULL, adding default as unknown\n");
+					strncpy(serialNum ,"unknown", sizeof(serialNum)-1);
+					WebcfgInfo("serialNum: %s\n", serialNum);
+					flag_unk = 1;
+				}
 			}
 
 			if( strlen(serialNum)>0 )
