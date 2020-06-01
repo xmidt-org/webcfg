@@ -22,7 +22,7 @@ install:
 script:
     - mkdir build
     - cd build
-    - cmake .. -DDISABLE_VALGRIND:BOOL=true
+    - cmake .. -DDISABLE_VALGRIND:BOOL=false
     - make
     - make test
 
