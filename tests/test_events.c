@@ -456,7 +456,7 @@ void test_eventCrashNewVersionWithoutRetry()
 	processWebcfgEvents();
 	initEventHandlingTask();
 	webcfgCallback("homessid,0,309708942", NULL);
-	//sleep(1);
+	sleep(1);
 	if(tmpData)
 	{
 		WEBCFG_FREE(tmpData->name);
