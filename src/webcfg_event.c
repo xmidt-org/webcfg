@@ -822,6 +822,7 @@ WEBCFG_STATUS retryMultipartSubdoc(webconfig_tmp_data_t *docNode, char *docName)
 						else
 						{
 							WebcfgError("blob type is incorrect\n");
+							return rv;
 						}
 			                }
 					WebcfgInfo("Request:> param[%d].name = %s, type = %d\n",i,reqParam[i].name,reqParam[i].type);

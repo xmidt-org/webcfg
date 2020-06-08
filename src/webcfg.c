@@ -237,7 +237,7 @@ void processWebconfgSync(int status)
 			rv = handlehttpResponse(res_code, webConfigData, retry_count, transaction_uuid, ct, dataSize);
 			if(rv ==1)
 			{
-				WebcfgInfo("No retries are required. Exiting..\n");
+				WebcfgDebug("No retries are required. Exiting..\n");
 				break;
 			}
 		}
