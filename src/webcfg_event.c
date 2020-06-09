@@ -1001,6 +1001,6 @@ expire_timer_t * getTimerNode(char *docname)
 		}
 		temp= temp->next;
 	}
-	WebcfgError("getTimerNode failed for doc %s\n", docname);
+	WebcfgDebug("getTimerNode failed for doc %s\n", docname);
 	return NULL;
 }
