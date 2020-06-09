@@ -1449,15 +1449,15 @@ void updateRootVersionToDB()
 	dStatus = deleteFromTmpList("root");
 	if(dStatus == 0)
 	{
-		WebcfgInfo("Delete tmp queue root is success\n");
+		WebcfgDebug("Delete tmp queue root is success\n");
 	}
 	else
 	{
 		WebcfgError("Delete tmp queue root is failed\n");
 	}
-	WebcfgInfo("free mp as all docs and root are updated to DB\n");
+	WebcfgDebug("free mp as all docs and root are updated to DB\n");
 	multipart_destroy(mp);
-	WebcfgInfo("After free mp\n");
+	WebcfgDebug("After free mp\n");
 }
 
 void failedDocsRetry()

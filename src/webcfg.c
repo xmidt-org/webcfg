@@ -111,7 +111,7 @@ void *WebConfigMultipartTask(void *status)
 		}
 
 		retry_flag = get_doc_fail();
-		WebcfgInfo("The retry flag value is %d\n", retry_flag);
+		WebcfgDebug("The retry flag value is %d\n", retry_flag);
 		if (retry_flag == 1)
 		{
 			clock_gettime(CLOCK_REALTIME, &ts);
@@ -227,7 +227,7 @@ void processWebconfgSync(int status)
 	{
 		if(retry_count >3)
 		{
-			WebcfgInfo("retry_count has reached max limit. Exiting.\n");
+			WebcfgInfo("Webcfg curl retry to server has reached max limit. Exiting.\n");
 			retry_count=0;
 			break;
 		}
@@ -237,7 +237,7 @@ void processWebconfgSync(int status)
 			rv = handlehttpResponse(res_code, webConfigData, retry_count, transaction_uuid, ct, dataSize);
 			if(rv ==1)
 			{
-				WebcfgInfo("No retries are required. Exiting..\n");
+				WebcfgDebug("No curl retries are required. Exiting..\n");
 				break;
 			}
 		}
@@ -249,7 +249,10 @@ void processWebconfgSync(int status)
 		WebcfgInfo("webcfg_http_request BACKOFF_SLEEP_DELAY_SEC is %d seconds\n", BACKOFF_SLEEP_DELAY_SEC);
 		sleep(BACKOFF_SLEEP_DELAY_SEC);
 		retry_count++;
-		WebcfgInfo("Webconfig retry_count is %d\n", retry_count);
+		if(retry_count <= 3)
+		{
+			WebcfgInfo("Webconfig curl retry_count to server is %d\n", retry_count);
+		}
 	}
 	WebcfgDebug("========= End of processWebconfgSync =============\n");
 	return;
@@ -290,7 +293,7 @@ int handlehttpResponse(long response_code, char *webConfigData, int retry_count,
 		}
 		else
 		{
-			WebcfgError("webConfigData is empty, need to retry\n");
+			WebcfgError("webConfigData is empty, need to do curl retry to server\n");
 		}
 	}
 	else if(response_code == 204)
@@ -321,10 +324,10 @@ int handlehttpResponse(long response_code, char *webConfigData, int retry_count,
 	}
 	else //5xx & all other errors
 	{
-		WebcfgError("Error code returned, need to retry. response_code:%ld\n", response_code);
+		WebcfgError("Error code returned, need to do curl retry to server. response_code:%ld\n", response_code);
 		if(retry_count == 3 && !err)
 		{
-			WebcfgDebug("3 retry attempts\n");
+			WebcfgDebug("3 curl retry attempts\n");
 			WEBCFG_FREE(transaction_uuid);
 			return 0;
 		}
