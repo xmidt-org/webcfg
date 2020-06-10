@@ -46,6 +46,12 @@ typedef enum
 /*----------------------------------------------------------------------------*/
 /*                             External Functions                             */
 /*----------------------------------------------------------------------------*/
+#ifdef MULTIPART_UTILITY
+int testUtility();
+int get_g_testfile();
+void set_g_testfile(int value);
+#endif
+
 bool get_global_shutdown();
 void set_global_shutdown(bool shutdown);
 pthread_cond_t *get_global_sync_condition(void);

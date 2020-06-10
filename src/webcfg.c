@@ -33,8 +33,13 @@
 /*----------------------------------------------------------------------------*/
 /*                                   Macros                                   */
 /*----------------------------------------------------------------------------*/
-/* none */
 
+
+#ifdef MULTIPART_UTILITY
+
+#define TEST_FILE_LOCATION		"/nvram/multipart.bin"
+
+#endif
 /*----------------------------------------------------------------------------*/
 /*                               Data Structures                              */
 /*----------------------------------------------------------------------------*/
@@ -46,6 +51,9 @@
 pthread_mutex_t sync_mutex=PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t sync_condition=PTHREAD_COND_INITIALIZER;
 bool g_shutdown  = false;
+#ifdef MULTIPART_UTILITY
+static int g_testfile = 0;
+#endif
 /*----------------------------------------------------------------------------*/
 /*                             Function Prototypes                            */
 /*----------------------------------------------------------------------------*/
@@ -207,6 +215,18 @@ void set_global_shutdown(bool shutdown)
 {
     g_shutdown = shutdown;
 }
+
+#ifdef MULTIPART_UTILITY
+int get_g_testfile()
+{
+    return g_testfile;
+}
+
+void set_g_testfile(int value)
+{
+    g_testfile = value;
+}
+#endif
 /*----------------------------------------------------------------------------*/
 /*                             Internal functions                             */
 /*----------------------------------------------------------------------------*/
@@ -225,6 +245,13 @@ void processWebconfgSync(int status)
 	WebcfgDebug("========= Start of processWebconfgSync =============\n");
 	while(1)
 	{
+		#ifdef MULTIPART_UTILITY
+		if(testUtility()==1)
+		{
+			break;
+		}
+		#endif
+
 		if(retry_count >3)
 		{
 			WebcfgInfo("Webcfg curl retry to server has reached max limit. Exiting.\n");
@@ -354,3 +381,72 @@ long timeVal_Diff(struct timespec *starttime, struct timespec *finishtime)
 	msec+=(finishtime->tv_nsec-starttime->tv_nsec)/1000000;
 	return msec;
 }
+
+#ifdef MULTIPART_UTILITY
+int testUtility()
+{
+	char *data = NULL;
+	int test_dataSize = 0;
+	int test_file_status = 0;
+
+	char *transaction_uuid =NULL;
+	char ct[256] = {0};
+
+	if(readFromFile(TEST_FILE_LOCATION, &data, &test_dataSize) == 1)
+	{
+		set_g_testfile(1);
+		WebcfgInfo("Using Test file \n");
+
+		char * data_body = malloc(sizeof(char) * test_dataSize+1);
+		memset(data_body, 0, sizeof(char) * test_dataSize+1);
+		data_body = memcpy(data_body, data, test_dataSize+1);
+		data_body[test_dataSize] = '\0';
+		char *ptr_count = data_body;
+		char *ptr1_count = data_body;
+		char *temp = NULL;
+
+		while((ptr_count - data_body) < test_dataSize )
+		{
+			ptr_count = memchr(ptr_count, 'C', test_dataSize - (ptr_count - data_body));
+			if(0 == memcmp(ptr_count, "Content-type:", strlen("Content-type:")))
+			{
+				ptr1_count = memchr(ptr_count+1, '\r', test_dataSize - (ptr_count - data_body));
+				temp = strndup(ptr_count, (ptr1_count-ptr_count));
+				strcpy(ct,temp);
+				break;
+			}
+
+			ptr_count++;
+		}
+		free(data_body);
+		free(temp);
+		WebcfgInfo("After  \n");
+		transaction_uuid = strdup(generate_trans_uuid());
+		if(data !=NULL)
+		{
+			WebcfgInfo("webConfigData fetched successfully\n");
+			WebcfgInfo("parseMultipartDocument\n");
+			test_file_status = parseMultipartDocument(data, ct, (size_t)test_dataSize, transaction_uuid);
+
+			if(test_file_status == WEBCFG_SUCCESS)
+			{
+				WebcfgInfo("Test webConfigData applied successfully\n");
+			}
+			else
+			{
+				WebcfgError("Failed to apply Test root webConfigData received from server\n");
+			}
+		}
+		else
+		{
+			WebcfgError("webConfigData is empty, need to retry\n");
+		}
+		return 1;
+	}
+	else
+	{
+		set_g_testfile(0);
+		return 0;
+	}
+}
+#endif
