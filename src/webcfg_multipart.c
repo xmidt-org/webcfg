@@ -392,7 +392,11 @@ WEBCFG_STATUS parseMultipartDocument(void *config_data, char *ct , size_t data_s
 					index1 = ptr_lb-str_body;
 					parse_multipart(str_body+index1+1,index2 - index1 - 2, &mp->entries[count]);
 					ptr_lb++;
+				#ifdef MULTIPART_UTILITY
+					if(0 == memcmp(ptr_lb+get_g_testfile(), last_line_boundary, strlen(last_line_boundary)))
+				#else
 					if(0 == memcmp(ptr_lb, last_line_boundary, strlen(last_line_boundary)))
+				#endif
 					{
 						WebcfgDebug("last line boundary inside \n");
 						break;
