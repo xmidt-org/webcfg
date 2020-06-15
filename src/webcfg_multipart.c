@@ -865,7 +865,11 @@ int readFromFile(char *filename, char **data, int *len)
 	fp = fopen(filename, "r+");
 	if (fp == NULL)
 	{
+	#ifdef MULTIPART_UTILITY
+		WebcfgDebug("Failed to open file %s\n", filename);
+	#else
 		WebcfgError("Failed to open file %s\n", filename);
+	#endif
 		return 0;
 	}
 	fseek(fp, 0, SEEK_END);
