@@ -434,12 +434,12 @@ int testUtility()
 			}
 			else
 			{
-				WebcfgDebug("Failed to apply Test root webConfigData received from server\n");
+				WebcfgError("Failed to apply Test root webConfigData received from server\n");
 			}
 		}
 		else
 		{
-			WebcfgDebug("webConfigData is empty, need to retry\n");
+			WebcfgError("webConfigData is empty, need to retry\n");
 		}
 		sprintf(command,"rm -rf %s",TEST_FILE_LOCATION);
 		if(-1 != system(command))
@@ -448,7 +448,7 @@ int testUtility()
 		}
 		else
 		{
-			WebcfgInfo("Error in removing %s file\n",TEST_FILE_LOCATION);
+			WebcfgError("Error in removing %s file\n",TEST_FILE_LOCATION);
 		}
 		return 1;
 	}
