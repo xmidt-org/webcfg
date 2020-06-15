@@ -253,7 +253,8 @@ void* processSubdocEvents()
 				WebcfgInfo("Event detection\n");
 				if (((eventParam->status !=NULL)&&(strcmp(eventParam->status, "ACK")==0)) && (eventParam->timeout == 0))
 				{
-					WebcfgInfo("ACK event. doc apply success, proceed to add to DB\n");
+					WebcfgInfo("ACK EVENT: %s,%lu,%lu,ACK,%lu %s\n", eventParam->subdoc_name,(long)eventParam->trans_id, (long)eventParam->version, (long)eventParam->timeout, "(doc apply success)");
+					WebcfgInfo("doc apply success, proceed to add to DB\n");
 					if( validateEvent(subdoc_node, eventParam->subdoc_name, eventParam->trans_id) == WEBCFG_SUCCESS)
 					{
 						//version in event &tmp are not same indicates latest doc is not yet applied
@@ -281,7 +282,8 @@ void* processSubdocEvents()
 				}
 				else if (((eventParam->status !=NULL)&&(strcmp(eventParam->status, "NACK")==0)) && (eventParam->timeout == 0))
 				{
-					WebcfgError("NACK event. doc apply failed for %s\n", eventParam->subdoc_name);
+					WebcfgInfo("NACK EVENT: %s,%lu,%lu,NACK,%lu %s\n", eventParam->subdoc_name,(long)eventParam->trans_id, (long)eventParam->version, (long)eventParam->timeout, "(doc apply failed)");
+					WebcfgError("doc apply failed for %s\n", eventParam->subdoc_name);
 					if( validateEvent(subdoc_node, eventParam->subdoc_name, eventParam->trans_id) == WEBCFG_SUCCESS)
 					{
 						if((getDocVersionFromTmpList(subdoc_node, eventParam->subdoc_name))== eventParam->version)
@@ -301,7 +303,8 @@ void* processSubdocEvents()
 				}
 				else if ((eventParam->status !=NULL)&&(strcmp(eventParam->status, "EXPIRE")==0))
 				{
-					WebcfgInfo("EXPIRE event. doc apply timeout expired, need to retry\n");
+					WebcfgInfo("EXPIRE EVENT: %s,%lu,%lu,EXPIRE,%lu\n", eventParam->subdoc_name,(long)eventParam->trans_id, (long)eventParam->version, (long)eventParam->timeout);
+					WebcfgInfo("doc apply timeout expired, need to retry\n");
 					WebcfgDebug("get_global_transID is %s\n", get_global_transID());
 					if(eventParam->version !=0)
 					{
@@ -326,7 +329,8 @@ void* processSubdocEvents()
 				}
 				else if (eventParam->timeout != 0)
 				{
-					WebcfgInfo("Timeout event. doc apply need time, start timer.\n");
+					WebcfgInfo("TIMEOUT EVENT: %s,%lu,%lu,ACK,%lu %s\n", eventParam->subdoc_name,(long)eventParam->trans_id, (long)eventParam->version, (long)eventParam->timeout,"(doc apply need time)");
+					WebcfgInfo("doc apply need time, start timer.\n");
 					if( validateEvent(subdoc_node, eventParam->subdoc_name, eventParam->trans_id) == WEBCFG_SUCCESS)
 					{
 						if((getDocVersionFromTmpList(subdoc_node, eventParam->subdoc_name))== eventParam->version)
@@ -342,7 +346,8 @@ void* processSubdocEvents()
 				}
 				else
 				{
-					WebcfgInfo("Crash event. Component restarted after crash, re-send blob.\n");
+					WebcfgInfo("Crash EVENT: %s,%d,%lu\n", eventParam->subdoc_name,0, (long)eventParam->version);
+					WebcfgInfo("Component restarted after crash, re-send blob.\n");
 					uint32_t tmpVersion = 0;
 					if(eventParam->version !=0)
 					{
@@ -958,7 +963,7 @@ uint32_t getDocVersionFromTmpList(webconfig_tmp_data_t *temp, char *docname)
 			return temp->version;
 		}
 	}
-	WebcfgError("getDocVersionFromTmpList failed for doc %s\n", docname);
+	WebcfgDebug("getDocVersionFromTmpList failed for doc %s\n", docname);
 	return 0;
 }
 
