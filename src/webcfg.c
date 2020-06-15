@@ -386,6 +386,7 @@ long timeVal_Diff(struct timespec *starttime, struct timespec *finishtime)
 int testUtility()
 {
 	char *data = NULL;
+	char command[30] = {0};
 	int test_dataSize = 0;
 	int test_file_status = 0;
 
@@ -420,7 +421,6 @@ int testUtility()
 		}
 		free(data_body);
 		free(temp);
-		WebcfgInfo("After  \n");
 		transaction_uuid = strdup(generate_trans_uuid());
 		if(data !=NULL)
 		{
@@ -434,12 +434,21 @@ int testUtility()
 			}
 			else
 			{
-				WebcfgError("Failed to apply Test root webConfigData received from server\n");
+				WebcfgDebug("Failed to apply Test root webConfigData received from server\n");
 			}
 		}
 		else
 		{
-			WebcfgError("webConfigData is empty, need to retry\n");
+			WebcfgDebug("webConfigData is empty, need to retry\n");
+		}
+		sprintf(command,"rm -rf %s",TEST_FILE_LOCATION);
+		if(-1 != system(command))
+		{
+			WebcfgInfo("The %s file is removed successfully\n",TEST_FILE_LOCATION);
+		}
+		else
+		{
+			WebcfgInfo("Error in removing %s file\n",TEST_FILE_LOCATION);
 		}
 		return 1;
 	}
