@@ -515,6 +515,14 @@ WEBCFG_STATUS processMsgpackSubdoc(char *transaction_id)
 						//Update doc trans_id to validate events.
 						WebcfgDebug("Update doc trans_id to validate events.\n");
 						updateTmpList(subdoc_node, mp->entries[m].name_space, mp->entries[m].etag, "pending", "none", 0, doc_transId, 0);
+						//If request type is BLOB, start event handler thread to process various error handling operations based on the events received from components.
+						if(eventFlag == 0)
+						{
+							WebcfgInfo("starting initEventHandlingTask\n");
+							initEventHandlingTask();
+							processWebcfgEvents();
+							eventFlag = 1;
+						}
 					}
 					else
 					{
@@ -541,14 +549,7 @@ WEBCFG_STATUS processMsgpackSubdoc(char *transaction_id)
 						WebcfgDebug("reqParam[0].type is %d WDMP_BASE64 %d\n", reqParam[0].type, WDMP_BASE64);
 						if(reqParam[0].type  == WDMP_BASE64)
 						{
-							//If request type is BLOB, start event handler thread to process various error handling operations based on the events received from components.
-							if(eventFlag == 0)
-							{
-								WebcfgInfo("blob subdoc success, starting initEventHandlingTask\n");
-								initEventHandlingTask();
-								processWebcfgEvents();
-								eventFlag = 1;
-							}
+							WebcfgDebug("blob subdoc set is success\n");
 						}
 						else
 						{
