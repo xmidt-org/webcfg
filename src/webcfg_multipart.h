@@ -60,4 +60,5 @@ multipart_t * get_global_mp(void);
 void set_global_mp(multipart_t *new);
 void reqParam_destroy( int paramCnt, param_t *reqObj );
 void failedDocsRetry();
+WEBCFG_STATUS validate_request_param(param_t *reqParam, int paramCount);
 #endif
