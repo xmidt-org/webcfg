@@ -37,6 +37,7 @@
 #define WEBPA_READ_HEADER          "/etc/parodus/parodus_read_file.sh"
 #define WEBPA_CREATE_HEADER        "/etc/parodus/parodus_create_file.sh"
 #define CCSP_CRASH_STATUS_CODE      192
+#define MAX_PARAMETERNAME_LEN		4096
 /*----------------------------------------------------------------------------*/
 /*                               Data Structures                              */
 /*----------------------------------------------------------------------------*/
@@ -536,9 +537,9 @@ WEBCFG_STATUS processMsgpackSubdoc(char *transaction_id)
 				WebcfgDebug("Request:> param[%d].type = %d\n",i,reqParam[i].type);
 			}
 
-			WebcfgDebug("Proceed to setValues..\n");
-			if(reqParam !=NULL)
+			if(reqParam !=NULL && validate_request_param(reqParam, paramCount) == WEBCFG_SUCCESS)
 			{
+				WebcfgDebug("Proceed to setValues..\n");
 				if((checkAndUpdateTmpRetryCount(subdoc_node, mp->entries[m].name_space))== WEBCFG_SUCCESS)
 				{
 					WebcfgInfo("WebConfig SET Request\n");
@@ -1489,4 +1490,33 @@ void failedDocsRetry()
 		}
 		temp= temp->next;
 	}
+}
+
+WEBCFG_STATUS validate_request_param(param_t *reqParam, int paramCount)
+{
+	int i = 0;
+	WEBCFG_STATUS ret = WEBCFG_SUCCESS;
+	WebcfgDebug("------------ validate_request_param ----------\n");
+	for (i = 0; i < paramCount; i++)
+	{
+		WebcfgDebug("reqParam[%d].name: %s\n",i,reqParam[i].name);
+		if(reqParam[i].name == NULL || strcmp(reqParam[i].name, "") == 0 || reqParam[i].value == NULL || strcmp(reqParam[i].value, "") == 0)
+		{
+			WebcfgError("Parameter name/value is null\n");
+			ret = WEBCFG_FAILURE;
+			break;
+		}
+
+		if(strlen(reqParam[i].name) >= MAX_PARAMETERNAME_LEN)
+		{
+			ret = WEBCFG_FAILURE;
+			break;
+		}
+
+	}
+	if(ret != WEBCFG_SUCCESS)
+	{
+		reqParam_destroy(paramCount, reqParam);
+	}
+	return ret;
 }

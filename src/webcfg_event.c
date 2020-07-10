@@ -827,15 +827,18 @@ WEBCFG_STATUS retryMultipartSubdoc(webconfig_tmp_data_t *docNode, char *docName)
 						else
 						{
 							WebcfgError("blob type is incorrect\n");
+							WEBCFG_FREE(reqParam);
+							webcfgparam_destroy( pm );
+							return rv;
 						}
 			                }
 					WebcfgInfo("Request:> param[%d].name = %s, type = %d\n",i,reqParam[i].name,reqParam[i].type);
 					WebcfgDebug("Request:> param[%d].value = %s\n",i,reqParam[i].value);
 				}
 
-				WebcfgDebug("Proceed to setValues..\n");
-				if(reqParam !=NULL)
+				if(reqParam !=NULL && validate_request_param(reqParam, paramCount) == WEBCFG_SUCCESS)
 				{
+					WebcfgDebug("Proceed to setValues..\n");
 					WebcfgDebug("retryMultipartSubdoc WebConfig SET Request\n");
 					setValues(reqParam, paramCount, ATOMIC_SET_WEBCONFIG, NULL, NULL, &ret, &ccspStatus);
 					if(ret == WDMP_SUCCESS)
