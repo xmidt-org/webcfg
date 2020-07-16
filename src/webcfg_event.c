@@ -1002,7 +1002,7 @@ expire_timer_t * getTimerNode(char *docname)
 	//Traverse through timer list & fetch required doc timer node.
 	while (NULL != temp)
 	{
-		WebcfgInfo("getTimerNode: subdoc_name %s txid %hu timeout %lu running %d\n",temp->subdoc_name, temp->txid, (long)temp->timeout, temp->running);
+		WebcfgDebug("getTimerNode: subdoc_name %s txid %hu timeout %lu running %d\n",temp->subdoc_name, temp->txid, (long)temp->timeout, temp->running);
 		if( strcmp(docname, temp->subdoc_name) == 0)
 		{
 			return temp;
