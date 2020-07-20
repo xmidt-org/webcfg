@@ -489,7 +489,7 @@ WEBCFG_STATUS processMsgpackSubdoc(char *transaction_id)
 	}
 
 	max_retry_sleep = (int) pow(2, backoff_max_time) -1;
-	WebcfgInfo("max_retry_sleep is %d\n", max_retry_sleep );
+	WebcfgDebug("max_retry_sleep is %d\n", max_retry_sleep );
 
 	WebcfgDebug("mp->entries_count is %d\n", (int)mp->entries_count);
 	for(m = 0 ; m<((int)mp->entries_count)-1; m++)
@@ -673,20 +673,22 @@ WEBCFG_STATUS processMsgpackSubdoc(char *transaction_id)
 						}
 						else
 						{
-							WebcfgError("aker doc send failed, update tmp list\n");
-							updateTmpList(subdoc_node, mp->entries[m].name_space, mp->entries[m].etag, "pending", "aker_service_unavailable", 0, 0, 0);
-
+							WebcfgError("aker doc send failed\n");
 							//aker is ready but send failed due to invalid request.
 							if(aker_retry == 0)
 							{
-								WebcfgError("aker send failed due to invalid request\n");
 								updateTmpList(subdoc_node, mp->entries[m].name_space, mp->entries[m].etag, "failed", "doc_rejected", 0, 0, 0);
 								addWebConfgNotifyMsg(mp->entries[m].name_space, mp->entries[m].etag, "failed", "doc_rejected", trans_id,0, "status", 0);
+							}
+							else
+							{
+								updateTmpList(subdoc_node, mp->entries[m].name_space, mp->entries[m].etag, "pending", "aker_service_unavailable", 0, 0, 0);
 							}
 							//after 3 aker retries send notification
 							WebcfgDebug("backoffRetryTime is %d max_retry_sleep %d\n", backoffRetryTime, max_retry_sleep);
 							if(backoffRetryTime == max_retry_sleep)
 							{
+								updateTmpList(subdoc_node, mp->entries[m].name_space, mp->entries[m].etag, "failed", "aker_service_unavailable", 0, 0, 0);
 								addWebConfgNotifyMsg(mp->entries[m].name_space, mp->entries[m].etag, "failed", "aker_service_unavailable", trans_id,0, "status", 0);
 								aker_retry = 0;
 							}

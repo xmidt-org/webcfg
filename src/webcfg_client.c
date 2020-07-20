@@ -354,8 +354,7 @@ void* parodus_receive()
 				WebcfgDebug("sourceService %s sourceApplication %s\n", sourceService, sourceApplication);
 				if(sourceService != NULL && sourceApplication != NULL && strcmp(sourceService,"parodus")== 0 && strcmp(sourceApplication,"aker-status")== 0)
 				{
-					WebcfgInfo("Retrieve response received from parodus : %s transaction_uuid %s\n",(char *)wrp_msg->u.crud.payload, wrp_msg->u.crud.transaction_uuid );
-					WebcfgDebug("B4 parsePayloadForAkerStatus\n");
+					WebcfgDebug("Retrieve response received from parodus : %s transaction_uuid %s\n",(char *)wrp_msg->u.crud.payload, wrp_msg->u.crud.transaction_uuid );
 					status = parsePayloadForAkerStatus(wrp_msg->u.crud.payload);
 					if(status !=NULL)
 					{
