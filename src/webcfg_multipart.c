@@ -606,8 +606,16 @@ WEBCFG_STATUS processMsgpackSubdoc(char *transaction_id)
 						//Update error_details to tmp list and send failure notification to cloud.
 						if((ccspStatus == CCSP_CRASH_STATUS_CODE) || (ccspStatus == 204) || (ccspStatus == 191))
 						{
+							WEBCFG_STATUS subdocStatus = isSubDocSupported(mp->entries[m].name_space);
 							WebcfgDebug("ccspStatus is %d\n", ccspStatus);
-							snprintf(result,MAX_VALUE_LEN,"crash_retrying:%s", errDetails);
+							if(ccspStatus == 204 && subdocStatus != WEBCFG_SUCCESS)
+							{
+								snprintf(result,MAX_VALUE_LEN,"doc_unsupported:%s", errDetails);
+							}
+							else
+							{
+								snprintf(result,MAX_VALUE_LEN,"crash_retrying:%s", errDetails);
+							}
 							WebcfgDebug("The result is %s\n",result);
 							updateTmpList(subdoc_node, mp->entries[m].name_space, mp->entries[m].etag, "failed", result, ccspStatus, 0, 1);
 							addWebConfgNotifyMsg(mp->entries[m].name_space, mp->entries[m].etag, "failed", result, trans_id,0,"status",ccspStatus);
@@ -1535,7 +1543,7 @@ void failedDocsRetry()
 
 	while (NULL != temp)
 	{
-		if((temp->error_code == CCSP_CRASH_STATUS_CODE) || (temp->error_code == 204) || (temp->error_code == 191))
+		if((temp->error_code == CCSP_CRASH_STATUS_CODE) || (temp->error_code == 204 && (temp->error_details != NULL && strstr(temp->error_details, "doc_unsupported") == NULL)) || (temp->error_code == 191))
 		{
 			if(retryMultipartSubdoc(temp, temp->name) == WEBCFG_SUCCESS)
 			{
@@ -1545,6 +1553,10 @@ void failedDocsRetry()
 			{
 				WebcfgError("The subdoc %s set is failed\n", temp->name);
 			}
+		}
+		else
+		{
+			WebcfgInfo("Retry skipped for %s (%s)\n",temp->name,temp->error_details);
 		}
 		temp= temp->next;
 	}

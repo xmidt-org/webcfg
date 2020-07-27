@@ -33,11 +33,14 @@
 /*----------------------------------------------------------------------------*/
 /*                            File Scoped Variables                           */
 /*----------------------------------------------------------------------------*/
+char *bitMap[MAX_GROUP_SIZE][MAX_SUBDOCS_SIZE] = {{"00000001","portforwarding","wan", "lan","macbinding","hotspot","bridge"},{"00000010","privatessid","homessid","radio"},{"00000011","moca"},{"00000100","xdns"},{"00000101","advsecurity"},{"00000110","mesh"},{"00000111","aker"},{"00001000","telemetry"},{"00001001","trafficreport","statusreport"},{"00001010","radioreport","interfacereport"}};
 static char * supported_bits = NULL;
 static char * supported_version = NULL;
 /*----------------------------------------------------------------------------*/
 /*                             Function Prototypes                            */
 /*----------------------------------------------------------------------------*/
+int getSubdocGroupId(char *subDoc, char **groupId);
+void getSubdDocBitForGroupId(char *groupId, char **subDocBit);
 /*----------------------------------------------------------------------------*/
 /*                             External Functions                             */
 /*----------------------------------------------------------------------------*/
@@ -136,4 +139,94 @@ char * getsupportedDocs()
 char * getsupportedVersion()
 {
       return supported_version;
+}
+
+WEBCFG_STATUS isSubDocSupported(char *subDoc)
+{
+	int pos = 0;
+	char *groupId = NULL, *subDocBit = NULL;
+	long long docBit = 0;
+	pos = getSubdocGroupId(subDoc, &groupId);
+	WebcfgDebug("%s is at %d position in %s group\n",subDoc,pos, groupId);
+	getSubdDocBitForGroupId(groupId, &subDocBit);
+	if(subDocBit != NULL)
+	{
+		WebcfgDebug("subDocBit: %s\n",subDocBit);
+		sscanf(subDocBit,"%lld",&docBit);
+		WebcfgDebug("docBit: %lld\n",docBit);
+	
+		if(docBit & (1 << (pos -1)))
+		{
+			WebcfgInfo("%s is supported\n",subDoc);
+			WEBCFG_FREE(groupId);
+			WEBCFG_FREE(subDocBit);
+			return WEBCFG_SUCCESS;
+		}
+	}
+	else
+	{
+		WebcfgError("Supported doc bit not found for %s\n",subDoc);
+	}
+	WEBCFG_FREE(groupId);
+	if(subDocBit != NULL)
+	{
+		WEBCFG_FREE(subDocBit);
+	}
+	WebcfgInfo("%s is not supported\n",subDoc);
+	return WEBCFG_FAILURE;
+}
+
+/*----------------------------------------------------------------------------*/
+/*                             Internal functions                             */
+/*----------------------------------------------------------------------------*/
+int getSubdocGroupId(char *subDoc, char **groupId)
+{
+	int position = 0, i = 0, j = 0;
+	WebcfgDebug("subDoc: %s\n",subDoc);
+	for(i=0; i<MAX_GROUP_SIZE; i++)
+	{
+		for(j=0;j<MAX_SUBDOCS_SIZE; j++)
+		{
+			if(bitMap[i][j] == NULL)
+			{
+				break;
+			}
+			if(strcmp(bitMap[i][j],subDoc) == 0)
+			{
+				WebcfgDebug("bitMap[%d][%d]: %s\n",i, j, bitMap[i][j]);
+				*groupId = strdup(bitMap[i][0]);
+				position = j;
+				return position;
+			}
+		}
+	}
+	return -1;
+}
+
+void getSubdDocBitForGroupId(char *groupId, char **subDocBit)
+{
+	char *tmpStr=  NULL, *numStr = NULL;
+	char subDoc[24] = {'\0'};
+	WebcfgDebug("supported_bits: %s\n",supported_bits);
+	if(supported_bits != NULL)
+	{
+		tmpStr = strdup(supported_bits);
+		while(tmpStr != NULL)
+		{
+			numStr = strsep(&tmpStr, "|");
+			WebcfgDebug("numStr: %s\n",numStr);
+			WebcfgDebug("groupId: %s\n",groupId);
+			if(strncmp(groupId, numStr, 8) == 0)
+			{
+				webcfgStrncpy(subDoc, numStr+8,sizeof(subDoc)+1);
+				WebcfgDebug("subDoc: %s\n",subDoc);
+				*subDocBit= strdup(subDoc);
+				break;
+			}
+		}
+	}
+	else
+	{
+		WebcfgError("Failed to read supported bits from webconfig.properties\n");
+	}
 }
