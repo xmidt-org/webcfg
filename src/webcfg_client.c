@@ -49,10 +49,10 @@
 /*                            File Scoped Variables                           */
 /*----------------------------------------------------------------------------*/
 libpd_instance_t webcfg_instance;
-int akerDocVersion;
-uint16_t akerTransId;
+int akerDocVersion=0;
+uint16_t akerTransId=0;
 int wakeFlag = 0;
-char *aker_status = "offline";
+char *aker_status = NULL;
 pthread_mutex_t client_mut=PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t client_con=PTHREAD_COND_INITIALIZER;
 /*----------------------------------------------------------------------------*/
@@ -178,7 +178,7 @@ WEBCFG_STATUS checkAkerStatus()
 		snprintf(source, sizeof(source), "mac:%s/webcfg",get_deviceMAC());
 		WebcfgDebug("source: %s\n",source);
 		msg->u.crud.source = strdup(source);
-		snprintf(dest, sizeof(dest), "mac:%s/parodus/aker-status",get_deviceMAC());
+		snprintf(dest, sizeof(dest), "mac:%s/parodus/service-status/aker",get_deviceMAC());
 		WebcfgDebug("dest: %s\n",dest);
 		msg->u.crud.dest = strdup(dest);
 		transaction_uuid = generate_trans_uuid();
@@ -352,7 +352,7 @@ void* parodus_receive()
 				sourceService = wrp_get_msg_element(WRP_ID_ELEMENT__SERVICE, wrp_msg, SOURCE);
 				sourceApplication = wrp_get_msg_element(WRP_ID_ELEMENT__APPLICATION, wrp_msg, SOURCE);
 				WebcfgDebug("sourceService %s sourceApplication %s\n", sourceService, sourceApplication);
-				if(sourceService != NULL && sourceApplication != NULL && strcmp(sourceService,"parodus")== 0 && strcmp(sourceApplication,"aker-status")== 0)
+				if(sourceService != NULL && sourceApplication != NULL && strcmp(sourceService,"parodus")== 0 && strcmp(sourceApplication,"service-status/aker")== 0)
 				{
 					WebcfgDebug("Retrieve response received from parodus : %s transaction_uuid %s\n",(char *)wrp_msg->u.crud.payload, wrp_msg->u.crud.transaction_uuid );
 					status = parsePayloadForAkerStatus(wrp_msg->u.crud.payload);

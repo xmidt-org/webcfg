@@ -686,7 +686,7 @@ WEBCFG_STATUS processMsgpackSubdoc(char *transaction_id)
 							}
 							//after 3 aker retries send notification
 							WebcfgDebug("backoffRetryTime is %d max_retry_sleep %d\n", backoffRetryTime, max_retry_sleep);
-							if(backoffRetryTime == max_retry_sleep)
+							if((aker_retry==1) && backoffRetryTime == max_retry_sleep)
 							{
 								updateTmpList(subdoc_node, mp->entries[m].name_space, mp->entries[m].etag, "failed", "aker_service_unavailable", 0, 0, 0);
 								addWebConfgNotifyMsg(mp->entries[m].name_space, mp->entries[m].etag, "failed", "aker_service_unavailable", trans_id,0, "status", 0);
