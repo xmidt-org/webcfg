@@ -1477,7 +1477,12 @@ WEBCFG_STATUS checkRootUpdate()
 			break;
 		}
 		WebcfgDebug("Root check ====> temp->name %s\n", temp->name);
-		if( strcmp("root", temp->name) != 0)
+		if(temp->error_code == 204 && (temp->error_details != NULL && strstr(temp->error_details, "doc_unsupported") != NULL))
+		{
+			WebcfgDebug("Error details: %s\n",temp->error_details);
+			WebcfgDebug("Skipping unsupported sub doc %s\n",temp->name);
+		}
+		else if( strcmp("root", temp->name) != 0)
 		{
 			WebcfgDebug("Found root in tmp list\n");
 			count = count+1;
