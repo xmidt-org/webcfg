@@ -57,6 +57,14 @@ add_executable(test_events test_events.c ../src/webcfg_param.c ../src/webcfg_mul
 target_link_libraries (test_events -lcunit -lmsgpackc -lcurl -lpthread  -lm -luuid -ltrower-base64 -lwdmp-c -lcimplog -lcjson)
 
 target_link_libraries (test_events gcov -Wl,--no-as-needed )
+#-------------------------------------------------------------------------------
+#   test_metadata
+#-------------------------------------------------------------------------------
+add_test(NAME test_metadata COMMAND ${MEMORY_CHECK} ./test_metadata)
+add_executable(test_metadata test_metadata.c ../src/webcfg_metadata.c)
+target_link_libraries (test_metadata -lcunit)
+
+target_link_libraries (test_metadata gcov -Wl,--no-as-needed )
 
 # Code coverage
 

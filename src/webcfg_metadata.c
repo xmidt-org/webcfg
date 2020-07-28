@@ -59,6 +59,7 @@ void initWebcfgProperties(char * filename)
 	if (fp == NULL)
 	{
 		WebcfgError("Failed to open file %s\n", filename);
+		return;
 	}
 
 	while (fgets(str, MAXCHAR, fp) != NULL)
@@ -84,6 +85,7 @@ void initWebcfgProperties(char * filename)
 		supported_bits_temp = strtok(supported_bits_temp,"\n");
 		setsupportedDocs(supported_bits_temp);
 		WebcfgDebug("Supported bits final %s value\n",supported_bits);
+		WEBCFG_FREE(temp_bit_token);
 	}
 
 	if(temp_version_token != NULL)
@@ -93,47 +95,64 @@ void initWebcfgProperties(char * filename)
 		supported_version_temp = strtok(supported_version_temp,"\n");
 		setsupportedVersion(supported_version_temp);
 		WebcfgDebug("supported_version = %s value\n", supported_version);
+		WEBCFG_FREE(temp_version_token);
 	}
-	WEBCFG_FREE(temp_bit_token);
-	WEBCFG_FREE(temp_version_token);
 }
 
 void setsupportedDocs( char * value)
 {
-     supported_bits = strdup(value);
+	if(value != NULL)
+	{
+		supported_bits = strdup(value);
+	}
+	else
+	{
+		supported_bits = NULL;
+	}
 }
 
 void setsupportedVersion( char * value)
 {
-     supported_version = strdup(value);
+	if(value != NULL)
+	{
+		supported_version = strdup(value);
+	}
+	else
+	{
+		supported_version = NULL;
+	}
 }
 
 
 char * getsupportedDocs()
 {
-    char * token_temp = strdup(supported_bits);
-    char * token = strtok(token_temp,"|");
-    long long number = 0;
-    char * endptr = NULL;
-    char * finalvalue = NULL , *tempvalue = NULL;
-    finalvalue = malloc(180);
-    memset(finalvalue,0,180);
-    tempvalue = malloc(20);
-    while(token != NULL)
-    {
-        memset(tempvalue,0,20);
-        number = strtoll(token,&endptr,2);
-        sprintf(tempvalue,"%lld", number);
-        token = strtok(NULL, "|");
-        strcat(finalvalue, tempvalue);
-        if(token!=NULL)
-        {
-            strcat(finalvalue, ",");
-        }
-    }
-    WEBCFG_FREE(tempvalue);
-    WEBCFG_FREE(token_temp);
-    return finalvalue;
+	if(supported_bits != NULL)
+	{
+		char * token_temp = strdup(supported_bits);
+		char * token = strtok(token_temp,"|");
+		long long number = 0;
+		char * endptr = NULL;
+		char * finalvalue = NULL , *tempvalue = NULL;
+		finalvalue = malloc(180);
+		memset(finalvalue,0,180);
+		tempvalue = malloc(20);
+		while(token != NULL)
+		{
+		    memset(tempvalue,0,20);
+		    number = strtoll(token,&endptr,2);
+		    sprintf(tempvalue,"%lld", number);
+		    token = strtok(NULL, "|");
+		    strcat(finalvalue, tempvalue);
+		    if(token!=NULL)
+		    {
+		        strcat(finalvalue, ",");
+		    }
+		}
+		WEBCFG_FREE(tempvalue);
+		WEBCFG_FREE(token_temp);
+		return finalvalue;
+	}
+	return NULL;
 }
 
 char * getsupportedVersion()
@@ -147,32 +166,39 @@ WEBCFG_STATUS isSubDocSupported(char *subDoc)
 	char *groupId = NULL, *subDocBit = NULL;
 	long long docBit = 0;
 	pos = getSubdocGroupId(subDoc, &groupId);
-	WebcfgDebug("%s is at %d position in %s group\n",subDoc,pos, groupId);
-	getSubdDocBitForGroupId(groupId, &subDocBit);
-	if(subDocBit != NULL)
+	if(pos > 0)
 	{
-		WebcfgDebug("subDocBit: %s\n",subDocBit);
-		sscanf(subDocBit,"%lld",&docBit);
-		WebcfgDebug("docBit: %lld\n",docBit);
-	
-		if(docBit & (1 << (pos -1)))
+		WebcfgDebug("%s is at %d position in %s group\n",subDoc,pos, groupId);
+		getSubdDocBitForGroupId(groupId, &subDocBit);
+		if(subDocBit != NULL)
 		{
-			WebcfgInfo("%s is supported\n",subDoc);
-			WEBCFG_FREE(groupId);
-			WEBCFG_FREE(subDocBit);
-			return WEBCFG_SUCCESS;
+			WebcfgDebug("subDocBit: %s\n",subDocBit);
+			sscanf(subDocBit,"%lld",&docBit);
+			WebcfgDebug("docBit: %lld\n",docBit);
+	
+			if(docBit & (1 << (pos -1)))
+			{
+				WebcfgInfo("%s is supported\n",subDoc);
+				WEBCFG_FREE(groupId);
+				WEBCFG_FREE(subDocBit);
+				return WEBCFG_SUCCESS;
+			}
 		}
+		else
+		{
+			WebcfgError("Supported doc bit not found for %s\n",subDoc);
+		}
+		WEBCFG_FREE(groupId);
+		if(subDocBit != NULL)
+		{
+			WEBCFG_FREE(subDocBit);
+		}
+		WebcfgInfo("%s is not supported\n",subDoc);
 	}
 	else
 	{
-		WebcfgError("Supported doc bit not found for %s\n",subDoc);
+		WebcfgError("Invalid subdoc %s\n",subDoc);
 	}
-	WEBCFG_FREE(groupId);
-	if(subDocBit != NULL)
-	{
-		WEBCFG_FREE(subDocBit);
-	}
-	WebcfgInfo("%s is not supported\n",subDoc);
 	return WEBCFG_FAILURE;
 }
 
@@ -205,12 +231,13 @@ int getSubdocGroupId(char *subDoc, char **groupId)
 
 void getSubdDocBitForGroupId(char *groupId, char **subDocBit)
 {
-	char *tmpStr=  NULL, *numStr = NULL;
+	char *temp =  NULL, *numStr = NULL, *tmpStr;
 	char subDoc[24] = {'\0'};
 	WebcfgDebug("supported_bits: %s\n",supported_bits);
 	if(supported_bits != NULL)
 	{
-		tmpStr = strdup(supported_bits);
+		temp = strdup(supported_bits);
+		tmpStr = temp;
 		while(tmpStr != NULL)
 		{
 			numStr = strsep(&tmpStr, "|");
@@ -224,6 +251,7 @@ void getSubdDocBitForGroupId(char *groupId, char **subDocBit)
 				break;
 			}
 		}
+		WEBCFG_FREE(temp);
 	}
 	else
 	{
