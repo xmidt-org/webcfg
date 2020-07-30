@@ -42,6 +42,9 @@ WEBCFG_STATUS isSubDocSupported(char *subDoc);
 void initWebcfgProperties(char * filename);
 void setsupportedDocs( char * value);
 void setsupportedVersion( char * value);
+void setConvertedSupportedDocs( char * value);
+void convertSupportedBit(char * value);
 char * getsupportedDocs();
 char * getsupportedVersion();
+char * getconvertedsupportedDocs();
 #endif

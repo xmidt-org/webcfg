@@ -55,8 +55,8 @@ char webpa_aut_token[4096]={'\0'};
 static char g_interface[32]={'\0'};
 static char g_systemReadyTime[64]={'\0'};
 static char g_FirmwareVersion[64]={'\0'};
-static char g_supportedDocs[180] ={'\0'};
-static char g_supportedVersion[64] ={'\0'};
+static char g_supportedDocs[400] ={'\0'};
+static char g_supportedVersion[1000] ={'\0'};
 static char g_bootTime[64]={'\0'};
 static char g_productClass[64]={'\0'};
 static char g_ModelName[64]={'\0'};
@@ -1084,7 +1084,7 @@ void createCurlHeader( struct curl_slist *list, struct curl_slist **header_list,
 
 	if(strlen(g_supportedDocs) ==0)
 	{
-		supportedDocs = getsupportedDocs();
+		supportedDocs = getconvertedsupportedDocs();
 		if(supportedDocs !=NULL)
 		{
 		       strncpy(g_supportedDocs, supportedDocs, sizeof(g_supportedDocs)-1);
