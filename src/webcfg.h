@@ -74,5 +74,5 @@ void webcfgStrncpy(char *destStr, const char *srcStr, size_t destSize);
 char* get_global_auth_token();
 void getCurrent_Time(struct timespec *timer);
 long timeVal_Diff(struct timespec *starttime, struct timespec *finishtime);
-
+void initWebConfigClient();
 #endif

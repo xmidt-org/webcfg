@@ -13,13 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __WEBCFG_CLIENT_H__
-#define __WEBCFG_CLIENT_H__
+#ifndef __WEBCFG_AKER_H__
+#define __WEBCFG_AKER_H__
 
 #include "webcfg.h"
-
-#define AKER_UPDATE_PARAM "Device.DeviceInfo.X_RDKCENTRAL-COM_Aker.Update"
-#define AKER_DELETE_PARAM "Device.DeviceInfo.X_RDKCENTRAL-COM_Aker.Delete"
+#include <wrp-c.h>
+#include <libparodus.h>
 /*----------------------------------------------------------------------------*/
 /*                                   Macros                                   */
 /*----------------------------------------------------------------------------*/
@@ -29,7 +28,9 @@
 /*----------------------------------------------------------------------------*/
 /*                             External Functions                             */
 /*----------------------------------------------------------------------------*/
-void initWebConfigClient();
 int send_aker_blob(char *paramName, char *blob, uint32_t blobSize, uint16_t docTransId, int version);
 WEBCFG_STATUS checkAkerStatus();
+void processAkerUpdateDelete(wrp_msg_t *wrpMsg);
+void processAkerRetrieve(wrp_msg_t *wrpMsg);
+libpd_instance_t get_webcfg_instance(void);
 #endif
