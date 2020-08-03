@@ -116,7 +116,7 @@ int send_aker_blob(char *paramName, char *blob, uint32_t blobSize, uint16_t docT
 			msg->u.crud.payload = NULL;
 			msg->u.crud.payload_size = 0;
 		}
-		else
+		else //aker schedule RETRIEVE is not supported through webconfig.
 		{
 			WebcfgError("Invalid aker request\n");
 			WEBCFG_FREE(msg);
