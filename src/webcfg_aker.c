@@ -393,9 +393,17 @@ void processAkerUpdateDelete(wrp_msg_t *wrpMsg)
 		WEBCFG_FREE(sourceService);
 		WEBCFG_FREE(sourceApplication);
 		payload = decodePayload(wrpMsg->u.crud.payload);
-		WebcfgDebug("payload = %s\n",payload);
-		WebcfgDebug("status: %d\n",wrpMsg->u.crud.status);
-		handleAkerStatus(wrpMsg->u.crud.status, payload);
+		if(payload !=NULL)
+		{
+			WebcfgDebug("payload = %s\n",payload);
+			WebcfgDebug("status: %d\n",wrpMsg->u.crud.status);
+			handleAkerStatus(wrpMsg->u.crud.status, payload);
+			WEBCFG_FREE(payload);
+		}
+		else
+		{
+			WebcfgError("decodePayload is NULL\n");
+		}
 	}
 	wrp_free_struct (wrpMsg);
 
@@ -411,7 +419,7 @@ void processAkerRetrieve(wrp_msg_t *wrpMsg)
 	WebcfgDebug("sourceService %s sourceApplication %s\n", sourceService, sourceApplication);
 	if(sourceService != NULL && sourceApplication != NULL && strcmp(sourceService,"parodus")== 0 && strcmp(sourceApplication,"service-status/aker")== 0)
 	{
-		WebcfgInfo("Retrieve response received from parodus : %s transaction_uuid %s\n",(char *)wrpMsg->u.crud.payload, wrpMsg->u.crud.transaction_uuid );
+		WebcfgDebug("Retrieve response received from parodus : %s transaction_uuid %s\n",(char *)wrpMsg->u.crud.payload, wrpMsg->u.crud.transaction_uuid );
 		status = parsePayloadForAkerStatus(wrpMsg->u.crud.payload);
 		if(status !=NULL)
 		{
