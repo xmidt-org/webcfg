@@ -460,12 +460,11 @@ WEBCFG_STATUS processMsgpackSubdoc(char *transaction_id)
         //size_t blob_len = -1 ;
 	char * trans_id = NULL;
 	uint16_t doc_transId = 0;
-	int aker_retry = 0;
 	int backoffRetryTime = 0;
 	int max_retry_sleep = 0;
 	int backoff_max_time = 6;
 	int c=4, akerIndex = 0;
-	int retry_inprogress = 0;
+	int akerSet = 0;
 
 	if(transaction_id !=NULL)
 	{
@@ -488,9 +487,6 @@ WEBCFG_STATUS processMsgpackSubdoc(char *transaction_id)
 		WebcfgError("addToTmpList failed\n");
 	}
 
-	max_retry_sleep = (int) pow(2, backoff_max_time) -1;
-	WebcfgDebug("max_retry_sleep is %d\n", max_retry_sleep );
-
 	WebcfgDebug("mp->entries_count is %d\n", (int)mp->entries_count);
 	for(m = 0 ; m<((int)mp->entries_count)-1; m++)
 	{
@@ -500,6 +496,14 @@ WEBCFG_STATUS processMsgpackSubdoc(char *transaction_id)
 		WebcfgDebug("mp->entries[%d].data %s\n" ,m,  mp->entries[m].data);
 
 		WebcfgDebug("mp->entries[%d].data_size is %zu\n", m,mp->entries[m].data_size);
+
+		if(strcmp(mp->entries[m].name_space, "aker") == 0)
+		{
+			akerIndex = m;
+			akerSet = 1;
+			WebcfgDebug("akerIndex is %d, skip aker doc and process at the end\n", akerIndex);
+			continue;
+		}
 		webconfig_tmp_data_t * subdoc_node = NULL;
 		subdoc_node = getTmpNode(mp->entries[m].name_space);
 
@@ -569,30 +573,8 @@ WEBCFG_STATUS processMsgpackSubdoc(char *transaction_id)
 				WebcfgDebug("Proceed to setValues..\n");
 				if((checkAndUpdateTmpRetryCount(subdoc_node, mp->entries[m].name_space))== WEBCFG_SUCCESS)
 				{
-					if(strcmp(mp->entries[m].name_space, "aker") == 0)
-					{
-						WebcfgDebug("WebConfig AKER Request\n");
-						//check aker process ready and is registered to parodus using RETRIEVE request to parodus.
-						WebcfgDebug("checkAkerStatus to check aker service ready\n");
-						if(checkAkerStatus() == WEBCFG_SUCCESS)
-						{
-							WebcfgDebug("Aker is ready to process requests\n");
-							aker_retry = 0;
-							ret = send_aker_blob(pm->entries[0].name, pm->entries[0].value,pm->entries[0].value_size, doc_transId, (int)mp->entries[m].etag);
-						}
-						else
-						{
-							WebcfgError("Aker is not ready to process requests, blob retry is required\n");
-							aker_retry = 1;
-							akerIndex = m;
-							WebcfgDebug("akerIndex %d aker_retry %d\n",akerIndex, aker_retry);
-						}
-					}
-					else
-					{
-						WebcfgInfo("WebConfig SET Request\n");
-						setValues(reqParam, paramCount, ATOMIC_SET_WEBCONFIG, NULL, NULL, &ret, &ccspStatus);
-					}
+					WebcfgInfo("WebConfig SET Request\n");
+					setValues(reqParam, paramCount, ATOMIC_SET_WEBCONFIG, NULL, NULL, &ret, &ccspStatus);
 					if(ret == WDMP_SUCCESS)
 					{
 						WebcfgInfo("setValues success. ccspStatus : %d\n", ccspStatus);
@@ -642,8 +624,6 @@ WEBCFG_STATUS processMsgpackSubdoc(char *transaction_id)
 					}
 					else
 					{
-						if(strcmp(mp->entries[m].name_space, "aker") != 0)
-						{
 						WebcfgError("setValues Failed. ccspStatus : %d\n", ccspStatus);
 						errd = mapStatus(ccspStatus);
 						WebcfgDebug("The errd value is %d\n",errd);
@@ -670,29 +650,6 @@ WEBCFG_STATUS processMsgpackSubdoc(char *transaction_id)
 							addWebConfgNotifyMsg(mp->entries[m].name_space, mp->entries[m].etag, "failed", result, trans_id,0, "status", ccspStatus);
 						}
 						//print_tmp_doc_list(mp->entries_count);
-						}
-						else
-						{
-							WebcfgError("aker doc send failed\n");
-							//aker is ready but send failed due to invalid request.
-							if(aker_retry == 0)
-							{
-								updateTmpList(subdoc_node, mp->entries[m].name_space, mp->entries[m].etag, "failed", "doc_rejected", 0, 0, 0);
-								addWebConfgNotifyMsg(mp->entries[m].name_space, mp->entries[m].etag, "failed", "doc_rejected", trans_id,0, "status", 0);
-							}
-							else
-							{
-								updateTmpList(subdoc_node, mp->entries[m].name_space, mp->entries[m].etag, "pending", "aker_service_unavailable", 0, 0, 0);
-							}
-							//after 3 aker retries send notification
-							WebcfgDebug("backoffRetryTime is %d max_retry_sleep %d\n", backoffRetryTime, max_retry_sleep);
-							if((aker_retry==1) && backoffRetryTime == max_retry_sleep)
-							{
-								updateTmpList(subdoc_node, mp->entries[m].name_space, mp->entries[m].etag, "failed", "aker_service_unavailable", 0, 0, 0);
-								addWebConfgNotifyMsg(mp->entries[m].name_space, mp->entries[m].etag, "failed", "aker_service_unavailable", trans_id,0, "status", 0);
-								aker_retry = 0;
-							}
-						}
 					}
 				}
 				else
@@ -711,38 +668,49 @@ WEBCFG_STATUS processMsgpackSubdoc(char *transaction_id)
 		{
 			WebcfgError("--------------decode root doc failed-------------\n");
 		}
-		WebcfgDebug("m value is %d mp->entries_count-2 %d retry_inprogress %d\n", m, (int)mp->entries_count-2, retry_inprogress);
-		//Retry aker doc at the end when all other docs are processed.
-		if(((aker_retry) && (m ==(int) mp->entries_count-2)) || (retry_inprogress ==1))
-		{
-			if(backoffRetryTime == max_retry_sleep)
-			{
-				WebcfgError("aker doc max retry reached\n");
-				retry_inprogress = 0;
-				break;
-			}
-
-			if(retry_inprogress==1 && (aker_retry ==0))
-			{
-				WebcfgInfo("all docs are processed including aker\n");
-				retry_inprogress = 0;
-				break;
-			}
-
-			if(backoffRetryTime < max_retry_sleep)
-			{
-				backoffRetryTime = (int) pow(2, c) -1;
-			}
-			WebcfgError("aker doc is pending, retrying in backoff interval %dsec\n", backoffRetryTime);
-			sleep(backoffRetryTime);
-			c++;
-			m = akerIndex-1;
-			retry_inprogress = 1;
-		}
 	}
 	WEBCFG_FREE(trans_id);
 	//multipart_destroy(mp);
-        
+
+	//Apply aker doc at the end when all other docs are processed.
+	if(akerSet)
+	{
+		AKER_STATUS akerStatus = AKER_FAILURE;
+		webconfig_tmp_data_t * subdoc_node = NULL;
+		subdoc_node = getTmpNode(mp->entries[akerIndex].name_space);
+		max_retry_sleep = (int) pow(2, backoff_max_time) -1;
+		WebcfgDebug("max_retry_sleep is %d\n", max_retry_sleep );
+
+		while(1)
+		{
+			WebcfgInfo("process aker sub doc\n");
+			akerStatus = processAkerSubdoc(subdoc_node, akerIndex);
+			if(akerStatus == AKER_UNAVAILABLE)
+			{
+				if(backoffRetryTime >= max_retry_sleep)
+				{
+					WebcfgError("aker doc max retry reached\n");
+					updateAkerMaxRetry(subdoc_node, "aker");
+					break;
+				}
+
+				if(backoffRetryTime < max_retry_sleep)
+				{
+					backoffRetryTime = (int) pow(2, c) -1;
+				}
+				WebcfgError("aker doc is pending, retrying in backoff interval %dsec\n", backoffRetryTime);
+				sleep(backoffRetryTime);
+				c++;
+			}
+			else
+			{
+				WebcfgInfo("Aker doc processed. akerStatus %d\n", akerStatus);
+				break;
+			}
+		}
+		akerSet= 0;
+	}
+
 	if(success_count) //No DB update when all docs failed.
 	{
 		size_t j=success_count;
