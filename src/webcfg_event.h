@@ -18,6 +18,7 @@
 
 #include <stdint.h>
 #include "webcfg.h"
+#include "webcfg_db.h"
 
 #define MAX_APPLY_RETRY_COUNT 3
 

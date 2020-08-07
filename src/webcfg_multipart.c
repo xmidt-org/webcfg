@@ -25,8 +25,11 @@
 #include "webcfg_notify.h"
 #include "webcfg_blob.h"
 #include "webcfg_event.h"
+#include "webcfg_aker.h"
 #include <pthread.h>
 #include <uuid/uuid.h>
+#include <math.h>
+#include <unistd.h>
 /*----------------------------------------------------------------------------*/
 /*                                   Macros                                   */
 /*----------------------------------------------------------------------------*/
@@ -100,6 +103,7 @@ void loadInitURLFromFile(char **url);
 static void get_webCfg_interface(char **interface);
 void get_root_version(uint32_t *rt_version);
 char *replaceMacWord(const char *s, const char *macW, const char *deviceMACW);
+WEBCFG_STATUS checkAkerDoc();
 /*----------------------------------------------------------------------------*/
 /*                             External Functions                             */
 /*----------------------------------------------------------------------------*/
@@ -449,13 +453,18 @@ WEBCFG_STATUS processMsgpackSubdoc(char *transaction_id)
 	char result[MAX_VALUE_LEN]={0};
 	int ccspStatus=0;
 	int paramCount = 0;
-	webcfgparam_t *pm;
+	webcfgparam_t *pm = NULL;
 	int success_count = 0;
 	WEBCFG_STATUS addStatus =0;
 	//char * blob_data = NULL;
         //size_t blob_len = -1 ;
 	char * trans_id = NULL;
 	uint16_t doc_transId = 0;
+	int backoffRetryTime = 0;
+	int max_retry_sleep = 0;
+	int backoff_max_time = 6;
+	int c=4, akerIndex = 0;
+	int akerSet = 0;
 
 	if(transaction_id !=NULL)
 	{
@@ -478,13 +487,23 @@ WEBCFG_STATUS processMsgpackSubdoc(char *transaction_id)
 		WebcfgError("addToTmpList failed\n");
 	}
 
+	WebcfgDebug("mp->entries_count is %d\n", (int)mp->entries_count);
 	for(m = 0 ; m<((int)mp->entries_count)-1; m++)
-	{       
+	{
+		ret = WDMP_FAILURE;
 		WebcfgInfo("mp->entries[%d].name_space %s\n", m, mp->entries[m].name_space);
 		WebcfgInfo("mp->entries[%d].etag %lu\n" ,m,  (long)mp->entries[m].etag);
 		WebcfgDebug("mp->entries[%d].data %s\n" ,m,  mp->entries[m].data);
 
 		WebcfgDebug("mp->entries[%d].data_size is %zu\n", m,mp->entries[m].data_size);
+
+		if(strcmp(mp->entries[m].name_space, "aker") == 0)
+		{
+			akerIndex = m;
+			akerSet = 1;
+			WebcfgDebug("akerIndex is %d, skip aker doc and process at the end\n", akerIndex);
+			continue;
+		}
 		webconfig_tmp_data_t * subdoc_node = NULL;
 		subdoc_node = getTmpNode(mp->entries[m].name_space);
 
@@ -507,12 +526,18 @@ WEBCFG_STATUS processMsgpackSubdoc(char *transaction_id)
 					{
 						char *appended_doc = NULL;
 						appended_doc = webcfg_appendeddoc( mp->entries[m].name_space, mp->entries[m].etag, pm->entries[i].value, pm->entries[i].value_size, &doc_transId);
-						WebcfgDebug("webcfg_appendeddoc doc_transId : %hu\n", doc_transId);
-						reqParam[i].name = strdup(pm->entries[i].name);
-						WebcfgDebug("appended_doc length: %zu\n", strlen(appended_doc));
-						reqParam[i].value = strdup(appended_doc);
-						reqParam[i].type = WDMP_BASE64;
-						WEBCFG_FREE(appended_doc);
+						if(appended_doc != NULL)
+						{
+							WebcfgDebug("webcfg_appendeddoc doc_transId : %hu\n", doc_transId);
+							if(pm->entries[i].name !=NULL)
+							{
+								reqParam[i].name = strdup(pm->entries[i].name);
+							}
+							WebcfgDebug("appended_doc length: %zu\n", strlen(appended_doc));
+							reqParam[i].value = strdup(appended_doc);
+							reqParam[i].type = WDMP_BASE64;
+							WEBCFG_FREE(appended_doc);
+						}
 						//Update doc trans_id to validate events.
 						WebcfgDebug("Update doc trans_id to validate events.\n");
 						updateTmpList(subdoc_node, mp->entries[m].name_space, mp->entries[m].etag, "pending", "none", 0, doc_transId, 0);
@@ -527,8 +552,14 @@ WEBCFG_STATUS processMsgpackSubdoc(char *transaction_id)
 					}
 					else
 					{
-						reqParam[i].name = strdup(pm->entries[i].name);
-						reqParam[i].value = strdup(pm->entries[i].value);
+						if(pm->entries[i].name !=NULL)
+						{
+							reqParam[i].name = strdup(pm->entries[i].name);
+						}
+						if(pm->entries[i].value !=NULL)
+						{
+							reqParam[i].value = strdup(pm->entries[i].value);
+						}
 						reqParam[i].type = pm->entries[i].type;
 					}
                                 }
@@ -593,7 +624,7 @@ WEBCFG_STATUS processMsgpackSubdoc(char *transaction_id)
 					}
 					else
 					{
-						WebcfgInfo("setValues Failed. ccspStatus : %d\n", ccspStatus);
+						WebcfgError("setValues Failed. ccspStatus : %d\n", ccspStatus);
 						errd = mapStatus(ccspStatus);
 						WebcfgDebug("The errd value is %d\n",errd);
 
@@ -640,7 +671,51 @@ WEBCFG_STATUS processMsgpackSubdoc(char *transaction_id)
 	}
 	WEBCFG_FREE(trans_id);
 	//multipart_destroy(mp);
-        
+
+	//Apply aker doc at the end when all other docs are processed.
+	if(akerSet)
+	{
+		AKER_STATUS akerStatus = AKER_FAILURE;
+		webconfig_tmp_data_t * subdoc_node = NULL;
+		subdoc_node = getTmpNode(mp->entries[akerIndex].name_space);
+		max_retry_sleep = (int) pow(2, backoff_max_time) -1;
+		WebcfgDebug("max_retry_sleep is %d\n", max_retry_sleep );
+
+		while(1)
+		{
+			//check aker ready and is registered to parodus using RETRIEVE request to parodus.
+			WebcfgDebug("AkerStatus to check service ready\n");
+			if(checkAkerStatus() != WEBCFG_SUCCESS)
+			{
+				WebcfgError("Aker is not ready to process requests, retry is required\n");
+				updateTmpList(subdoc_node, mp->entries[akerIndex].name_space, mp->entries[akerIndex].etag, "pending", "aker_service_unavailable", 0, 0, 0);
+
+				if(backoffRetryTime >= max_retry_sleep)
+				{
+					WebcfgError("aker doc max retry reached\n");
+					updateAkerMaxRetry(subdoc_node, "aker");
+					break;
+				}
+
+				if(backoffRetryTime < max_retry_sleep)
+				{
+					backoffRetryTime = (int) pow(2, c) -1;
+				}
+				WebcfgError("aker doc is pending, retrying in backoff interval %dsec\n", backoffRetryTime);
+				sleep(backoffRetryTime);
+				c++;
+			}
+			else
+			{
+				WebcfgInfo("process aker sub doc\n");
+				akerStatus = processAkerSubdoc(subdoc_node, akerIndex);
+				WebcfgInfo("Aker doc processed. akerStatus %d\n", akerStatus);
+				break;
+			}
+		}
+		akerSet= 0;
+	}
+
 	if(success_count) //No DB update when all docs failed.
 	{
 		size_t j=success_count;
