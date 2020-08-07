@@ -257,6 +257,15 @@ AKER_STATUS processAkerSubdoc(webconfig_tmp_data_t *docNode, int akerIndex)
 		WebcfgDebug("gmp->entries[%d].data %s\n" ,m,  gmp->entries[m].data);
 		WebcfgDebug("gmp->entries[%d].data_size is %zu\n", m,gmp->entries[m].data_size);
 
+		//check aker ready and is registered to parodus using RETRIEVE request to parodus.
+		WebcfgDebug("AkerStatus to check service ready\n");
+		if(checkAkerStatus() != WEBCFG_SUCCESS)
+		{
+			WebcfgError("Aker is not ready to process requests, retry is required\n");
+			updateTmpList(docNode, gmp->entries[m].name_space, gmp->entries[m].etag, "pending", "aker_service_unavailable", 0, 0, 0);
+			return AKER_UNAVAILABLE;
+		}
+
 		WebcfgDebug("--------------decode root doc-------------\n");
 		pm = webcfgparam_convert( gmp->entries[m].data, gmp->entries[m].data_size+1 );
 		if ( NULL != pm)
@@ -303,31 +312,19 @@ AKER_STATUS processAkerSubdoc(webconfig_tmp_data_t *docNode, int akerIndex)
 
 			if(reqParam !=NULL && validate_request_param(reqParam, paramCount) == WEBCFG_SUCCESS)
 			{
-				//check aker ready and is registered to parodus using RETRIEVE request to parodus.
-				WebcfgDebug("AkerStatus to check service ready\n");
-				if(checkAkerStatus() != WEBCFG_SUCCESS)
+				ret = send_aker_blob(pm->entries[0].name, pm->entries[0].value,pm->entries[0].value_size, doc_transId, (int)gmp->entries[m].etag);
+
+				if(ret == WDMP_SUCCESS)
 				{
-					WebcfgError("Aker is not ready to process requests, retry is required\n");
-					updateTmpList(docNode, gmp->entries[m].name_space, gmp->entries[m].etag, "pending", "aker_service_unavailable", 0, 0, 0);
-					rv = AKER_UNAVAILABLE;
+					WebcfgDebug("aker doc send success\n");
+					rv = AKER_SUCCESS;
 				}
 				else
 				{
-					WebcfgDebug("Aker is ready to process requests\n");
-					ret = send_aker_blob(pm->entries[0].name, pm->entries[0].value,pm->entries[0].value_size, doc_transId, (int)gmp->entries[m].etag);
-
-					if(ret == WDMP_SUCCESS)
-					{
-						WebcfgDebug("aker doc send success\n");
-						rv = AKER_SUCCESS;
-					}
-					else
-					{
-						//Invalid aker request
-						updateTmpList(docNode, gmp->entries[m].name_space, gmp->entries[m].etag, "failed", "doc_rejected", 0, 0, 0);
-						addWebConfgNotifyMsg(gmp->entries[m].name_space, gmp->entries[m].etag, "failed", "doc_rejected", get_global_transID(),0, "status", 0);
-						rv = AKER_FAILURE;
-					}
+					//Invalid aker request
+					updateTmpList(docNode, gmp->entries[m].name_space, gmp->entries[m].etag, "failed", "doc_rejected", 0, 0, 0);
+					addWebConfgNotifyMsg(gmp->entries[m].name_space, gmp->entries[m].etag, "failed", "doc_rejected", get_global_transID(),0, "status", 0);
+					rv = AKER_FAILURE;
 				}
 				reqParam_destroy(paramCount, reqParam);
 			}
