@@ -184,31 +184,31 @@ WEBCFG_STATUS checkAkerStatus()
 		if(sendStatus == 0)
 		{
 			WebcfgInfo("Sent aker retrieve request to parodus\n");
+			//waiting to get response from parodus. add lock here while reading
+			status_val = get_global_status();
+			if(status_val !=NULL)
+			{
+				if (strcmp(status_val, AKER_STATUS_ONLINE) == 0)
+				{
+					WebcfgDebug("Received aker status as %s\n", status_val);
+					rv = WEBCFG_SUCCESS;
+				}
+				else
+				{
+					WebcfgError("Received aker status as %s\n", status_val);
+				}
+				WEBCFG_FREE(status_val);
+			}
+			else
+			{
+				WebcfgError("Failed to get aker status\n");
+			}
 		}
 		else
 		{
 			WebcfgError("Failed to send aker retrieve req: '%s'\n",libparodus_strerror(sendStatus));
 		}
 
-		//waiting to get response from parodus. add lock here while reading
-		status_val = get_global_status();
-		if(status_val !=NULL)
-		{
-			if (strcmp(status_val, AKER_STATUS_ONLINE) == 0)
-			{
-				WebcfgDebug("Received aker status as %s\n", status_val);
-				rv = WEBCFG_SUCCESS;
-			}
-			else
-			{
-				WebcfgError("Received aker status as %s\n", status_val);
-			}
-			WEBCFG_FREE(status_val);
-		}
-		else
-		{
-			WebcfgError("Failed to get aker status\n");
-		}
 		wrp_free_struct (msg);
 	}
 	return rv;
