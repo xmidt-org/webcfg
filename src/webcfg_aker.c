@@ -257,15 +257,6 @@ AKER_STATUS processAkerSubdoc(webconfig_tmp_data_t *docNode, int akerIndex)
 		WebcfgDebug("gmp->entries[%d].data %s\n" ,m,  gmp->entries[m].data);
 		WebcfgDebug("gmp->entries[%d].data_size is %zu\n", m,gmp->entries[m].data_size);
 
-		//check aker ready and is registered to parodus using RETRIEVE request to parodus.
-		WebcfgDebug("AkerStatus to check service ready\n");
-		if(checkAkerStatus() != WEBCFG_SUCCESS)
-		{
-			WebcfgError("Aker is not ready to process requests, retry is required\n");
-			updateTmpList(docNode, gmp->entries[m].name_space, gmp->entries[m].etag, "pending", "aker_service_unavailable", 0, 0, 0);
-			return AKER_UNAVAILABLE;
-		}
-
 		WebcfgDebug("--------------decode root doc-------------\n");
 		pm = webcfgparam_convert( gmp->entries[m].data, gmp->entries[m].data_size+1 );
 		if ( NULL != pm)

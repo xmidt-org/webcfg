@@ -683,10 +683,13 @@ WEBCFG_STATUS processMsgpackSubdoc(char *transaction_id)
 
 		while(1)
 		{
-			WebcfgInfo("process aker sub doc\n");
-			akerStatus = processAkerSubdoc(subdoc_node, akerIndex);
-			if(akerStatus == AKER_UNAVAILABLE)
+			//check aker ready and is registered to parodus using RETRIEVE request to parodus.
+			WebcfgDebug("AkerStatus to check service ready\n");
+			if(checkAkerStatus() != WEBCFG_SUCCESS)
 			{
+				WebcfgError("Aker is not ready to process requests, retry is required\n");
+				updateTmpList(subdoc_node, mp->entries[akerIndex].name_space, mp->entries[akerIndex].etag, "pending", "aker_service_unavailable", 0, 0, 0);
+
 				if(backoffRetryTime >= max_retry_sleep)
 				{
 					WebcfgError("aker doc max retry reached\n");
@@ -704,6 +707,8 @@ WEBCFG_STATUS processMsgpackSubdoc(char *transaction_id)
 			}
 			else
 			{
+				WebcfgInfo("process aker sub doc\n");
+				akerStatus = processAkerSubdoc(subdoc_node, akerIndex);
 				WebcfgInfo("Aker doc processed. akerStatus %d\n", akerStatus);
 				break;
 			}
