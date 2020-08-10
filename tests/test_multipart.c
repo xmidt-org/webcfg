@@ -104,6 +104,12 @@ char * getFirmwareVersion()
 	return fName;
 }
 
+char * getRebootReason()
+{
+	char *reason = strdup("Sotware_upgrade2");
+	return reason;
+}
+
 void sendNotification(char *payload, char *source, char *destination)
 {
 	WEBCFG_FREE(payload);

@@ -101,7 +101,7 @@ char* generate_trans_uuid();
 WEBCFG_STATUS processMsgpackSubdoc(char *transaction_id);
 void loadInitURLFromFile(char **url);
 static void get_webCfg_interface(char **interface);
-void get_root_version(uint32_t *rt_version);
+void get_root_version(uint32_t *rt_version, int *subdoclist);
 char *replaceMacWord(const char *s, const char *macW, const char *deviceMACW);
 WEBCFG_STATUS checkAkerDoc();
 /*----------------------------------------------------------------------------*/
@@ -997,7 +997,7 @@ void getConfigDocList(char *docList)
 	}
 }
 
-void get_root_version(uint32_t *rt_version)
+void get_root_version(uint32_t *rt_version, int *subdoclist)
 {
 	webconfig_db_data_t *temp = NULL;
 	temp = get_global_db_node();
@@ -1010,6 +1010,72 @@ void get_root_version(uint32_t *rt_version)
 			WebcfgDebug("rt_version %lu\n", (long)*rt_version);
 		}
 		temp= temp->next;
+		*subdoclist = *subdoclist+1;
+	}
+	WebcfgDebug("*subdoclist is %d\n", *subdoclist);
+}
+
+void get_root_version_string(char *rootVersion, int status)
+{
+	FILE *fp = NULL;
+	char *reason = NULL;
+	uint32_t root_version = 0;
+	int subdocList = 0;
+
+	fp = fopen(WEBCFG_DB_FILE,"rb");
+
+	reason = getRebootReason();
+	if(reason != NULL)
+	{
+		WebcfgInfo("reboot reason is %s\n", reason);
+		if (fp == NULL)
+		{
+			if(strncmp(reason,"factory-reset",strlen("factory-reset"))==0)
+			{
+				strcpy(rootVersion, "NONE");
+			}
+			else if(strncmp(reason,"Software_upgrade",strlen("Software_upgrade"))==0)
+			{
+				strcpy(rootVersion, "NONE-MIGRATION");
+			}
+			else
+			{
+				strcpy(rootVersion, "NONE-REBOOT");
+			}
+		}
+		else
+		{
+			if((strncmp(rootVersion,"POST-NONE",strlen("POST-NONE")==0)) && ((strncmp(reason,"Software_upgrade",strlen("Software_upgrade"))!=0) || (strncmp(reason,"factory-reset",strlen("factory-reset"))!=0)))
+			{
+				strcpy(rootVersion, "NONE-REBOOT");
+				return;
+			}
+			else if(status == 404 && ((strcmp(rootVersion, "NONE") == 0) || (strcmp(rootVersion, "NONE-MIGRATION") == 0) || (strcmp(rootVersion, "NONE-REBOOT") == 0)))
+			{
+				strcpy(rootVersion, "POST-NONE");
+				return;
+			}
+
+			//check existing root version
+			get_root_version(&root_version, &subdocList);
+			WebcfgDebug("root_version %lu subdocList %d\n", (long)root_version, subdocList);
+
+			//when subdocs are applied and reboot due to software migration/rollback, root reset to 0.
+			if(subdocList > 1 && strncmp(reason,"Software_upgrade",strlen("Software_upgrade"))==0)
+			{
+				strcpy(rootVersion, "0");
+				return;
+			}
+			if(root_version)
+			{
+				WebcfgDebug("root_version is %lu\n", (long)root_version);
+				sprintf(rootVersion, "%lu", (long)root_version);
+			}
+		}
+	}
+	else
+	{
+		WebcfgError("Failed to get reboot reason\n");
 	}
 }
 
@@ -1020,27 +1086,26 @@ This can be increased if required. */
 void getConfigVersionList(char *versionsList)
 {
 	char *versionsList_tmp = NULL;
-	uint32_t root_version = 0;
+	char root_str[32]={'\0'};
+	int http_status = 404; //TODO: pass http status to handle 404
 
-	get_root_version(&root_version);
-	WebcfgDebug("root_version %lu\n", (long)root_version);
+	//initialize to default value "0".
+	sprintf(versionsList, "%s", "0");
+
+	get_root_version_string(root_str, http_status);
+	if(strlen(root_str) >0)
+	{
+		WebcfgInfo("root_str is %s\n", root_str);
+		sprintf(versionsList, "%s", root_str);
+	}
 
 	webconfig_db_data_t *temp = NULL;
 	temp = get_global_db_node();
 
 	if(NULL != temp)
 	{
-		if(root_version)
-		{
-			WebcfgDebug("Updating root_version to versionsList\n");
-			sprintf(versionsList, "%lu", (long)root_version);
-		}
-		else
-		{
-			WebcfgDebug("Updating versionsList as NONE\n");
-			sprintf(versionsList, "%s", "NONE");
-		}
-		WebcfgDebug("versionsList is %s\n", versionsList);
+		sprintf(versionsList, "%s", root_str);
+		WebcfgInfo("versionsList is %s\n", versionsList);
 
 		while (NULL != temp)
 		{
@@ -1055,7 +1120,7 @@ void getConfigVersionList(char *versionsList)
 			}
 			temp= temp->next;
 		}
-		WebcfgDebug("Final versionsList is %s len %lu\n", versionsList, strlen(versionsList));
+		WebcfgInfo("Final versionsList is %s len %lu\n", versionsList, strlen(versionsList));
 	}
 }
 
@@ -1102,7 +1167,7 @@ void createCurlHeader( struct curl_slist *list, struct curl_slist **header_list,
 	if(version_header !=NULL)
 	{
 		getConfigVersionList(version);
-		snprintf(version_header, MAX_BUF_SIZE, "IF-NONE-MATCH:%s", ((strlen(version)!=0) ? version : "NONE"));
+		snprintf(version_header, MAX_BUF_SIZE, "IF-NONE-MATCH:%s", ((strlen(version)!=0) ? version : "0"));
 		WebcfgInfo("version_header formed %s\n", version_header);
 		list = curl_slist_append(list, version_header);
 		WEBCFG_FREE(version_header);
