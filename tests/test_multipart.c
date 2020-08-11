@@ -106,7 +106,7 @@ char * getFirmwareVersion()
 
 char * getRebootReason()
 {
-	char *reason = strdup("Sotware_upgrade2");
+	char *reason = strdup("factory-reset");
 	return reason;
 }
 
@@ -157,6 +157,7 @@ void test_multipart()
 	initWebConfigNotifyTask();
 	processWebcfgEvents();
 	initEventHandlingTask();
+	initWebConfigClient();
 	processWebconfgSync(status);
 }
 

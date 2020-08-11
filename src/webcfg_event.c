@@ -272,7 +272,7 @@ void* processSubdocEvents()
 							//add to DB, update tmp list and notification based on success ack.
 							sendSuccessNotification(subdoc_node, eventParam->subdoc_name, eventParam->version, eventParam->trans_id);
 							WebcfgDebug("AddToDB subdoc_name %s version %lu\n", eventParam->subdoc_name, (long)eventParam->version);
-							checkDBList(eventParam->subdoc_name,eventParam->version);
+							checkDBList(eventParam->subdoc_name,eventParam->version, NULL);
 							WebcfgDebug("checkRootUpdate\n");
 							if(checkRootUpdate() == WEBCFG_SUCCESS)
 							{
@@ -390,7 +390,7 @@ void* processSubdocEvents()
 							WebcfgInfo("tmp version %lu same as event version %lu\n",(long)tmpVersion, (long)eventParam->version); 
 							sendSuccessNotification(subdoc_node, eventParam->subdoc_name, eventParam->version, eventParam->trans_id);
 							WebcfgInfo("AddToDB subdoc_name %s version %lu\n", eventParam->subdoc_name, (long)eventParam->version);
-							checkDBList(eventParam->subdoc_name,eventParam->version);
+							checkDBList(eventParam->subdoc_name,eventParam->version, NULL);
 							WebcfgDebug("checkRootUpdate\n");
 							if(checkRootUpdate() == WEBCFG_SUCCESS)
 							{
@@ -859,7 +859,7 @@ WEBCFG_STATUS retryMultipartSubdoc(webconfig_tmp_data_t *docNode, char *docName)
 							addWebConfgNotifyMsg(gmp->entries[m].name_space, gmp->entries[m].etag, "success", "none", get_global_transID(), 0, "status", 0);
 							WebcfgDebug("deleteFromTmpList as scalar doc is applied\n");
 							deleteFromTmpList(gmp->entries[m].name_space);
-							checkDBList(gmp->entries[m].name_space,gmp->entries[m].etag);
+							checkDBList(gmp->entries[m].name_space,gmp->entries[m].etag, NULL);
 							WebcfgDebug("checkRootUpdate scalar doc case\n");
 							if(checkRootUpdate() == WEBCFG_SUCCESS)
 							{

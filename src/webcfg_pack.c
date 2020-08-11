@@ -125,7 +125,14 @@ ssize_t webcfgdb_blob_pack(webconfig_db_data_t *webcfgdb, webconfig_tmp_data_t *
        {
 	    while(db_data != NULL) //1 element
 	    {
-                msgpack_pack_map( &pk, 5); //name, version,status, error_details
+		if(db_data->root_string !=NULL)
+		{
+                msgpack_pack_map( &pk, 6); //name, version,status, error_details, root_string
+		}
+		else
+		{
+			msgpack_pack_map( &pk, 5);
+		}
 
 	        struct webcfg_token WEBCFG_MAP_BLOB_NAME;
 
@@ -160,6 +167,14 @@ ssize_t webcfgdb_blob_pack(webconfig_db_data_t *webcfgdb, webconfig_tmp_data_t *
 	        __msgpack_pack_string( &pk, WEBCFG_MAP_BLOB_ERROR_CODE.name, WEBCFG_MAP_BLOB_ERROR_CODE.length);
                 msgpack_pack_uint64(&pk,0);
 
+		if(db_data->root_string !=NULL)
+		{
+			struct webcfg_token WEBCFG_MAP_BLOB_ROOT_STRING;
+
+		        WEBCFG_MAP_BLOB_ROOT_STRING.name = "root_string";
+		        WEBCFG_MAP_BLOB_ROOT_STRING.length = strlen( "root_string" );
+		        __msgpack_pack_string_nvp( &pk, &WEBCFG_MAP_BLOB_ROOT_STRING, db_data->root_string );
+		}
                 db_data = db_data->next;
 
 	    }
@@ -250,8 +265,15 @@ ssize_t webcfgdb_pack( webconfig_db_data_t *packData, void **data, size_t count 
     webconfig_db_data_t *temp = packData;
 
 	while(temp != NULL) //1 element
-	{   
-            msgpack_pack_map( &pk, 2); //name, version
+	{
+	    if(temp->root_string !=NULL)
+	    {
+		msgpack_pack_map( &pk, 3); //name, version, root_string
+	    }
+	    else
+	    {
+		msgpack_pack_map( &pk, 2);
+            }
 
 	    struct webcfg_token WEBCFG_MAP_NAME;
 
@@ -266,7 +288,15 @@ ssize_t webcfgdb_pack( webconfig_db_data_t *packData, void **data, size_t count 
 	    __msgpack_pack_string( &pk, WEBCFG_MAP_VERSION.name, WEBCFG_MAP_VERSION.length);
             //WebcfgDebug("The version is %ld\n",(long)temp->version);
             msgpack_pack_uint64(&pk,(uint32_t) temp->version);
-            
+
+	    if(temp->root_string !=NULL)
+	    {
+	    struct webcfg_token WEBCFG_MAP_ROOTSTRING;
+
+            WEBCFG_MAP_ROOTSTRING.name = "root_string";
+            WEBCFG_MAP_ROOTSTRING.length = strlen( "root_string" );
+            __msgpack_pack_string_nvp( &pk, &WEBCFG_MAP_ROOTSTRING, temp->root_string );
+            }
             temp = temp->next;
 
 	}

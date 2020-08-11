@@ -50,6 +50,7 @@ typedef struct webconfig_tmp_data
 typedef struct webconfig_db_data{
 	char * name;
 	uint32_t version;
+	char *root_string;
         struct webconfig_db_data *next;
 }webconfig_db_data_t;
 
@@ -62,6 +63,7 @@ typedef struct blob{
 typedef struct{
         char * name;
         uint32_t version;
+	char *root_string;
         char * status;
 	char * error_details;
 	uint16_t error_code;
@@ -130,9 +132,9 @@ void set_doc_fail( int value);
 
 char * get_DB_BLOB_base64();
 
-void checkDBList(char *docname, uint32_t version);
+void checkDBList(char *docname, uint32_t version,char *rootstr);
 
-WEBCFG_STATUS updateDBlist(char *docname, uint32_t version);
+WEBCFG_STATUS updateDBlist(char *docname, uint32_t version,char *rootstr);
 
 int writebase64ToDBFile(char *base64_file_path, char *data);
 
