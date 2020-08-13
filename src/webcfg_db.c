@@ -697,7 +697,6 @@ int process_webcfgdbparams( webconfig_db_data_t *e, msgpack_object_map *map )
         }
         p++;
     }
-	WebcfgInfo("objects_left is %d\n", objects_left);
     if( 1 & objects_left )
     {
 	if( (1 << 0) & objects_left )
@@ -710,7 +709,6 @@ int process_webcfgdbparams( webconfig_db_data_t *e, msgpack_object_map *map )
     {
         errno = WD_OK;
     }
-	WebcfgInfo("End objects_left is %d\n", objects_left);
     return (0 == objects_left) ? 0 : -1;
 }
 
@@ -928,7 +926,6 @@ int process_webcfgdbblobparams( blob_data_t *e, msgpack_object_map *map )
         }
         p++;
     }
-    WebcfgInfo("objects_left is %d\n", objects_left);
     if( 1 & objects_left )
     {
     }
@@ -940,7 +937,6 @@ int process_webcfgdbblobparams( blob_data_t *e, msgpack_object_map *map )
     {
         errno = BD_OK;
     }
-    WebcfgInfo("End objects_left is %d\n", objects_left);
     return (0 == objects_left) ? 0 : -1;
 }
 

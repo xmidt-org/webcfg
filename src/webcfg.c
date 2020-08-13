@@ -294,6 +294,7 @@ int handlehttpResponse(long response_code, char *webConfigData, int retry_count,
 	int first_digit=0;
 	int msgpack_status=0;
 	int err = 0;
+	char version[512]={'\0'};
 
 	if(response_code == 304)
 	{
@@ -350,6 +351,11 @@ int handlehttpResponse(long response_code, char *webConfigData, int retry_count,
 	if((response_code !=403) && (first_digit == 4)) //4xx
 	{
 		WebcfgInfo("Action not supported. response_code:%ld\n", response_code);
+		if (response_code == 404)
+		{
+			//To set POST-NONE reboot version string when 404
+			getConfigVersionList(version, response_code);
+		}
 		WEBCFG_FREE(transaction_uuid);
 		return 1;
 	}

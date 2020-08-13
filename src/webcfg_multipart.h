@@ -57,4 +57,5 @@ void failedDocsRetry();
 WEBCFG_STATUS validate_request_param(param_t *reqParam, int paramCount);
 char * get_global_rootString(void);
 void set_global_rootString(char *rootStr);
+void getConfigVersionList(char *versionsList, int http_status);
 #endif

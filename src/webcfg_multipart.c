@@ -1092,7 +1092,6 @@ void getConfigVersionList(char *versionsList, int http_status)
 	char *versionsList_tmp = NULL;
 	char root_str[32]="0";
 	uint32_t root_version = 0;
-	//int http_status = 404; //TODO: pass http status to handle 404
 
 	//initialize to default value "0".
 	sprintf(versionsList, "%s", "0");
@@ -1104,6 +1103,8 @@ void getConfigVersionList(char *versionsList, int http_status)
 		sprintf(versionsList, "%s", root_str);
 		WebcfgInfo("update root_version %lu rootString %s to DB\n", (long)root_version, root_str);
 		checkDBList("root", root_version, root_str);
+		WebcfgInfo("addNewDocEntry. get_successDocCount %d\n", get_successDocCount());
+		addNewDocEntry(get_successDocCount());
 	}
 
 	webconfig_db_data_t *temp = NULL;
