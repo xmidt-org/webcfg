@@ -102,7 +102,7 @@ char* generate_trans_uuid();
 WEBCFG_STATUS processMsgpackSubdoc(char *transaction_id);
 void loadInitURLFromFile(char **url);
 static void get_webCfg_interface(char **interface);
-void get_root_version(uint32_t *rt_version, int *subdoclist);
+void getRootVersionFromDB(uint32_t *rt_version, char *rt_string, int *subdoclist);
 char *replaceMacWord(const char *s, const char *macW, const char *deviceMACW);
 WEBCFG_STATUS checkAkerDoc();
 /*----------------------------------------------------------------------------*/
@@ -998,7 +998,7 @@ void getConfigDocList(char *docList)
 	}
 }
 
-void get_root_version(uint32_t *rt_version, int *subdoclist)
+void getRootVersionFromDB(uint32_t *rt_version, char *rt_string, int *subdoclist)
 {
 	webconfig_db_data_t *temp = NULL;
 	temp = get_global_db_node();
@@ -1008,7 +1008,11 @@ void get_root_version(uint32_t *rt_version, int *subdoclist)
 		if( strcmp(temp->name, "root") == 0)
 		{
 			*rt_version = temp->version;
-			WebcfgDebug("rt_version %lu\n", (long)*rt_version);
+			if(temp->root_string !=NULL)
+			{
+				strcpy(rt_string, temp->root_string);
+			}
+			WebcfgInfo("rt_version %lu rt_string %s from DB list\n", (long)*rt_version, rt_string);
 		}
 		temp= temp->next;
 		*subdoclist = *subdoclist+1;
@@ -1020,7 +1024,8 @@ void get_root_version_string(char *rootVersion, uint32_t *root_ver, int status)
 {
 	FILE *fp = NULL;
 	char *reason = NULL;
-	uint32_t root_version = 0;
+	uint32_t db_root_version = 0;
+	char db_root_string[32]="0";
 	int subdocList = 0;
 
 	fp = fopen(WEBCFG_DB_FILE,"rb");
@@ -1046,35 +1051,48 @@ void get_root_version_string(char *rootVersion, uint32_t *root_ver, int status)
 		}
 		else
 		{
-			if((strncmp(rootVersion,"POST-NONE",strlen("POST-NONE"))==0) && ((strncmp(reason,"Software_upgrade",strlen("Software_upgrade"))!=0) || (strncmp(reason,"factory-reset",strlen("factory-reset"))!=0)))
+			//get existing root version from DB
+			getRootVersionFromDB(&db_root_version, db_root_string, &subdocList);
+			WebcfgDebug("db_root_version %lu db_root_string %s subdocList %d\n", (long)db_root_version, db_root_string, subdocList);
+
+			if((strncmp(db_root_string,"POST-NONE",strlen("POST-NONE"))==0) && ((strncmp(reason,"Software_upgrade",strlen("Software_upgrade"))!=0) || (strncmp(reason,"factory-reset",strlen("factory-reset"))!=0)))
 			{
 				strcpy(rootVersion, "NONE-REBOOT");
 				return;
 			}
-			else if(status == 404 && ((strcmp(rootVersion, "NONE") == 0) || (strcmp(rootVersion, "NONE-MIGRATION") == 0) || (strcmp(rootVersion, "NONE-REBOOT") == 0)))
+			else if(status == 404 && ((strcmp(db_root_string, "NONE") == 0) || (strcmp(db_root_string, "NONE-MIGRATION") == 0) || (strcmp(db_root_string, "NONE-REBOOT") == 0)))
 			{
 				strcpy(rootVersion, "POST-NONE");
+				return;
+			}
+			//Reset reboot version string to "0" after initial migration and factory reset.
+			else if(status == 200 && ((strcmp(db_root_string, "NONE") == 0) || (strcmp(db_root_string, "NONE-MIGRATION") == 0) || (strcmp(db_root_string, "NONE-REBOOT") == 0)))
+			{
+				WebcfgInfo("Received config from server, root reset to 0\n");
+				strcpy(rootVersion, "0");
 				return;
 			}
 
 			//check existing root version
 			WebcfgInfo("check existing root version\n");
-			get_root_version(&root_version, &subdocList);
-			WebcfgDebug("root_version %lu subdocList %d\n", (long)root_version, subdocList);
-
+			if(db_root_version)
+			{
 			//when subdocs are applied and reboot due to software migration/rollback, root reset to 0.
-			if(subdocList > 1 && strncmp(reason,"Software_upgrade",strlen("Software_upgrade"))==0)
-			{
-				WebcfgInfo("reboot due to software migration/rollback, root reset to 0\n");
-				strcpy(rootVersion, "0");
-				return;
+				if(subdocList > 1 && strncmp(reason,"Software_upgrade",strlen("Software_upgrade"))==0)
+				{
+					WebcfgInfo("reboot due to software migration/rollback, root reset to 0\n");
+					strcpy(rootVersion, "0");
+					return;
+				}
+				WebcfgDebug("Update rootVersion with db_root_version %lu\n", (long)db_root_version);
+				sprintf(rootVersion, "%lu", (long)db_root_version);
 			}
-			if(root_version)
+			else
 			{
-				WebcfgDebug("root_version is %lu\n", (long)root_version);
-				sprintf(rootVersion, "%lu", (long)root_version);
+				WebcfgInfo("Update rootVersion with db_root_string %s\n", db_root_string);
+				sprintf(rootVersion, "%s", db_root_string);
 			}
-			*root_ver = root_version;
+			*root_ver = db_root_version;
 		}
 	}
 	else
