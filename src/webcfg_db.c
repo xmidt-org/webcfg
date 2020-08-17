@@ -477,6 +477,10 @@ void checkDBList(char *docname, uint32_t version, char* rootstr)
 			{
 				webcfgdb->root_string = strdup(rootstr);
 			}
+			else
+			{
+				webcfgdb->root_string =  NULL;
+			}
 			webcfgdb->next = NULL;
 
 			addToDBList(webcfgdb);
@@ -507,7 +511,11 @@ WEBCFG_STATUS updateDBlist(char *docname, uint32_t version, char* rootstr)
 			{
 				webcfgdb->root_string = strdup(rootstr);
 			}
-			WebcfgDebug("webcfgdb %s is updated to version %lu webcfgdb->root_string %s\n", docname, (long)webcfgdb->version, webcfgdb->root_string);
+			else
+			{
+				webcfgdb->root_string =  NULL;
+			}
+			WebcfgInfo("webcfgdb %s is updated to version %lu webcfgdb->root_string %s\n", docname, (long)webcfgdb->version, webcfgdb->root_string);
 			pthread_mutex_unlock (&webconfig_db_mut);
 			WebcfgDebug("mutex_unlock if docname is webcfgdb name\n");
 			return WEBCFG_SUCCESS;

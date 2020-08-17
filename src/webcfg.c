@@ -309,7 +309,6 @@ int handlehttpResponse(long response_code, char *webConfigData, int retry_count,
 		if(webConfigData !=NULL)
 		{
 			WebcfgDebug("webConfigData fetched successfully\n");
-			getConfigVersionList(version, response_code);
 			WebcfgDebug("parseMultipartDocument\n");
 			msgpack_status = parseMultipartDocument(webConfigData, ct, dataSize, transaction_uuid);
 
@@ -326,7 +325,9 @@ int handlehttpResponse(long response_code, char *webConfigData, int retry_count,
 		}
 		else
 		{
-			WebcfgError("webConfigData is empty, need to do curl retry to server\n");
+			WebcfgInfo("webConfigData is empty\n");
+			//After factory reset when server sends 200 with empty config, set POST-NONE root version
+			getConfigVersionList(version, response_code);
 		}
 	}
 	else if(response_code == 204)
@@ -354,7 +355,7 @@ int handlehttpResponse(long response_code, char *webConfigData, int retry_count,
 		WebcfgInfo("Action not supported. response_code:%ld\n", response_code);
 		if (response_code == 404)
 		{
-			//To set POST-NONE reboot version string when 404
+			//To set POST-NONE root version when 404
 			getConfigVersionList(version, response_code);
 		}
 		WEBCFG_FREE(transaction_uuid);
