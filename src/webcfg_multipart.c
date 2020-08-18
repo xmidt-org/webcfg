@@ -102,7 +102,7 @@ char* generate_trans_uuid();
 WEBCFG_STATUS processMsgpackSubdoc(char *transaction_id);
 void loadInitURLFromFile(char **url);
 static void get_webCfg_interface(char **interface);
-void getRootVersionFromDB(uint32_t *rt_version, char *rt_string, int *subdoclist);
+void getRootVersionFromDB(uint32_t *rt_version, char **rt_string, int *subdoclist);
 char *replaceMacWord(const char *s, const char *macW, const char *deviceMACW);
 WEBCFG_STATUS checkAkerDoc();
 /*----------------------------------------------------------------------------*/
@@ -998,7 +998,7 @@ void getConfigDocList(char *docList)
 	}
 }
 
-void getRootVersionFromDB(uint32_t *rt_version, char *rt_string, int *subdoclist)
+void getRootVersionFromDB(uint32_t *rt_version, char **rt_string, int *subdoclist)
 {
 	webconfig_db_data_t *temp = NULL;
 	temp = get_global_db_node();
@@ -1010,9 +1010,9 @@ void getRootVersionFromDB(uint32_t *rt_version, char *rt_string, int *subdoclist
 			*rt_version = temp->version;
 			if(temp->root_string !=NULL)
 			{
-				strcpy(rt_string, temp->root_string);
+				*rt_string = strdup(temp->root_string);
 			}
-			WebcfgInfo("rt_version %lu rt_string %s from DB list\n", (long)*rt_version, rt_string);
+			WebcfgInfo("rt_version %lu rt_string %s from DB list\n", (long)*rt_version, *rt_string);
 		}
 		temp= temp->next;
 		*subdoclist = *subdoclist+1;
@@ -1025,7 +1025,7 @@ void get_root_version_string(char **rootVersion, uint32_t *root_ver, int status)
 	FILE *fp = NULL;
 	char *reason = NULL;
 	uint32_t db_root_version = 0;
-	char db_root_string[32]="0";
+	char *db_root_string = NULL;
 	int subdocList = 0;
 
 	fp = fopen(WEBCFG_DB_FILE,"rb");
@@ -1038,40 +1038,44 @@ void get_root_version_string(char **rootVersion, uint32_t *root_ver, int status)
 		{
 			if(strncmp(reason,"factory-reset",strlen("factory-reset"))==0)
 			{
-				strcpy(*rootVersion, "NONE");
+				*rootVersion = strdup("NONE");
 			}
 			else if(strncmp(reason,"Software_upgrade",strlen("Software_upgrade"))==0)
 			{
-				strcpy(*rootVersion, "NONE-MIGRATION");
+				*rootVersion = strdup("NONE-MIGRATION");
 			}
 			else
 			{
-				strcpy(*rootVersion, "NONE-REBOOT");
+				*rootVersion = strdup("NONE-REBOOT");
 			}
 		}
 		else
 		{
 			//get existing root version from DB
-			getRootVersionFromDB(&db_root_version, db_root_string, &subdocList);
+			getRootVersionFromDB(&db_root_version, &db_root_string, &subdocList);
 			WebcfgDebug("db_root_version %lu db_root_string %s subdocList %d\n", (long)db_root_version, db_root_string, subdocList);
 
-			if((strncmp(db_root_string,"POST-NONE",strlen("POST-NONE"))==0) && ((strncmp(reason,"Software_upgrade",strlen("Software_upgrade"))!=0) && (strncmp(reason,"factory-reset",strlen("factory-reset"))!=0)))
+			if(db_root_string !=NULL)
 			{
-				strcpy(*rootVersion, "NONE-REBOOT");
-				return;
-			}
-			else if(status == 404 && ((strcmp(db_root_string, "NONE") == 0) || (strcmp(db_root_string, "NONE-MIGRATION") == 0) || (strcmp(db_root_string, "NONE-REBOOT") == 0)))
-			{
-				strcpy(*rootVersion, "POST-NONE");
-				return;
-			}
-			//Reset reboot version string to "0" after initial migration and factory reset.
-			else if(status == 200 && (strcmp(db_root_string, "NONE") == 0))
-			{
-				WebcfgInfo("Received factory reset Ack from server, root reset to POST-NONE\n");
-				strcpy(*rootVersion, "POST-NONE");
-				*root_ver = 0;
-				return;
+				if((strcmp(db_root_string,"POST-NONE")==0) && ((strcmp(reason,"Software_upgrade")!=0) && (strcmp(reason,"factory-reset")!=0)))
+				{
+					*rootVersion = strdup("NONE-REBOOT");
+					WEBCFG_FREE(db_root_string);
+					return;
+				}
+				else if(status == 404 && ((strcmp(db_root_string, "NONE") == 0) || (strcmp(db_root_string, "NONE-MIGRATION") == 0) || (strcmp(db_root_string, "NONE-REBOOT") == 0)))
+				{
+					*rootVersion = strdup("POST-NONE");
+					WEBCFG_FREE(db_root_string);
+					return;
+				}
+				else if(status == 200 && (strcmp(db_root_string, "NONE") == 0))
+				{
+					WebcfgInfo("Received factory reset Ack from server, set root to POST-NONE\n");
+					*rootVersion = strdup("POST-NONE");
+					WEBCFG_FREE(db_root_string);
+					return;
+				}
 			}
 
 			//check existing root version
@@ -1082,17 +1086,19 @@ void get_root_version_string(char **rootVersion, uint32_t *root_ver, int status)
 				if(subdocList > 1 && strncmp(reason,"Software_upgrade",strlen("Software_upgrade"))==0)
 				{
 					WebcfgInfo("reboot due to software migration/rollback, root reset to 0\n");
-					*rootVersion = NULL;
 					*root_ver = 0;
 					return;
 				}
 				WebcfgDebug("Update rootVersion with db_root_version %lu\n", (long)db_root_version);
-				*rootVersion = NULL;
 			}
 			else
 			{
-				WebcfgInfo("Update rootVersion with db_root_string %s\n", db_root_string);
-				sprintf(*rootVersion, "%s", db_root_string);
+				if(db_root_string !=NULL)
+				{
+					WebcfgInfo("Update rootVersion with db_root_string %s\n", db_root_string);
+					*rootVersion = strdup(db_root_string);
+					WEBCFG_FREE(db_root_string);
+				}
 			}
 			*root_ver = db_root_version;
 		}
@@ -1112,20 +1118,14 @@ void getConfigVersionList(char *versionsList, int http_status)
 	char *versionsList_tmp = NULL;
 	char *root_str = NULL;
 	uint32_t root_version = 0;
-	root_str = (char*) malloc(32);
 
 	//initialize to default value "0".
 	sprintf(versionsList, "%s", "0");
 
 	get_root_version_string(&root_str, &root_version, http_status);
-	WebcfgInfo("root_str is %s\n", root_str);
-	if(root_str !=NULL)
-	{
-		sprintf(versionsList, "%s", root_str);
-	}
 	WebcfgInfo("update root_version %lu rootString %s to DB\n", (long)root_version, root_str);
 	checkDBList("root", root_version, root_str);
-	WebcfgInfo("addNewDocEntry. get_successDocCount %d\n", get_successDocCount());
+	WebcfgDebug("addNewDocEntry. get_successDocCount %d\n", get_successDocCount());
 	addNewDocEntry(get_successDocCount());
 
 	webconfig_db_data_t *temp = NULL;
@@ -1137,6 +1137,7 @@ void getConfigVersionList(char *versionsList, int http_status)
 		{
 			WebcfgInfo("update root_str %s to versionsList\n", root_str);
 			sprintf(versionsList, "%s", root_str);
+			WEBCFG_FREE(root_str);
 		}
 		else
 		{
