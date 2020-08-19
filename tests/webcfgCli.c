@@ -25,6 +25,7 @@
 #include "../src/webcfg_helpers.h"
 #include "../src/webcfg_db.h"
 #include "../src/webcfg_notify.h"
+#include "../src/webcfg_metadata.h"
 #include <msgpack.h>
 #include <curl/curl.h>
 #include <base64.h>

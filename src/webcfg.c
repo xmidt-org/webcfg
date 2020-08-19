@@ -31,6 +31,7 @@
 #include <base64.h>
 #include "webcfg_db.h"
 #include "webcfg_aker.h"
+#include "webcfg_metadata.h"
 /*----------------------------------------------------------------------------*/
 /*                                   Macros                                   */
 /*----------------------------------------------------------------------------*/
@@ -94,6 +95,8 @@ void *WebConfigMultipartTask(void *status)
 	Status = (unsigned long)status;
 
 	//start webconfig notification thread.
+	initWebcfgProperties(WEBCFG_PROPERTIES_FILE);
+
 	initWebConfigNotifyTask();
 	initWebConfigClient();
 	WebcfgInfo("initDB %s\n", WEBCFG_DB_FILE);

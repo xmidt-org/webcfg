@@ -1002,7 +1002,7 @@ webconfig_tmp_data_t * getTmpNode(char *docname)
 		WebcfgDebug("getTmpNode: temp->name %s, temp->version %lu\n",temp->name, (long)temp->version);
 		if( strcmp(docname, temp->name) == 0)
 		{
-			WebcfgDebug("subdoc node : name %s version %lu status %s error_details %s error_code %hu trans_id %hu temp->retry_count %d\n", temp->name, (long)temp->version, temp->status, temp->error_details, temp->error_code, temp->trans_id, temp->retry_count);
+			WebcfgInfo("subdoc node : name %s version %lu status %s error_details %s error_code %hu trans_id %hu temp->retry_count %d\n", temp->name, (long)temp->version, temp->status, temp->error_details, temp->error_code, temp->trans_id, temp->retry_count);
 			return temp;
 		}
 		temp= temp->next;
