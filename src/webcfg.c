@@ -327,7 +327,13 @@ int handlehttpResponse(long response_code, char *webConfigData, int retry_count,
 		{
 			WebcfgInfo("webConfigData is empty\n");
 			//After factory reset when server sends 200 with empty config, set POST-NONE root version
-			getConfigVersionList(version, response_code);
+			if(strcmp(get_global_contentLen(), "0") == 0)
+			{
+				WebcfgInfo("webConfigData content length is 0\n");
+				getConfigVersionList(version, response_code);
+				memset(get_global_contentLen(), 0, 32);
+				return 1;
+			}
 		}
 	}
 	else if(response_code == 204)

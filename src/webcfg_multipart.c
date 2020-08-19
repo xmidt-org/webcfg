@@ -35,6 +35,7 @@
 /*----------------------------------------------------------------------------*/
 #define MAX_HEADER_LEN			4096
 #define ETAG_HEADER 		       "Etag:"
+#define CONTENT_LENGTH_HEADER 	       "Content-Length:"
 #define CURL_TIMEOUT_SEC	   25L
 #define CA_CERT_PATH 		   "/etc/ssl/certs/ca-certificates.crt"
 #define WEBPA_READ_HEADER          "/etc/parodus/parodus_read_file.sh"
@@ -61,6 +62,7 @@ static char g_bootTime[64]={'\0'};
 static char g_productClass[64]={'\0'};
 static char g_ModelName[64]={'\0'};
 static char g_transID[64]={'\0'};
+static char g_contentLen[32]={'\0'};
 multipart_t *mp = NULL;
 pthread_mutex_t multipart_t_mut =PTHREAD_MUTEX_INITIALIZER;
 static int eventFlag = 0;
@@ -88,6 +90,10 @@ void set_global_mp(multipart_t *new)
 	mp = new;
 }
 
+char * get_global_contentLen(void)
+{
+	return g_contentLen;
+}
 /*----------------------------------------------------------------------------*/
 /*                             Function Prototypes                            */
 /*----------------------------------------------------------------------------*/
@@ -799,8 +805,10 @@ size_t headr_callback(char *buffer, size_t size, size_t nitems)
 	char* header_value = NULL;
 	char* final_header = NULL;
 	char header_str[64] = {'\0'};
+	size_t content_len = 0;
 
 	etag_len = strlen(ETAG_HEADER);
+	content_len = strlen(CONTENT_LENGTH_HEADER);
 	if( nitems > etag_len )
 	{
 		if( strncasecmp(ETAG_HEADER, buffer, etag_len) == 0 )
@@ -817,6 +825,23 @@ size_t headr_callback(char *buffer, size_t size, size_t nitems)
 					strncpy(g_ETAG, final_header, sizeof(g_ETAG)-1);
 				}
 			}
+		}
+
+		if( strncasecmp(CONTENT_LENGTH_HEADER, buffer, content_len) == 0 )
+		{
+			header_value = strtok(buffer, ":");
+			while( header_value != NULL )
+			{
+				header_value = strtok(NULL, ":");
+				if(header_value !=NULL)
+				{
+					strncpy(header_str, header_value, sizeof(header_str)-1);
+					stripspaces(header_str, &final_header);
+
+					strncpy(g_contentLen, final_header, sizeof(g_contentLen)-1);
+				}
+			}
+			WebcfgInfo("g_contentLen is %s\n", g_contentLen);
 		}
 	}
 	WebcfgInfo("header_callback size %zu\n", size);
