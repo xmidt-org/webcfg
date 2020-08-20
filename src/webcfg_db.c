@@ -515,7 +515,7 @@ WEBCFG_STATUS updateDBlist(char *docname, uint32_t version, char* rootstr)
 			{
 				webcfgdb->root_string =  NULL;
 			}
-			WebcfgInfo("webcfgdb %s is updated to version %lu webcfgdb->root_string %s\n", docname, (long)webcfgdb->version, webcfgdb->root_string);
+			WebcfgDebug("webcfgdb %s is updated to version %lu webcfgdb->root_string %s\n", docname, (long)webcfgdb->version, webcfgdb->root_string);
 			pthread_mutex_unlock (&webconfig_db_mut);
 			WebcfgDebug("mutex_unlock if docname is webcfgdb name\n");
 			return WEBCFG_SUCCESS;
@@ -709,7 +709,7 @@ int process_webcfgdbparams( webconfig_db_data_t *e, msgpack_object_map *map )
     {
 	if( (1 << 0) & objects_left )
 	{
-		WebcfgInfo("Skip optional root_string element\n");
+		WebcfgDebug("Skip optional root_string element\n");
 		objects_left &= ~(1 << 0);
 	}
     }
@@ -717,6 +717,7 @@ int process_webcfgdbparams( webconfig_db_data_t *e, msgpack_object_map *map )
     {
         errno = WD_OK;
     }
+
     return (0 == objects_left) ? 0 : -1;
 }
 
@@ -781,7 +782,7 @@ void addToDBList(webconfig_db_data_t *webcfgdb)
           webcfgdb_data = webcfgdb;
 	  pthread_mutex_unlock (&webconfig_db_mut);
           success_doc_count++;
-	  WebcfgInfo("Producer added webcfgdb->name %s, webcfg->version %lu, webcfgdb->root_string %s, success_doc_count %d\n",webcfgdb->name, (long)webcfgdb->version, webcfgdb->root_string, success_doc_count);
+	  WebcfgInfo("Producer added webcfgdb->name %s, webcfg->version %lu, success_doc_count %d\n",webcfgdb->name, (long)webcfgdb->version, success_doc_count);
       }
       else
       {
@@ -794,7 +795,7 @@ void addToDBList(webconfig_db_data_t *webcfgdb)
           temp->next = webcfgdb;
           pthread_mutex_unlock (&webconfig_db_mut);
           success_doc_count++;
-	  WebcfgInfo("Producer added webcfgdb->name %s, webcfg->version %lu, webcfgdb->root_string %s, success_doc_count %d\n",webcfgdb->name, (long)webcfgdb->version, webcfgdb->root_string, success_doc_count);
+	  WebcfgInfo("Producer added webcfgdb->name %s, webcfg->version %lu, success_doc_count %d\n",webcfgdb->name, (long)webcfgdb->version, success_doc_count);
       }
 }
 
@@ -938,13 +939,14 @@ int process_webcfgdbblobparams( blob_data_t *e, msgpack_object_map *map )
     {
     }
     else if( (1 << 3) & objects_left ) {
-	    WebcfgInfo("Skip optional root_string element\n");
+	    WebcfgDebug("Skip optional root_string element\n");
         objects_left &= ~(1 << 3);
     }
     else
     {
         errno = BD_OK;
     }
+
     return (0 == objects_left) ? 0 : -1;
 }
 

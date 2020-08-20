@@ -732,7 +732,7 @@ WEBCFG_STATUS processMsgpackSubdoc(char *transaction_id)
 
 		while(temp1 )
 		{
-			WebcfgInfo("DB wd->entries[%lu].name: %s, version: %lu root_string: %s\n", success_count-j, temp1->name, (long)temp1->version, temp1->root_string);
+			WebcfgInfo("DB wd->entries[%lu].name: %s, version: %lu\n", success_count-j, temp1->name, (long)temp1->version);
 			j--;
 			temp1 = temp1->next;
 		}
@@ -1037,7 +1037,7 @@ void getRootVersionFromDB(uint32_t *rt_version, char **rt_string, int *subdoclis
 			{
 				*rt_string = strdup(temp->root_string);
 			}
-			WebcfgInfo("rt_version %lu rt_string %s from DB list\n", (long)*rt_version, *rt_string);
+			WebcfgDebug("rt_version %lu rt_string %s from DB list\n", (long)*rt_version, *rt_string);
 		}
 		temp= temp->next;
 		*subdoclist = *subdoclist+1;
@@ -1148,7 +1148,7 @@ void getConfigVersionList(char *versionsList, int http_status)
 	sprintf(versionsList, "%s", "0");
 
 	get_root_version_string(&root_str, &root_version, http_status);
-	WebcfgInfo("update root_version %lu rootString %s to DB\n", (long)root_version, root_str);
+	WebcfgDebug("update root_version %lu rootString %s to DB\n", (long)root_version, root_str);
 	checkDBList("root", root_version, root_str);
 	WebcfgDebug("addNewDocEntry. get_successDocCount %d\n", get_successDocCount());
 	addNewDocEntry(get_successDocCount());
@@ -1160,13 +1160,13 @@ void getConfigVersionList(char *versionsList, int http_status)
 	{
 		if(root_str!=NULL && strlen(root_str) >0)
 		{
-			WebcfgInfo("update root_str %s to versionsList\n", root_str);
+			WebcfgDebug("update root_str %s to versionsList\n", root_str);
 			sprintf(versionsList, "%s", root_str);
 			WEBCFG_FREE(root_str);
 		}
 		else
 		{
-			WebcfgInfo("update root_version %lu to versionsList\n", (long)root_version);
+			WebcfgDebug("update root_version %lu to versionsList\n", (long)root_version);
 			sprintf(versionsList, "%lu", (long)root_version);
 		}
 		WebcfgInfo("versionsList is %s\n", versionsList);
