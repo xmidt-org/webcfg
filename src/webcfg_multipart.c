@@ -438,7 +438,7 @@ WEBCFG_STATUS parseMultipartDocument(void *config_data, char *ct , size_t data_s
 		}
 		else
 		{
-			WebcfgError("processMsgpackSubdoc failed,as all the docs are not applied\n");
+			WebcfgDebug("processMsgpackSubdoc done,docs are sent for apply\n");
 		}
 		return WEBCFG_FAILURE;
 	}

@@ -319,7 +319,7 @@ int handlehttpResponse(long response_code, char *webConfigData, int retry_count,
 			}
 			else
 			{
-				WebcfgError("Failed to apply root webConfigData received from server\n");
+				WebcfgInfo("root webConfigData processed, waiting for apply status events\n");
 				return 1;
 			}
 		}
