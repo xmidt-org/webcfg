@@ -306,7 +306,7 @@ int handlehttpResponse(long response_code, char *webConfigData, int retry_count,
 	{
 		WebcfgInfo("webConfig is not in sync with cloud. response_code:%ld\n", response_code);
 
-		if(webConfigData !=NULL)
+		if(webConfigData !=NULL && (strlen(webConfigData)>0))
 		{
 			WebcfgDebug("webConfigData fetched successfully\n");
 			WebcfgDebug("parseMultipartDocument\n");
