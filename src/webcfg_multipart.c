@@ -627,7 +627,7 @@ WEBCFG_STATUS processMsgpackSubdoc(char *transaction_id)
 					}
 					else
 					{
-						WebcfgInfo("setValues Failed. ccspStatus : %d\n", ccspStatus);
+						WebcfgError("setValues Failed. ccspStatus : %d\n", ccspStatus);
 						errd = mapStatus(ccspStatus);
 						WebcfgDebug("The errd value is %d\n",errd);
 
@@ -1139,7 +1139,6 @@ void createCurlHeader( struct curl_slist *list, struct curl_slist **header_list,
 		{
 			strncpy(g_supportedVersion, supportedVersion, sizeof(g_supportedVersion)-1);
 			WebcfgDebug("g_supportedVersion fetched is %s\n", g_supportedVersion);
-			//WEBCFG_FREE(supportedVersion);
 		}
 	}
 
@@ -1156,7 +1155,7 @@ void createCurlHeader( struct curl_slist *list, struct curl_slist **header_list,
 	}
 	else
 	{
-		WebcfgError("Failed to get supportedVersion\n");
+		WebcfgInfo("Failed to get supportedVersion\n");
 	}
 
 	if(strlen(g_supportedDocs) ==0)
@@ -1166,7 +1165,6 @@ void createCurlHeader( struct curl_slist *list, struct curl_slist **header_list,
 		{
 		       strncpy(g_supportedDocs, supportedDocs, sizeof(g_supportedDocs)-1);
 		       WebcfgDebug("g_supportedDocs fetched is %s\n", g_supportedDocs);
-		       //WEBCFG_FREE(supportedDocs);
 		}
 	}
 

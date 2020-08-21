@@ -23,15 +23,15 @@
 /*----------------------------------------------------------------------------*/
 /*                                   Macros                                   */
 /*----------------------------------------------------------------------------*/
-#define MAXCHAR 1000
-
+#define MAXCHAR 1024
 /*----------------------------------------------------------------------------*/
 /*                               Data Structures                              */
 /*----------------------------------------------------------------------------*/
-typedef struct
+typedef struct SubDocSupportMap
 {
     char name[256];//portforwarding or wlan
-    char support[10];//true or false;
+    char support[8];//true or false;
+    struct SubDocSupportMap *next;
 }SubDocSupportMap_t;
 
 /*----------------------------------------------------------------------------*/
@@ -39,15 +39,14 @@ typedef struct
 /*----------------------------------------------------------------------------*/
 static char * supported_bits = NULL;
 static char * supported_version = NULL;
-static int g_webcont = 0;
-SubDocSupportMap_t *sdInfo = NULL;
+SubDocSupportMap_t *g_sdInfoHead = NULL;
+SubDocSupportMap_t *g_sdInfoTail = NULL;
 /*----------------------------------------------------------------------------*/
 /*                             Function Prototypes                            */
 /*----------------------------------------------------------------------------*/
-void displaystruct(SubDocSupportMap_t *sdInfo,int count);
-void incrementWebCount();
-int getWebCount();
-SubDocSupportMap_t * get_global_sdInfo(void);
+void displaystruct();
+SubDocSupportMap_t * get_global_sdInfoHead(void);
+SubDocSupportMap_t * get_global_sdInfoTail(void);
 /*----------------------------------------------------------------------------*/
 /*                             External Functions                             */
 /*----------------------------------------------------------------------------*/
@@ -57,21 +56,10 @@ void initWebcfgProperties(char * filename)
 {
 	FILE *fp = NULL;
 	char str[MAXCHAR] = {'\0'};
-	char * temp_bit_token = NULL, * temp_version_token = NULL;
-	char * supported_bits_temp = NULL, * supported_version_temp = NULL;
 	//For WEBCONFIG_SUBDOC_MAP parsing
-	int i =0;
 	int line_index =0;
 	char *p;
 	char *token;
-
-	sdInfo = (SubDocSupportMap_t *)malloc(sizeof(SubDocSupportMap_t) * MAXCHAR);
-	memset(sdInfo, 0, sizeof(SubDocSupportMap_t) * MAXCHAR);
-	if( sdInfo==NULL )
-	{
-		WebcfgError("Unable to allocate memory");
-		return;
-	}
 
 	WebcfgDebug("webcfg properties file path is %s\n", filename);
 	fp = fopen(filename,"r");
@@ -88,19 +76,19 @@ void initWebcfgProperties(char * filename)
 
 		if(NULL != (value = strstr(str,"WEBCONFIG_SUPPORTED_DOCS_BIT=")))
 		{
-			WebcfgDebug("The value stored in temp_bit_token is %s\n", str);
+			WebcfgDebug("The value stored is %s\n", str);
 			value = value + strlen("WEBCONFIG_SUPPORTED_DOCS_BIT=");
 			value[strlen(value)-1] = '\0';
-			temp_bit_token = strdup(value);
+			setsupportedDocs(value);
                         value = NULL;
 		}
 
 		if(NULL != (value =strstr(str,"WEBCONFIG_DOC_SCHEMA_VERSION")))
 		{
-			WebcfgDebug("The value stored in temp_version_token is %s\n", str);
+			WebcfgDebug("The value stored is %s\n", str);
 			value = value + strlen("WEBCONFIG_DOC_SCHEMA_VERSION=");
 			value[strlen(value)-1] = '\0';
-			temp_version_token = strdup(value);
+			setsupportedVersion(value);
 			value = NULL;
 		}
 
@@ -117,8 +105,17 @@ void initWebcfgProperties(char * filename)
 
 				char subdoc[100];
 				char *subtoken;
+				SubDocSupportMap_t *sdInfo = NULL;
 				strcpy(subdoc,token);
 				puts(subdoc);
+				sdInfo = (SubDocSupportMap_t *)malloc(sizeof(SubDocSupportMap_t));
+				if( sdInfo==NULL )
+				{
+					WebcfgError("Unable to allocate memory");
+					return;
+				}
+				memset(sdInfo, 0, sizeof(SubDocSupportMap_t));
+
 				subtoken = strtok(subdoc,":");//portforwarding or lan
 
 				if(subtoken == NULL)
@@ -126,14 +123,26 @@ void initWebcfgProperties(char * filename)
 					return;
 				}
 
-				strcpy(sdInfo[i].name,subtoken);
+				strcpy(sdInfo->name,subtoken);
 				subtoken = strtok(NULL,":");//skip 1st value
 				subtoken = strtok(NULL,":");//true or false
-				strcpy(sdInfo[i].support,subtoken); 
+				strcpy(sdInfo->support,subtoken);
 				token =strtok_r(p,",",&p);
-				i++;
+				sdInfo->next = NULL;
 
-				incrementWebCount();    
+				if(g_sdInfoTail == NULL)
+				{
+					g_sdInfoHead = sdInfo;
+					g_sdInfoTail = sdInfo;
+				}
+				else
+				{
+					SubDocSupportMap_t *temp =NULL;
+					temp = get_global_sdInfoTail();
+					temp->next = sdInfo;
+					g_sdInfoTail = sdInfo;
+				}
+
 			}
 			line_index++;
 
@@ -141,27 +150,9 @@ void initWebcfgProperties(char * filename)
 	}
 	fclose(fp);
 
-	if(temp_bit_token != NULL)
+	if(g_sdInfoHead != NULL)
 	{
-		supported_bits_temp = strdup(temp_bit_token);
-		setsupportedDocs(supported_bits_temp);
-		WebcfgDebug("Supported bits final %s value\n",supported_bits);
-		WEBCFG_FREE(temp_bit_token);
-		WEBCFG_FREE(supported_bits_temp);
-	}
-
-	if(temp_version_token != NULL)
-	{ 
-		supported_version_temp = strdup(temp_version_token);
-		setsupportedVersion(supported_version_temp);
-		WebcfgDebug("supported_version = %s value\n", supported_version);
-		WEBCFG_FREE(temp_version_token);
-		WEBCFG_FREE(supported_version_temp);
-	}
-
-	if(sdInfo != NULL)
-	{
-		displaystruct(get_global_sdInfo(), getWebCount());
+		displaystruct();
 	}
 }
 
@@ -191,30 +182,29 @@ void setsupportedVersion( char * value)
 
 char * getsupportedDocs()
 {
-	WebcfgInfo("The value in supportedbits get is %s\n",supported_bits);
+	WebcfgDebug("The value in supportedbits get is %s\n",supported_bits);
 	return supported_bits;
 }
 
 char * getsupportedVersion()
 {
-      WebcfgInfo("The value in supportedversion get is %s\n",supported_version);
+      WebcfgDebug("The value in supportedversion get is %s\n",supported_version);
       return supported_version;
 }
 
 WEBCFG_STATUS isSubDocSupported(char *subDoc)
 {
-	int i = 0;
 
 	SubDocSupportMap_t *sd = NULL;
 	
-	sd = get_global_sdInfo();
+	sd = get_global_sdInfoHead();
 
-	for(i=0;i<getWebCount();i++)
+	while(sd != NULL)
 	{
-		if(strncmp(sd[i].name, subDoc, strlen(subDoc)) == 0)
+		if(strncmp(sd->name, subDoc, strlen(subDoc)) == 0)
 		{
-			WebcfgDebug("The subdoc %s is present\n",sd[i].name);
-			if(strncmp(sd[i].support, "true", strlen("true")) == 0)
+			WebcfgDebug("The subdoc %s is present\n",sd->name);
+			if(strncmp(sd->support, "true", strlen("true")) == 0)
 			{
 				WebcfgInfo("%s is supported\n",subDoc);
 				return WEBCFG_SUCCESS;
@@ -226,6 +216,7 @@ WEBCFG_STATUS isSubDocSupported(char *subDoc)
 				return WEBCFG_FAILURE;
 			}
 		}
+		sd = sd->next;
 		
 	}
 	WebcfgError("Supported doc bit not found for %s\n",subDoc);
@@ -235,27 +226,27 @@ WEBCFG_STATUS isSubDocSupported(char *subDoc)
 /*----------------------------------------------------------------------------*/
 /*                             Internal functions                             */
 /*----------------------------------------------------------------------------*/
-SubDocSupportMap_t * get_global_sdInfo(void)
+SubDocSupportMap_t * get_global_sdInfoHead(void)
 {
     SubDocSupportMap_t *tmp = NULL;
-    tmp = sdInfo;
+    tmp = g_sdInfoHead;
     return tmp;
 }
 
-void incrementWebCount()
+SubDocSupportMap_t * get_global_sdInfoTail(void)
 {
-	g_webcont = g_webcont + 1;
+    SubDocSupportMap_t *tmp = NULL;
+    tmp = g_sdInfoTail;
+    return tmp;
 }
 
-int getWebCount()
+void displaystruct()
 {
-	return g_webcont;
-}
-
-void displaystruct(SubDocSupportMap_t *sd,int count)
-{
-	int i;
-	WebcfgDebug("The struct values are:\n");
-	for(i=0;i<count;i++)
-	WebcfgDebug(" %s %s\n",sd[i].name,sd[i].support);
+	SubDocSupportMap_t *temp =NULL;
+	temp = get_global_sdInfoHead();
+	while(temp != NULL)
+	{
+		WebcfgDebug(" %s %s\n",temp->name,temp->support);
+		temp=temp->next;
+	}
 }
