@@ -57,4 +57,5 @@ void failedDocsRetry();
 WEBCFG_STATUS validate_request_param(param_t *reqParam, int paramCount);
 void getConfigVersionList(char *versionsList, int http_status);
 char * get_global_contentLen(void);
+void getRootVersionFromDB(uint32_t *rt_version, char **rt_string, int *subdoclist);
 #endif

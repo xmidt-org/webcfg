@@ -108,7 +108,6 @@ char* generate_trans_uuid();
 WEBCFG_STATUS processMsgpackSubdoc(char *transaction_id);
 void loadInitURLFromFile(char **url);
 static void get_webCfg_interface(char **interface);
-void getRootVersionFromDB(uint32_t *rt_version, char **rt_string, int *subdoclist);
 char *replaceMacWord(const char *s, const char *macW, const char *deviceMACW);
 WEBCFG_STATUS checkAkerDoc();
 /*----------------------------------------------------------------------------*/
@@ -596,7 +595,7 @@ WEBCFG_STATUS processMsgpackSubdoc(char *transaction_id)
 							updateTmpList(subdoc_node, mp->entries[m].name_space, mp->entries[m].etag, "success", "none", 0, 0, 0);
 							//send success notification to cloud
 							WebcfgDebug("send notify for mp->entries[m].name_space %s\n", mp->entries[m].name_space);
-							addWebConfgNotifyMsg(mp->entries[m].name_space, mp->entries[m].etag, "success", "none", trans_id,0, "status",0);
+							addWebConfgNotifyMsg(mp->entries[m].name_space, mp->entries[m].etag, "success", "none", trans_id,0, "status",0, NULL, 200);
 							WebcfgDebug("deleteFromTmpList as doc is applied\n");
 							deleteFromTmpList(mp->entries[m].name_space);
 							checkDBList(mp->entries[m].name_space,mp->entries[m].etag, NULL);
@@ -645,7 +644,7 @@ WEBCFG_STATUS processMsgpackSubdoc(char *transaction_id)
 							snprintf(result,MAX_VALUE_LEN,"crash_retrying:%s", errDetails);
 							WebcfgDebug("The result is %s\n",result);
 							updateTmpList(subdoc_node, mp->entries[m].name_space, mp->entries[m].etag, "failed", result, ccspStatus, 0, 1);
-							addWebConfgNotifyMsg(mp->entries[m].name_space, mp->entries[m].etag, "failed", result, trans_id,0,"status",ccspStatus);
+							addWebConfgNotifyMsg(mp->entries[m].name_space, mp->entries[m].etag, "failed", result, trans_id,0,"status",ccspStatus, NULL, 200);
 							set_doc_fail(1);
 							WebcfgDebug("the retry flag value is %d\n", get_doc_fail());
 						}
@@ -654,7 +653,7 @@ WEBCFG_STATUS processMsgpackSubdoc(char *transaction_id)
 							snprintf(result,MAX_VALUE_LEN,"doc_rejected:%s", errDetails);
 							WebcfgDebug("The result is %s\n",result);
 							updateTmpList(subdoc_node, mp->entries[m].name_space, mp->entries[m].etag, "failed", result, ccspStatus, 0, 0);
-							addWebConfgNotifyMsg(mp->entries[m].name_space, mp->entries[m].etag, "failed", result, trans_id,0, "status", ccspStatus);
+							addWebConfgNotifyMsg(mp->entries[m].name_space, mp->entries[m].etag, "failed", result, trans_id,0, "status", ccspStatus, NULL, 200);
 						}
 						//print_tmp_doc_list(mp->entries_count);
 					}

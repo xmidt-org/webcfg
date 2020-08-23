@@ -68,7 +68,7 @@ void initWebConfigNotifyTask()
 
 }
 
-void addWebConfgNotifyMsg(char *docname, uint32_t version, char *status, char *error_details, char *transaction_uuid, uint32_t timeout, char *type, uint16_t error_code)
+void addWebConfgNotifyMsg(char *docname, uint32_t version, char *status, char *error_details, char *transaction_uuid, uint32_t timeout, char *type, uint16_t error_code, char *root_string, long response_code)
 {
 	notify_params_t *args = NULL;
 
@@ -95,7 +95,16 @@ void addWebConfgNotifyMsg(char *docname, uint32_t version, char *status, char *e
 			args->error_details = strdup(error_details);
 		}
 
-		snprintf(versionStr, sizeof(versionStr), "%lu", (long)version);
+		if(version ==0 && root_string !=NULL)
+		{
+			WebcfgInfo("Update root_string %s to notify struct\n", root_string);
+			strcpy(versionStr, root_string);
+		}
+		else
+		{
+			snprintf(versionStr, sizeof(versionStr), "%lu", (long)version);
+		}
+		WebcfgInfo("versionStr is %s\n", versionStr);
 
 		if(strlen(versionStr) > 0)
 		{
@@ -114,7 +123,9 @@ void addWebConfgNotifyMsg(char *docname, uint32_t version, char *status, char *e
 
 		args->error_code = error_code;
 
-		WebcfgDebug("args->name:%s,args->application_status:%s,args->timeout:%lu,args->error_details:%s,args->version:%s,args->transaction_uuid:%s,args->type:%s,args->error_code:%lu\n",args->name,args->application_status, (long)args->timeout, args->error_details, args->version, args->transaction_uuid, args->type, (long)args->error_code );
+		args->response_code = response_code;
+
+		WebcfgInfo("args->name:%s,args->application_status:%s,args->timeout:%lu,args->error_details:%s,args->version:%s,args->transaction_uuid:%s,args->type:%s,args->error_code:%lu,args->response_code:%lu\n",args->name,args->application_status, (long)args->timeout, args->error_details, args->version, args->transaction_uuid, args->type, (long)args->error_code,args->response_code );
 
 		args->next=NULL;
 
@@ -183,7 +194,10 @@ void* processWebConfgNotification()
 
 					if(msg)
 					{
-						cJSON_AddStringToObject(notifyPayload,"namespace", (NULL != msg->name && (strlen(msg->name)!=0)) ? msg->name : "unknown");
+						if(msg->name !=NULL)
+						{
+							cJSON_AddStringToObject(notifyPayload,"namespace", (NULL != msg->name && (strlen(msg->name)!=0)) ? msg->name : "unknown");
+						}
 						if(msg->application_status !=NULL)
 						{
 							cJSON_AddStringToObject(notifyPayload,"application_status", msg->application_status);
@@ -202,15 +216,26 @@ void* processWebConfgNotification()
 						{
 							cJSON_AddStringToObject(notifyPayload,"error_details", (NULL != msg->error_details) ? msg->error_details : "unknown");
 						}
+						if( msg->response_code != 200 )
+						{
+							cJSON_AddNumberToObject(notifyPayload,"http_status_code", msg->response_code);
+						}
 						cJSON_AddStringToObject(notifyPayload,"transaction_uuid", (NULL != msg->transaction_uuid && (strlen(msg->transaction_uuid)!=0)) ? msg->transaction_uuid : "unknown");
-						cJSON_AddStringToObject(notifyPayload,"version", (NULL != msg->version && (strlen(msg->version)!=0)) ? msg->version : "NONE");
+						cJSON_AddStringToObject(notifyPayload,"version", (NULL != msg->version && (strlen(msg->version)!=0)) ? msg->version : "0");
 					
 					}
 					stringifiedNotifyPayload = cJSON_PrintUnformatted(notifyPayload);
 					cJSON_Delete(notifyPayload);
 				}
 
-				snprintf(dest,sizeof(dest),"event:subdoc-report/%s/%s/%s",msg->name,device_id,msg->type);
+				if(msg->response_code == 200)
+				{
+					snprintf(dest,sizeof(dest),"event:subdoc-report/%s/%s/%s",msg->name,device_id,msg->type);
+				}
+				else
+				{
+					snprintf(dest,sizeof(dest),"event:rootdoc-report/%s/%s",device_id,msg->type);
+				}
 				WebcfgInfo("dest is %s\n", dest);
 
 				if (stringifiedNotifyPayload != NULL && strlen(device_id) != 0)
