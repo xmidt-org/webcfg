@@ -298,12 +298,12 @@ int handlehttpResponse(long response_code, char *webConfigData, int retry_count,
 	uint32_t db_root_version = 0;
 	char *db_root_string = NULL;
 	int subdocList = 0;
+	char *contentLength = NULL;
 
 	if(response_code == 304)
 	{
 		WebcfgInfo("webConfig is in sync with cloud. response_code:%ld\n", response_code);
 		getRootVersionFromDB(&db_root_version, &db_root_string, &subdocList);
-		WebcfgInfo("db_root_version %lu db_root_string %s\n", (long)db_root_version, db_root_string);
 		addWebConfgNotifyMsg(NULL, db_root_version, NULL, NULL, transaction_uuid, 0, "status", 0, db_root_string, response_code);
 		if(db_root_string !=NULL)
 		{
@@ -337,11 +337,12 @@ int handlehttpResponse(long response_code, char *webConfigData, int retry_count,
 		{
 			WebcfgInfo("webConfigData is empty\n");
 			//After factory reset when server sends 200 with empty config, set POST-NONE root version
-			if(strcmp(get_global_contentLen(), "0") == 0)
+			contentLength = get_global_contentLen();
+			if((contentLength !=NULL) && (strcmp(contentLength, "0") == 0))
 			{
 				WebcfgInfo("webConfigData content length is 0\n");
 				getConfigVersionList(version, response_code);
-				memset(get_global_contentLen(), 0, 32);
+				WEBCFG_FREE(contentLength);
 				return 1;
 			}
 		}
@@ -350,7 +351,6 @@ int handlehttpResponse(long response_code, char *webConfigData, int retry_count,
 	{
 		WebcfgInfo("No configuration available for this device. response_code:%ld\n", response_code);
 		getRootVersionFromDB(&db_root_version, &db_root_string, &subdocList);
-		WebcfgInfo("db_root_version %lu db_root_string %s\n", (long)db_root_version, db_root_string);
 		addWebConfgNotifyMsg(NULL, db_root_version, NULL, NULL, transaction_uuid, 0, "status", 0, db_root_string, response_code);
 		if(db_root_string !=NULL)
 		{
@@ -370,7 +370,6 @@ int handlehttpResponse(long response_code, char *webConfigData, int retry_count,
 	{
 		WebcfgInfo("No action required from client. response_code:%ld\n", response_code);
 		getRootVersionFromDB(&db_root_version, &db_root_string, &subdocList);
-		WebcfgInfo("db_root_version %lu db_root_string %s\n", (long)db_root_version, db_root_string);
 		addWebConfgNotifyMsg(NULL, db_root_version, NULL, NULL, transaction_uuid, 0, "status", 0, db_root_string, response_code);
 		if(db_root_string !=NULL)
 		{
@@ -389,7 +388,6 @@ int handlehttpResponse(long response_code, char *webConfigData, int retry_count,
 			getConfigVersionList(version, response_code);
 		}
 		getRootVersionFromDB(&db_root_version, &db_root_string, &subdocList);
-		WebcfgInfo("db_root_version %lu db_root_string %s\n", (long)db_root_version, db_root_string);
 		addWebConfgNotifyMsg(NULL, db_root_version, NULL, NULL, transaction_uuid, 0, "status", 0, db_root_string, response_code);
 		if(db_root_string !=NULL)
 		{
@@ -405,7 +403,6 @@ int handlehttpResponse(long response_code, char *webConfigData, int retry_count,
 		{
 			WebcfgDebug("3 curl retry attempts\n");
 			getRootVersionFromDB(&db_root_version, &db_root_string, &subdocList);
-			WebcfgInfo("db_root_version %lu db_root_string %s\n", (long)db_root_version, db_root_string);
 			addWebConfgNotifyMsg(NULL, db_root_version, NULL, NULL, transaction_uuid, 0, "status", 0, db_root_string, response_code);
 			if(db_root_string !=NULL)
 			{

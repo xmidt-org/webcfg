@@ -61,8 +61,9 @@ static char g_FirmwareVersion[64]={'\0'};
 static char g_bootTime[64]={'\0'};
 static char g_productClass[64]={'\0'};
 static char g_ModelName[64]={'\0'};
+static char g_RebootReason[64]={'\0'};
 static char g_transID[64]={'\0'};
-static char g_contentLen[32]={'\0'};
+static char * g_contentLen = NULL;
 multipart_t *mp = NULL;
 pthread_mutex_t multipart_t_mut =PTHREAD_MUTEX_INITIALIZER;
 static int eventFlag = 0;
@@ -836,8 +837,7 @@ size_t headr_callback(char *buffer, size_t size, size_t nitems)
 				{
 					strncpy(header_str, header_value, sizeof(header_str)-1);
 					stripspaces(header_str, &final_header);
-
-					strncpy(g_contentLen, final_header, sizeof(g_contentLen)-1);
+					g_contentLen = strdup(final_header);
 				}
 			}
 			WebcfgInfo("g_contentLen is %s\n", g_contentLen);
@@ -1054,17 +1054,31 @@ void get_root_version_string(char **rootVersion, uint32_t *root_ver, int status)
 
 	fp = fopen(WEBCFG_DB_FILE,"rb");
 
-	reason = getRebootReason();
-	if(reason != NULL)
+	if(strlen(g_RebootReason) == 0)
 	{
-		WebcfgInfo("reboot reason is %s\n", reason);
+		reason = getRebootReason();
+		if(reason !=NULL)
+		{
+		       strncpy(g_RebootReason, reason, sizeof(g_RebootReason)-1);
+		       WebcfgInfo("g_RebootReason fetched is %s\n", g_RebootReason);
+		       WEBCFG_FREE(reason);
+		}
+		else
+		{
+			WebcfgError("Failed to get reboot reason\n");
+		}
+	}
+
+	if(strlen(g_RebootReason)> 0)
+	{
+		WebcfgInfo("reboot reason is %s\n", g_RebootReason);
 		if (fp == NULL)
 		{
-			if(strncmp(reason,"factory-reset",strlen("factory-reset"))==0)
+			if(strncmp(g_RebootReason,"factory-reset",strlen("factory-reset"))==0)
 			{
 				*rootVersion = strdup("NONE");
 			}
-			else if(strncmp(reason,"Software_upgrade",strlen("Software_upgrade"))==0)
+			else if(strncmp(g_RebootReason,"Software_upgrade",strlen("Software_upgrade"))==0)
 			{
 				*rootVersion = strdup("NONE-MIGRATION");
 			}
@@ -1081,7 +1095,7 @@ void get_root_version_string(char **rootVersion, uint32_t *root_ver, int status)
 
 			if(db_root_string !=NULL)
 			{
-				if((strcmp(db_root_string,"POST-NONE")==0) && ((strcmp(reason,"Software_upgrade")!=0) && (strcmp(reason,"factory-reset")!=0)))
+				if((strcmp(db_root_string,"POST-NONE")==0) && ((strcmp(g_RebootReason,"Software_upgrade")!=0) && (strcmp(g_RebootReason,"factory-reset")!=0)))
 				{
 					*rootVersion = strdup("NONE-REBOOT");
 					WEBCFG_FREE(db_root_string);
@@ -1107,7 +1121,7 @@ void get_root_version_string(char **rootVersion, uint32_t *root_ver, int status)
 			if(db_root_version)
 			{
 			//when subdocs are applied and reboot due to software migration/rollback, root reset to 0.
-				if(subdocList > 1 && strncmp(reason,"Software_upgrade",strlen("Software_upgrade"))==0)
+				if(subdocList > 1 && strcmp(g_RebootReason,"Software_upgrade")==0)
 				{
 					WebcfgInfo("reboot due to software migration/rollback, root reset to 0\n");
 					*root_ver = 0;
@@ -1119,17 +1133,13 @@ void get_root_version_string(char **rootVersion, uint32_t *root_ver, int status)
 			{
 				if(db_root_string !=NULL)
 				{
-					WebcfgInfo("Update rootVersion with db_root_string %s\n", db_root_string);
+					WebcfgDebug("Update rootVersion with db_root_string %s\n", db_root_string);
 					*rootVersion = strdup(db_root_string);
 					WEBCFG_FREE(db_root_string);
 				}
 			}
 			*root_ver = db_root_version;
 		}
-	}
-	else
-	{
-		WebcfgError("Failed to get reboot reason\n");
 	}
 }
 

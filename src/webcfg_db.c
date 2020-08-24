@@ -144,8 +144,8 @@ WEBCFG_STATUS addNewDocEntry(size_t count)
  
      WebcfgDebug("DB docs count %ld\n", (size_t)count);
      webcfgdbPackSize = webcfgdb_pack(webcfgdb_data, &data, count);
-     WebcfgInfo("size of webcfgdbPackSize %ld\n", webcfgdbPackSize);
-     WebcfgInfo("writeToDBFile %s\n", WEBCFG_DB_FILE);
+     WebcfgDebug("size of webcfgdbPackSize %ld\n", webcfgdbPackSize);
+     WebcfgDebug("writeToDBFile %s\n", WEBCFG_DB_FILE);
      writeToDBFile(WEBCFG_DB_FILE,(char *)data,webcfgdbPackSize);
      if(data)
      {
