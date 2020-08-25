@@ -106,11 +106,12 @@ void initWebcfgProperties(char * filename)
 				char subdoc[100];
 				char *subtoken;
 				SubDocSupportMap_t *sdInfo = NULL;
-				strcpy(subdoc,token);
+				strncpy(subdoc,token,(sizeof(subdoc)-1));
 				puts(subdoc);
 				sdInfo = (SubDocSupportMap_t *)malloc(sizeof(SubDocSupportMap_t));
 				if( sdInfo==NULL )
 				{
+					fclose(fp);
 					WebcfgError("Unable to allocate memory");
 					return;
 				}
@@ -120,13 +121,15 @@ void initWebcfgProperties(char * filename)
 
 				if(subtoken == NULL)
 				{
+					fclose(fp);
+					WEBCFG_FREE(sdInfo);
 					return;
 				}
-
-				strcpy(sdInfo->name,subtoken);
+				
+				strncpy(sdInfo->name,subtoken,(sizeof(sdInfo->name)-1));
 				subtoken = strtok(NULL,":");//skip 1st value
-				subtoken = strtok(NULL,":");//true or false
-				strcpy(sdInfo->support,subtoken);
+				subtoken = strtok(NULL,":");//true or false				
+				strncpy(sdInfo->support,subtoken,(sizeof(sdInfo->support)-1));
 				token =strtok_r(p,",",&p);
 				sdInfo->next = NULL;
 
