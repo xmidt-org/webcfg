@@ -263,6 +263,9 @@ void webcfgdbblob_destroy( blob_struct_t *bd )
 	    if( NULL != bd->entries[i].error_details ) {
                 free( bd->entries[i].error_details );
             }
+	    if( NULL != bd->entries[i].root_string ) {
+                free( bd->entries[i].root_string );
+            }
         }
         if( NULL != bd->entries ) {
             free( bd->entries );
@@ -473,13 +476,12 @@ void checkDBList(char *docname, uint32_t version, char* rootstr)
 
 			webcfgdb->name = strdup(docname);
 			webcfgdb->version = version;
-			if(rootstr !=NULL)
+			if( strcmp("root", webcfgdb->name) == 0)
 			{
-				webcfgdb->root_string = strdup(rootstr);
-			}
-			else
-			{
-				webcfgdb->root_string =  NULL;
+				if(rootstr !=NULL)
+				{
+					webcfgdb->root_string = strdup(rootstr);
+				}
 			}
 			webcfgdb->next = NULL;
 
@@ -507,13 +509,17 @@ WEBCFG_STATUS updateDBlist(char *docname, uint32_t version, char* rootstr)
 		if( strcmp(docname, webcfgdb->name) == 0)
 		{
 			webcfgdb->version = version;
-			if(rootstr !=NULL)
+			if( strcmp("root", webcfgdb->name) == 0)
 			{
-				webcfgdb->root_string = strdup(rootstr);
-			}
-			else
-			{
-				webcfgdb->root_string =  NULL;
+				if(webcfgdb->root_string !=NULL)
+				{
+					WEBCFG_FREE(webcfgdb->root_string);
+					webcfgdb->root_string = NULL;
+				}
+				if(rootstr!=NULL)
+				{
+					webcfgdb->root_string = strdup(rootstr);
+				}
 			}
 			WebcfgDebug("webcfgdb %s is updated to version %lu webcfgdb->root_string %s\n", docname, (long)webcfgdb->version, webcfgdb->root_string);
 			pthread_mutex_unlock (&webconfig_db_mut);
