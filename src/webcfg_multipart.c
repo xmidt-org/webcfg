@@ -840,7 +840,7 @@ size_t headr_callback(char *buffer, size_t size, size_t nitems)
 					g_contentLen = strdup(final_header);
 				}
 			}
-			WebcfgInfo("g_contentLen is %s\n", g_contentLen);
+			WebcfgDebug("g_contentLen is %s\n", g_contentLen);
 		}
 	}
 	WebcfgInfo("header_callback size %zu\n", size);
@@ -1060,7 +1060,7 @@ void get_root_version_string(char **rootVersion, uint32_t *root_ver, int status)
 		if(reason !=NULL)
 		{
 		       strncpy(g_RebootReason, reason, sizeof(g_RebootReason)-1);
-		       WebcfgInfo("g_RebootReason fetched is %s\n", g_RebootReason);
+		       WebcfgDebug("g_RebootReason fetched is %s\n", g_RebootReason);
 		       WEBCFG_FREE(reason);
 		}
 		else
