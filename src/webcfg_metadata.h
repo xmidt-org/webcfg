@@ -28,8 +28,6 @@
 #define WEBCFG_PROPERTIES_FILE 	    "/tmp/webconfig.properties"
 #endif
 
-#define MAX_GROUP_SIZE 10
-#define MAX_SUBDOCS_SIZE 24
 /*----------------------------------------------------------------------------*/
 /*                               Data Structures                              */
 /*----------------------------------------------------------------------------*/

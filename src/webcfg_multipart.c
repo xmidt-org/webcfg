@@ -58,12 +58,12 @@ char webpa_aut_token[4096]={'\0'};
 static char g_interface[32]={'\0'};
 static char g_systemReadyTime[64]={'\0'};
 static char g_FirmwareVersion[64]={'\0'};
-static char g_supportedDocs[400] ={'\0'};
-static char g_supportedVersion[1000] ={'\0'};
 static char g_bootTime[64]={'\0'};
 static char g_productClass[64]={'\0'};
 static char g_ModelName[64]={'\0'};
 static char g_transID[64]={'\0'};
+static char *supportedVersion_header=NULL;
+static char *supportedDocs_header=NULL;
 multipart_t *mp = NULL;
 pthread_mutex_t multipart_t_mut =PTHREAD_MUTEX_INITIALIZER;
 static int eventFlag = 0;
@@ -645,12 +645,13 @@ WEBCFG_STATUS processMsgpackSubdoc(char *transaction_id)
 							}
 							else
 							{
+								set_doc_fail(1);
 								snprintf(result,MAX_VALUE_LEN,"crash_retrying:%s", errDetails);
 							}
 							WebcfgDebug("The result is %s\n",result);
 							updateTmpList(subdoc_node, mp->entries[m].name_space, mp->entries[m].etag, "failed", result, ccspStatus, 0, 1);
 							addWebConfgNotifyMsg(mp->entries[m].name_space, mp->entries[m].etag, "failed", result, trans_id,0,"status",ccspStatus);
-							set_doc_fail(1);
+
 							WebcfgDebug("the retry flag value is %d\n", get_doc_fail());
 						}
 						else
@@ -1084,8 +1085,8 @@ void createCurlHeader( struct curl_slist *list, struct curl_slist **header_list,
 	char *schema_header=NULL;
 	char *bootTime = NULL, *bootTime_header = NULL;
 	char *FwVersion = NULL, *FwVersion_header=NULL;
-	char *supportedDocs = NULL, *supportedDocs_header=NULL;
-	char *supportedVersion = NULL, *supportedVersion_header=NULL;
+	char *supportedDocs = NULL;
+	char *supportedVersion = NULL;
         char *productClass = NULL, *productClass_header = NULL;
 	char *ModelName = NULL, *ModelName_header = NULL;
 	char *systemReadyTime = NULL, *systemReadyTime_header=NULL;
@@ -1097,6 +1098,8 @@ void createCurlHeader( struct curl_slist *list, struct curl_slist **header_list,
 	char version[512]={'\0'};
 	char* syncTransID = NULL;
 	char* ForceSyncDoc = NULL;
+	size_t supported_doc_size = 0;
+	size_t supported_version_size = 0;
 
 	WebcfgInfo("Start of createCurlheader\n");
 	//Fetch auth JWT token from cloud.
@@ -1132,57 +1135,57 @@ void createCurlHeader( struct curl_slist *list, struct curl_slist **header_list,
 		WEBCFG_FREE(schema_header);
 	}
 
-	if(strlen(g_supportedVersion) ==0)
+
+	if(supportedVersion_header == NULL)
 	{
 		supportedVersion = getsupportedVersion();
+
 		if(supportedVersion !=NULL)
 		{
-			strncpy(g_supportedVersion, supportedVersion, sizeof(g_supportedVersion)-1);
-			WebcfgDebug("g_supportedVersion fetched is %s\n", g_supportedVersion);
-		}
-	}
-
-	if(strlen(g_supportedVersion))
-	{
-		supportedVersion_header = (char *) malloc(sizeof(char)*MAX_BUF_SIZE);
-		if(supportedVersion_header !=NULL)
-		{
-			snprintf(supportedVersion_header, MAX_BUF_SIZE, "X-System-Schema-Version: %s", g_supportedVersion);
+			supported_version_size = strlen(supportedVersion)+strlen("X-System-Schema-Version: ");
+			supportedVersion_header = (char *) malloc(supported_version_size+1);
+			memset(supportedVersion_header,0,supported_version_size+1);
+			WebcfgDebug("supportedVersion fetched is %s\n", supportedVersion);
+			snprintf(supportedVersion_header, supported_version_size+1, "X-System-Schema-Version: %s", supportedVersion);
 			WebcfgInfo("supportedVersion_header formed %s\n", supportedVersion_header);
 			list = curl_slist_append(list, supportedVersion_header);
-			WEBCFG_FREE(supportedVersion_header);
+		}
+		else
+		{
+			WebcfgInfo("supportedVersion fetched is NULL\n");
 		}
 	}
 	else
 	{
-		WebcfgInfo("Failed to get supportedVersion\n");
+		WebcfgInfo("supportedVersion_header formed %s\n", supportedVersion_header);
+		list = curl_slist_append(list, supportedVersion_header);
 	}
 
-	if(strlen(g_supportedDocs) ==0)
+	if(supportedDocs_header == NULL)
 	{
 		supportedDocs = getsupportedDocs();
+
 		if(supportedDocs !=NULL)
 		{
-		       strncpy(g_supportedDocs, supportedDocs, sizeof(g_supportedDocs)-1);
-		       WebcfgDebug("g_supportedDocs fetched is %s\n", g_supportedDocs);
-		}
-	}
-
-	if(strlen(g_supportedDocs))
-	{
-		supportedDocs_header = (char *) malloc(sizeof(char)*MAX_BUF_SIZE);
-		if(supportedDocs_header !=NULL)
-		{
-			snprintf(supportedDocs_header, MAX_BUF_SIZE, "X-System-Supported-Docs: %s", g_supportedDocs);
+			supported_doc_size = strlen(supportedDocs)+strlen("X-System-Supported-Docs: ");
+			supportedDocs_header = (char *) malloc(supported_doc_size+1);
+			memset(supportedDocs_header,0,supported_doc_size+1);
+			WebcfgDebug("supportedDocs fetched is %s\n", supportedDocs);
+			snprintf(supportedDocs_header, supported_doc_size+1, "X-System-Supported-Docs: %s", supportedDocs);
 			WebcfgInfo("supportedDocs_header formed %s\n", supportedDocs_header);
 			list = curl_slist_append(list, supportedDocs_header);
-			WEBCFG_FREE(supportedDocs_header);
+		}
+		else
+		{
+			WebcfgInfo("SupportedDocs fetched is NULL\n");
 		}
 	}
 	else
 	{
-		WebcfgError("Failed to get supportedDocs\n");
+		WebcfgInfo("supportedDocs_header formed %s\n", supportedDocs_header);
+		list = curl_slist_append(list, supportedDocs_header);
 	}
+
 
 	if(strlen(g_bootTime) ==0)
 	{
@@ -1636,7 +1639,7 @@ void failedDocsRetry()
 		}
 		else
 		{
-			WebcfgInfo("Retry skipped for %s (%s)\n",temp->name,temp->error_details);
+			WebcfgDebug("Retry skipped for %s (%s)\n",temp->name,temp->error_details);
 		}
 		temp= temp->next;
 	}

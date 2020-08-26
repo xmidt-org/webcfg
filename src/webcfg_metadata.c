@@ -57,7 +57,6 @@ void initWebcfgProperties(char * filename)
 	FILE *fp = NULL;
 	char str[MAXCHAR] = {'\0'};
 	//For WEBCONFIG_SUBDOC_MAP parsing
-	int line_index =0;
 	char *p;
 	char *token;
 
@@ -147,7 +146,6 @@ void initWebcfgProperties(char * filename)
 				}
 
 			}
-			line_index++;
 
 		}
 	}
