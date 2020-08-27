@@ -61,7 +61,7 @@ static char g_FirmwareVersion[64]={'\0'};
 static char g_bootTime[64]={'\0'};
 static char g_productClass[64]={'\0'};
 static char g_ModelName[64]={'\0'};
-static char g_RebootReason[64]={'\0'};
+char g_RebootReason[64]={'\0'};
 static char g_transID[64]={'\0'};
 static char * g_contentLen = NULL;
 multipart_t *mp = NULL;
@@ -1052,8 +1052,6 @@ void get_root_version_string(char **rootVersion, uint32_t *root_ver, int status)
 	char *db_root_string = NULL;
 	int subdocList = 0;
 
-	fp = fopen(WEBCFG_DB_FILE,"rb");
-
 	if(strlen(g_RebootReason) == 0)
 	{
 		reason = getRebootReason();
@@ -1072,6 +1070,8 @@ void get_root_version_string(char **rootVersion, uint32_t *root_ver, int status)
 	if(strlen(g_RebootReason)> 0)
 	{
 		WebcfgInfo("reboot reason is %s\n", g_RebootReason);
+
+		fp = fopen(WEBCFG_DB_FILE,"rb");
 		if (fp == NULL)
 		{
 			if(strncmp(g_RebootReason,"factory-reset",strlen("factory-reset"))==0)
@@ -1089,6 +1089,7 @@ void get_root_version_string(char **rootVersion, uint32_t *root_ver, int status)
 		}
 		else
 		{
+			fclose(fp);
 			//get existing root version from DB
 			getRootVersionFromDB(&db_root_version, &db_root_string, &subdocList);
 			WebcfgDebug("db_root_version %lu db_root_string %s subdocList %d\n", (long)db_root_version, db_root_string, subdocList);
