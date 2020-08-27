@@ -26,6 +26,7 @@
 #include "webcfg_blob.h"
 #include "webcfg_event.h"
 #include "webcfg_aker.h"
+#include "webcfg_metadata.h"
 #include <pthread.h>
 #include <uuid/uuid.h>
 #include <math.h>
@@ -61,6 +62,8 @@ static char g_bootTime[64]={'\0'};
 static char g_productClass[64]={'\0'};
 static char g_ModelName[64]={'\0'};
 static char g_transID[64]={'\0'};
+static char *supportedVersion_header=NULL;
+static char *supportedDocs_header=NULL;
 multipart_t *mp = NULL;
 pthread_mutex_t multipart_t_mut =PTHREAD_MUTEX_INITIALIZER;
 static int eventFlag = 0;
@@ -634,12 +637,21 @@ WEBCFG_STATUS processMsgpackSubdoc(char *transaction_id)
 						//Update error_details to tmp list and send failure notification to cloud.
 						if((ccspStatus == CCSP_CRASH_STATUS_CODE) || (ccspStatus == 204) || (ccspStatus == 191))
 						{
+							WEBCFG_STATUS subdocStatus = isSubDocSupported(mp->entries[m].name_space);
 							WebcfgDebug("ccspStatus is %d\n", ccspStatus);
-							snprintf(result,MAX_VALUE_LEN,"crash_retrying:%s", errDetails);
+							if(ccspStatus == 204 && subdocStatus != WEBCFG_SUCCESS)
+							{
+								snprintf(result,MAX_VALUE_LEN,"doc_unsupported:%s", errDetails);
+							}
+							else
+							{
+								set_doc_fail(1);
+								snprintf(result,MAX_VALUE_LEN,"crash_retrying:%s", errDetails);
+							}
 							WebcfgDebug("The result is %s\n",result);
 							updateTmpList(subdoc_node, mp->entries[m].name_space, mp->entries[m].etag, "failed", result, ccspStatus, 0, 1);
 							addWebConfgNotifyMsg(mp->entries[m].name_space, mp->entries[m].etag, "failed", result, trans_id,0,"status",ccspStatus);
-							set_doc_fail(1);
+
 							WebcfgDebug("the retry flag value is %d\n", get_doc_fail());
 						}
 						else
@@ -1073,6 +1085,8 @@ void createCurlHeader( struct curl_slist *list, struct curl_slist **header_list,
 	char *schema_header=NULL;
 	char *bootTime = NULL, *bootTime_header = NULL;
 	char *FwVersion = NULL, *FwVersion_header=NULL;
+	char *supportedDocs = NULL;
+	char *supportedVersion = NULL;
         char *productClass = NULL, *productClass_header = NULL;
 	char *ModelName = NULL, *ModelName_header = NULL;
 	char *systemReadyTime = NULL, *systemReadyTime_header=NULL;
@@ -1084,6 +1098,8 @@ void createCurlHeader( struct curl_slist *list, struct curl_slist **header_list,
 	char version[512]={'\0'};
 	char* syncTransID = NULL;
 	char* ForceSyncDoc = NULL;
+	size_t supported_doc_size = 0;
+	size_t supported_version_size = 0;
 
 	WebcfgInfo("Start of createCurlheader\n");
 	//Fetch auth JWT token from cloud.
@@ -1098,6 +1114,7 @@ void createCurlHeader( struct curl_slist *list, struct curl_slist **header_list,
 		list = curl_slist_append(list, auth_header);
 		WEBCFG_FREE(auth_header);
 	}
+
 	version_header = (char *) malloc(sizeof(char)*MAX_BUF_SIZE);
 	if(version_header !=NULL)
 	{
@@ -1117,6 +1134,58 @@ void createCurlHeader( struct curl_slist *list, struct curl_slist **header_list,
 		list = curl_slist_append(list, schema_header);
 		WEBCFG_FREE(schema_header);
 	}
+
+
+	if(supportedVersion_header == NULL)
+	{
+		supportedVersion = getsupportedVersion();
+
+		if(supportedVersion !=NULL)
+		{
+			supported_version_size = strlen(supportedVersion)+strlen("X-System-Schema-Version: ");
+			supportedVersion_header = (char *) malloc(supported_version_size+1);
+			memset(supportedVersion_header,0,supported_version_size+1);
+			WebcfgDebug("supportedVersion fetched is %s\n", supportedVersion);
+			snprintf(supportedVersion_header, supported_version_size+1, "X-System-Schema-Version: %s", supportedVersion);
+			WebcfgInfo("supportedVersion_header formed %s\n", supportedVersion_header);
+			list = curl_slist_append(list, supportedVersion_header);
+		}
+		else
+		{
+			WebcfgInfo("supportedVersion fetched is NULL\n");
+		}
+	}
+	else
+	{
+		WebcfgInfo("supportedVersion_header formed %s\n", supportedVersion_header);
+		list = curl_slist_append(list, supportedVersion_header);
+	}
+
+	if(supportedDocs_header == NULL)
+	{
+		supportedDocs = getsupportedDocs();
+
+		if(supportedDocs !=NULL)
+		{
+			supported_doc_size = strlen(supportedDocs)+strlen("X-System-Supported-Docs: ");
+			supportedDocs_header = (char *) malloc(supported_doc_size+1);
+			memset(supportedDocs_header,0,supported_doc_size+1);
+			WebcfgDebug("supportedDocs fetched is %s\n", supportedDocs);
+			snprintf(supportedDocs_header, supported_doc_size+1, "X-System-Supported-Docs: %s", supportedDocs);
+			WebcfgInfo("supportedDocs_header formed %s\n", supportedDocs_header);
+			list = curl_slist_append(list, supportedDocs_header);
+		}
+		else
+		{
+			WebcfgInfo("SupportedDocs fetched is NULL\n");
+		}
+	}
+	else
+	{
+		WebcfgInfo("supportedDocs_header formed %s\n", supportedDocs_header);
+		list = curl_slist_append(list, supportedDocs_header);
+	}
+
 
 	if(strlen(g_bootTime) ==0)
 	{
@@ -1486,7 +1555,12 @@ WEBCFG_STATUS checkRootUpdate()
 			break;
 		}
 		WebcfgDebug("Root check ====> temp->name %s\n", temp->name);
-		if( strcmp("root", temp->name) != 0)
+		if(temp->error_code == 204 && (temp->error_details != NULL && strstr(temp->error_details, "doc_unsupported") != NULL))
+		{
+			WebcfgDebug("Error details: %s\n",temp->error_details);
+			WebcfgDebug("Skipping unsupported sub doc %s\n",temp->name);
+		}
+		else if( strcmp("root", temp->name) != 0)
 		{
 			WebcfgDebug("Found root in tmp list\n");
 			count = count+1;
@@ -1552,7 +1626,7 @@ void failedDocsRetry()
 
 	while (NULL != temp)
 	{
-		if((temp->error_code == CCSP_CRASH_STATUS_CODE) || (temp->error_code == 204) || (temp->error_code == 191))
+		if((temp->error_code == CCSP_CRASH_STATUS_CODE) || (temp->error_code == 204 && (temp->error_details != NULL && strstr(temp->error_details, "doc_unsupported") == NULL)) || (temp->error_code == 191))
 		{
 			if(retryMultipartSubdoc(temp, temp->name) == WEBCFG_SUCCESS)
 			{
@@ -1562,6 +1636,10 @@ void failedDocsRetry()
 			{
 				WebcfgError("The subdoc %s set is failed\n", temp->name);
 			}
+		}
+		else
+		{
+			WebcfgDebug("Retry skipped for %s (%s)\n",temp->name,temp->error_details);
 		}
 		temp= temp->next;
 	}

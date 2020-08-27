@@ -24,6 +24,7 @@
 #include "../src/webcfg_helpers.h"
 #include "../src/webcfg_db.h"
 #include "../src/webcfg_notify.h"
+#include "../src/webcfg_metadata.h"
 #include <msgpack.h>
 #include <curl/curl.h>
 #include <base64.h>
@@ -148,6 +149,7 @@ void test_multipart()
 		printf("\nProvide config URL as argument\n");
 		return;
 	}
+	initWebcfgProperties(WEBCFG_PROPERTIES_FILE);
 	initWebConfigNotifyTask();
 	processWebcfgEvents();
 	initEventHandlingTask();
