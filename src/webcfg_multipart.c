@@ -1154,7 +1154,7 @@ void getConfigVersionList(char *versionsList, int http_status)
 	uint32_t root_version = 0;
 
 	//initialize to default value "0".
-	sprintf(versionsList, "%s", "0");
+	snprintf(versionsList, 512, "%s", "0");
 
 	get_root_version_string(&root_str, &root_version, http_status);
 	WebcfgDebug("update root_version %lu rootString %s to DB\n", (long)root_version, root_str);
@@ -1170,7 +1170,7 @@ void getConfigVersionList(char *versionsList, int http_status)
 		if(root_str!=NULL && strlen(root_str) >0)
 		{
 			WebcfgDebug("update root_str %s to versionsList\n", root_str);
-			sprintf(versionsList, "%s", root_str);
+			snprintf(versionsList, 512, "%s", root_str);
 			WEBCFG_FREE(root_str);
 		}
 		else

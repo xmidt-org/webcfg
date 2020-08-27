@@ -97,7 +97,7 @@ void addWebConfgNotifyMsg(char *docname, uint32_t version, char *status, char *e
 
 		if(version ==0 && root_string !=NULL)
 		{
-			strcpy(versionStr, root_string);
+			snprintf(versionStr, sizeof(versionStr), "%s", root_string);
 		}
 		else
 		{
