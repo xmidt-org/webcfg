@@ -31,6 +31,7 @@
 #include <base64.h>
 #include "webcfg_db.h"
 #include "webcfg_aker.h"
+#include "webcfg_metadata.h"
 /*----------------------------------------------------------------------------*/
 /*                                   Macros                                   */
 /*----------------------------------------------------------------------------*/
@@ -94,6 +95,8 @@ void *WebConfigMultipartTask(void *status)
 	Status = (unsigned long)status;
 
 	//start webconfig notification thread.
+	initWebcfgProperties(WEBCFG_PROPERTIES_FILE);
+
 	initWebConfigNotifyTask();
 	initWebConfigClient();
 	WebcfgInfo("initDB %s\n", WEBCFG_DB_FILE);
@@ -468,7 +471,7 @@ int testUtility()
 			{
 				ptr1_count = memchr(ptr_count+1, '\r', test_dataSize - (ptr_count - data_body));
 				temp = strndup(ptr_count, (ptr1_count-ptr_count));
-				strcpy(ct,temp);
+				strncpy(ct,temp,(sizeof(ct)-1));
 				break;
 			}
 
@@ -494,6 +497,7 @@ int testUtility()
 		}
 		else
 		{
+			WEBCFG_FREE(transaction_uuid);
 			WebcfgError("webConfigData is empty, need to retry\n");
 		}
 		sprintf(command,"rm -rf %s",TEST_FILE_LOCATION);

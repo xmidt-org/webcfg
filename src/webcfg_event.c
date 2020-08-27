@@ -260,6 +260,7 @@ void* processSubdocEvents()
 						WebcfgInfo("ACK for mesh/cujo received: %s,%lu,%lu,%s,%lu\n", eventParam->subdoc_name,(long)eventParam->trans_id, (long)eventParam->version, eventParam->status, (long)eventParam->timeout);
 						handleConnectedClientNotify(eventParam->status);
 					}
+				
 					WebcfgInfo("ACK EVENT: %s,%lu,%lu,ACK,%lu %s\n", eventParam->subdoc_name,(long)eventParam->trans_id, (long)eventParam->version, (long)eventParam->timeout, "(doc apply success)");
 					WebcfgInfo("doc apply success, proceed to add to DB\n");
 					if( validateEvent(subdoc_node, eventParam->subdoc_name, eventParam->trans_id) == WEBCFG_SUCCESS)
@@ -980,7 +981,7 @@ uint32_t getDocVersionFromTmpList(webconfig_tmp_data_t *temp, char *docname)
 //validate each event based on exact doc txid in tmp list.
 WEBCFG_STATUS validateEvent(webconfig_tmp_data_t *temp, char *docname, uint16_t txid)
 {
-	if (NULL != temp)
+	if ((NULL != temp) && (docname != NULL))
 	{
 		WebcfgDebug("validateEvent: temp->name %s, temp->trans_id %hu\n",temp->name, temp->trans_id);
 		if( strcmp(docname, temp->name) == 0)
@@ -1034,7 +1035,7 @@ void handleConnectedClientNotify(char *status)
 
 	if(status != NULL)
 	{
-		strcpy(tmpStr , status);
+		strncpy(tmpStr , status,(sizeof(tmpStr)-1));
 		token = strtok(tmpStr, s);
 		if( token != NULL )
 		{
