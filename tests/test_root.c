@@ -17,156 +17,25 @@
 #include <stdint.h>
 #include <errno.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <unistd.h>
 #include <CUnit/Basic.h>
-#include "../src/webcfg_param.h"
-#include "../src/webcfg.h"
 #include "../src/webcfg_multipart.h"
-#include "../src/webcfg_helpers.h"
 #include "../src/webcfg_db.h"
-#include "../src/webcfg_notify.h"
-#include <msgpack.h>
-#include <curl/curl.h>
-#include <base64.h>
 #include "../src/webcfg_generic.h"
-#include "../src/webcfg_event.h"
-#define FILE_URL "/tmp/webcfg_url"
 
-#define UNUSED(x) (void )(x)
-
-char *url = NULL;
-char *interface = NULL;
-char device_mac[32] = {'\0'};
 char *reason = NULL;
 extern char g_RebootReason;
-
-char* get_deviceMAC()
-{
-	strcpy(device_mac, "b42xxxxxxxxx");
-	return device_mac;
-}
-void setValues(const param_t paramVal[], const unsigned int paramCount, const int setType, char *transactionId, money_trace_spans *timeSpan, WDMP_STATUS *retStatus, int *ccspStatus)
-{
-	UNUSED(paramVal);
-	UNUSED(paramCount);
-	UNUSED(setType);
-	UNUSED(transactionId);
-	UNUSED(timeSpan);
-	UNUSED(ccspStatus);
-	*retStatus = WDMP_SUCCESS;
-	return;
-}
-
-void setAttributes(param_t *attArr, const unsigned int paramCount, money_trace_spans *timeSpan, WDMP_STATUS *retStatus)
-{
-	UNUSED(attArr);
-	UNUSED(paramCount);
-	UNUSED(timeSpan);
-	*retStatus = WDMP_SUCCESS;
-	return;
-}
-
-int getForceSync(char** pString, char **transactionId)
-{
-	UNUSED(pString);
-	UNUSED(transactionId);
-	return 0;
-}
-int setForceSync(char* pString, char *transactionId,int *session_status)
-{
-	UNUSED(pString);
-	UNUSED(transactionId);
-	UNUSED(session_status);
-	return 0;
-}
-
-char * getParameterValue(char *paramName)
-{
-	UNUSED(paramName);
-	return NULL;
-}
-
-char * getSerialNumber()
-{
-	char *sNum = strdup("1234");
-	return sNum;
-}
-
-char * getDeviceBootTime()
-{
-	char *bTime = strdup("152200345");
-	return bTime;
-}
-
-char * getProductClass()
-{
-	char *pClass = strdup("Product");
-	return pClass;
-}
-
-char * getModelName()
-{
-	char *mName = strdup("Model");
-	return mName;
-}
-
-char * getConnClientParamName()
-{
-	char *pName = strdup("ConnClientParamName");
-	return pName;
-}
-char * getFirmwareVersion()
-{
-	char *fName = strdup("Firmware.bin");
-	return fName;
-}
 
 void setRebootReason(char *r_reason)
 {
 	if (r_reason)
 	reason = strdup(r_reason);
-	//return reason;
 }
 
 char * getRebootReason()
 {
-	//char *reason = strdup("factory-reset");
 	return reason;
-}
-
-void sendNotification(char *payload, char *source, char *destination)
-{
-	WEBCFG_FREE(payload);
-	WEBCFG_FREE(source);
-	UNUSED(destination);
-	return;
-}
-
-char *get_global_systemReadyTime()
-{
-	char *sTime = strdup("158000123");
-	return sTime;
-}
-
-int Get_Webconfig_URL( char *pString)
-{
-	char *webConfigURL =NULL;
-	loadInitURLFromFile(&webConfigURL);
-	pString = webConfigURL;
-        printf("The value of pString is %s\n",pString);
-	return 0;
-}
-
-int Set_Webconfig_URL( char *pString)
-{
-	printf("Set_Webconfig_URL pString %s\n", pString);
-	return 0;
-}
-
-int registerWebcfgEvent(WebConfigEventCallback webcfgEventCB)
-{
-	UNUSED(webcfgEventCB);
-	return 0;
 }
 
 void test_FRNONE()
@@ -184,9 +53,10 @@ void test_FRNONE()
 	}
 	setRebootReason("factory-reset");
 
-	get_root_version_string(&root_str, &root_version, http_status);
+	derive_root_doc_version_string(&root_str, &root_version, http_status);
 	CU_ASSERT_FATAL( NULL != root_str );
 	CU_ASSERT_STRING_EQUAL( "NONE", root_str );
+	WEBCFG_FREE(reason);
 }
 
 void test_MIGRATION()
@@ -197,9 +67,10 @@ void test_MIGRATION()
 	g_RebootReason ='\0';
 
 	setRebootReason("Software_upgrade");
-	get_root_version_string(&root_str, &root_version, http_status);
+	derive_root_doc_version_string(&root_str, &root_version, http_status);
 	CU_ASSERT_FATAL( NULL != root_str );
 	CU_ASSERT_STRING_EQUAL( "NONE-MIGRATION", root_str );
+	WEBCFG_FREE(reason);
 }
 
 void test_NONE_REBOOT()
@@ -210,9 +81,10 @@ void test_NONE_REBOOT()
 	g_RebootReason ='\0';
 
 	setRebootReason("unknown");
-	get_root_version_string(&root_str, &root_version, http_status);
+	derive_root_doc_version_string(&root_str, &root_version, http_status);
 	CU_ASSERT_FATAL( NULL != root_str );
 	CU_ASSERT_STRING_EQUAL( "NONE-REBOOT", root_str );
+	WEBCFG_FREE(reason);
 }
 
 void test_ROOTNULL()
@@ -224,8 +96,9 @@ void test_ROOTNULL()
 	reason = NULL;
 
 	setRebootReason(NULL);
-	get_root_version_string(&root_str, &root_version, http_status);
+	derive_root_doc_version_string(&root_str, &root_version, http_status);
 	CU_ASSERT_FATAL( NULL == root_str );
+	WEBCFG_FREE(reason);
 }
 
 void test_POSTNONE()
@@ -240,7 +113,7 @@ void test_POSTNONE()
 	checkDBList("root", root_version, root_str);
 	addNewDocEntry(1);
 	
-	get_root_version_string(&root_str, &root_version, http_status);
+	derive_root_doc_version_string(&root_str, &root_version, http_status);
 	CU_ASSERT_FATAL( NULL != root_str );
 	CU_ASSERT_STRING_EQUAL( "NONE-REBOOT", root_str );
 	fp = fopen("/tmp/webconfig_db.bin","rb");
@@ -263,7 +136,7 @@ void test_FR_404()
 	checkDBList("root", root_version, root_str);
 	addNewDocEntry(1);
 	
-	get_root_version_string(&root_str, &root_version, http_status);
+	derive_root_doc_version_string(&root_str, &root_version, http_status);
 	CU_ASSERT_FATAL( NULL != root_str );
 	CU_ASSERT_STRING_EQUAL( "POST-NONE", root_str );
 	fp = fopen("/tmp/webconfig_db.bin","rb");
@@ -286,7 +159,7 @@ void test_FR_200()
 	checkDBList("root", root_version, root_str);
 	addNewDocEntry(1);
 	
-	get_root_version_string(&root_str, &root_version, http_status);
+	derive_root_doc_version_string(&root_str, &root_version, http_status);
 	CU_ASSERT_FATAL( NULL != root_str );
 	CU_ASSERT_STRING_EQUAL( "POST-NONE", root_str );
 	fp = fopen("/tmp/webconfig_db.bin","rb");
@@ -310,7 +183,7 @@ void test_FW_ROLLBACK()
 	checkDBList("test", 123, NULL);
 	addNewDocEntry(2);
 	
-	get_root_version_string(&root_str, &root_version, http_status);
+	derive_root_doc_version_string(&root_str, &root_version, http_status);
 	CU_ASSERT_FATAL( NULL == root_str );
 	CU_ASSERT_EQUAL( 0, root_version );
 	fp = fopen("/tmp/webconfig_db.bin","rb");
@@ -334,7 +207,7 @@ void test_zerorootVersion()
 	checkDBList("test", 1234, NULL);
 	addNewDocEntry(2);
 	
-	get_root_version_string(&root_str, &root_version, http_status);
+	derive_root_doc_version_string(&root_str, &root_version, http_status);
 	CU_ASSERT_FATAL( NULL != root_str );
 	CU_ASSERT_STRING_EQUAL( "POST-NONE", root_str );
 	fp = fopen("/tmp/webconfig_db.bin","rb");
@@ -358,7 +231,7 @@ void test_rootVersion()
 	checkDBList("test", 1234, NULL);
 	addNewDocEntry(2);
 	
-	get_root_version_string(&root_str, &root_version, http_status);
+	derive_root_doc_version_string(&root_str, &root_version, http_status);
 	CU_ASSERT_FATAL( NULL == root_str );
 	CU_ASSERT_EQUAL( 44444, root_version );
 	fp = fopen("/tmp/webconfig_db.bin","rb");

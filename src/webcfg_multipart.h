@@ -55,8 +55,8 @@ void set_global_mp(multipart_t *new);
 void reqParam_destroy( int paramCnt, param_t *reqObj );
 void failedDocsRetry();
 WEBCFG_STATUS validate_request_param(param_t *reqParam, int paramCount);
-void getConfigVersionList(char *versionsList, int http_status);
+void refreshConfigVersionList(char *versionsList, int http_status);
 char * get_global_contentLen(void);
-void getRootVersionFromDB(uint32_t *rt_version, char **rt_string, int *subdoclist);
-void get_root_version_string(char **rootVersion, uint32_t *root_ver, int status);
+void getRootDocVersionFromDBCache(uint32_t *rt_version, char **rt_string, int *subdoclist);
+void derive_root_doc_version_string(char **rootVersion, uint32_t *root_ver, int status);
 #endif

@@ -306,7 +306,7 @@ int handlehttpResponse(long response_code, char *webConfigData, int retry_count,
 	if(response_code == 304)
 	{
 		WebcfgInfo("webConfig is in sync with cloud. response_code:%ld\n", response_code);
-		getRootVersionFromDB(&db_root_version, &db_root_string, &subdocList);
+		getRootDocVersionFromDBCache(&db_root_version, &db_root_string, &subdocList);
 		addWebConfgNotifyMsg(NULL, db_root_version, NULL, NULL, transaction_uuid, 0, "status", 0, db_root_string, response_code);
 		if(db_root_string !=NULL)
 		{
@@ -344,7 +344,7 @@ int handlehttpResponse(long response_code, char *webConfigData, int retry_count,
 			if((contentLength !=NULL) && (strcmp(contentLength, "0") == 0))
 			{
 				WebcfgInfo("webConfigData content length is 0\n");
-				getConfigVersionList(version, response_code);
+				refreshConfigVersionList(version, response_code);
 				WEBCFG_FREE(contentLength);
 				WEBCFG_FREE(transaction_uuid);
 				WEBCFG_FREE(webConfigData);
@@ -355,7 +355,7 @@ int handlehttpResponse(long response_code, char *webConfigData, int retry_count,
 	else if(response_code == 204)
 	{
 		WebcfgInfo("No configuration available for this device. response_code:%ld\n", response_code);
-		getRootVersionFromDB(&db_root_version, &db_root_string, &subdocList);
+		getRootDocVersionFromDBCache(&db_root_version, &db_root_string, &subdocList);
 		addWebConfgNotifyMsg(NULL, db_root_version, NULL, NULL, transaction_uuid, 0, "status", 0, db_root_string, response_code);
 		if(db_root_string !=NULL)
 		{
@@ -374,7 +374,7 @@ int handlehttpResponse(long response_code, char *webConfigData, int retry_count,
 	else if(response_code == 429)
 	{
 		WebcfgInfo("No action required from client. response_code:%ld\n", response_code);
-		getRootVersionFromDB(&db_root_version, &db_root_string, &subdocList);
+		getRootDocVersionFromDBCache(&db_root_version, &db_root_string, &subdocList);
 		addWebConfgNotifyMsg(NULL, db_root_version, NULL, NULL, transaction_uuid, 0, "status", 0, db_root_string, response_code);
 		if(db_root_string !=NULL)
 		{
@@ -390,9 +390,9 @@ int handlehttpResponse(long response_code, char *webConfigData, int retry_count,
 		if (response_code == 404)
 		{
 			//To set POST-NONE root version when 404
-			getConfigVersionList(version, response_code);
+			refreshConfigVersionList(version, response_code);
 		}
-		getRootVersionFromDB(&db_root_version, &db_root_string, &subdocList);
+		getRootDocVersionFromDBCache(&db_root_version, &db_root_string, &subdocList);
 		addWebConfgNotifyMsg(NULL, db_root_version, NULL, NULL, transaction_uuid, 0, "status", 0, db_root_string, response_code);
 		if(db_root_string !=NULL)
 		{
@@ -407,7 +407,7 @@ int handlehttpResponse(long response_code, char *webConfigData, int retry_count,
 		if(retry_count == 3 && !err)
 		{
 			WebcfgDebug("3 curl retry attempts\n");
-			getRootVersionFromDB(&db_root_version, &db_root_string, &subdocList);
+			getRootDocVersionFromDBCache(&db_root_version, &db_root_string, &subdocList);
 			addWebConfgNotifyMsg(NULL, db_root_version, NULL, NULL, transaction_uuid, 0, "status", 0, db_root_string, response_code);
 			if(db_root_string !=NULL)
 			{

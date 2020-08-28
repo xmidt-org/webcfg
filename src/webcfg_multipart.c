@@ -1033,7 +1033,7 @@ void getConfigDocList(char *docList)
 	}
 }
 
-void getRootVersionFromDB(uint32_t *rt_version, char **rt_string, int *subdoclist)
+void getRootDocVersionFromDBCache(uint32_t *rt_version, char **rt_string, int *subdoclist)
 {
 	webconfig_db_data_t *temp = NULL;
 	temp = get_global_db_node();
@@ -1055,7 +1055,7 @@ void getRootVersionFromDB(uint32_t *rt_version, char **rt_string, int *subdoclis
 	WebcfgDebug("*subdoclist is %d\n", *subdoclist);
 }
 
-void get_root_version_string(char **rootVersion, uint32_t *root_ver, int status)
+void derive_root_doc_version_string(char **rootVersion, uint32_t *root_ver, int status)
 {
 	FILE *fp = NULL;
 	char *reason = NULL;
@@ -1102,7 +1102,7 @@ void get_root_version_string(char **rootVersion, uint32_t *root_ver, int status)
 		{
 			fclose(fp);
 			//get existing root version from DB
-			getRootVersionFromDB(&db_root_version, &db_root_string, &subdocList);
+			getRootDocVersionFromDBCache(&db_root_version, &db_root_string, &subdocList);
 			WebcfgDebug("db_root_version %lu db_root_string %s subdocList %d\n", (long)db_root_version, db_root_string, subdocList);
 
 			if(db_root_string !=NULL)
@@ -1159,7 +1159,7 @@ void get_root_version_string(char **rootVersion, uint32_t *root_ver, int status)
 e.g. IF-NONE-MATCH: 123,44317,66317,77317 where 123 is root version.
 Currently versionsList length is fixed to 512 which can support up to 45 docs.
 This can be increased if required. */
-void getConfigVersionList(char *versionsList, int http_status)
+void refreshConfigVersionList(char *versionsList, int http_status)
 {
 	char *versionsList_tmp = NULL;
 	char *root_str = NULL;
@@ -1168,7 +1168,7 @@ void getConfigVersionList(char *versionsList, int http_status)
 	//initialize to default value "0".
 	snprintf(versionsList, 512, "%s", "0");
 
-	get_root_version_string(&root_str, &root_version, http_status);
+	derive_root_doc_version_string(&root_str, &root_version, http_status);
 	WebcfgDebug("update root_version %lu rootString %s to DB\n", (long)root_version, root_str);
 	checkDBList("root", root_version, root_str);
 	WebcfgDebug("addNewDocEntry. get_successDocCount %d\n", get_successDocCount());
@@ -1256,7 +1256,7 @@ void createCurlHeader( struct curl_slist *list, struct curl_slist **header_list,
 	version_header = (char *) malloc(sizeof(char)*MAX_BUF_SIZE);
 	if(version_header !=NULL)
 	{
-		getConfigVersionList(version, 0);
+		refreshConfigVersionList(version, 0);
 		snprintf(version_header, MAX_BUF_SIZE, "IF-NONE-MATCH:%s", ((strlen(version)!=0) ? version : "0"));
 		WebcfgInfo("version_header formed %s\n", version_header);
 		list = curl_slist_append(list, version_header);
