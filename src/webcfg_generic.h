@@ -42,6 +42,7 @@ char * getModelName();
 char * getConnClientParamName();
 char * getFirmwareVersion();
 char* get_deviceMAC();
+char * getRebootReason();
 
 /* Getter function to return systemReadyTime in UTC format */
 char *get_global_systemReadyTime();

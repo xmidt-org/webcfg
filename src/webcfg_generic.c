@@ -30,6 +30,7 @@ char *__attribute__((weak)) getDeviceBootTime(void);
 char *__attribute__((weak)) getSerialNumber(void);
 char *__attribute__((weak)) getProductClass(void);
 char *__attribute__((weak)) getModelName(void);
+char *__attribute__((weak)) getRebootReason(void);
 char *__attribute__((weak)) getConnClientParamName(void);
 char *__attribute__((weak)) getFirmwareVersion(void);
 char *__attribute__((weak)) get_deviceMAC(void);
@@ -64,6 +65,11 @@ char *getProductClass(void)
 }
 
 char *getModelName(void)
+{
+    return NULL;
+}
+
+char *getRebootReason(void)
 {
     return NULL;
 }

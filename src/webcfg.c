@@ -297,10 +297,21 @@ int handlehttpResponse(long response_code, char *webConfigData, int retry_count,
 	int first_digit=0;
 	int msgpack_status=0;
 	int err = 0;
+	char version[512]={'\0'};
+	uint32_t db_root_version = 0;
+	char *db_root_string = NULL;
+	int subdocList = 0;
+	char *contentLength = NULL;
 
 	if(response_code == 304)
 	{
 		WebcfgInfo("webConfig is in sync with cloud. response_code:%ld\n", response_code);
+		getRootDocVersionFromDBCache(&db_root_version, &db_root_string, &subdocList);
+		addWebConfgNotifyMsg(NULL, db_root_version, NULL, NULL, transaction_uuid, 0, "status", 0, db_root_string, response_code);
+		if(db_root_string !=NULL)
+		{
+			WEBCFG_FREE(db_root_string);
+		}
 		WEBCFG_FREE(transaction_uuid);
 		return 1;
 	}
@@ -308,7 +319,7 @@ int handlehttpResponse(long response_code, char *webConfigData, int retry_count,
 	{
 		WebcfgInfo("webConfig is not in sync with cloud. response_code:%ld\n", response_code);
 
-		if(webConfigData !=NULL)
+		if(webConfigData !=NULL && (strlen(webConfigData)>0))
 		{
 			WebcfgDebug("webConfigData fetched successfully\n");
 			WebcfgDebug("parseMultipartDocument\n");
@@ -321,18 +332,35 @@ int handlehttpResponse(long response_code, char *webConfigData, int retry_count,
 			}
 			else
 			{
-				WebcfgError("Failed to apply root webConfigData received from server\n");
+				WebcfgDebug("root webConfigData processed, check apply status events\n");
 				return 1;
 			}
 		}
 		else
 		{
-			WebcfgError("webConfigData is empty, need to do curl retry to server\n");
+			WebcfgInfo("webConfigData is empty\n");
+			//After factory reset when server sends 200 with empty config, set POST-NONE root version
+			contentLength = get_global_contentLen();
+			if((contentLength !=NULL) && (strcmp(contentLength, "0") == 0))
+			{
+				WebcfgInfo("webConfigData content length is 0\n");
+				refreshConfigVersionList(version, response_code);
+				WEBCFG_FREE(contentLength);
+				WEBCFG_FREE(transaction_uuid);
+				WEBCFG_FREE(webConfigData);
+				return 1;
+			}
 		}
 	}
 	else if(response_code == 204)
 	{
 		WebcfgInfo("No configuration available for this device. response_code:%ld\n", response_code);
+		getRootDocVersionFromDBCache(&db_root_version, &db_root_string, &subdocList);
+		addWebConfgNotifyMsg(NULL, db_root_version, NULL, NULL, transaction_uuid, 0, "status", 0, db_root_string, response_code);
+		if(db_root_string !=NULL)
+		{
+			WEBCFG_FREE(db_root_string);
+		}
 		WEBCFG_FREE(transaction_uuid);
 		return 1;
 	}
@@ -346,6 +374,12 @@ int handlehttpResponse(long response_code, char *webConfigData, int retry_count,
 	else if(response_code == 429)
 	{
 		WebcfgInfo("No action required from client. response_code:%ld\n", response_code);
+		getRootDocVersionFromDBCache(&db_root_version, &db_root_string, &subdocList);
+		addWebConfgNotifyMsg(NULL, db_root_version, NULL, NULL, transaction_uuid, 0, "status", 0, db_root_string, response_code);
+		if(db_root_string !=NULL)
+		{
+			WEBCFG_FREE(db_root_string);
+		}
 		WEBCFG_FREE(transaction_uuid);
 		return 1;
 	}
@@ -353,6 +387,17 @@ int handlehttpResponse(long response_code, char *webConfigData, int retry_count,
 	if((response_code !=403) && (first_digit == 4)) //4xx
 	{
 		WebcfgInfo("Action not supported. response_code:%ld\n", response_code);
+		if (response_code == 404)
+		{
+			//To set POST-NONE root version when 404
+			refreshConfigVersionList(version, response_code);
+		}
+		getRootDocVersionFromDBCache(&db_root_version, &db_root_string, &subdocList);
+		addWebConfgNotifyMsg(NULL, db_root_version, NULL, NULL, transaction_uuid, 0, "status", 0, db_root_string, response_code);
+		if(db_root_string !=NULL)
+		{
+			WEBCFG_FREE(db_root_string);
+		}
 		WEBCFG_FREE(transaction_uuid);
 		return 1;
 	}
@@ -362,6 +407,12 @@ int handlehttpResponse(long response_code, char *webConfigData, int retry_count,
 		if(retry_count == 3 && !err)
 		{
 			WebcfgDebug("3 curl retry attempts\n");
+			getRootDocVersionFromDBCache(&db_root_version, &db_root_string, &subdocList);
+			addWebConfgNotifyMsg(NULL, db_root_version, NULL, NULL, transaction_uuid, 0, "status", 0, db_root_string, response_code);
+			if(db_root_string !=NULL)
+			{
+				WEBCFG_FREE(db_root_string);
+			}
 			WEBCFG_FREE(transaction_uuid);
 			return 0;
 		}

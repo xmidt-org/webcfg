@@ -36,6 +36,7 @@
 /*----------------------------------------------------------------------------*/
 #define MAX_HEADER_LEN			4096
 #define ETAG_HEADER 		       "Etag:"
+#define CONTENT_LENGTH_HEADER 	       "Content-Length:"
 #define CURL_TIMEOUT_SEC	   25L
 #define CA_CERT_PATH 		   "/etc/ssl/certs/ca-certificates.crt"
 #define WEBPA_READ_HEADER          "/etc/parodus/parodus_read_file.sh"
@@ -61,7 +62,9 @@ static char g_FirmwareVersion[64]={'\0'};
 static char g_bootTime[64]={'\0'};
 static char g_productClass[64]={'\0'};
 static char g_ModelName[64]={'\0'};
+char g_RebootReason[64]={'\0'};
 static char g_transID[64]={'\0'};
+static char * g_contentLen = NULL;
 static char *supportedVersion_header=NULL;
 static char *supportedDocs_header=NULL;
 multipart_t *mp = NULL;
@@ -90,6 +93,11 @@ void set_global_mp(multipart_t *new)
 {
 	mp = new;
 }
+
+char * get_global_contentLen(void)
+{
+	return g_contentLen;
+}
 /*----------------------------------------------------------------------------*/
 /*                             Function Prototypes                            */
 /*----------------------------------------------------------------------------*/
@@ -104,7 +112,6 @@ char* generate_trans_uuid();
 WEBCFG_STATUS processMsgpackSubdoc(char *transaction_id);
 void loadInitURLFromFile(char **url);
 static void get_webCfg_interface(char **interface);
-void get_root_version(uint32_t *rt_version);
 char *replaceMacWord(const char *s, const char *macW, const char *deviceMACW);
 WEBCFG_STATUS checkAkerDoc();
 /*----------------------------------------------------------------------------*/
@@ -434,7 +441,7 @@ WEBCFG_STATUS parseMultipartDocument(void *config_data, char *ct , size_t data_s
 		}
 		else
 		{
-			WebcfgError("processMsgpackSubdoc failed,as all the docs are not applied\n");
+			WebcfgDebug("processMsgpackSubdoc done,docs are sent for apply\n");
 		}
 		return WEBCFG_FAILURE;
 	}
@@ -592,10 +599,10 @@ WEBCFG_STATUS processMsgpackSubdoc(char *transaction_id)
 							updateTmpList(subdoc_node, mp->entries[m].name_space, mp->entries[m].etag, "success", "none", 0, 0, 0);
 							//send success notification to cloud
 							WebcfgDebug("send notify for mp->entries[m].name_space %s\n", mp->entries[m].name_space);
-							addWebConfgNotifyMsg(mp->entries[m].name_space, mp->entries[m].etag, "success", "none", trans_id,0, "status",0);
+							addWebConfgNotifyMsg(mp->entries[m].name_space, mp->entries[m].etag, "success", "none", trans_id,0, "status",0, NULL, 200);
 							WebcfgDebug("deleteFromTmpList as doc is applied\n");
 							deleteFromTmpList(mp->entries[m].name_space);
-							checkDBList(mp->entries[m].name_space,mp->entries[m].etag);
+							checkDBList(mp->entries[m].name_space,mp->entries[m].etag, NULL);
 							success_count++;
 						}
 
@@ -612,7 +619,7 @@ WEBCFG_STATUS processMsgpackSubdoc(char *transaction_id)
 							}
 							if(version != 0)
 							{
-								checkDBList("root",version);
+								checkDBList("root",version, NULL);
 								success_count++;
 							}
 
@@ -650,8 +657,7 @@ WEBCFG_STATUS processMsgpackSubdoc(char *transaction_id)
 							}
 							WebcfgDebug("The result is %s\n",result);
 							updateTmpList(subdoc_node, mp->entries[m].name_space, mp->entries[m].etag, "failed", result, ccspStatus, 0, 1);
-							addWebConfgNotifyMsg(mp->entries[m].name_space, mp->entries[m].etag, "failed", result, trans_id,0,"status",ccspStatus);
-
+							addWebConfgNotifyMsg(mp->entries[m].name_space, mp->entries[m].etag, "failed", result, trans_id,0,"status",ccspStatus, NULL, 200);
 							WebcfgDebug("the retry flag value is %d\n", get_doc_fail());
 						}
 						else
@@ -659,7 +665,7 @@ WEBCFG_STATUS processMsgpackSubdoc(char *transaction_id)
 							snprintf(result,MAX_VALUE_LEN,"doc_rejected:%s", errDetails);
 							WebcfgDebug("The result is %s\n",result);
 							updateTmpList(subdoc_node, mp->entries[m].name_space, mp->entries[m].etag, "failed", result, ccspStatus, 0, 0);
-							addWebConfgNotifyMsg(mp->entries[m].name_space, mp->entries[m].etag, "failed", result, trans_id,0, "status", ccspStatus);
+							addWebConfgNotifyMsg(mp->entries[m].name_space, mp->entries[m].etag, "failed", result, trans_id,0, "status", ccspStatus, NULL, 200);
 						}
 						//print_tmp_doc_list(mp->entries_count);
 					}
@@ -810,8 +816,10 @@ size_t headr_callback(char *buffer, size_t size, size_t nitems)
 	char* header_value = NULL;
 	char* final_header = NULL;
 	char header_str[64] = {'\0'};
+	size_t content_len = 0;
 
 	etag_len = strlen(ETAG_HEADER);
+	content_len = strlen(CONTENT_LENGTH_HEADER);
 	if( nitems > etag_len )
 	{
 		if( strncasecmp(ETAG_HEADER, buffer, etag_len) == 0 )
@@ -828,6 +836,22 @@ size_t headr_callback(char *buffer, size_t size, size_t nitems)
 					strncpy(g_ETAG, final_header, sizeof(g_ETAG)-1);
 				}
 			}
+		}
+
+		if( strncasecmp(CONTENT_LENGTH_HEADER, buffer, content_len) == 0 )
+		{
+			header_value = strtok(buffer, ":");
+			while( header_value != NULL )
+			{
+				header_value = strtok(NULL, ":");
+				if(header_value !=NULL)
+				{
+					strncpy(header_str, header_value, sizeof(header_str)-1);
+					stripspaces(header_str, &final_header);
+					g_contentLen = strdup(final_header);
+				}
+			}
+			WebcfgDebug("g_contentLen is %s\n", g_contentLen);
 		}
 	}
 	WebcfgInfo("header_callback size %zu\n", size);
@@ -1009,7 +1033,7 @@ void getConfigDocList(char *docList)
 	}
 }
 
-void get_root_version(uint32_t *rt_version)
+void getRootDocVersionFromDBCache(uint32_t *rt_version, char **rt_string, int *subdoclist)
 {
 	webconfig_db_data_t *temp = NULL;
 	temp = get_global_db_node();
@@ -1019,9 +1043,115 @@ void get_root_version(uint32_t *rt_version)
 		if( strcmp(temp->name, "root") == 0)
 		{
 			*rt_version = temp->version;
-			WebcfgDebug("rt_version %lu\n", (long)*rt_version);
+			if(temp->root_string !=NULL)
+			{
+				*rt_string = strdup(temp->root_string);
+			}
+			WebcfgDebug("rt_version %lu rt_string %s from DB list\n", (long)*rt_version, *rt_string);
 		}
 		temp= temp->next;
+		*subdoclist = *subdoclist+1;
+	}
+	WebcfgDebug("*subdoclist is %d\n", *subdoclist);
+}
+
+void derive_root_doc_version_string(char **rootVersion, uint32_t *root_ver, int status)
+{
+	FILE *fp = NULL;
+	char *reason = NULL;
+	uint32_t db_root_version = 0;
+	char *db_root_string = NULL;
+	int subdocList = 0;
+
+	if(strlen(g_RebootReason) == 0)
+	{
+		reason = getRebootReason();
+		if(reason !=NULL)
+		{
+		       strncpy(g_RebootReason, reason, sizeof(g_RebootReason)-1);
+		       WebcfgDebug("g_RebootReason fetched is %s\n", g_RebootReason);
+		       WEBCFG_FREE(reason);
+		}
+		else
+		{
+			WebcfgError("Failed to get reboot reason\n");
+		}
+	}
+
+	if(strlen(g_RebootReason)> 0)
+	{
+		WebcfgInfo("reboot reason is %s\n", g_RebootReason);
+
+		fp = fopen(WEBCFG_DB_FILE,"rb");
+		if (fp == NULL)
+		{
+			if(strncmp(g_RebootReason,"factory-reset",strlen("factory-reset"))==0)
+			{
+				*rootVersion = strdup("NONE");
+			}
+			else if(strncmp(g_RebootReason,"Software_upgrade",strlen("Software_upgrade"))==0)
+			{
+				*rootVersion = strdup("NONE-MIGRATION");
+			}
+			else
+			{
+				*rootVersion = strdup("NONE-REBOOT");
+			}
+		}
+		else
+		{
+			fclose(fp);
+			//get existing root version from DB
+			getRootDocVersionFromDBCache(&db_root_version, &db_root_string, &subdocList);
+			WebcfgDebug("db_root_version %lu db_root_string %s subdocList %d\n", (long)db_root_version, db_root_string, subdocList);
+
+			if(db_root_string !=NULL)
+			{
+				if((strcmp(db_root_string,"POST-NONE")==0) && ((strcmp(g_RebootReason,"Software_upgrade")!=0) && (strcmp(g_RebootReason,"factory-reset")!=0)))
+				{
+					*rootVersion = strdup("NONE-REBOOT");
+					WEBCFG_FREE(db_root_string);
+					return;
+				}
+				else if(status == 404 && ((strcmp(db_root_string, "NONE") == 0) || (strcmp(db_root_string, "NONE-MIGRATION") == 0) || (strcmp(db_root_string, "NONE-REBOOT") == 0)))
+				{
+					*rootVersion = strdup("POST-NONE");
+					WEBCFG_FREE(db_root_string);
+					return;
+				}
+				else if(status == 200 && (strcmp(db_root_string, "NONE") == 0))
+				{
+					WebcfgInfo("Received factory reset Ack from server, set root to POST-NONE\n");
+					*rootVersion = strdup("POST-NONE");
+					WEBCFG_FREE(db_root_string);
+					return;
+				}
+			}
+
+			//check existing root version
+			WebcfgInfo("check existing root version\n");
+			if(db_root_version)
+			{
+			//when subdocs are applied and reboot due to software migration/rollback, root reset to 0.
+				if(subdocList > 1 && strcmp(g_RebootReason,"Software_upgrade")==0)
+				{
+					WebcfgInfo("reboot due to software migration/rollback, root reset to 0\n");
+					*root_ver = 0;
+					return;
+				}
+				WebcfgDebug("Update rootVersion with db_root_version %lu\n", (long)db_root_version);
+			}
+			else
+			{
+				if(db_root_string !=NULL)
+				{
+					WebcfgDebug("Update rootVersion with db_root_string %s\n", db_root_string);
+					*rootVersion = strdup(db_root_string);
+					WEBCFG_FREE(db_root_string);
+				}
+			}
+			*root_ver = db_root_version;
+		}
 	}
 }
 
@@ -1029,30 +1159,38 @@ void get_root_version(uint32_t *rt_version)
 e.g. IF-NONE-MATCH: 123,44317,66317,77317 where 123 is root version.
 Currently versionsList length is fixed to 512 which can support up to 45 docs.
 This can be increased if required. */
-void getConfigVersionList(char *versionsList)
+void refreshConfigVersionList(char *versionsList, int http_status)
 {
 	char *versionsList_tmp = NULL;
+	char *root_str = NULL;
 	uint32_t root_version = 0;
 
-	get_root_version(&root_version);
-	WebcfgDebug("root_version %lu\n", (long)root_version);
+	//initialize to default value "0".
+	snprintf(versionsList, 512, "%s", "0");
+
+	derive_root_doc_version_string(&root_str, &root_version, http_status);
+	WebcfgDebug("update root_version %lu rootString %s to DB\n", (long)root_version, root_str);
+	checkDBList("root", root_version, root_str);
+	WebcfgDebug("addNewDocEntry. get_successDocCount %d\n", get_successDocCount());
+	addNewDocEntry(get_successDocCount());
 
 	webconfig_db_data_t *temp = NULL;
 	temp = get_global_db_node();
 
 	if(NULL != temp)
 	{
-		if(root_version)
+		if(root_str!=NULL && strlen(root_str) >0)
 		{
-			WebcfgDebug("Updating root_version to versionsList\n");
-			sprintf(versionsList, "%lu", (long)root_version);
+			WebcfgDebug("update root_str %s to versionsList\n", root_str);
+			snprintf(versionsList, 512, "%s", root_str);
+			WEBCFG_FREE(root_str);
 		}
 		else
 		{
-			WebcfgDebug("Updating versionsList as NONE\n");
-			sprintf(versionsList, "%s", "NONE");
+			WebcfgDebug("update root_version %lu to versionsList\n", (long)root_version);
+			sprintf(versionsList, "%lu", (long)root_version);
 		}
-		WebcfgDebug("versionsList is %s\n", versionsList);
+		WebcfgInfo("versionsList is %s\n", versionsList);
 
 		while (NULL != temp)
 		{
@@ -1118,8 +1256,8 @@ void createCurlHeader( struct curl_slist *list, struct curl_slist **header_list,
 	version_header = (char *) malloc(sizeof(char)*MAX_BUF_SIZE);
 	if(version_header !=NULL)
 	{
-		getConfigVersionList(version);
-		snprintf(version_header, MAX_BUF_SIZE, "IF-NONE-MATCH:%s", ((strlen(version)!=0) ? version : "NONE"));
+		refreshConfigVersionList(version, 0);
+		snprintf(version_header, MAX_BUF_SIZE, "IF-NONE-MATCH:%s", ((strlen(version)!=0) ? version : "0"));
 		WebcfgInfo("version_header formed %s\n", version_header);
 		list = curl_slist_append(list, version_header);
 		WEBCFG_FREE(version_header);
@@ -1598,7 +1736,7 @@ void updateRootVersionToDB()
 	}
 	if(version != 0)
 	{
-		checkDBList("root",version);
+		checkDBList("root",version, NULL);
 	}
 
 	WebcfgDebug("The Etag is %lu\n",(long)version );

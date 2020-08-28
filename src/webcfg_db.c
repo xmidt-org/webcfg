@@ -144,8 +144,8 @@ WEBCFG_STATUS addNewDocEntry(size_t count)
  
      WebcfgDebug("DB docs count %ld\n", (size_t)count);
      webcfgdbPackSize = webcfgdb_pack(webcfgdb_data, &data, count);
-     WebcfgInfo("size of webcfgdbPackSize %ld\n", webcfgdbPackSize);
-     WebcfgInfo("writeToDBFile %s\n", WEBCFG_DB_FILE);
+     WebcfgDebug("size of webcfgdbPackSize %ld\n", webcfgdbPackSize);
+     WebcfgDebug("writeToDBFile %s\n", WEBCFG_DB_FILE);
      writeToDBFile(WEBCFG_DB_FILE,(char *)data,webcfgdbPackSize);
      if(data)
      {
@@ -262,6 +262,9 @@ void webcfgdbblob_destroy( blob_struct_t *bd )
             }
 	    if( NULL != bd->entries[i].error_details ) {
                 free( bd->entries[i].error_details );
+            }
+	    if( NULL != bd->entries[i].root_string ) {
+                free( bd->entries[i].root_string );
             }
         }
         if( NULL != bd->entries ) {
@@ -461,9 +464,9 @@ WEBCFG_STATUS addToTmpList( multipart_t *mp)
 }
 
 
-void checkDBList(char *docname, uint32_t version)
+void checkDBList(char *docname, uint32_t version, char* rootstr)
 {
-	if(updateDBlist(docname, version) != WEBCFG_SUCCESS)
+	if(updateDBlist(docname, version, rootstr) != WEBCFG_SUCCESS)
 	{
 		webconfig_db_data_t * webcfgdb = NULL;
 		webcfgdb = (webconfig_db_data_t *) malloc (sizeof(webconfig_db_data_t));
@@ -473,10 +476,24 @@ void checkDBList(char *docname, uint32_t version)
 
 			webcfgdb->name = strdup(docname);
 			webcfgdb->version = version;
+			if( strcmp("root", webcfgdb->name) == 0)
+			{
+				if(rootstr !=NULL)
+				{
+					webcfgdb->root_string = strdup(rootstr);
+				}
+			}
 			webcfgdb->next = NULL;
 
 			addToDBList(webcfgdb);
-			WebcfgInfo("webcfgdb->name added to DB %s webcfgdb->version %lu\n",webcfgdb->name, (long)webcfgdb->version);
+			if(webcfgdb->root_string !=NULL)
+			{
+				WebcfgInfo("webcfgdb->name added to DB %s webcfgdb->version %lu webcfgdb->root_string %s\n",webcfgdb->name, (long)webcfgdb->version, webcfgdb->root_string);
+			}
+			else
+			{
+				WebcfgInfo("webcfgdb->name added to DB %s webcfgdb->version %lu\n",webcfgdb->name, (long)webcfgdb->version);
+			}
 		}
 		else
 		{
@@ -485,7 +502,7 @@ void checkDBList(char *docname, uint32_t version)
 	}
 }
 
-WEBCFG_STATUS updateDBlist(char *docname, uint32_t version)
+WEBCFG_STATUS updateDBlist(char *docname, uint32_t version, char* rootstr)
 {
 	webconfig_db_data_t *webcfgdb = NULL;
 	webcfgdb = get_global_db_node();
@@ -495,11 +512,23 @@ WEBCFG_STATUS updateDBlist(char *docname, uint32_t version)
 	{
 		pthread_mutex_lock (&webconfig_db_mut);
 		WebcfgDebug("mutex_lock in updateDBlist\n");
-		WebcfgDebug("node is pointing to webcfgdb->name %s, docname %s, dblen %zu, doclen %zu \n",webcfgdb->name, docname, strlen(webcfgdb->name), strlen(docname));
+		WebcfgDebug("node is pointing to webcfgdb->name %s, docname %s, dblen %zu, doclen %zu webcfgdb->root_string %s\n",webcfgdb->name, docname, strlen(webcfgdb->name), strlen(docname), webcfgdb->root_string);
 		if( strcmp(docname, webcfgdb->name) == 0)
 		{
 			webcfgdb->version = version;
-			WebcfgDebug("webcfgdb %s is updated to version %lu\n", docname, (long)webcfgdb->version);
+			if( strcmp("root", webcfgdb->name) == 0)
+			{
+				if(webcfgdb->root_string !=NULL)
+				{
+					WEBCFG_FREE(webcfgdb->root_string);
+					webcfgdb->root_string = NULL;
+				}
+				if(rootstr!=NULL)
+				{
+					webcfgdb->root_string = strdup(rootstr);
+				}
+			}
+			WebcfgDebug("webcfgdb %s is updated to version %lu webcfgdb->root_string %s\n", docname, (long)webcfgdb->version, webcfgdb->root_string);
 			pthread_mutex_unlock (&webconfig_db_mut);
 			WebcfgDebug("mutex_unlock if docname is webcfgdb name\n");
 			return WEBCFG_SUCCESS;
@@ -641,7 +670,7 @@ void delete_tmp_doc_list()
 int process_webcfgdbparams( webconfig_db_data_t *e, msgpack_object_map *map )
 {
     int left = map->size;
-    uint8_t objects_left = 0x02;
+    uint8_t objects_left = 0x03;
     msgpack_object_kv *p;
 
     p = map->ptr;
@@ -675,16 +704,27 @@ int process_webcfgdbparams( webconfig_db_data_t *e, msgpack_object_map *map )
                 {
                     e->name = strndup( p->val.via.str.ptr, p->val.via.str.size );
 		    //WebcfgDebug("e->name is %s\n", e->name);
-                    objects_left &= ~(1 << 0);
+                    objects_left &= ~(1 << 2);
 		    //WebcfgDebug("objects_left after name %d\n", objects_left);
+                }
+		else if( 0 == match(p, "root_string") )
+                {
+                    e->root_string = strndup( p->val.via.str.ptr, p->val.via.str.size );
+		    //WebcfgDebug("e->root_string is %s\n", e->root_string);
+                    objects_left &= ~(1 << 0);
+		    //WebcfgDebug("objects_left after root_string %d\n", objects_left);
                 }
             }
         }
         p++;
     }
-
     if( 1 & objects_left )
     {
+	if( (1 << 0) & objects_left )
+	{
+		WebcfgDebug("Skip optional root_string element\n");
+		objects_left &= ~(1 << 0);
+	}
     }
     else
     {
@@ -815,7 +855,14 @@ char * get_DB_BLOB_base64()
 		{
 			for(k = 0;k< bd->entries_count ; k++)
 			{
-				WebcfgInfo("Blob bd->entries[%zu].name %s, version: %lu, status: %s, error_details: %s, error_code: %d\n", k, bd->entries[k].name, (long)bd->entries[k].version, bd->entries[k].status, bd->entries[k].error_details, bd->entries[k].error_code );
+				if(bd->entries[k].root_string !=NULL)
+				{
+					WebcfgInfo("Blob bd->entries[%zu].name %s, version: %lu, status: %s, error_details: %s, error_code: %d root_string: %s\n", k, bd->entries[k].name, (long)bd->entries[k].version, bd->entries[k].status, bd->entries[k].error_details, bd->entries[k].error_code, bd->entries[k].root_string );
+				}
+				else
+				{
+					WebcfgInfo("Blob bd->entries[%zu].name %s, version: %lu, status: %s, error_details: %s, error_code: %d\n", k, bd->entries[k].name, (long)bd->entries[k].version, bd->entries[k].status, bd->entries[k].error_details, bd->entries[k].error_code );
+				}
 			}
 
 		}
@@ -874,7 +921,7 @@ int process_webcfgdbblobparams( blob_data_t *e, msgpack_object_map *map )
                         e->error_code = (uint16_t) p->val.via.u64;
 			//WebcfgDebug("e->version is %d\n", e->error_code);
                     }
-                    objects_left &= ~(1 << 3);
+                    objects_left &= ~(1 << 4);
                 
                 }
             }
@@ -898,13 +945,22 @@ int process_webcfgdbblobparams( blob_data_t *e, msgpack_object_map *map )
 		     //WebcfgDebug("e->error_details is %s\n", e->error_details);
                      objects_left &= ~(1 << 2);
                 }
+		else if(0 == match(p, "root_string") )
+                {
+                     e->root_string = strndup( p->val.via.str.ptr, p->val.via.str.size );
+		     //WebcfgDebug("e->root_string is %s\n", e->root_string);
+                     objects_left &= ~(1 << 3);
+                }
             }
         }
         p++;
     }
-
     if( 1 & objects_left )
     {
+    }
+    else if( (1 << 3) & objects_left ) {
+	    WebcfgDebug("Skip optional root_string element\n");
+        objects_left &= ~(1 << 3);
     }
     else
     {
