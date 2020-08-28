@@ -332,7 +332,7 @@ int handlehttpResponse(long response_code, char *webConfigData, int retry_count,
 			}
 			else
 			{
-				WebcfgInfo("root webConfigData processed, check apply status events\n");
+				WebcfgDebug("root webConfigData processed, check apply status events\n");
 				return 1;
 			}
 		}

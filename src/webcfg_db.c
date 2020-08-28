@@ -486,7 +486,14 @@ void checkDBList(char *docname, uint32_t version, char* rootstr)
 			webcfgdb->next = NULL;
 
 			addToDBList(webcfgdb);
-			WebcfgInfo("webcfgdb->name added to DB %s webcfgdb->version %lu webcfgdb->root_string %s\n",webcfgdb->name, (long)webcfgdb->version, webcfgdb->root_string);
+			if(webcfgdb->root_string !=NULL)
+			{
+				WebcfgInfo("webcfgdb->name added to DB %s webcfgdb->version %lu webcfgdb->root_string %s\n",webcfgdb->name, (long)webcfgdb->version, webcfgdb->root_string);
+			}
+			else
+			{
+				WebcfgInfo("webcfgdb->name added to DB %s webcfgdb->version %lu\n",webcfgdb->name, (long)webcfgdb->version);
+			}
 		}
 		else
 		{
@@ -848,7 +855,14 @@ char * get_DB_BLOB_base64()
 		{
 			for(k = 0;k< bd->entries_count ; k++)
 			{
-				WebcfgInfo("Blob bd->entries[%zu].name %s, version: %lu, status: %s, error_details: %s, error_code: %d root_string: %s\n", k, bd->entries[k].name, (long)bd->entries[k].version, bd->entries[k].status, bd->entries[k].error_details, bd->entries[k].error_code, bd->entries[k].root_string );
+				if(bd->entries[k].root_string !=NULL)
+				{
+					WebcfgInfo("Blob bd->entries[%zu].name %s, version: %lu, status: %s, error_details: %s, error_code: %d root_string: %s\n", k, bd->entries[k].name, (long)bd->entries[k].version, bd->entries[k].status, bd->entries[k].error_details, bd->entries[k].error_code, bd->entries[k].root_string );
+				}
+				else
+				{
+					WebcfgInfo("Blob bd->entries[%zu].name %s, version: %lu, status: %s, error_details: %s, error_code: %d\n", k, bd->entries[k].name, (long)bd->entries[k].version, bd->entries[k].status, bd->entries[k].error_details, bd->entries[k].error_code );
+				}
 			}
 
 		}
