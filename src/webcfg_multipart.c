@@ -844,17 +844,21 @@ size_t headr_callback(char *buffer, size_t size, size_t nitems)
 			while( header_value != NULL )
 			{
 				header_value = strtok(NULL, ":");
-				if(header_value !=NULL)
+				if(header_value != NULL)
 				{
 					strncpy(header_str, header_value, sizeof(header_str)-1);
 					stripspaces(header_str, &final_header);
+					if(g_contentLen != NULL)
+					{
+						WEBCFG_FREE(g_contentLen);						
+					}
 					g_contentLen = strdup(final_header);
 				}
 			}
 			WebcfgDebug("g_contentLen is %s\n", g_contentLen);
 		}
 	}
-	WebcfgInfo("header_callback size %zu\n", size);
+	WebcfgDebug("header_callback size %zu\n", size);
 	return nitems;
 }
 
