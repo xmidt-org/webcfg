@@ -357,22 +357,18 @@ void* processSubdocEvents()
 					WebcfgInfo("Crash EVENT: %s,%d,%lu\n", eventParam->subdoc_name,0, (long)eventParam->version);
 					WebcfgInfo("Component restarted after crash, re-send blob.\n");
 					uint32_t tmpVersion = 0;
-					if(eventParam->version !=0)
-					{
-						docVersion = eventParam->version;
-					}
-					else
-					{
-						docVersion = getDocVersionFromTmpList(subdoc_node, eventParam->subdoc_name);
-					}
-					WebcfgDebug("docVersion is %lu\n", (long)docVersion);
 
 					//If version in event and tmp are not matching, re-send blob to retry.
 					if(checkDBVersion(eventParam->subdoc_name, eventParam->version) !=WEBCFG_SUCCESS)
 					{
 						WebcfgInfo("DB and event version are not same, check tmp list\n");
 						tmpVersion = getDocVersionFromTmpList(subdoc_node, eventParam->subdoc_name);
-						if(tmpVersion != eventParam->version)
+						if (tmpVersion == 0)
+						{
+							//tmpVersion=0 indicate already doc is applied & doc is not available in tmp list
+							WebcfgInfo("tmpVersion is 0, DB already in latest version\n");
+						}
+						else if(tmpVersion != eventParam->version)
 						{
 							WebcfgInfo("tmp list has new version %lu for doc %s, retry\n", (long)tmpVersion, eventParam->subdoc_name);
 							rs = retryMultipartSubdoc(subdoc_node, eventParam->subdoc_name);
