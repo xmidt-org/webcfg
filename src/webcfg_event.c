@@ -876,7 +876,7 @@ WEBCFG_STATUS retryMultipartSubdoc(webconfig_tmp_data_t *docNode, char *docName)
 						mapWdmpStatusToStatusMessage(errd, errDetails);
 						WebcfgDebug("The errDetails value is %s\n",errDetails);
 
-						if((ccspStatus == 192) || (ccspStatus == 204) || (ccspStatus == 191))
+						if((ccspStatus == 192) || (ccspStatus == 204) || (ccspStatus == 191) || (ccspStatus == 193) || (ccspStatus == 190))
 						{
 							WebcfgError("ccspStatus is crash %d\n", ccspStatus);
 							snprintf(result,MAX_VALUE_LEN,"failed_retrying:%s", errDetails);
@@ -944,10 +944,13 @@ WEBCFG_STATUS checkAndUpdateTmpRetryCount(webconfig_tmp_data_t *temp, char *docn
 			if(temp->retry_count >= MAX_APPLY_RETRY_COUNT)
 			{
 				WebcfgInfo("Apply retry_count %d has reached max limit for doc %s\n", temp->retry_count, docname);
-				//send max retry notification to cloud.
-				addWebConfgNotifyMsg(temp->name, temp->version, "failed", "max_retry_reached", get_global_transID(),0,"status",0, NULL, 200);
-				WebcfgDebug("update max_retry_reached to tmp list: ccsp error code %hu\n", temp->error_code);
-				updateTmpList(temp, temp->name, temp->version, "failed", "max_retry_reached", temp->error_code, 0, 1);
+				//send max retry notification to cloud only one time on the max retry attempt.
+				if((temp->retry_count == MAX_APPLY_RETRY_COUNT) && (strcmp(temp->error_details, "max_retry_reached") !=0))
+				{
+					addWebConfgNotifyMsg(temp->name, temp->version, "failed", "max_retry_reached", get_global_transID(),0,"status",0, NULL, 200);
+					WebcfgDebug("update max_retry_reached to tmp list: ccsp error code %hu\n", temp->error_code);
+					updateTmpList(temp, temp->name, temp->version, "failed", "max_retry_reached", temp->error_code, 0, 1);
+				}
 				return WEBCFG_FAILURE;
 			}
 			temp->retry_count++;
