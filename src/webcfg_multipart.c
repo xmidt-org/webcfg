@@ -658,10 +658,10 @@ WEBCFG_STATUS processMsgpackSubdoc(char *transaction_id)
 							WebcfgDebug("The result is %s\n",result);
 							updateTmpList(subdoc_node, mp->entries[m].name_space, mp->entries[m].etag, "failed", result, ccspStatus, 0, 1);
 							addWebConfgNotifyMsg(mp->entries[m].name_space, mp->entries[m].etag, "failed", result, trans_id,0,"status",ccspStatus, NULL, 200);
-							WebcfgInfo("checkRootUpdate\n");
-							if(checkRootUpdate() == WEBCFG_SUCCESS)
+							WebcfgDebug("checkRootUpdate\n");
+							if((ccspStatus == 204 && subdocStatus != WEBCFG_SUCCESS) && (checkRootUpdate() == WEBCFG_SUCCESS))
 							{
-								WebcfgInfo("updateRootVersionToDB\n");
+								WebcfgDebug("updateRootVersionToDB\n");
 								updateRootVersionToDB();
 								addNewDocEntry(get_successDocCount());
 								if(NULL != reqParam)
@@ -672,7 +672,7 @@ WEBCFG_STATUS processMsgpackSubdoc(char *transaction_id)
 								break;
 							}
 
-							WebcfgInfo("the retry flag value is %d\n", get_doc_fail());
+							WebcfgDebug("the retry flag value is %d\n", get_doc_fail());
 						}
 						else
 						{
@@ -1759,8 +1759,8 @@ void updateRootVersionToDB()
 
 	WebcfgDebug("The Etag is %lu\n",(long)version );
 	//Delete tmp queue root as all docs are applied
-	WebcfgInfo("Delete tmp queue root as all docs are applied\n");
-	WebcfgInfo("root version to delete is %lu\n", (long)version);
+	WebcfgDebug("Delete tmp queue root as all docs are applied\n");
+	WebcfgDebug("root version to delete is %lu\n", (long)version);
 	dStatus = deleteFromTmpList("root");
 	if(dStatus == 0)
 	{
