@@ -1782,15 +1782,16 @@ void failedDocsRetry()
 
 	while (NULL != temp)
 	{
-		if((temp->error_code == CCSP_CRASH_STATUS_CODE) || (temp->error_code == 204 && (temp->error_details != NULL && strstr(temp->error_details, "doc_unsupported") == NULL)) || (temp->error_code == 191))
+		if((temp->error_code == CCSP_CRASH_STATUS_CODE) || (temp->error_code == 204 && (temp->error_details != NULL && strstr(temp->error_details, "doc_unsupported") == NULL)) || (temp->error_code == 191) || (temp->error_code == 193) || (temp->error_code == 190))
 		{
+			WebcfgInfo("Retrying for subdoc %s error_code %lu\n", temp->name, (long)temp->error_code);
 			if(retryMultipartSubdoc(temp, temp->name) == WEBCFG_SUCCESS)
 			{
-				WebcfgInfo("The subdoc %s set is success\n", temp->name);
+				WebcfgDebug("The subdoc %s set is success\n", temp->name);
 			}
 			else
 			{
-				WebcfgError("The subdoc %s set is failed\n", temp->name);
+				WebcfgDebug("The subdoc %s set is failed\n", temp->name);
 			}
 		}
 		else

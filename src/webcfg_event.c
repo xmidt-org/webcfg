@@ -830,10 +830,15 @@ WEBCFG_STATUS retryMultipartSubdoc(webconfig_tmp_data_t *docNode, char *docName)
 						}
 						else
 						{
-							WebcfgError("blob type is incorrect\n");
-							WEBCFG_FREE(reqParam);
-							webcfgparam_destroy( pm );
-							return rv;
+							if(pm->entries[i].name !=NULL)
+							{
+								reqParam[i].name = strdup(pm->entries[i].name);
+							}
+							if(pm->entries[i].value !=NULL)
+							{
+								reqParam[i].value = strdup(pm->entries[i].value);
+							}
+							reqParam[i].type = pm->entries[i].type;
 						}
 			                }
 					WebcfgInfo("Request:> param[%d].name = %s, type = %d\n",i,reqParam[i].name,reqParam[i].type);
