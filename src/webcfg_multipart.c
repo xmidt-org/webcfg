@@ -642,7 +642,7 @@ WEBCFG_STATUS processMsgpackSubdoc(char *transaction_id)
 						WebcfgDebug("The errDetails value is %s\n",errDetails);
 
 						//Update error_details to tmp list and send failure notification to cloud.
-						if((ccspStatus == CCSP_CRASH_STATUS_CODE) || (ccspStatus == 204) || (ccspStatus == 191))
+						if((ccspStatus == CCSP_CRASH_STATUS_CODE) || (ccspStatus == 204) || (ccspStatus == 191) || (ccspStatus == 193) || (ccspStatus == 190))
 						{
 							WEBCFG_STATUS subdocStatus = isSubDocSupported(mp->entries[m].name_space);
 							WebcfgDebug("ccspStatus is %d\n", ccspStatus);
