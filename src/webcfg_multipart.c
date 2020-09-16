@@ -634,6 +634,11 @@ WEBCFG_STATUS processMsgpackSubdoc(char *transaction_id)
 					}
 					else
 					{
+						if(ccspStatus == 9005)
+						{
+							ccspStatus = 204;
+						}
+
 						WebcfgError("setValues Failed. ccspStatus : %d\n", ccspStatus);
 						errd = mapStatus(ccspStatus);
 						WebcfgDebug("The errd value is %d\n",errd);
