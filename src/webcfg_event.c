@@ -874,11 +874,6 @@ WEBCFG_STATUS retryMultipartSubdoc(webconfig_tmp_data_t *docNode, char *docName)
 					}
 					else
 					{
-						if(ccspStatus == 9005)
-						{
-							WebcfgDebug("The ccspstatus is %d\n",ccspStatus);
-							ccspStatus = 204;
-						}
 
 						WebcfgError("retryMultipartSubdoc setValues Failed. ccspStatus : %d\n", ccspStatus);
 						errd = mapStatus(ccspStatus);

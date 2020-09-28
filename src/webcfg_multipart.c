@@ -466,6 +466,7 @@ WEBCFG_STATUS processMsgpackSubdoc(char *transaction_id)
 	webcfgparam_t *pm = NULL;
 	int success_count = 0;
 	WEBCFG_STATUS addStatus =0;
+	WEBCFG_STATUS subdocStatus = 0;
 	//char * blob_data = NULL;
         //size_t blob_len = -1 ;
 	char * trans_id = NULL;
@@ -636,10 +637,13 @@ WEBCFG_STATUS processMsgpackSubdoc(char *transaction_id)
 					{
 						if(ccspStatus == 9005)
 						{
-							WebcfgDebug("The ccspstatus is %d\n",ccspStatus);
-							ccspStatus = 204;
+							subdocStatus = isSubDocSupported(mp->entries[m].name_space);
+							if(subdocStatus != WEBCFG_SUCCESS)
+							{
+								WebcfgInfo("The ccspstatus is %d\n",ccspStatus);
+								ccspStatus = 204;
+							}
 						}
-
 						WebcfgError("setValues Failed. ccspStatus : %d\n", ccspStatus);
 						errd = mapStatus(ccspStatus);
 						WebcfgDebug("The errd value is %d\n",errd);
@@ -650,7 +654,7 @@ WEBCFG_STATUS processMsgpackSubdoc(char *transaction_id)
 						//Update error_details to tmp list and send failure notification to cloud.
 						if((ccspStatus == CCSP_CRASH_STATUS_CODE) || (ccspStatus == 204) || (ccspStatus == 191) || (ccspStatus == 193) || (ccspStatus == 190))
 						{
-							WEBCFG_STATUS subdocStatus = isSubDocSupported(mp->entries[m].name_space);
+							subdocStatus = isSubDocSupported(mp->entries[m].name_space);
 							WebcfgDebug("ccspStatus is %d\n", ccspStatus);
 							if(ccspStatus == 204 && subdocStatus != WEBCFG_SUCCESS)
 							{
