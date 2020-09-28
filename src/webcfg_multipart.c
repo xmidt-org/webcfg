@@ -636,6 +636,7 @@ WEBCFG_STATUS processMsgpackSubdoc(char *transaction_id)
 					{
 						if(ccspStatus == 9005)
 						{
+							WebcfgDebug("The ccspstatus is %d\n",ccspStatus);
 							ccspStatus = 204;
 						}
 
