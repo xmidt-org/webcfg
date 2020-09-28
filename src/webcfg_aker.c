@@ -69,6 +69,30 @@ static void set_global_status(char *status);
 /*                             External Functions                             */
 /*----------------------------------------------------------------------------*/
 
+pthread_cond_t *get_global_client_con(void)
+{
+    return &client_con;
+}
+
+pthread_mutex_t *get_global_client_mut(void)
+{
+    return &client_mut;
+}
+
+int akerwait__ (unsigned int secs)
+{
+  int shutdown_flag;
+  struct timespec svc_timer;
+
+  clock_gettime(CLOCK_REALTIME, &svc_timer);
+  svc_timer.tv_sec += secs;
+  pthread_mutex_lock(get_global_sync_mutex());
+  pthread_cond_timedwait (get_global_sync_condition(), get_global_sync_mutex(), &svc_timer);
+  shutdown_flag = get_global_shutdown();
+  pthread_mutex_unlock (get_global_sync_mutex());
+  return shutdown_flag;
+}
+
 int send_aker_blob(char *paramName, char *blob, uint32_t blobSize, uint16_t docTransId, int version)
 {
 	WebcfgDebug("Aker blob is %s\n",blob);
@@ -139,7 +163,11 @@ int send_aker_blob(char *paramName, char *blob, uint32_t blobSize, uint16_t docT
 			{
 				WebcfgError("Failed to send blob: '%s', retrying ...\n",libparodus_strerror(sendStatus));
 				WebcfgInfo("send_aker_blob backoffRetryTime %d seconds\n", backoffRetryTime);
-				sleep(backoffRetryTime);
+				if (akerwait__ (backoffRetryTime))
+				{
+					WebcfgInfo("g_shutdown true, break send_aker_blob failure\n");
+					break;
+				}
 				c++;
 				retry_count++;
 			}
@@ -362,6 +390,12 @@ static char *get_global_status()
 
 	while (!wakeFlag)
 	{
+		if (get_global_shutdown())
+		{
+			WebcfgInfo("g_shutdown in client consumer thread\n");
+			pthread_mutex_unlock (&client_mut);
+			break;
+		}
 		rv = pthread_cond_timedwait(&client_con, &client_mut, &ts);
 		WebcfgDebug("After pthread_cond_timedwait\n");
 		if (rv == ETIMEDOUT)

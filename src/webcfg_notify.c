@@ -52,6 +52,16 @@ pthread_t get_global_notify_threadid()
     return NotificationThreadId;
 }
 
+pthread_cond_t *get_global_notify_con(void)
+{
+    return &notify_con;
+}
+
+pthread_mutex_t *get_global_notify_mut(void)
+{
+    return &notify_mut;
+}
+
 //To handle webconfig notification tasks
 void initWebConfigNotifyTask()
 {
@@ -157,7 +167,7 @@ void addWebConfgNotifyMsg(char *docname, uint32_t version, char *status, char *e
 //Notify thread function waiting for notify msgs
 void* processWebConfgNotification()
 {
-	pthread_detach(pthread_self());
+	//pthread_detach(pthread_self());
 	char device_id[32] = { '\0' };
 	cJSON *notifyPayload = NULL;
 	char  * stringifiedNotifyPayload = NULL;
@@ -251,6 +261,12 @@ void* processWebConfgNotification()
 		}
 		else
 		{
+			if (get_global_shutdown())
+			{
+				WebcfgInfo("g_shutdown in notify consumer thread\n");
+				pthread_mutex_unlock (&notify_mut);
+				break;
+			}
 			WebcfgDebug("Before pthread cond wait in notify thread\n");
 			pthread_cond_wait(&notify_con, &notify_mut);
 			pthread_mutex_unlock (&notify_mut);

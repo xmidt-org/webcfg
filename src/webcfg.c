@@ -32,6 +32,7 @@
 #include "webcfg_db.h"
 #include "webcfg_aker.h"
 #include "webcfg_metadata.h"
+#include "webcfg_event.h"
 /*----------------------------------------------------------------------------*/
 /*                                   Macros                                   */
 /*----------------------------------------------------------------------------*/
@@ -86,7 +87,6 @@ void initWebConfigMultipartTask(unsigned long status)
 void *WebConfigMultipartTask(void *status)
 {
 	pthread_detach(pthread_self());
-	int ret = 0;
 	int rv=0;
 	int forced_sync=0;
         int Status = 0;
@@ -94,9 +94,9 @@ void *WebConfigMultipartTask(void *status)
 	struct timespec ts;
 	Status = (unsigned long)status;
 
-	//start webconfig notification thread.
 	initWebcfgProperties(WEBCFG_PROPERTIES_FILE);
 
+	//start webconfig notification thread.
 	initWebConfigNotifyTask();
 	initWebConfigClient();
 	WebcfgInfo("initDB %s\n", WEBCFG_DB_FILE);
@@ -185,18 +185,43 @@ void *WebConfigMultipartTask(void *status)
 		pthread_mutex_unlock(&sync_mutex);
 
 	}
-	if(get_global_notify_threadid())
-	{
-		ret = pthread_join (get_global_notify_threadid(), NULL);
-		if(ret ==0)
-		{
-			WebcfgInfo("pthread_join returns success\n");
-		}
-		else
-		{
-			WebcfgError("Error joining thread\n");
-		}
-	}
+
+	/* release all active threads before shutdown */
+	pthread_mutex_lock (get_global_event_mut());
+	pthread_cond_signal (get_global_event_con());
+	pthread_mutex_unlock (get_global_event_mut());
+
+	pthread_mutex_lock (get_global_client_mut());
+	pthread_cond_signal (get_global_client_con());
+	pthread_mutex_unlock (get_global_client_mut());
+
+	pthread_mutex_lock (get_global_notify_mut());
+	pthread_cond_signal (get_global_notify_con());
+	pthread_mutex_unlock (get_global_notify_mut());
+
+	WebcfgDebug("event process thread: pthread_join\n");
+	JoinThread (get_global_process_threadid());
+
+	WebcfgDebug("notify thread: pthread_join\n");
+	JoinThread (get_global_notify_threadid());
+
+	WebcfgDebug("client thread: pthread_join\n");
+	JoinThread (get_global_client_threadid());
+
+	WebcfgDebug("event thread: pthread_join\n");
+	JoinThread (get_global_event_threadid());
+
+	reset_global_eventFlag();
+	set_doc_fail( 0);
+	reset_successDocCount();
+
+	delete_tmp_doc_list();
+	//delete db list also and mp cache, timer struct etc.
+
+	webcfgdb_destroy (get_global_db_node() );
+
+	multipart_destroy(get_global_mp());
+
 	WebcfgInfo("B4 pthread_exit\n");
 	pthread_exit(0);
 	WebcfgDebug("After pthread_exit\n");
@@ -518,3 +543,17 @@ int testUtility()
 	}
 }
 #endif
+
+void JoinThread (pthread_t threadId)
+{
+	int ret = 0;
+	ret = pthread_join (threadId, NULL);
+	if(ret ==0)
+	{
+		WebcfgInfo("pthread_join returns success\n");
+	}
+	else
+	{
+		WebcfgError("Error joining thread threadId %ld\n", threadId);
+	}
+}
