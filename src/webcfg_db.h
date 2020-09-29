@@ -26,7 +26,11 @@
 /*                                   Macros                                   */
 /*----------------------------------------------------------------------------*/
 #ifdef BUILD_YOCTO
+#if defined(RDK_PERSISTENT_PATH_BROADBAND)
 #define WEBCFG_DB_FILE 	    "/nvram/webconfig_db.bin"
+#elif defined(RDK_PERSISTENT_PATH_VIDEO)
+#define WEBCFG_DB_FILE 	    "/opt/webconfig_db.bin"
+#endif
 #else
 #define WEBCFG_DB_FILE 	    "/tmp/webconfig_db.bin"
 #endif
