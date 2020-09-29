@@ -154,7 +154,6 @@ void* parodus_receive()
 	int rtn;
 	wrp_msg_t *wrp_msg = NULL;
 
-	//pthread_detach(pthread_self());
 	while(1)
 	{
 		if (get_global_shutdown())

@@ -167,7 +167,6 @@ void addWebConfgNotifyMsg(char *docname, uint32_t version, char *status, char *e
 //Notify thread function waiting for notify msgs
 void* processWebConfgNotification()
 {
-	//pthread_detach(pthread_self());
 	char device_id[32] = { '\0' };
 	cJSON *notifyPayload = NULL;
 	char  * stringifiedNotifyPayload = NULL;
@@ -263,7 +262,7 @@ void* processWebConfgNotification()
 		{
 			if (get_global_shutdown())
 			{
-				WebcfgInfo("g_shutdown in notify consumer thread\n");
+				WebcfgDebug("g_shutdown in notify consumer thread\n");
 				pthread_mutex_unlock (&notify_mut);
 				break;
 			}

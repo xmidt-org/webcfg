@@ -124,7 +124,6 @@ void initEventHandlingTask()
 
 void* blobEventHandler()
 {
-	//pthread_detach(pthread_self());
 
 	int ret = 0;
 	char *expired_doc= NULL;
@@ -173,11 +172,10 @@ void* blobEventHandler()
 			}
 		}
 	}
-	WebcfgInfo("unregisterWebcfgEvent from event handler thread\n");
 	ret = unregisterWebcfgEvent();
 	if(ret)
 	{
-		WebcfgInfo("unregisterWebcfgEvent success\n");
+		WebcfgDebug("unregisterWebcfgEvent success\n");
 	}
 	else
 	{
@@ -468,7 +466,7 @@ void* processSubdocEvents()
 		{
 			if (get_global_shutdown())
 			{
-				WebcfgInfo("g_shutdown in event consumer thread\n");
+				WebcfgDebug("g_shutdown in event consumer thread\n");
 				pthread_mutex_unlock (&event_mut);
 				break;
 			}

@@ -392,8 +392,7 @@ static char *get_global_status()
 	{
 		if (get_global_shutdown())
 		{
-			WebcfgInfo("g_shutdown in client consumer thread\n");
-			pthread_mutex_unlock (&client_mut);
+			WebcfgDebug("g_shutdown in client consumer thread\n");
 			break;
 		}
 		rv = pthread_cond_timedwait(&client_con, &client_mut, &ts);
