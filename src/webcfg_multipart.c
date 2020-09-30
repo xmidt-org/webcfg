@@ -640,7 +640,7 @@ WEBCFG_STATUS processMsgpackSubdoc(char *transaction_id)
 							subdocStatus = isSubDocSupported(mp->entries[m].name_space);
 							if(subdocStatus != WEBCFG_SUCCESS)
 							{
-								WebcfgInfo("The ccspstatus is %d\n",ccspStatus);
+								WebcfgDebug("The ccspstatus is %d\n",ccspStatus);
 								ccspStatus = 204;
 							}
 						}
