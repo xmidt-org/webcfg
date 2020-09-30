@@ -1785,6 +1785,7 @@ void updateRootVersionToDB()
 	}
 	WebcfgDebug("free mp as all docs and root are updated to DB\n");
 	multipart_destroy(mp);
+	mp = NULL;
 	WebcfgDebug("After free mp\n");
 }
 
