@@ -167,7 +167,7 @@ void* blobEventHandler()
 			sleep(5);
 			if (get_global_shutdown())
 			{
-				WebcfgInfo("g_shutdown true, break timer expire events\n");
+				WebcfgDebug("g_shutdown true, break timer expire events\n");
 				break;
 			}
 		}

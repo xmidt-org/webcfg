@@ -158,7 +158,7 @@ void* parodus_receive()
 	{
 		if (get_global_shutdown())
 		{
-			WebcfgInfo("g_shutdown true, break libparodus_receive\n");
+			WebcfgDebug("g_shutdown true, break libparodus_receive\n");
 			break;
 		}
 		rtn = libparodus_receive (webcfg_instance, &wrp_msg, 2000);
