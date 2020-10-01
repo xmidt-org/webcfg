@@ -66,7 +66,25 @@ void handleConnectedClientNotify(char *status);
 /*----------------------------------------------------------------------------*/
 /*                             External Functions                             */
 /*----------------------------------------------------------------------------*/
+pthread_t get_global_event_threadid()
+{
+    return EventThreadId;
+}
 
+pthread_t get_global_process_threadid()
+{
+    return processThreadId;
+}
+
+pthread_cond_t *get_global_event_con(void)
+{
+    return &event_con;
+}
+
+pthread_mutex_t *get_global_event_mut(void)
+{
+    return &event_mut;
+}
 expire_timer_t * get_global_timer_node(void)	
 {
     expire_timer_t * tmp = NULL;
@@ -106,7 +124,6 @@ void initEventHandlingTask()
 
 void* blobEventHandler()
 {
-	pthread_detach(pthread_self());
 
 	int ret = 0;
 	char *expired_doc= NULL;
@@ -148,7 +165,21 @@ void* blobEventHandler()
 		{
 			WebcfgDebug("Waiting at timer loop of 5s\n");
 			sleep(5);
+			if (get_global_shutdown())
+			{
+				WebcfgDebug("g_shutdown true, break timer expire events\n");
+				break;
+			}
 		}
+	}
+	ret = unregisterWebcfgEvent();
+	if(ret)
+	{
+		WebcfgDebug("unregisterWebcfgEvent success\n");
+	}
+	else
+	{
+		WebcfgError("unregisterWebcfgEvent failed\n");
 	}
 	return NULL;
 }
@@ -433,6 +464,12 @@ void* processSubdocEvents()
 		}
 		else
 		{
+			if (get_global_shutdown())
+			{
+				WebcfgDebug("g_shutdown in event consumer thread\n");
+				pthread_mutex_unlock (&event_mut);
+				break;
+			}
 			WebcfgDebug("Before pthread cond wait in event consumer thread\n");
 			pthread_cond_wait(&event_con, &event_mut);
 			pthread_mutex_unlock (&event_mut);

@@ -243,9 +243,9 @@ void webcfgdb_destroy( webconfig_db_data_t *pm )
 	{
 		if( NULL != pm->name )
 		{
-			free( pm->name );
+			WEBCFG_FREE( pm->name );
 		}
-		free( pm );
+		WEBCFG_FREE( pm );
 	}
 }
 
@@ -356,6 +356,12 @@ int get_successDocCount()
 {
     return success_doc_count;
 }
+
+void reset_successDocCount()
+{
+    success_doc_count = 0;
+}
+
 
 int get_doc_fail()
 {

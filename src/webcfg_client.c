@@ -41,6 +41,7 @@
 /*                            File Scoped Variables                           */
 /*----------------------------------------------------------------------------*/
 libpd_instance_t webcfg_instance;
+static pthread_t clientthreadId=0;
 /*----------------------------------------------------------------------------*/
 /*                             Function Prototypes                            */
 /*----------------------------------------------------------------------------*/
@@ -61,15 +62,20 @@ libpd_instance_t get_webcfg_instance(void)
 {
     return webcfg_instance;
 }
+
+pthread_t get_global_client_threadid()
+{
+    return clientthreadId;
+}
+
 /*----------------------------------------------------------------------------*/
 /*                             Internal functions                             */
 /*----------------------------------------------------------------------------*/
 static void webConfigClientReceive()
 {
 	int err = 0;
-	pthread_t threadId;
 
-	err = pthread_create(&threadId, NULL, parodus_receive, NULL);
+	err = pthread_create(&clientthreadId, NULL, parodus_receive, NULL);
 	if (err != 0) 
 	{
 		WebcfgError("Error creating webConfigClientReceive thread :[%s]\n", strerror(err));
@@ -123,7 +129,11 @@ static void connect_parodus()
 			else
 			{
 				WebcfgError("Init for parodus failed: '%s'\n",libparodus_strerror(ret));
-				sleep(backoffRetryTime);
+				if (akerwait__ (backoffRetryTime))
+				{
+					WebcfgInfo("g_shutdown true, break connect_parodus wait\n");
+					break;
+				}
 				c++;
 
 				if(backoffRetryTime == max_retry_sleep)
@@ -144,9 +154,13 @@ void* parodus_receive()
 	int rtn;
 	wrp_msg_t *wrp_msg = NULL;
 
-	pthread_detach(pthread_self());
 	while(1)
 	{
+		if (get_global_shutdown())
+		{
+			WebcfgDebug("g_shutdown true, break libparodus_receive\n");
+			break;
+		}
 		rtn = libparodus_receive (webcfg_instance, &wrp_msg, 2000);
 		if (rtn == 1)
 		{

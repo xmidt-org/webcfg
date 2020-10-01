@@ -98,6 +98,16 @@ char * get_global_contentLen(void)
 {
 	return g_contentLen;
 }
+
+int get_global_eventFlag(void)
+{
+    return eventFlag;
+}
+
+void reset_global_eventFlag()
+{
+	eventFlag = 0;
+}
 /*----------------------------------------------------------------------------*/
 /*                             Function Prototypes                            */
 /*----------------------------------------------------------------------------*/
@@ -106,7 +116,6 @@ size_t headr_callback(char *buffer, size_t size, size_t nitems);
 void stripspaces(char *str, char **final_str);
 void createCurlHeader( struct curl_slist *list, struct curl_slist **header_list, int status, char ** trans_uuid);
 void parse_multipart(char *ptr, int no_of_bytes, multipartdocs_t *m);
-void multipart_destroy( multipart_t *m );
 void addToDBList(webconfig_db_data_t *webcfgdb);
 char* generate_trans_uuid();
 WEBCFG_STATUS processMsgpackSubdoc(char *transaction_id);
@@ -734,7 +743,11 @@ WEBCFG_STATUS processMsgpackSubdoc(char *transaction_id)
 					backoffRetryTime = (int) pow(2, c) -1;
 				}
 				WebcfgError("aker doc is pending, retrying in backoff interval %dsec\n", backoffRetryTime);
-				sleep(backoffRetryTime);
+				if (akerwait__ (backoffRetryTime))
+				{
+					WebcfgInfo("g_shutdown true, break checkAkerStatus\n");
+					break;
+				}
 				c++;
 			}
 			else
@@ -1569,16 +1582,16 @@ void multipart_destroy( multipart_t *m )
         size_t i=0;
         for( i = 0; i < m->entries_count-1; i++ ) {
            if( NULL != m->entries[i].name_space ) {
-                free( m->entries[i].name_space );
+                WEBCFG_FREE( m->entries[i].name_space );
             }
              if( NULL != m->entries[i].data ) {
-                free( m->entries[i].data );
+                WEBCFG_FREE( m->entries[i].data );
             }
         }
         if( NULL != m->entries ) {
-            free( m->entries );
+            WEBCFG_FREE( m->entries );
         }
-        free( m );
+        WEBCFG_FREE( m );
     }
 }
 
@@ -1772,6 +1785,7 @@ void updateRootVersionToDB()
 	}
 	WebcfgDebug("free mp as all docs and root are updated to DB\n");
 	multipart_destroy(mp);
+	mp = NULL;
 	WebcfgDebug("After free mp\n");
 }
 
