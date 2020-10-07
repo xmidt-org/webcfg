@@ -80,6 +80,15 @@ target_link_libraries (test_root -lcunit -lmsgpackc -lcurl -lpthread  -lm -luuid
 
 target_link_libraries (test_root gcov -Wl,--no-as-needed )
 
+#-------------------------------------------------------------------------------
+#   test_webcfgdb
+#-------------------------------------------------------------------------------
+add_test(NAME test_db COMMAND ${MEMORY_CHECK} ./test_db)
+add_executable(test_db test_db.c ../src/webcfg_db.c ../src/webcfg_pack.c ../src/webcfg_helpers.c ../src/webcfg_param.c)
+target_link_libraries (test_db -lcunit -lmsgpackc -lcurl -lpthread  -lm -luuid -ltrower-base64 -lwdmp-c -lcimplog -lcjson -lwrp-c -llibparodus -lnanomsg)
+
+target_link_libraries (test_db gcov -Wl,--no-as-needed )
+
 # Code coverage
 
 add_custom_target(coverage
