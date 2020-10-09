@@ -84,10 +84,10 @@ return;
 
 
 void isSubDocSupported(){
-return 0;};
+return 0;}
 
 void checkAkerStatus(){
-return 0;};
+return 0;}
 void updateAkerMaxRetry(webconfig_tmp_data_t *temp, char *docname)
 {
 UNUSED(temp);
@@ -162,9 +162,7 @@ UNUSED(timer);
 return;
 }
 
-
-
-void test_blobPack(){
+void test_blobPackUnpack(){
 	size_t webcfgdbBlobPackSize = -1;
     	void * data = NULL;
 	webconfig_db_data_t * webcfgdb = NULL;
@@ -173,13 +171,13 @@ void test_blobPack(){
     	webconfig_tmp_data_t *temp_data;
 	//db data	
 	webcfgdb = (webconfig_db_data_t *) malloc (sizeof(webconfig_db_data_t));
-	webcfgdb->name = strdup("root");
+	webcfgdb->name = strdup("wan");
 	webcfgdb->version = 2.0;
-	webcfgdb->root_string = strdup("rootstr");
+	webcfgdb->root_string = strdup("portmapping");
 	webcfgdb->next=NULL;
 	//temp data
 	webcfgtemp=(webconfig_tmp_data_t *)malloc(sizeof(webconfig_tmp_data_t));
-	webcfgtemp->name = strdup("root");
+	webcfgtemp->name = strdup("wan");
 	webcfgtemp->version = 2.0;
 	webcfgtemp->status = strdup("pending");
 	webcfgtemp->error_details = strdup("none");
@@ -187,35 +185,97 @@ void test_blobPack(){
 	webcfgtemp->trans_id = 0;
 	webcfgtemp->retry_count = 0;
 	webcfgtemp->next=NULL;
-	//webcfgdb_blob_pack
-	size_t len = 0;
+	//webcfgdb_blob_pack function
+	
  	webcfgdbBlobPackSize = webcfgdb_blob_pack(webcfgdb, webcfgtemp, &data);
-	//inside the function
+	msgpack_sbuffer sbuf;
 	db_data = webcfgdb;
     	temp_data = webcfgtemp;
+	CU_ASSERT_PTR_NOT_NULL(webcfgdbBlobPackSize);
 	CU_ASSERT_PTR_NOT_NULL(db_data);
 	CU_ASSERT_PTR_NOT_NULL(temp_data);
+	CU_ASSERT_PTR_NOT_NULL(db_data->root_string);
+	CU_ASSERT_PTR_NOT_NULL(sbuf.data);
+	
+	//decode data function
+	size_t len = 0;
 	blob_t * webcfgdb_blob = NULL;
 	webcfgdb_blob = (blob_t *)malloc(sizeof(blob_t));
 	webcfgdb_blob->data = (char *)data;
         webcfgdb_blob->len  = webcfgdbBlobPackSize;
 	printf("The webcfgdbBlobPackSize is : %ld\n",webcfgdb_blob->len);
-	CU_ASSERT_PTR_NOT_NULL(data);
-	CU_ASSERT_PTR_NOT_NULL(webcfgdbBlobPackSize);
-	//decode data
-	webconfig_db_data_t* dm = NULL;
-	dm = decodeData((void *)data, len);
-	printf("\ndm->name %s\n",dm->name);
-	printf("dm->version %d\n",dm->version);
-	CU_ASSERT_PTR_NOT_NULL(dm);
-	//CU_ASSERT_STRING_EQUAL(dm->name,"root");
-
+	CU_ASSERT_PTR_NOT_NULL(webcfgdb_blob->data);
+	CU_ASSERT_PTR_NOT_NULL(webcfgdb_blob->len);
+	data=webcfgdb_blob->data;
+	len=webcfgdb_blob->len;
+	blob_struct_t *bd = NULL;
+	//decodeBlobData
+	bd = decodeBlobData((void *)data, webcfgdbBlobPackSize );
+	//bd = decodeBlobData((void *)decodeMsg, size);
+	CU_ASSERT_PTR_NOT_NULL(bd);
+	printf("\nbd->entries.name %s\n",bd->entries[0].name);
+	printf("\nbd->entries.version %d\n",bd->entries[0].version);
+	printf("\nbd->entries.status %s\n",bd->entries[0].status);
+	printf("\nerror_details %s\n",bd->entries[0].error_details);
+	printf("\nbd->entries.error_code %d\n",bd->entries[0].error_code);
+	printf("\nbd->entries.root_string %s\n",bd->entries[0].root_string);
+	CU_ASSERT_STRING_EQUAL("wan",bd->entries[0].name);
+	CU_ASSERT_EQUAL(2.0,bd->entries[0].version);
+	CU_ASSERT_STRING_EQUAL("success",bd->entries[0].status);
+	CU_ASSERT_STRING_EQUAL("none",bd->entries[0].error_details);
+	CU_ASSERT_EQUAL(0,bd->entries[0].error_code);
+	CU_ASSERT_STRING_EQUAL("portmapping",bd->entries[0].root_string);
+	webcfgdbblob_destroy(bd);
+	
 }
+
+void test_PackUnpack(){
+	size_t webcfgdbPackSize = -1;
+     	void* data = NULL;
+	size_t count=1;
+	webconfig_db_data_t * webcfgdb = NULL;
+	webconfig_db_data_t *db_data;
+	//db data	
+	webcfgdb = (webconfig_db_data_t *) malloc (sizeof(webconfig_db_data_t));
+	webcfgdb->name = strdup("wan");
+	webcfgdb->version = 2.0;
+	webcfgdb->root_string = strdup("portmapping");
+	webcfgdb->next=NULL;
+	
+	//webcfgdb_blob_pack function
+	
+ 	webcfgdbPackSize = webcfgdb_pack(webcfgdb, &data, count);
+	printf("\nsreee after pack");
+	msgpack_sbuffer sbuf;
+	db_data = webcfgdb;
+	CU_ASSERT_PTR_NOT_NULL(webcfgdbPackSize);
+	CU_ASSERT_PTR_NOT_NULL(db_data);
+	CU_ASSERT_PTR_NOT_NULL(db_data->root_string);
+	CU_ASSERT_PTR_NOT_NULL(sbuf.data);
+	printf("\nsrrreee data %s",data);
+	printf("\npaccckk sizeeeeeeee %d",webcfgdbPackSize);
+	webconfig_db_data_t* dm = NULL;
+	
+	dm = decodeData((void *)data, webcfgdbPackSize );
+	CU_ASSERT_PTR_NOT_NULL(dm);
+	printf("\ndmmmmm %d",dm);
+	printf("\ndm name %s\n",dm->name);
+	printf("\ndm version %d\n",dm->version);
+	printf("\ndm rootstring %s\n",dm->root_string);
+	//CU_ASSERT_STRING_EQUAL("wan",dm->name);
+	////CU_ASSERT_EQUAL(2.0,dm->version);
+	//CU_ASSERT_STRING_EQUAL("portmapping",dm->root_string);
+	webcfgdb_destroy (dm );
+	
+}
+
 
 void add_suites( CU_pSuite *suite )
 {
     *suite = CU_add_suite( "tests", NULL, NULL );
-    CU_add_test( *suite, "test_blobPack", test_blobPack);
+    CU_add_test( *suite, "test_blobPackUnpack", test_blobPackUnpack);
+    CU_add_test( *suite, "test_PackUnpack", test_PackUnpack);
+   
 }
 
 /*----------------------------------------------------------------------------*/
