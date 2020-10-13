@@ -316,6 +316,16 @@ AKER_STATUS processAkerSubdoc(webconfig_tmp_data_t *docNode, int akerIndex)
 							WEBCFG_FREE(appended_doc);
 						}
 						updateTmpList(docNode, gmp->entries[m].name_space, gmp->entries[m].etag, "pending", "none", 0, doc_transId, 0);
+
+						//Start event handler thread to process aker events if it is not started already.
+						WebcfgDebug("get_global_eventFlag is %d\n", get_global_eventFlag());
+						if(get_global_eventFlag() == 0)
+						{
+							WebcfgInfo("starting initEventHandlingTask during aker processing\n");
+							initEventHandlingTask();
+							processWebcfgEvents();
+							set_global_eventFlag();
+						}
 					}
 					else
 					{

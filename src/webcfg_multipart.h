@@ -61,6 +61,7 @@ void getRootDocVersionFromDBCache(uint32_t *rt_version, char **rt_string, int *s
 void derive_root_doc_version_string(char **rootVersion, uint32_t *root_ver, int status);
 void reset_global_eventFlag();
 int get_global_eventFlag(void);
+void set_global_eventFlag();
 pthread_t get_global_process_threadid();
 void multipart_destroy( multipart_t *m );
 #endif
