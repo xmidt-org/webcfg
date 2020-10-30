@@ -80,6 +80,26 @@ target_link_libraries (test_root -lcunit -lmsgpackc -lcurl -lpthread  -lm -luuid
 
 target_link_libraries (test_root gcov -Wl,--no-as-needed )
 
+#-------------------------------------------------------------------------------
+#   test_webcfgdb
+#-------------------------------------------------------------------------------
+add_test(NAME test_db COMMAND ${MEMORY_CHECK} ./test_db)
+add_executable(test_db test_db.c ../src/webcfg_db.c ../src/webcfg_pack.c ../src/webcfg_helpers.c ../src/webcfg_param.c ../src/webcfg_multipart.c)
+target_link_libraries (test_db -lcunit -lmsgpackc -lcurl -lpthread  -lm -luuid -ltrower-base64 -lwdmp-c -lcimplog -lcjson -lwrp-c -llibparodus -lnanomsg)
+
+target_link_libraries (test_db gcov -Wl,--no-as-needed )
+
+#-------------------------------------------------------------------------------
+#   test_multipart_unittest
+#-------------------------------------------------------------------------------
+add_test(NAME test_multipart_unittest COMMAND ${MEMORY_CHECK} ./test_multipart_unittest)
+add_executable(test_multipart_unittest test_multipart_unittest.c ../src/webcfg_param.c ../src/webcfg_multipart.c ../src/webcfg_helpers.c ../src/webcfg.c ../src/webcfg_auth.c ../src/webcfg_notify.c ../src/webcfg_db.c ../src/webcfg_pack.c ../src/webcfg_blob.c ../src/webcfg_event.c ../src/webcfg_generic.c ../src/webcfg_client.c ../src/webcfg_aker.c ../src/webcfg_metadata.c)
+target_link_libraries (test_multipart_unittest -lcunit -lmsgpackc -lcurl -lpthread  -lm -luuid -ltrower-base64 -lwdmp-c -lcimplog -lcjson -llibparodus -lnanomsg -lwrp-c)
+
+target_link_libraries (test_multipart_unittest gcov -Wl,--no-as-needed )
+
+
+
 # Code coverage
 
 add_custom_target(coverage
@@ -87,10 +107,17 @@ COMMAND lcov -q --capture --directory
 ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/test_webcfgpack.dir/__/src --output-file test_webcfgpack.info
 COMMAND lcov -q --capture --directory 
 ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/test_webcfgparam.dir/__/src --output-file test_webcfgparam.info
+COMMAND lcov -q --capture --directory 
+${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/test_webcfgdb.dir/__/src --output-file test_webcfgdb.info
+COMMAND lcov -q --capture --directory 
+${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/test_multipart_unittest.dir/__/src --output-file test_multipart_unittest.info
+COMMAND lcov -q --capture --directory 
 
 COMMAND lcov
 -a test_webcfgparam.info
 -a test_webcfgpack.info
+-a test_webcfgdb.info
+-a test_multipart_unittest.info
 --output-file coverage.info
 
 COMMAND genhtml coverage.info

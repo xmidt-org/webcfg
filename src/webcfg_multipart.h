@@ -64,4 +64,6 @@ int get_global_eventFlag(void);
 void set_global_eventFlag();
 pthread_t get_global_process_threadid();
 void multipart_destroy( multipart_t *m );
+char *replaceMacWord(const char *s, const char *macW, const char *deviceMACW);
+void createCurlHeader( struct curl_slist *list, struct curl_slist **header_list, int status, char ** trans_uuid);
 #endif
