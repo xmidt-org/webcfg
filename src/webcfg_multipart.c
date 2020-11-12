@@ -84,6 +84,15 @@ void set_global_mp(multipart_t *new)
 {
 	mp = new;
 }
+int get_global_eventFlag(void)
+{
+    return eventFlag;
+}
+
+void reset_global_eventFlag()
+{
+	eventFlag = 0;
+}
 /*----------------------------------------------------------------------------*/
 /*                             Function Prototypes                            */
 /*----------------------------------------------------------------------------*/
@@ -92,7 +101,6 @@ size_t headr_callback(char *buffer, size_t size, size_t nitems);
 void stripspaces(char *str, char **final_str);
 void createCurlHeader( struct curl_slist *list, struct curl_slist **header_list, int status, char ** trans_uuid);
 void parse_multipart(char *ptr, int no_of_bytes, multipartdocs_t *m);
-void multipart_destroy( multipart_t *m );
 void addToDBList(webconfig_db_data_t *webcfgdb);
 char* generate_trans_uuid();
 WEBCFG_STATUS processMsgpackSubdoc(char *transaction_id);
@@ -507,12 +515,18 @@ WEBCFG_STATUS processMsgpackSubdoc(char *transaction_id)
 					{
 						char *appended_doc = NULL;
 						appended_doc = webcfg_appendeddoc( mp->entries[m].name_space, mp->entries[m].etag, pm->entries[i].value, pm->entries[i].value_size, &doc_transId);
-						WebcfgDebug("webcfg_appendeddoc doc_transId : %hu\n", doc_transId);
-						reqParam[i].name = strdup(pm->entries[i].name);
-						WebcfgDebug("appended_doc length: %zu\n", strlen(appended_doc));
-						reqParam[i].value = strdup(appended_doc);
-						reqParam[i].type = WDMP_BASE64;
-						WEBCFG_FREE(appended_doc);
+						if(appended_doc != NULL)
+						{
+							WebcfgDebug("webcfg_appendeddoc doc_transId : %hu\n", doc_transId);
+							if(pm->entries[i].name !=NULL)
+							{
+								reqParam[i].name = strdup(pm->entries[i].name);
+							}
+							WebcfgDebug("appended_doc length: %zu\n", strlen(appended_doc));
+							reqParam[i].value = strdup(appended_doc);
+							reqParam[i].type = WDMP_BASE64;
+							WEBCFG_FREE(appended_doc);
+						}
 						//Update doc trans_id to validate events.
 						WebcfgDebug("Update doc trans_id to validate events.\n");
 						updateTmpList(subdoc_node, mp->entries[m].name_space, mp->entries[m].etag, "pending", "none", 0, doc_transId, 0);
@@ -527,8 +541,14 @@ WEBCFG_STATUS processMsgpackSubdoc(char *transaction_id)
 					}
 					else
 					{
-						reqParam[i].name = strdup(pm->entries[i].name);
-						reqParam[i].value = strdup(pm->entries[i].value);
+						if(pm->entries[i].name !=NULL)
+						{
+							reqParam[i].name = strdup(pm->entries[i].name);
+						}
+						if(pm->entries[i].value !=NULL)
+						{
+							reqParam[i].value = strdup(pm->entries[i].value);
+						}
 						reqParam[i].type = pm->entries[i].type;
 					}
                                 }
@@ -1269,16 +1289,16 @@ void multipart_destroy( multipart_t *m )
         size_t i=0;
         for( i = 0; i < m->entries_count-1; i++ ) {
            if( NULL != m->entries[i].name_space ) {
-                free( m->entries[i].name_space );
+                WEBCFG_FREE( m->entries[i].name_space );
             }
              if( NULL != m->entries[i].data ) {
-                free( m->entries[i].data );
+                WEBCFG_FREE( m->entries[i].data );
             }
         }
         if( NULL != m->entries ) {
-            free( m->entries );
+            WEBCFG_FREE( m->entries );
         }
-        free( m );
+        WEBCFG_FREE( m );
     }
 }
 
@@ -1467,6 +1487,7 @@ void updateRootVersionToDB()
 	}
 	WebcfgDebug("free mp as all docs and root are updated to DB\n");
 	multipart_destroy(mp);
+	mp = NULL;
 	WebcfgDebug("After free mp\n");
 }
 
