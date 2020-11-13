@@ -224,7 +224,7 @@ webconfig_db_data_t* decodeData(const void * buf, size_t len)
      return helper_convert( buf, len, sizeof(webconfig_db_data_t),"webcfgdb",
                            MSGPACK_OBJECT_ARRAY, true,
                            (process_fn_t) process_webcfgdb,
-                           NULL );
+                           (destroy_fn_t) webcfgdb_destroy );
 }
 
 //Used to decode the webconfig_tmp_data_t and webconfig_db_data_t msgpack
