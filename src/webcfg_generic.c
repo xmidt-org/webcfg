@@ -40,6 +40,7 @@ int __attribute__((weak)) Set_Webconfig_URL( char *pString);
 void __attribute__((weak)) setValues(const param_t paramVal[], const unsigned int paramCount, const int setType, char *transactionId, money_trace_spans *timeSpan, WDMP_STATUS *retStatus, int *ccspStatus);
 void __attribute__((weak)) sendNotification(char *payload, char *source, char *destination);
 int __attribute__((weak)) registerWebcfgEvent(WebConfigEventCallback webcfgEventCB);
+int __attribute__((weak)) unregisterWebcfgEvent();
 WDMP_STATUS __attribute__((weak)) mapStatus(int ret);
 /*----------------------------------------------------------------------------*/
 /*                             External Functions                             */
@@ -130,6 +131,11 @@ void sendNotification(char *payload, char *source, char *destination)
 int registerWebcfgEvent(WebConfigEventCallback webcfgEventCB)
 {
     UNUSED(webcfgEventCB);
+    return 0;
+}
+
+int unregisterWebcfgEvent()
+{
     return 0;
 }
 

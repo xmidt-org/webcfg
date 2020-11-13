@@ -224,7 +224,7 @@ webconfig_db_data_t* decodeData(const void * buf, size_t len)
      return helper_convert( buf, len, sizeof(webconfig_db_data_t),"webcfgdb",
                            MSGPACK_OBJECT_ARRAY, true,
                            (process_fn_t) process_webcfgdb,
-                           NULL );
+                           (destroy_fn_t) webcfgdb_destroy );
 }
 
 //Used to decode the webconfig_tmp_data_t and webconfig_db_data_t msgpack
@@ -243,9 +243,9 @@ void webcfgdb_destroy( webconfig_db_data_t *pm )
 	{
 		if( NULL != pm->name )
 		{
-			free( pm->name );
+			WEBCFG_FREE( pm->name );
 		}
-		free( pm );
+		WEBCFG_FREE( pm );
 	}
 }
 
@@ -353,6 +353,12 @@ int get_successDocCount()
 {
     return success_doc_count;
 }
+
+void reset_successDocCount()
+{
+    success_doc_count = 0;
+}
+
 
 int get_doc_fail()
 {

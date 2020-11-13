@@ -67,4 +67,5 @@ char* get_global_auth_token();
 void getCurrent_Time(struct timespec *timer);
 long timeVal_Diff(struct timespec *starttime, struct timespec *finishtime);
 
+void JoinThread (pthread_t threadId);
 #endif
