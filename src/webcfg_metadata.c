@@ -39,6 +39,7 @@ typedef struct SubDocSupportMap
 /*----------------------------------------------------------------------------*/
 static char * supported_bits = NULL;
 static char * supported_version = NULL;
+static char * supplementary_docs = NULL;
 SubDocSupportMap_t *g_sdInfoHead = NULL;
 SubDocSupportMap_t *g_sdInfoTail = NULL;
 /*----------------------------------------------------------------------------*/
@@ -148,12 +149,32 @@ void initWebcfgProperties(char * filename)
 			}
 
 		}
+		if(NULL != (value =strstr(str,"WEBCONFIG_SUPPLEMENTARY_DOCS")))
+		{
+			WebcfgDebug("The value stored is %s\n", str);
+			value = value + strlen("WEBCONFIG_SUPPLEMENTARY_DOCS=");
+			value[strlen(value)-1] = '\0';
+			setsupplementaryDocs(value);
+			value = NULL;
+		}
 	}
 	fclose(fp);
 
 	if(g_sdInfoHead != NULL)
 	{
 		displaystruct();
+	}
+}
+
+void setsupplementaryDocs( char * value)
+{
+	if(value != NULL)
+	{
+		supplementary_docs = strdup(value);
+	}
+	else
+	{
+		supplementary_docs = NULL;
 	}
 }
 
@@ -191,6 +212,12 @@ char * getsupportedVersion()
 {
       WebcfgDebug("The value in supportedversion get is %s\n",supported_version);
       return supported_version;
+}
+
+char * getsupplementaryDocs()
+{
+      WebcfgDebug("The value in supplementary_docs get is %s\n",supplementary_docs);
+      return supplementary_docs;
 }
 
 WEBCFG_STATUS isSubDocSupported(char *subDoc)

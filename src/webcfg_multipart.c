@@ -67,6 +67,7 @@ static char g_transID[64]={'\0'};
 static char * g_contentLen = NULL;
 static char *supportedVersion_header=NULL;
 static char *supportedDocs_header=NULL;
+static char *supplementaryDocs_header=NULL;
 multipart_t *mp = NULL;
 pthread_mutex_t multipart_t_mut =PTHREAD_MUTEX_INITIALIZER;
 static int eventFlag = 0;
@@ -1271,6 +1272,7 @@ void createCurlHeader( struct curl_slist *list, struct curl_slist **header_list,
 	char *FwVersion = NULL, *FwVersion_header=NULL;
 	char *supportedDocs = NULL;
 	char *supportedVersion = NULL;
+	char *supplementaryDocs = NULL;
         char *productClass = NULL, *productClass_header = NULL;
 	char *ModelName = NULL, *ModelName_header = NULL;
 	char *systemReadyTime = NULL, *systemReadyTime_header=NULL;
@@ -1284,6 +1286,7 @@ void createCurlHeader( struct curl_slist *list, struct curl_slist **header_list,
 	char* ForceSyncDoc = NULL;
 	size_t supported_doc_size = 0;
 	size_t supported_version_size = 0;
+	size_t supplementary_docs_size = 0;
 
 	WebcfgInfo("Start of createCurlheader\n");
 	//Fetch auth JWT token from cloud.
@@ -1368,6 +1371,31 @@ void createCurlHeader( struct curl_slist *list, struct curl_slist **header_list,
 	{
 		WebcfgInfo("supportedDocs_header formed %s\n", supportedDocs_header);
 		list = curl_slist_append(list, supportedDocs_header);
+	}
+
+	if(supplementaryDocs_header == NULL)
+	{
+		supplementaryDocs = getsupplementaryDocs();
+
+		if(supplementaryDocs !=NULL)
+		{
+			supplementary_docs_size = strlen(supplementaryDocs)+strlen("X-System-SupplementaryService-Sync: ");
+			supplementaryDocs_header = (char *) malloc(supplementary_docs_size+1);
+			memset(supplementaryDocs_header,0,supplementary_docs_size+1);
+			WebcfgDebug("supplementaryDocs fetched is %s\n", supplementaryDocs);
+			snprintf(supplementaryDocs_header, supplementary_docs_size+1, "X-System-SupplementaryService-Sync: %s", supplementaryDocs);
+			WebcfgInfo("supplementaryDocs_header formed %s\n", supplementaryDocs_header);
+			list = curl_slist_append(list, supplementaryDocs_header);
+		}
+		else
+		{
+			WebcfgInfo("supplementaryDocs fetched is NULL\n");
+		}
+	}
+	else
+	{
+		WebcfgInfo("supplementaryDocs_header formed %s\n", supplementaryDocs_header);
+		list = curl_slist_append(list, supplementaryDocs_header);
 	}
 
 
