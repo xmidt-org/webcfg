@@ -59,6 +59,7 @@ bool g_shutdown  = false;
 #ifdef MULTIPART_UTILITY
 static int g_testfile = 0;
 #endif
+static int g_supplementarySync = 0;
 /*----------------------------------------------------------------------------*/
 /*                             Function Prototypes                            */
 /*----------------------------------------------------------------------------*/
@@ -265,6 +266,17 @@ void set_g_testfile(int value)
     g_testfile = value;
 }
 #endif
+
+void set_global_supplementarySync(int value)
+{
+    g_supplementarySync = value;
+}
+
+int get_global_supplementarySync()
+{
+    return g_supplementarySync;
+}
+
 /*----------------------------------------------------------------------------*/
 /*                             Internal functions                             */
 /*----------------------------------------------------------------------------*/

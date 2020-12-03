@@ -40,7 +40,7 @@ WEBCFG_STATUS checkAkerStatus();
 void processAkerUpdateDelete(wrp_msg_t *wrpMsg);
 void processAkerRetrieve(wrp_msg_t *wrpMsg);
 libpd_instance_t get_webcfg_instance(void);
-AKER_STATUS processAkerSubdoc(webconfig_tmp_data_t *docNode, int akerIndex);
+AKER_STATUS processAkerSubdoc(webconfig_tmp_data_t *docNode, multipartdocs_t *akerIndex);
 void updateAkerMaxRetry(webconfig_tmp_data_t *temp, char *docname);
 int akerwait__ (unsigned int secs);
 pthread_cond_t *get_global_client_con(void);

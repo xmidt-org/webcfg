@@ -220,7 +220,7 @@ int addToEventQueue(char *buf)
             else
             {
                 event_data_t *temp = eventDataQ;
-                while(temp->next)
+                while(temp != NULL)
                 {
                     temp = temp->next;
                 }
@@ -625,7 +625,7 @@ WEBCFG_STATUS startWebcfgTimer(expire_timer_t *timer_node, char *name, uint16_t 
 				expire_timer_t *temp = NULL;
 				WebcfgDebug("Adding next events to list\n");
 				temp = g_timer_head;
-				while(temp->next !=NULL)
+				while(temp !=NULL)
 				{
 					temp=temp->next;
 				}
@@ -800,7 +800,7 @@ int checkTimerExpired (char **exp_doc)
 
 WEBCFG_STATUS retryMultipartSubdoc(webconfig_tmp_data_t *docNode, char *docName)
 {
-	int i =0, m=0;
+	int i =0;
 	WEBCFG_STATUS rv = WEBCFG_FAILURE;
 	param_t *reqParam = NULL;
 	WDMP_STATUS ret = WDMP_FAILURE;
@@ -809,11 +809,14 @@ WEBCFG_STATUS retryMultipartSubdoc(webconfig_tmp_data_t *docNode, char *docName)
 	char result[MAX_VALUE_LEN]={0};
 	int ccspStatus=0;
 	int paramCount = 0;
+	int mp_count = 0;
 	uint16_t doc_transId = 0;
 	webcfgparam_t *pm = NULL;
-	multipart_t *gmp = NULL;
+	multipartdocs_t *gmp = NULL;
 
 	gmp = get_global_mp();
+
+	mp_count = get_numOfMpDocs();
 
 	if(gmp ==NULL)
 	{
@@ -827,18 +830,18 @@ WEBCFG_STATUS retryMultipartSubdoc(webconfig_tmp_data_t *docNode, char *docName)
 		return rv;
 	}
 
-	for(m = 0 ; m<((int)gmp->entries_count)-1; m++)
+	while( gmp != NULL)
 	{
-		WebcfgDebug("gmp->entries_count %d\n",(int)gmp->entries_count);
-		if(strcmp(gmp->entries[m].name_space, docName) == 0)
+		WebcfgDebug("gmp->entries_count %d\n",mp_count);
+		if(strcmp(gmp->name_space, docName) == 0)
 		{
-			WebcfgDebug("gmp->entries[%d].name_space %s\n", m, gmp->entries[m].name_space);
-			WebcfgDebug("gmp->entries[%d].etag %lu\n" ,m,  (long)gmp->entries[m].etag);
-			WebcfgDebug("gmp->entries[%d].data %s\n" ,m,  gmp->entries[m].data);
-			WebcfgDebug("gmp->entries[%d].data_size is %zu\n", m,gmp->entries[m].data_size);
+			WebcfgDebug("gmp->name_space %s\n", gmp->name_space);
+			WebcfgDebug("gmp->etag %lu\n" , (long)gmp->etag);
+			WebcfgDebug("gmp->data %s\n" , gmp->data);
+			WebcfgDebug("gmp->data_size is %zu\n", gmp->data_size);
 
 			WebcfgDebug("--------------decode root doc-------------\n");
-			pm = webcfgparam_convert( gmp->entries[m].data, gmp->entries[m].data_size+1 );
+			pm = webcfgparam_convert( gmp->data, gmp->data_size+1 );
 			if ( NULL != pm)
 			{
 				paramCount = (int)pm->entries_count;
@@ -855,7 +858,7 @@ WEBCFG_STATUS retryMultipartSubdoc(webconfig_tmp_data_t *docNode, char *docName)
 						{
 							char *appended_doc = NULL;
 							WebcfgDebug("B4 webcfg_appendeddoc\n");
-							appended_doc = webcfg_appendeddoc( gmp->entries[m].name_space, gmp->entries[m].etag, pm->entries[i].value, pm->entries[i].value_size, &doc_transId);
+							appended_doc = webcfg_appendeddoc( gmp->name_space, gmp->etag, pm->entries[i].value, pm->entries[i].value_size, &doc_transId);
 							WebcfgDebug("webcfg_appendeddoc doc_transId is %hu\n", doc_transId);
 							reqParam[i].name = strdup(pm->entries[i].name);
 							WebcfgDebug("appended_doc length: %zu\n", strlen(appended_doc));
@@ -863,7 +866,7 @@ WEBCFG_STATUS retryMultipartSubdoc(webconfig_tmp_data_t *docNode, char *docName)
 							reqParam[i].type = WDMP_BASE64;
 							WEBCFG_FREE(appended_doc);
 							//update doc_transId only for blob docs, not for scalars.
-							updateTmpList(docNode, gmp->entries[m].name_space, gmp->entries[m].etag, "pending", "failed_retrying", ccspStatus, doc_transId, 1);
+							updateTmpList(docNode, gmp->name_space, gmp->etag, "pending", "failed_retrying", ccspStatus, doc_transId, 1);
 						}
 						else
 						{
@@ -893,12 +896,12 @@ WEBCFG_STATUS retryMultipartSubdoc(webconfig_tmp_data_t *docNode, char *docName)
 						if(reqParam[0].type  != WDMP_BASE64)
 						{
 							WebcfgDebug("For scalar docs, update trans_id as 0\n");
-							updateTmpList(docNode, gmp->entries[m].name_space, gmp->entries[m].etag, "success", "none", 0, 0, 0);
+							updateTmpList(docNode, gmp->name_space, gmp->etag, "success", "none", 0, 0, 0);
 							//send scalar success notification, delete tmp, updateDB
-							addWebConfgNotifyMsg(gmp->entries[m].name_space, gmp->entries[m].etag, "success", "none", get_global_transID(), 0, "status", 0, NULL, 200);
+							addWebConfgNotifyMsg(gmp->name_space, gmp->etag, "success", "none", get_global_transID(), 0, "status", 0, NULL, 200);
 							WebcfgDebug("deleteFromTmpList as scalar doc is applied\n");
-							deleteFromTmpList(gmp->entries[m].name_space);
-							checkDBList(gmp->entries[m].name_space,gmp->entries[m].etag, NULL);
+							deleteFromTmpList(gmp->name_space);
+							checkDBList(gmp->name_space,gmp->etag, NULL);
 							WebcfgDebug("checkRootUpdate scalar doc case\n");
 							if(checkRootUpdate() == WEBCFG_SUCCESS)
 							{
@@ -924,8 +927,8 @@ WEBCFG_STATUS retryMultipartSubdoc(webconfig_tmp_data_t *docNode, char *docName)
 							WebcfgError("ccspStatus is crash %d\n", ccspStatus);
 							snprintf(result,MAX_VALUE_LEN,"failed_retrying:%s", errDetails);
 							WebcfgDebug("The result is %s\n",result);
-							updateTmpList(docNode, gmp->entries[m].name_space, gmp->entries[m].etag, "pending", result, ccspStatus, 0, 1);
-							addWebConfgNotifyMsg(gmp->entries[m].name_space, gmp->entries[m].etag, "pending", result, get_global_transID(), 0,"status",ccspStatus, NULL, 200);
+							updateTmpList(docNode, gmp->name_space, gmp->etag, "pending", result, ccspStatus, 0, 1);
+							addWebConfgNotifyMsg(gmp->name_space, gmp->etag, "pending", result, get_global_transID(), 0,"status",ccspStatus, NULL, 200);
 							set_doc_fail(1);
 							WebcfgDebug("the retry flag value is %d\n", get_doc_fail());
 						}
@@ -933,8 +936,8 @@ WEBCFG_STATUS retryMultipartSubdoc(webconfig_tmp_data_t *docNode, char *docName)
 						{
 							snprintf(result,MAX_VALUE_LEN,"doc_rejected:%s", errDetails);
 							WebcfgDebug("The result is %s\n",result);
-							updateTmpList(docNode, gmp->entries[m].name_space, gmp->entries[m].etag, "failed", result, ccspStatus, 0, 0);
-							addWebConfgNotifyMsg(gmp->entries[m].name_space, gmp->entries[m].etag, "failed", result, get_global_transID(), 0, "status", ccspStatus, NULL, 200);
+							updateTmpList(docNode, gmp->name_space, gmp->etag, "failed", result, ccspStatus, 0, 0);
+							addWebConfgNotifyMsg(gmp->name_space, gmp->etag, "failed", result, get_global_transID(), 0, "status", ccspStatus, NULL, 200);
 						}
 					}
 					reqParam_destroy(paramCount, reqParam);

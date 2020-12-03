@@ -384,85 +384,93 @@ blob_t * get_DB_BLOB()
 }
 
 //new_node indicates the docs which need to be added to list
-WEBCFG_STATUS addToTmpList( multipart_t *mp)
+WEBCFG_STATUS addToTmpList()
 {
-	int m = 0;
 	int retStatus = WEBCFG_FAILURE;
+	int mp_count = 0;
 
-	WebcfgDebug("mp->entries_count is %zu\n", mp->entries_count);
+	mp_count = get_multipartdoc_count();
+	WebcfgDebug("multipartdoc count is %d\n", mp_count);
 	numOfMpDocs = 0;
 	WebcfgDebug("reset numOfMpDocs to %d\n", numOfMpDocs);
 
 	delete_tmp_doc_list();
 	WebcfgDebug("Deleted existing tmp list, proceed to addToTmpList\n");
 
-	for(m = 0 ; m<((int)mp->entries_count); m++)
+	multipartdocs_t *mp_node = NULL;
+	mp_node = get_global_mp();
+
+	if(mp_node)
 	{
-		webconfig_tmp_data_t *new_node;
-		new_node=(webconfig_tmp_data_t *)malloc(sizeof(webconfig_tmp_data_t));
-		if(new_node)
+		while(mp_node->next != NULL)
 		{
-			memset( new_node, 0, sizeof( webconfig_tmp_data_t ) );
-
-			if(numOfMpDocs == 0)
+			webconfig_tmp_data_t *new_node;
+			new_node=(webconfig_tmp_data_t *)malloc(sizeof(webconfig_tmp_data_t));
+			if(new_node)
 			{
-				WebcfgDebug("Adding root doc to list\n");
-				new_node->name = strdup("root");
-				new_node->version = get_global_root();
-				new_node->status = strdup("pending");
-				new_node->error_details = strdup("none");
-				new_node->error_code = 0;
-				new_node->trans_id = 0;
-				new_node->retry_count = 0;
-			}
-			else
-			{
-				new_node->name = strdup(mp->entries[m-1].name_space);
-				WebcfgDebug("mp->entries[m-1].name_space is %s\n", mp->entries[m-1].name_space);
-				new_node->version = mp->entries[m-1].etag;
-				new_node->status = strdup("pending");
-				new_node->error_details = strdup("none");
-				new_node->error_code = 0;
-				new_node->trans_id = 0;
-				new_node->retry_count = 0;
-			}
+				memset( new_node, 0, sizeof( webconfig_tmp_data_t ) );
 
-			WebcfgDebug("new_node->name is %s\n", new_node->name);
-			WebcfgDebug("new_node->version is %lu\n", (long)new_node->version);
-			WebcfgDebug("new_node->status is %s\n", new_node->status);
-			WebcfgDebug("new_node->error_details is %s\n", new_node->error_details);
-			WebcfgDebug("new_node->retry_count is %d\n", new_node->retry_count);
-
-
-			new_node->next=NULL;
-			pthread_mutex_lock (&webconfig_tmp_data_mut);
-			if (g_head == NULL)
-			{
-				g_head = new_node;
-				pthread_mutex_unlock (&webconfig_tmp_data_mut);
-			}
-			else
-			{
-				webconfig_tmp_data_t *temp = NULL;
-				WebcfgDebug("Adding docs to list\n");
-				temp = g_head;
-				while(temp->next !=NULL)
+				if(numOfMpDocs == 0)
 				{
-					temp=temp->next;
+					WebcfgDebug("Adding root doc to list\n");
+					new_node->name = strdup("root");
+					new_node->version = get_global_root();
+					new_node->status = strdup("pending");
+					new_node->error_details = strdup("none");
+					new_node->error_code = 0;
+					new_node->trans_id = 0;
+					new_node->retry_count = 0;
 				}
-				temp->next=new_node;
-				pthread_mutex_unlock (&webconfig_tmp_data_mut);
+				else
+				{
+					new_node->name = strdup(mp_node->name_space);
+					WebcfgDebug("mp_node->name_space is %s\n", mp_node->name_space);
+					new_node->version = mp_node->etag;
+					new_node->status = strdup("pending");
+					new_node->error_details = strdup("none");
+					new_node->error_code = 0;
+					new_node->trans_id = 0;
+					new_node->retry_count = 0;
+					mp_node = mp_node->next;
+				}
+
+				WebcfgDebug("new_node->name is %s\n", new_node->name);
+				WebcfgDebug("new_node->version is %lu\n", (long)new_node->version);
+				WebcfgDebug("new_node->status is %s\n", new_node->status);
+				WebcfgDebug("new_node->error_details is %s\n", new_node->error_details);
+				WebcfgDebug("new_node->retry_count is %d\n", new_node->retry_count);
+
+
+				new_node->next=NULL;
+				pthread_mutex_lock (&webconfig_tmp_data_mut);
+				if (g_head == NULL)
+				{
+					g_head = new_node;
+					pthread_mutex_unlock (&webconfig_tmp_data_mut);
+				}
+				else
+				{
+					webconfig_tmp_data_t *temp = NULL;
+					WebcfgDebug("Adding docs to list\n");
+					temp = g_head;
+					while(temp->next !=NULL)
+					{
+						temp=temp->next;
+					}
+					temp->next=new_node;
+					pthread_mutex_unlock (&webconfig_tmp_data_mut);
+				}
+
+				WebcfgDebug("--->>doc %s with version %lu is added to list\n", new_node->name, (long)new_node->version);
+				numOfMpDocs = numOfMpDocs + 1;
 			}
+			WebcfgDebug("numOfMpDocs %d\n", numOfMpDocs);
 
-			WebcfgDebug("--->>doc %s with version %lu is added to list\n", new_node->name, (long)new_node->version);
-			numOfMpDocs = numOfMpDocs + 1;
-		}
-		WebcfgDebug("numOfMpDocs %d\n", numOfMpDocs);
-
-		if((int)mp->entries_count == numOfMpDocs)
-		{
-			WebcfgDebug("addToTmpList success\n");
-			retStatus = WEBCFG_SUCCESS;
+			if(mp_count == numOfMpDocs)
+			{
+				WebcfgDebug("addToTmpList success\n");
+				retStatus = WEBCFG_SUCCESS;
+			}
 		}
 	}
 	WebcfgDebug("addToList return %d\n", retStatus);

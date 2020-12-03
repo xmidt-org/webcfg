@@ -257,18 +257,18 @@ void updateAkerMaxRetry(webconfig_tmp_data_t *temp, char *docname)
 	WebcfgError("updateAkerMaxRetry failed for doc %s\n", docname);
 }
 
-AKER_STATUS processAkerSubdoc(webconfig_tmp_data_t *docNode, int akerIndex)
+AKER_STATUS processAkerSubdoc(webconfig_tmp_data_t *docNode, multipartdocs_t *akerIndex)
 {
-	int i =0, m=0;
+	int i =0;
 	AKER_STATUS rv = AKER_FAILURE;
 	param_t *reqParam = NULL;
 	WDMP_STATUS ret = WDMP_FAILURE;
 	int paramCount = 0;
 	uint16_t doc_transId = 0;
 	webcfgparam_t *pm = NULL;
-	multipart_t *gmp = NULL;
+	multipartdocs_t *gmp = NULL;
 
-	gmp = get_global_mp();
+	gmp = akerIndex;
 
 	if(gmp ==NULL)
 	{
@@ -276,17 +276,16 @@ AKER_STATUS processAkerSubdoc(webconfig_tmp_data_t *docNode, int akerIndex)
 		return AKER_FAILURE;
 	}
 
-	m = akerIndex;
-	WebcfgDebug("gmp->entries_count %d\n",(int)gmp->entries_count);
-	if(strcmp(gmp->entries[m].name_space, "aker") == 0)
+	WebcfgDebug("gmp->entries_count %d\n",get_multipartdoc_count());
+	if(strcmp(gmp->name_space, "aker") == 0)
 	{
-		WebcfgDebug("gmp->entries[%d].name_space %s\n", m, gmp->entries[m].name_space);
-		WebcfgDebug("gmp->entries[%d].etag %lu\n" ,m,  (long)gmp->entries[m].etag);
-		WebcfgDebug("gmp->entries[%d].data %s\n" ,m,  gmp->entries[m].data);
-		WebcfgDebug("gmp->entries[%d].data_size is %zu\n", m,gmp->entries[m].data_size);
+		WebcfgDebug("gmp->name_space %s\n", gmp->name_space);
+		WebcfgDebug("gmp->etag %lu\n" , (long)gmp->etag);
+		WebcfgDebug("gmp->data %s\n" , gmp->data);
+		WebcfgDebug("gmp->data_size is %zu\n", gmp->data_size);
 
 		WebcfgDebug("--------------decode root doc-------------\n");
-		pm = webcfgparam_convert( gmp->entries[m].data, gmp->entries[m].data_size+1 );
+		pm = webcfgparam_convert( gmp->data, gmp->data_size+1 );
 		if ( NULL != pm)
 		{
 			paramCount = (int)pm->entries_count;
@@ -302,7 +301,7 @@ AKER_STATUS processAkerSubdoc(webconfig_tmp_data_t *docNode, int akerIndex)
 					if(pm->entries[i].type == WDMP_BLOB)
 					{
 						char *appended_doc = NULL;
-						appended_doc = webcfg_appendeddoc( gmp->entries[m].name_space, gmp->entries[m].etag, pm->entries[i].value, pm->entries[i].value_size, &doc_transId);
+						appended_doc = webcfg_appendeddoc( gmp->name_space, gmp->etag, pm->entries[i].value, pm->entries[i].value_size, &doc_transId);
 						if(appended_doc != NULL)
 						{
 							WebcfgDebug("webcfg_appendeddoc doc_transId : %hu\n", doc_transId);
@@ -315,7 +314,7 @@ AKER_STATUS processAkerSubdoc(webconfig_tmp_data_t *docNode, int akerIndex)
 							reqParam[i].type = WDMP_BASE64;
 							WEBCFG_FREE(appended_doc);
 						}
-						updateTmpList(docNode, gmp->entries[m].name_space, gmp->entries[m].etag, "pending", "none", 0, doc_transId, 0);
+						updateTmpList(docNode, gmp->name_space, gmp->etag, "pending", "none", 0, doc_transId, 0);
 
 						//Start event handler thread to process aker events if it is not started already.
 						WebcfgDebug("get_global_eventFlag is %d\n", get_global_eventFlag());
@@ -341,7 +340,7 @@ AKER_STATUS processAkerSubdoc(webconfig_tmp_data_t *docNode, int akerIndex)
 
 			if(reqParam !=NULL && validate_request_param(reqParam, paramCount) == WEBCFG_SUCCESS)
 			{
-				ret = send_aker_blob(pm->entries[0].name, pm->entries[0].value,pm->entries[0].value_size, doc_transId, (int)gmp->entries[m].etag);
+				ret = send_aker_blob(pm->entries[0].name, pm->entries[0].value,pm->entries[0].value_size, doc_transId, (int)gmp->etag);
 
 				if(ret == WDMP_SUCCESS)
 				{
@@ -351,8 +350,8 @@ AKER_STATUS processAkerSubdoc(webconfig_tmp_data_t *docNode, int akerIndex)
 				else
 				{
 					//Invalid aker request
-					updateTmpList(docNode, gmp->entries[m].name_space, gmp->entries[m].etag, "failed", "doc_rejected", 0, 0, 0);
-					addWebConfgNotifyMsg(gmp->entries[m].name_space, gmp->entries[m].etag, "failed", "doc_rejected", get_global_transID(),0, "status", 0, NULL, 200);
+					updateTmpList(docNode, gmp->name_space, gmp->etag, "failed", "doc_rejected", 0, 0, 0);
+					addWebConfgNotifyMsg(gmp->name_space, gmp->etag, "failed", "doc_rejected", get_global_transID(),0, "status", 0, NULL, 200);
 					rv = AKER_FAILURE;
 				}
 				reqParam_destroy(paramCount, reqParam);

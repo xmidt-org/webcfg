@@ -24,7 +24,8 @@
 #define WEBCFG_FREE(__x__) if(__x__ != NULL) { free((void*)(__x__)); __x__ = NULL;} else {printf("Trying to free null pointer\n");}
 
 #define ATOMIC_SET_WEBCONFIG	    3
-#define MAX_VALUE_LEN			128
+#define MAX_VALUE_LEN		128
+/*
 typedef struct
 {
     uint32_t  etag;
@@ -37,7 +38,17 @@ typedef struct {
     multipartdocs_t *entries;
     size_t   entries_count;
 } multipart_t;
+*/
 
+typedef struct multipartdocs
+{
+    uint32_t  etag;
+    char  *name_space;
+    char  *data;
+    size_t data_size;
+    //int isSupplementarySync; 
+    struct multipartdocs *next;
+} multipartdocs_t;
 
 int readFromFile(char *filename, char **data, int *len);
 WEBCFG_STATUS parseMultipartDocument(void *config_data, char *ct , size_t data_size, char* trans_uuid);
@@ -50,8 +61,8 @@ void updateRootVersionToDB();
 char * get_global_transID(void);
 char* generate_trans_uuid();
 void set_global_transID(char *id);
-multipart_t * get_global_mp(void);
-void set_global_mp(multipart_t *new);
+multipartdocs_t * get_global_mp(void);
+void set_global_mp(multipartdocs_t *new);
 void reqParam_destroy( int paramCnt, param_t *reqObj );
 void failedDocsRetry();
 WEBCFG_STATUS validate_request_param(param_t *reqParam, int paramCount);
@@ -63,5 +74,6 @@ void reset_global_eventFlag();
 int get_global_eventFlag(void);
 void set_global_eventFlag();
 pthread_t get_global_process_threadid();
-void multipart_destroy( multipart_t *m );
+void multipart_destroy( multipartdocs_t *m );
+int get_multipartdoc_count();
 #endif
