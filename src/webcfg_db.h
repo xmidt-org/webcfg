@@ -48,6 +48,7 @@ typedef struct webconfig_tmp_data
 	int retry_count;
 	uint16_t error_code;
 	uint16_t trans_id;
+	int isSupplementarySync;
         struct webconfig_tmp_data *next;
 } webconfig_tmp_data_t;
 

@@ -400,22 +400,26 @@ WEBCFG_STATUS addToTmpList()
 	multipartdocs_t *mp_node = NULL;
 	mp_node = get_global_mp();
 
+	printf("The numdocs is %d\n",numOfMpDocs);
 	if(mp_node)
 	{
-		while(mp_node->next != NULL)
+		printf("Inside if\n");
+		while(mp_node != NULL)
 		{
+			printf("Inside while\n");
 			webconfig_tmp_data_t *new_node;
 			new_node=(webconfig_tmp_data_t *)malloc(sizeof(webconfig_tmp_data_t));
 			if(new_node)
 			{
 				memset( new_node, 0, sizeof( webconfig_tmp_data_t ) );
 
-				if(numOfMpDocs == 0)
+				if(numOfMpDocs == 0 && get_global_supplementarySync() == 0)
 				{
 					WebcfgDebug("Adding root doc to list\n");
 					new_node->name = strdup("root");
 					new_node->version = get_global_root();
 					new_node->status = strdup("pending");
+					new_node->isSupplementarySync = get_global_supplementarySync();
 					new_node->error_details = strdup("none");
 					new_node->error_code = 0;
 					new_node->trans_id = 0;
@@ -427,6 +431,7 @@ WEBCFG_STATUS addToTmpList()
 					WebcfgDebug("mp_node->name_space is %s\n", mp_node->name_space);
 					new_node->version = mp_node->etag;
 					new_node->status = strdup("pending");
+					new_node->isSupplementarySync = get_global_supplementarySync();
 					new_node->error_details = strdup("none");
 					new_node->error_code = 0;
 					new_node->trans_id = 0;
@@ -437,6 +442,7 @@ WEBCFG_STATUS addToTmpList()
 				WebcfgDebug("new_node->name is %s\n", new_node->name);
 				WebcfgDebug("new_node->version is %lu\n", (long)new_node->version);
 				WebcfgDebug("new_node->status is %s\n", new_node->status);
+				WebcfgDebug("new_node->isSupplementarySync is %d\n", new_node->isSupplementarySync);
 				WebcfgDebug("new_node->error_details is %s\n", new_node->error_details);
 				WebcfgDebug("new_node->retry_count is %d\n", new_node->retry_count);
 
@@ -659,9 +665,9 @@ void delete_tmp_doc_list()
     while(head != NULL)
     {
         temp = head;
-        head = head->next;
-	WebcfgDebug("Delete node--> temp->name %s temp->version %lu temp->status %s temp->error_details %s temp->error_code %lu temp->trans_id %lu temp->retry_count %d\n",temp->name, (long)temp->version, temp->status, temp->error_details, (long)temp->error_code, (long)temp->trans_id, temp->retry_count);
-        free(temp);
+	head = head->next;
+	WebcfgDebug("Delete node--> temp->name %s temp->version %lu temp->status %s temp->isSupplementarySync %d temp->error_details %s temp->error_code %lu temp->trans_id %lu temp->retry_count %d\n",temp->name, (long)temp->version, temp->status, temp->isSupplementarySync, temp->error_details, (long)temp->error_code, (long)temp->trans_id, temp->retry_count);
+	free(temp);
 	temp = NULL;
     }
 	pthread_mutex_lock (&webconfig_tmp_data_mut);

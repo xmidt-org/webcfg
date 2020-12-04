@@ -160,12 +160,21 @@ void test_multipart()
 		printf("\nProvide config URL as argument\n");
 		return;
 	}
-	initWebcfgProperties(WEBCFG_PROPERTIES_FILE);
+/*	initWebcfgProperties(WEBCFG_PROPERTIES_FILE);
 	initWebConfigNotifyTask();
 	processWebcfgEvents();
 	initEventHandlingTask();
 	initWebConfigClient();
-	processWebconfgSync(status);
+	processWebconfgSync(status);*/
+
+	initWebcfgProperties(WEBCFG_PROPERTIES_FILE);
+	processWebconfgSync((int)status);
+	set_global_supplementarySync(1);
+	processWebconfgSync((int)status);
+	//set_global_supplementarySync(0);
+	processWebconfgSync((int)status);
+	/*set_global_supplementarySync(1);*/
+	
 }
 
 void add_suites( CU_pSuite *suite )

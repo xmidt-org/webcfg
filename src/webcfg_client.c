@@ -121,6 +121,7 @@ static void connect_parodus()
 			WebcfgInfo("New backoffRetryTime value calculated as %d seconds\n", backoffRetryTime);
 			int ret =libparodus_init (&webcfg_instance, &cfg1);
 			WebcfgDebug("ret is %d\n",ret);
+			ret = 0;
 			if(ret ==0)
 			{
 				WebcfgInfo("Init for parodus Success..!!\n");

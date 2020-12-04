@@ -43,6 +43,8 @@
 #define WEBPA_CREATE_HEADER        "/etc/parodus/parodus_create_file.sh"
 #define CCSP_CRASH_STATUS_CODE      192
 #define MAX_PARAMETERNAME_LEN		4096
+#define WEBCFG_URL_FILE 	   "webcfg url" //check here.
+#define SUPPLEMENTARY_URL_FILE      "t2 url"
 /*----------------------------------------------------------------------------*/
 /*                               Data Structures                              */
 /*----------------------------------------------------------------------------*/
@@ -84,9 +86,9 @@ void set_global_transID(char *id)
 multipartdocs_t * get_global_mp(void)
 {
     multipartdocs_t *tmp = NULL;
-    pthread_mutex_lock (&multipart_t_mut);
+   // pthread_mutex_lock (&multipart_t_mut);
     tmp = g_mp_head;
-    pthread_mutex_unlock (&multipart_t_mut);
+   // pthread_mutex_unlock (&multipart_t_mut);
     return tmp;
 }
 
@@ -158,8 +160,8 @@ WEBCFG_STATUS webcfg_http_request(char **configData, int r_count, int status, lo
 	char *webConfigURL = NULL;
 	char *transID = NULL;
 	char docList[512] = {'\0'};
-	char configURL[256] = { 0 };
-	char c[] = "{mac}";
+	//char configURL[256] = { 0 };//check here
+	//char c[] = "{mac}";
 	int rv = 0;
 
 	int content_res=0;
@@ -186,7 +188,18 @@ WEBCFG_STATUS webcfg_http_request(char **configData, int r_count, int status, lo
 			WEBCFG_FREE(transID);
 		}
 		//loadInitURLFromFile(&webConfigURL);
-		Get_Webconfig_URL(configURL);
+		if(get_global_supplementarySync())
+		{
+			//readFromFile(SUPPLEMENTARY_URL_FILE, &webConfigURL, &len );
+			webConfigURL = strdup(SUPPLEMENTARY_URL_FILE);
+		}
+		else
+		{
+			//readFromFile(WEBCFG_URL_FILE, &webConfigURL, &len );
+			webConfigURL = strdup(WEBCFG_URL_FILE);
+		}
+		//loadInitURLFromFile(&webConfigURL);//check here
+		/*Get_Webconfig_URL(configURL);
 		if(strlen(configURL)>0)
 		{
 			//Replace {mac} string from default init url with actual deviceMAC
@@ -201,7 +214,7 @@ WEBCFG_STATUS webcfg_http_request(char **configData, int r_count, int status, lo
 			curl_slist_free_all(headers_list);
 			curl_easy_cleanup(curl);
 			return WEBCFG_FAILURE;
-		}
+		}*/
 		WebcfgDebug("ConfigURL fetched is %s\n", webConfigURL);
 
 		//Update query param in the URL based on the existing doc names from db
@@ -233,6 +246,7 @@ WEBCFG_STATUS webcfg_http_request(char **configData, int r_count, int status, lo
 		if(strlen(g_interface) == 0)
 		{
 			get_webCfg_interface(&interface);
+			interface = strdup("tun0"); //check here.
 			if(interface !=NULL)
 		        {
 		               strncpy(g_interface, interface, sizeof(g_interface)-1);
@@ -402,6 +416,7 @@ WEBCFG_STATUS parseMultipartDocument(void *config_data, char *ct , size_t data_s
 		memset( mp->entries, 0, sizeof(multipartdocs_t)*(mp->entries_count-1));*/
 
 		///Scanning each lines with \n as delimiter
+		delete_mp_doc();
 		while((ptr_lb - str_body) < (int)data_size)
 		{
 
@@ -423,6 +438,7 @@ WEBCFG_STATUS parseMultipartDocument(void *config_data, char *ct , size_t data_s
 					}
 					index2 = ptr_lb1-str_body;
 					index1 = ptr_lb-str_body;
+					printf("The parse\n");
 					parse_multipart(str_body+index1+1,index2 - index1 - 2);
 					ptr_lb++;
 				#ifdef MULTIPART_UTILITY
@@ -580,8 +596,8 @@ WEBCFG_STATUS processMsgpackSubdoc(char *transaction_id)
 						if(eventFlag == 0)
 						{
 							WebcfgInfo("starting initEventHandlingTask\n");
-							initEventHandlingTask();
-							processWebcfgEvents();
+							//initEventHandlingTask();
+							//processWebcfgEvents();
 							eventFlag = 1;
 						}
 					}
@@ -1301,6 +1317,9 @@ void createCurlHeader( struct curl_slist *list, struct curl_slist **header_list,
 	WebcfgInfo("Start of createCurlheader\n");
 	//Fetch auth JWT token from cloud.
 	getAuthToken();
+	//int len=0; char *token= NULL;//check here
+	//readFromFile("/tmp/webcfg_token", &token, &len );
+	//strcpy(get_global_auth_token(), "");
 
 	WebcfgDebug("get_global_auth_token() is %s\n", get_global_auth_token());
 
@@ -1650,10 +1669,11 @@ void multipart_destroy( multipartdocs_t *m )
 void parse_multipart(char *ptr, int no_of_bytes)
 {
 	char *Content_type = NULL;
-	char *name_space = NULL;
-	char *data = NULL;
-	uint32_t  etag = 0;
-	size_t data_size = 0;
+	static char *name_space = NULL;
+	static char *data = NULL;
+	static uint32_t  etag = 0;
+	static size_t data_size = 0;
+	int update = 0;
 
 	/*for storing respective values */
 	if(0 == strncmp(ptr,"Content-type: ",strlen("Content-type")))
@@ -1668,6 +1688,7 @@ void parse_multipart(char *ptr, int no_of_bytes)
 	else if(0 == strncasecmp(ptr,"Namespace",strlen("Namespace")))
 	{
 	        name_space = strndup(ptr+(strlen("Namespace: ")),no_of_bytes-((strlen("Namespace: "))));
+		printf("The namespace is %s\n", name_space);
 	}
 	else if(0 == strncasecmp(ptr,"Etag",strlen("Etag")))
 	{
@@ -1687,44 +1708,155 @@ void parse_multipart(char *ptr, int no_of_bytes)
 		data_size = no_of_bytes;
 	}
 
-	multipartdocs_t *mp_node;
-	mp_node = (multipartdocs_t *)malloc(sizeof(multipartdocs_t));
-	if(mp_node)
+	if(etag != 0 && name_space != NULL && data != NULL && data_size != 0 )
 	{
-		memset(mp_node, 0, sizeof(multipartdocs_t));
-
-		mp_node->etag = etag;
-		mp_node->name_space = name_space;
-		mp_node->data = data;
-		mp_node->data_size = data_size;
-		//mp_node->isSupplementarySync = get_global_supplementarySync();
-
-		mp_node->next = NULL;
-
-		WebcfgDebug("mp_node->etag is %ld\n",(long)mp_node->etag);
-		WebcfgDebug("mp_node->name_space is %s\n", mp_node->name_space);
-		WebcfgDebug("mp_node->data is %s\n", mp_node->data);
-		WebcfgDebug("mp_node->data_size is %zu\n", mp_node->data_size);
-		//WebcfgDebug("mp_node->isSupplementarySync is %d\n", mp_node->isSupplementarySync);
-
-		pthread_mutex_lock(&multipart_t_mut);
-		if(g_mp_head == NULL)
+		if((get_global_supplementarySync() && strncasecmp(name_space,"wan",strlen("wan")) == 0 )|| (get_global_supplementarySync() && strncasecmp(name_space,"lan",strlen("lan")) == 0) )
 		{
-			g_mp_head = mp_node;
-			pthread_mutex_unlock(&multipart_t_mut);
+			printf("name_space is %s\n",name_space);
+			 name_space = NULL;
+			 data = NULL;
+			 etag = 0;
+			 data_size = 0;
 		}
 		else
 		{
-			multipartdocs_t *temp = NULL;
-			temp = g_mp_head;
-			while( temp != NULL)
+			multipartdocs_t *mp_node;
+			mp_node = (multipartdocs_t *)malloc(sizeof(multipartdocs_t));
+			if(mp_node)
 			{
-				temp = temp->next;
+				memset(mp_node, 0, sizeof(multipartdocs_t));
+
+				mp_node->etag = etag;
+				mp_node->name_space = name_space;
+				mp_node->data = data;
+				mp_node->data_size = data_size;
+				mp_node->isSupplementarySync = get_global_supplementarySync();
+
+				mp_node->next = NULL;
+
+				WebcfgDebug("mp_node->etag is %ld\n",(long)mp_node->etag);
+				WebcfgDebug("mp_node->name_space is %s\n", mp_node->name_space);
+				WebcfgDebug("mp_node->data is %s\n", mp_node->data);
+				WebcfgDebug("mp_node->data_size is %zu\n", mp_node->data_size);
+				WebcfgDebug("mp_node->isSupplementarySync is %d\n", mp_node->isSupplementarySync);
+
+				pthread_mutex_lock(&multipart_t_mut);
+				if(mp_node->isSupplementarySync == 1)
+				{
+					update = update_supplementary_doc(mp_node);
+				}
+				if( update == 0)
+				{
+					if(g_mp_head == NULL)
+					{
+						printf("Inside head\n");
+						g_mp_head = mp_node;
+						pthread_mutex_unlock(&multipart_t_mut);
+					}
+					else
+					{
+						multipartdocs_t *temp = NULL;
+						temp = g_mp_head;
+						while( temp->next != NULL)
+						{
+							printf("The temp->name_space is %s\n", temp->name_space);
+							temp = temp->next;
+						}
+						temp->next = mp_node;
+						pthread_mutex_unlock(&multipart_t_mut);
+					}
+				}
 			}
-			temp->next = mp_node;
-			pthread_mutex_unlock(&multipart_t_mut);
+
+			 name_space = NULL;
+			 data = NULL;
+			 etag = 0;
+			 data_size = 0;
 		}
 	}
+}
+
+void delete_mp_doc()
+{
+	multipartdocs_t *head = NULL;
+	multipartdocs_t *mp_temp = NULL;
+	multipartdocs_t *supplementary = NULL;
+	head = g_mp_head;
+
+	printf("Inside delete docs\n");
+	if(get_global_supplementarySync() == 0)
+	{
+
+		while(head != NULL)
+		{
+			mp_temp = head;
+			if(mp_temp->isSupplementarySync == 0)
+			{
+				head = head->next;
+				WebcfgDebug("Delete mp_temp--> mp_temp->name_space %s mp_temp->etag %d\n", mp_temp->name_space, mp_temp->etag);
+				free(mp_temp);
+				mp_temp = NULL;
+			}
+			else
+			{
+				printf("Inside the supplementary\n");
+				pthread_mutex_lock (&multipart_t_mut);
+				if(supplementary != NULL)
+				{
+					supplementary = mp_temp;
+					printf("Inside the supplementary null assign\n");
+					pthread_mutex_unlock (&multipart_t_mut);
+				}
+				else
+				{
+					while(supplementary->next != NULL)
+					{
+						supplementary = supplementary->next;
+					}
+					supplementary = mp_temp;	
+					pthread_mutex_unlock (&multipart_t_mut);
+				}
+				printf("before head->next\n");
+				head = head->next;
+				printf("After head->next\n");
+			}
+		}
+	
+	
+		pthread_mutex_lock (&multipart_t_mut);
+	    	g_mp_head = NULL;
+		if(supplementary != NULL)
+		{
+			g_mp_head = supplementary;
+		}
+		pthread_mutex_unlock (&multipart_t_mut);
+	}
+}
+
+int update_supplementary_doc(multipartdocs_t * mp_doc)
+{
+	multipartdocs_t *temp = NULL;
+	temp = g_mp_head;
+
+	printf("Inside Update\n");
+	while( temp != NULL)
+	{
+		if(temp->isSupplementarySync == 1)
+		{
+			if(strncasecmp(temp->name_space, mp_doc->name_space, strlen(mp_doc->name_space)) == 0)
+			{
+				printf("Updated\n");
+				WebcfgInfo("The temp->name_space inside update is %s\n", temp->name_space);
+				temp->etag = mp_doc->etag;
+				temp->data = mp_doc->data;
+				temp->data_size = mp_doc->data_size;
+				return 1;
+			}
+		}
+		temp = temp->next;
+	}
+
+	return 0;
 }
 
 void print_tmp_doc_list(size_t mp_count)

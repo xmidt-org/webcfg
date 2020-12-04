@@ -46,7 +46,7 @@ typedef struct multipartdocs
     char  *name_space;
     char  *data;
     size_t data_size;
-    //int isSupplementarySync; 
+    int isSupplementarySync; 
     struct multipartdocs *next;
 } multipartdocs_t;
 
@@ -76,4 +76,6 @@ void set_global_eventFlag();
 pthread_t get_global_process_threadid();
 void multipart_destroy( multipartdocs_t *m );
 int get_multipartdoc_count();
+int update_supplementary_doc(multipartdocs_t * mp_doc);
+void delete_mp_doc();
 #endif
