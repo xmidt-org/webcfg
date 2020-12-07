@@ -539,9 +539,21 @@ WEBCFG_STATUS processMsgpackSubdoc(char *transaction_id)
 
 	multipartdocs_t *mp = NULL;
 	mp = g_mp_head;
+
 	while(mp != NULL)
 	{
 		ret = WDMP_FAILURE;
+
+		webconfig_tmp_data_t * subdoc_node = NULL;
+		subdoc_node = getTmpNode(mp->name_space);
+
+		//Process subdocs with status "pending" which indicates docs from current sync, skip all others.
+		if(strcmp(subdoc_node->status, "pending") != 0)
+		{
+			WebcfgInfo("skipped setValues for doc %s as it is already processed\n", mp->name_space);
+			mp = mp->next;
+			continue;
+		}
 		WebcfgInfo("mp->name_space %s\n", mp->name_space);
 		WebcfgInfo("mp->etag %lu\n" , (long)mp->etag);
 		WebcfgDebug("mp->data %s\n" , mp->data);
@@ -555,8 +567,6 @@ WEBCFG_STATUS processMsgpackSubdoc(char *transaction_id)
 			WebcfgDebug("skip aker doc and process at the end\n");
 			continue;
 		}
-		webconfig_tmp_data_t * subdoc_node = NULL;
-		subdoc_node = getTmpNode(mp->name_space);
 
 		WebcfgDebug("--------------decode root doc-------------\n");
 		pm = webcfgparam_convert( mp->data, mp->data_size+1 );
