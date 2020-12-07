@@ -524,12 +524,12 @@ WEBCFG_STATUS processMsgpackSubdoc(char *transaction_id)
 	}
         
 	WebcfgDebug("Add mp entries to tmp list\n");
-        addStatus = addToTmpList();
-        if(addStatus == WEBCFG_SUCCESS)
-        {
+	addStatus = addToTmpList();
+	if(addStatus == WEBCFG_SUCCESS)
+	{
 		WebcfgInfo("Added %d mp entries To tmp List\n", get_numOfMpDocs());
-		print_tmp_doc_list(mp_count);
-        }
+		print_tmp_doc_list(mp_count+1);
+	}
 	else
 	{
 		WebcfgError("addToTmpList failed\n");

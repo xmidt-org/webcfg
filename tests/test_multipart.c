@@ -168,13 +168,14 @@ void test_multipart()
 	processWebconfgSync(status);*/
 
 	initWebcfgProperties(WEBCFG_PROPERTIES_FILE);
+	//set_global_supplementarySync(1);
+	processWebconfgSync((int)status);
+	set_global_supplementarySync(1);
 	processWebconfgSync((int)status);
 	set_global_supplementarySync(1);
 	processWebconfgSync((int)status);
 	//set_global_supplementarySync(0);
-	processWebconfgSync((int)status);
-	/*set_global_supplementarySync(1);*/
-	
+	//processWebconfgSync((int)status);
 }
 
 void add_suites( CU_pSuite *suite )

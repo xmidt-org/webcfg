@@ -78,4 +78,5 @@ void multipart_destroy( multipartdocs_t *m );
 int get_multipartdoc_count();
 int update_supplementary_doc(multipartdocs_t * mp_doc);
 void delete_mp_doc();
+void delete_tmp_docs_list();
 #endif

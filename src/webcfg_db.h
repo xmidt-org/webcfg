@@ -143,6 +143,10 @@ void checkDBList(char *docname, uint32_t version,char *rootstr);
 
 WEBCFG_STATUS updateDBlist(char *docname, uint32_t version,char *rootstr);
 
+void checkTmpList();
+
+void checkTmpRootUpdate();
+
 int writebase64ToDBFile(char *base64_file_path, char *data);
 
 char * base64blobencoder(char * blob_data, size_t blob_size );
