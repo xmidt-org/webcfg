@@ -246,7 +246,7 @@ WEBCFG_STATUS webcfg_http_request(char **configData, int r_count, int status, lo
 		if(strlen(g_interface) == 0)
 		{
 			get_webCfg_interface(&interface);
-			interface = strdup("tun0"); //check here.
+			interface = strdup("wlan0"); //check here.
 			if(interface !=NULL)
 		        {
 		               strncpy(g_interface, interface, sizeof(g_interface)-1);
@@ -1778,59 +1778,68 @@ void parse_multipart(char *ptr, int no_of_bytes)
 
 void delete_mp_doc()
 {
+	multipartdocs_t *temp = NULL;
 	multipartdocs_t *head = NULL;
-	multipartdocs_t *mp_temp = NULL;
 	multipartdocs_t *supplementary = NULL;
+	multipartdocs_t *support = NULL;
+
 	head = g_mp_head;
 
-	printf("Inside delete docs\n");
 	if(get_global_supplementarySync() == 0)
 	{
-
 		while(head != NULL)
 		{
-			mp_temp = head;
-			if(mp_temp->isSupplementarySync == 0)
+			temp = head;
+			if( temp->isSupplementarySync == 0)
 			{
 				head = head->next;
-				WebcfgDebug("Delete mp_temp--> mp_temp->name_space %s mp_temp->etag %d\n", mp_temp->name_space, mp_temp->etag);
-				free(mp_temp);
-				mp_temp = NULL;
+				WebcfgDebug("Delete mp_node--> mp_temp->name_space %s mp_temp->etag %d\n", temp->name_space, temp->etag);
+				free(temp);
+				temp = NULL;
 			}
 			else
 			{
-				printf("Inside the supplementary\n");
-				pthread_mutex_lock (&multipart_t_mut);
-				if(supplementary != NULL)
+				support = (multipartdocs_t *)malloc(sizeof(multipartdocs_t));
+				if(support)
 				{
-					supplementary = mp_temp;
-					printf("Inside the supplementary null assign\n");
-					pthread_mutex_unlock (&multipart_t_mut);
-				}
-				else
-				{
-					while(supplementary->next != NULL)
+					memset(support, 0, sizeof(multipartdocs_t));
+
+					support->etag = head->etag;
+					support->name_space = strndup(head->name_space, strlen(head->name_space));
+
+					support->data = malloc(sizeof(char) * head->data_size );
+					support->data = memcpy(support->data, head->data, head->data_size );
+
+					support->data_size = (size_t)head->data_size;
+					support->isSupplementarySync = head->isSupplementarySync;
+					support->next = NULL;
+
+					if(supplementary == NULL)
 					{
-						supplementary = supplementary->next;
+						supplementary = support;
 					}
-					supplementary = mp_temp;	
-					pthread_mutex_unlock (&multipart_t_mut);
+					else
+					{
+						multipartdocs_t *supp_temp = NULL;
+						supp_temp = supplementary;
+						while(supp_temp->next !=NULL)
+						{
+							supp_temp = supp_temp->next;
+						}
+						supp_temp->next = support;
+					}
 				}
-				printf("before head->next\n");
 				head = head->next;
-				printf("After head->next\n");
 			}
 		}
-	
-	
-		pthread_mutex_lock (&multipart_t_mut);
-	    	g_mp_head = NULL;
+
+		g_mp_head = NULL;
 		if(supplementary != NULL)
 		{
 			g_mp_head = supplementary;
 		}
-		pthread_mutex_unlock (&multipart_t_mut);
 	}
+
 }
 
 int update_supplementary_doc(multipartdocs_t * mp_doc)

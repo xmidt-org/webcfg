@@ -172,7 +172,7 @@ void test_multipart()
 	processWebconfgSync((int)status);
 	set_global_supplementarySync(1);
 	processWebconfgSync((int)status);
-	set_global_supplementarySync(1);
+	set_global_supplementarySync(0);
 	processWebconfgSync((int)status);
 	//set_global_supplementarySync(0);
 	//processWebconfgSync((int)status);
