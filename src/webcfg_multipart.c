@@ -43,8 +43,8 @@
 #define WEBPA_CREATE_HEADER        "/etc/parodus/parodus_create_file.sh"
 #define CCSP_CRASH_STATUS_CODE      192
 #define MAX_PARAMETERNAME_LEN		4096
-#define WEBCFG_URL_FILE 	   "webcfg url" //check here.
-#define SUPPLEMENTARY_URL_FILE      "t2 url"
+#define WEBCFG_URL_FILE 	   "webpa url" //check here.
+#define SUPPLEMENTARY_URL_FILE      "telemetry url"
 /*----------------------------------------------------------------------------*/
 /*                               Data Structures                              */
 /*----------------------------------------------------------------------------*/
@@ -160,8 +160,8 @@ WEBCFG_STATUS webcfg_http_request(char **configData, int r_count, int status, lo
 	char *webConfigURL = NULL;
 	char *transID = NULL;
 	char docList[512] = {'\0'};
-	//char configURL[256] = { 0 };//check here
-	//char c[] = "{mac}";
+	char configURL[256] = { 0 };//check here
+	char c[] = "{mac}";
 	int rv = 0;
 
 	int content_res=0;
@@ -188,7 +188,7 @@ WEBCFG_STATUS webcfg_http_request(char **configData, int r_count, int status, lo
 			WEBCFG_FREE(transID);
 		}
 		//loadInitURLFromFile(&webConfigURL);
-		if(get_global_supplementarySync())
+		/*if(get_global_supplementarySync())
 		{
 			//readFromFile(SUPPLEMENTARY_URL_FILE, &webConfigURL, &len );
 			webConfigURL = strdup(SUPPLEMENTARY_URL_FILE);
@@ -197,9 +197,9 @@ WEBCFG_STATUS webcfg_http_request(char **configData, int r_count, int status, lo
 		{
 			//readFromFile(WEBCFG_URL_FILE, &webConfigURL, &len );
 			webConfigURL = strdup(WEBCFG_URL_FILE);
-		}
+		}*/
 		//loadInitURLFromFile(&webConfigURL);//check here
-		/*Get_Webconfig_URL(configURL);
+		Get_Webconfig_URL(configURL);
 		if(strlen(configURL)>0)
 		{
 			//Replace {mac} string from default init url with actual deviceMAC
@@ -214,8 +214,19 @@ WEBCFG_STATUS webcfg_http_request(char **configData, int r_count, int status, lo
 			curl_slist_free_all(headers_list);
 			curl_easy_cleanup(curl);
 			return WEBCFG_FAILURE;
-		}*/
+		}
 		WebcfgDebug("ConfigURL fetched is %s\n", webConfigURL);
+
+		if(strstr(webConfigURL, "/v2/"))
+		{
+			set_global_supplementarySync(0);
+			WebcfgInfo("The Sync is %d\n", get_global_supplementarySync());
+		}
+		else
+		{
+			set_global_supplementarySync(1);
+			WebcfgInfo("The Sync is %d\n", get_global_supplementarySync());
+		}
 
 		//Update query param in the URL based on the existing doc names from db
 		getConfigDocList(docList);
@@ -246,7 +257,7 @@ WEBCFG_STATUS webcfg_http_request(char **configData, int r_count, int status, lo
 		if(strlen(g_interface) == 0)
 		{
 			get_webCfg_interface(&interface);
-			interface = strdup("wlan0"); //check here.
+			//interface = strdup("wlan0"); //check here.
 			if(interface !=NULL)
 		        {
 		               strncpy(g_interface, interface, sizeof(g_interface)-1);
@@ -509,9 +520,12 @@ WEBCFG_STATUS processMsgpackSubdoc(char *transaction_id)
 	int max_retry_sleep = 0;
 	int backoff_max_time = 6;
 	int c=4;
+	//int backoff_max_time = 1;
+	//int c=1;
 	multipartdocs_t *akerIndex = NULL;
 	int akerSet = 0;
 	int mp_count = 0;
+	int current_doc_count = 0;
 
 	mp_count = get_multipartdoc_count();
 	if(transaction_id !=NULL)
@@ -554,6 +568,13 @@ WEBCFG_STATUS processMsgpackSubdoc(char *transaction_id)
 			mp = mp->next;
 			continue;
 		}
+		else
+		{
+			if(subdoc_node->isSupplementarySync == 0)
+			{
+				current_doc_count++;
+			}
+		}
 		WebcfgInfo("mp->name_space %s\n", mp->name_space);
 		WebcfgInfo("mp->etag %lu\n" , (long)mp->etag);
 		WebcfgDebug("mp->data %s\n" , mp->data);
@@ -565,6 +586,7 @@ WEBCFG_STATUS processMsgpackSubdoc(char *transaction_id)
 			akerIndex = mp;
 			akerSet = 1;
 			WebcfgDebug("skip aker doc and process at the end\n");
+			mp = mp->next;
 			continue;
 		}
 
@@ -606,8 +628,8 @@ WEBCFG_STATUS processMsgpackSubdoc(char *transaction_id)
 						if(eventFlag == 0)
 						{
 							WebcfgInfo("starting initEventHandlingTask\n");
-							//initEventHandlingTask();
-							//processWebcfgEvents();
+							initEventHandlingTask();
+							processWebcfgEvents();
 							eventFlag = 1;
 						}
 					}
@@ -636,6 +658,7 @@ WEBCFG_STATUS processMsgpackSubdoc(char *transaction_id)
 				{
 					WebcfgInfo("WebConfig SET Request\n");
 					setValues(reqParam, paramCount, ATOMIC_SET_WEBCONFIG, NULL, NULL, &ret, &ccspStatus);
+					ret = WDMP_SUCCESS;
 					if(ret == WDMP_SUCCESS)
 					{
 						WebcfgInfo("setValues success. ccspStatus : %d\n", ccspStatus);
@@ -653,13 +676,19 @@ WEBCFG_STATUS processMsgpackSubdoc(char *transaction_id)
 							addWebConfgNotifyMsg(mp->name_space, mp->etag, "success", "none", trans_id,0, "status",0, NULL, 200);
 							WebcfgDebug("deleteFromTmpList as doc is applied\n");
 							deleteFromTmpList(mp->name_space);
-							checkDBList(mp->name_space,mp->etag, NULL);
-							success_count++;
+
+							if(mp->isSupplementarySync == 0)
+							{
+								checkDBList(mp->name_space,mp->etag, NULL);
+								success_count++;
+								WebcfgDebug("The success_count is %d\n",success_count);
+							}
 						}
 
 						WebcfgDebug("The mp->entries_count %d\n",mp_count);
+						WebcfgDebug("The current doc  count in primary sync is %d\n",current_doc_count);
 						WebcfgDebug("The count %d\n",success_count);
-						if(success_count == mp_count)
+						if(success_count == current_doc_count && get_global_supplementarySync() == 0)
 						{
 							char * temp = strdup(g_ETAG);
 							uint32_t version=0;
@@ -762,6 +791,7 @@ WEBCFG_STATUS processMsgpackSubdoc(char *transaction_id)
 		}
 		mp = mp->next;
 	}
+	WebcfgDebug("The current_doc_count is %d\n",current_doc_count);
 	WEBCFG_FREE(trans_id);
 	//multipart_destroy(mp);
 
@@ -782,7 +812,6 @@ WEBCFG_STATUS processMsgpackSubdoc(char *transaction_id)
 			{
 				WebcfgError("Aker is not ready to process requests, retry is required\n");
 				updateTmpList(subdoc_node, akerIndex->name_space, akerIndex->etag, "pending", "aker_service_unavailable", 0, 0, 0);
-
 				if(backoffRetryTime >= max_retry_sleep)
 				{
 					WebcfgError("aker doc max retry reached\n");
@@ -815,15 +844,13 @@ WEBCFG_STATUS processMsgpackSubdoc(char *transaction_id)
 
 	if(success_count) //No DB update when all docs failed.
 	{
-		size_t j=success_count;
 		
 		webconfig_db_data_t* temp1 = NULL;
 		temp1 = get_global_db_node();
 
 		while(temp1 )
 		{
-			WebcfgInfo("DB wd->entries[%lu].name: %s, version: %lu\n", success_count-j, temp1->name, (long)temp1->version);
-			j--;
+			WebcfgInfo("DB wd->name: %s, version: %lu\n",  temp1->name, (long)temp1->version);
 			temp1 = temp1->next;
 		}
 		WebcfgDebug("addNewDocEntry\n");
@@ -1329,7 +1356,7 @@ void createCurlHeader( struct curl_slist *list, struct curl_slist **header_list,
 	getAuthToken();
 	//int len=0; char *token= NULL;//check here
 	//readFromFile("/tmp/webcfg_token", &token, &len );
-	//strcpy(get_global_auth_token(), "");
+	//strcpy(get_global_auth_token(), );
 
 	WebcfgDebug("get_global_auth_token() is %s\n", get_global_auth_token());
 
@@ -1750,7 +1777,6 @@ void parse_multipart(char *ptr, int no_of_bytes)
 				WebcfgDebug("mp_node->data_size is %zu\n", mp_node->data_size);
 				WebcfgDebug("mp_node->isSupplementarySync is %d\n", mp_node->isSupplementarySync);
 
-				pthread_mutex_lock(&multipart_t_mut);
 				if(mp_node->isSupplementarySync == 1)
 				{
 					update = update_supplementary_doc(mp_node);
@@ -1761,7 +1787,6 @@ void parse_multipart(char *ptr, int no_of_bytes)
 					{
 						printf("Inside head\n");
 						g_mp_head = mp_node;
-						pthread_mutex_unlock(&multipart_t_mut);
 					}
 					else
 					{
@@ -1773,7 +1798,6 @@ void parse_multipart(char *ptr, int no_of_bytes)
 							temp = temp->next;
 						}
 						temp->next = mp_node;
-						pthread_mutex_unlock(&multipart_t_mut);
 					}
 				}
 			}

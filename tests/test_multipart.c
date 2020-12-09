@@ -38,6 +38,8 @@ char *url = NULL;
 char *interface = NULL;
 char device_mac[32] = {'\0'};
 
+void printTest();
+
 char* get_deviceMAC()
 {
 	strcpy(device_mac, "b42xxxxxxxxx");
@@ -168,14 +170,49 @@ void test_multipart()
 	processWebconfgSync(status);*/
 
 	initWebcfgProperties(WEBCFG_PROPERTIES_FILE);
-	//set_global_supplementarySync(1);
+	set_global_supplementarySync(0);
+	printTest();
 	processWebconfgSync((int)status);
 	set_global_supplementarySync(1);
+	printTest();
+	processWebconfgSync((int)status);
+/*	set_global_supplementarySync(0);
+	printTest();
+	processWebconfgSync((int)status);
+	set_global_supplementarySync(1);
+	printTest();
+	processWebconfgSync((int)status);
+	set_global_supplementarySync(1);
+	printTest();
 	processWebconfgSync((int)status);
 	set_global_supplementarySync(0);
+	printTest();
 	processWebconfgSync((int)status);
-	//set_global_supplementarySync(0);
-	//processWebconfgSync((int)status);
+	set_global_supplementarySync(0);
+	printTest();
+	processWebconfgSync((int)status);
+	set_global_supplementarySync(1);
+	printTest();
+	processWebconfgSync((int)status);
+	set_global_supplementarySync(0);
+	printTest();
+	processWebconfgSync((int)status);
+	set_global_supplementarySync(1);
+	printTest();
+	processWebconfgSync((int)status);*/
+
+}
+
+void printTest()
+{
+	int count = get_global_supplementarySync();
+	printf("\n");
+	printf("\n");
+	printf("------------------------------------------------------------\n");
+	printf("------------Testing with Supplementary Sync %s--------------\n",count?"ON":"OFF");
+	printf("------------------------------------------------------------\n");
+	printf("\n");
+	printf("\n");
 }
 
 void add_suites( CU_pSuite *suite )
