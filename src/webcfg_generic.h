@@ -52,6 +52,8 @@ int setForceSync(char* pString, char *transactionId,int *session_status);
 int getForceSync(char** pString, char **transactionId);
 int Get_Webconfig_URL( char *pString);
 int Set_Webconfig_URL( char *pString);
+int Get_Supplementary_URL( char *name, char *pString);
+int Set_Supplementary_URL( char *name, char *pString);
 
 /**
  * @brief setValues interface sets the parameter value.

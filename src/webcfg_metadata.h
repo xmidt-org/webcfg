@@ -43,4 +43,6 @@ void setsupplementaryDocs( char * value);
 char * getsupportedDocs();
 char * getsupportedVersion();
 char * getsupplementaryDocs();
+char * getSupplementaryUrls();
+void supplementaryUrls();
 #endif

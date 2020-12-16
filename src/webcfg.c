@@ -104,7 +104,16 @@ void *WebConfigMultipartTask(void *status)
 
 	initDB(WEBCFG_DB_FILE);
 
+	//For Primary sync set flag to 0
+	set_global_supplementarySync(0);
 	processWebconfgSync((int)Status);
+
+	//For supplementary sync set flag to 1
+	set_global_supplementarySync(1);
+	processWebconfgSync((int)Status);
+
+	//Resetting the supplementary sync
+	set_global_supplementarySync(0);
 
 	while(1)
 	{

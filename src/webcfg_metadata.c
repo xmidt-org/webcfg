@@ -16,6 +16,7 @@
 #include <errno.h>
 #include <string.h>
 #include <stdlib.h>
+#include <ctype.h>
 #include "webcfg_log.h"
 #include "webcfg_metadata.h"
 #include "webcfg_multipart.h"
@@ -40,6 +41,7 @@ typedef struct SubDocSupportMap
 static char * supported_bits = NULL;
 static char * supported_version = NULL;
 static char * supplementary_docs = NULL;
+static char * supplementary_urls[64] = {0};
 SubDocSupportMap_t *g_sdInfoHead = NULL;
 SubDocSupportMap_t *g_sdInfoTail = NULL;
 /*----------------------------------------------------------------------------*/
@@ -156,7 +158,9 @@ void initWebcfgProperties(char * filename)
 			value[strlen(value)-1] = '\0';
 			setsupplementaryDocs(value);
 			value = NULL;
+			supplementaryUrls();
 		}
+		
 	}
 	fclose(fp);
 
@@ -268,6 +272,28 @@ SubDocSupportMap_t * get_global_sdInfoTail(void)
     return tmp;
 }
 
+void supplementaryUrls()
+{
+	int count = 0;
+	char* url = NULL;
+	url = strndup(getsupplementaryDocs(), strlen(getsupplementaryDocs()));
+
+	char* token = strtok(url, ",");
+
+	while(token != NULL)
+	{
+		supplementary_urls[count] = token;
+		*supplementary_urls[count] = toupper((unsigned char) *supplementary_urls[count]);
+		WebcfgInfo("The supplementary_urls[%d] is %s\n", count, supplementary_urls[count]);
+		count++;
+		token = strtok(NULL, ",");
+	}
+}
+
+char* getSupplementaryUrls()
+{
+	return *supplementary_urls;
+}
 void displaystruct()
 {
 	SubDocSupportMap_t *temp =NULL;

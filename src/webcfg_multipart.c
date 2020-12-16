@@ -188,18 +188,36 @@ WEBCFG_STATUS webcfg_http_request(char **configData, int r_count, int status, lo
 			WEBCFG_FREE(transID);
 		}
 		//loadInitURLFromFile(&webConfigURL);
-		/*if(get_global_supplementarySync())
+		if(get_global_supplementarySync() == 0)
 		{
 			//readFromFile(SUPPLEMENTARY_URL_FILE, &webConfigURL, &len );
-			webConfigURL = strdup(SUPPLEMENTARY_URL_FILE);
+			Get_Webconfig_URL(configURL);
+			WebcfgInfo("Primary sync \n");
+			//webConfigURL = strdup(SUPPLEMENTARY_URL_FILE);
 		}
 		else
 		{
+			char* docname[64] = {0};
+			int i = 0;
+			*docname = getSupplementaryUrls();
+			int docs_size = sizeof(docname)/sizeof(*docname);
+
+			for(i=0; i<docs_size; i++)
+			{
+				if(docname[i] != NULL)
+				{
+					WebcfgInfo("Supplementary sync for %s\n",docname[i]);
+					Get_Supplementary_URL(docname[i], configURL);
+				}
+				else
+				{
+					break;
+				}
+			}
 			//readFromFile(WEBCFG_URL_FILE, &webConfigURL, &len );
-			webConfigURL = strdup(WEBCFG_URL_FILE);
-		}*/
+			//webConfigURL = strdup(WEBCFG_URL_FILE);
+		}
 		//loadInitURLFromFile(&webConfigURL);//check here
-		Get_Webconfig_URL(configURL);
 		if(strlen(configURL)>0)
 		{
 			//Replace {mac} string from default init url with actual deviceMAC
@@ -216,17 +234,6 @@ WEBCFG_STATUS webcfg_http_request(char **configData, int r_count, int status, lo
 			return WEBCFG_FAILURE;
 		}
 		WebcfgDebug("ConfigURL fetched is %s\n", webConfigURL);
-
-		if(strstr(webConfigURL, "/v2/"))
-		{
-			set_global_supplementarySync(0);
-			WebcfgInfo("The Sync is %d\n", get_global_supplementarySync());
-		}
-		else
-		{
-			set_global_supplementarySync(1);
-			WebcfgInfo("The Sync is %d\n", get_global_supplementarySync());
-		}
 
 		//Update query param in the URL based on the existing doc names from db
 		getConfigDocList(docList);
@@ -947,16 +954,18 @@ size_t headr_callback(char *buffer, size_t size, size_t nitems)
 		if( strncasecmp(CONTENT_LENGTH_HEADER, buffer, content_len) == 0 )
 		{
 			header_value = strtok(buffer, ":");
+			WebcfgInfo("After header value \n");
 			while( header_value != NULL )
 			{
 				header_value = strtok(NULL, ":");
 				if(header_value != NULL)
 				{
+					WebcfgInfo("Inside header value \n");
 					strncpy(header_str, header_value, sizeof(header_str)-1);
 					stripspaces(header_str, &final_header);
 					if(g_contentLen != NULL)
 					{
-						WEBCFG_FREE(g_contentLen);						
+						WEBCFG_FREE(g_contentLen);
 					}
 					g_contentLen = strdup(final_header);
 				}
