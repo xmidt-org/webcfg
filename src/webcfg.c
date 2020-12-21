@@ -92,6 +92,8 @@ void *WebConfigMultipartTask(void *status)
 	int forced_sync=0;
         int Status = 0;
 	int retry_flag = 0;
+	char* docname[64] = {0};
+	int i = 0;
 	struct timespec ts;
 	Status = (unsigned long)status;
 
@@ -106,11 +108,26 @@ void *WebConfigMultipartTask(void *status)
 
 	//For Primary sync set flag to 0
 	set_global_supplementarySync(0);
-	processWebconfgSync((int)Status);
+	processWebconfgSync((int)Status, NULL);
 
 	//For supplementary sync set flag to 1
 	set_global_supplementarySync(1);
-	processWebconfgSync((int)Status);
+
+	*docname = getSupplementaryUrls();
+	int docs_size = sizeof(docname)/sizeof(*docname);
+
+	for(i=0; i<docs_size; i++)
+	{
+		if(docname[i] != NULL)
+		{
+			WebcfgInfo("Supplementary sync for %s\n",docname[i]);
+			processWebconfgSync((int)Status, docname[i]);
+		}
+		else
+		{
+			break;
+		}
+	}
 
 	//Resetting the supplementary sync
 	set_global_supplementarySync(0);
@@ -120,7 +137,7 @@ void *WebConfigMultipartTask(void *status)
 		if(forced_sync)
 		{
 			WebcfgDebug("Triggered Forced sync\n");
-			processWebconfgSync((int)Status);
+			processWebconfgSync((int)Status, NULL);
 			WebcfgDebug("reset forced_sync after sync\n");
 			forced_sync = 0;
 			setForceSync("", "", 0);
@@ -289,7 +306,7 @@ int get_global_supplementarySync()
 /*----------------------------------------------------------------------------*/
 /*                             Internal functions                             */
 /*----------------------------------------------------------------------------*/
-void processWebconfgSync(int status)
+void processWebconfgSync(int status, char* docname)
 {
 	int retry_count=0;
 	int r_count=0;
@@ -317,7 +334,7 @@ void processWebconfgSync(int status)
 			retry_count=0;
 			break;
 		}
-		configRet = webcfg_http_request(&webConfigData, r_count, status, &res_code, &transaction_uuid, ct, &dataSize);
+		configRet = webcfg_http_request(&webConfigData, r_count, status, &res_code, &transaction_uuid, ct, &dataSize, docname);
 		if(configRet == 0)
 		{
 			rv = handlehttpResponse(res_code, webConfigData, retry_count, transaction_uuid, ct, dataSize);

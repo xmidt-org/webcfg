@@ -172,10 +172,10 @@ void test_multipart()
 	initWebcfgProperties(WEBCFG_PROPERTIES_FILE);
 	set_global_supplementarySync(0);
 	printTest();
-	processWebconfgSync((int)status);
+	processWebconfgSync((int)status, NULL);
 	set_global_supplementarySync(1);
 	printTest();
-	processWebconfgSync((int)status);
+	processWebconfgSync((int)status, NULL);
 /*	set_global_supplementarySync(0);
 	printTest();
 	processWebconfgSync((int)status);

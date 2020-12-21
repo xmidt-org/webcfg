@@ -146,7 +146,7 @@ WEBCFG_STATUS checkAkerDoc();
 * @param[out] contentType config data contentType 
 * @return returns 0 if success, otherwise failed to fetch auth token and will be retried.
 */
-WEBCFG_STATUS webcfg_http_request(char **configData, int r_count, int status, long *code, char **transaction_id, char* contentType, size_t *dataSize)
+WEBCFG_STATUS webcfg_http_request(char **configData, int r_count, int status, long *code, char **transaction_id, char* contentType, size_t *dataSize, char* docname)
 {
 	CURL *curl;
 	CURLcode res;
@@ -188,32 +188,26 @@ WEBCFG_STATUS webcfg_http_request(char **configData, int r_count, int status, lo
 			WEBCFG_FREE(transID);
 		}
 		//loadInitURLFromFile(&webConfigURL);
+		WebcfgInfo("The get_global_supplementarySync() is %d\n", get_global_supplementarySync());
 		if(get_global_supplementarySync() == 0)
 		{
 			//readFromFile(SUPPLEMENTARY_URL_FILE, &webConfigURL, &len );
 			Get_Webconfig_URL(configURL);
 			WebcfgInfo("Primary sync \n");
+			WebcfgInfo("primary sync url fetched is %s\n", configURL);
 			//webConfigURL = strdup(SUPPLEMENTARY_URL_FILE);
 		}
 		else
 		{
-			char* docname[64] = {0};
-			int i = 0;
-			*docname = getSupplementaryUrls();
-			int docs_size = sizeof(docname)/sizeof(*docname);
 
-			for(i=0; i<docs_size; i++)
+			if(docname != NULL)
 			{
-				if(docname[i] != NULL)
-				{
-					WebcfgInfo("Supplementary sync for %s\n",docname[i]);
-					Get_Supplementary_URL(docname[i], configURL);
-				}
-				else
-				{
-					break;
-				}
+				WebcfgInfo("Supplementary sync for %s\n",docname);
+				Get_Supplementary_URL(docname, configURL);
+				WebcfgInfo("Supplementary sync \n");
+				WebcfgInfo("Supplementary sync url fetched is %s\n", configURL);
 			}
+
 			//readFromFile(WEBCFG_URL_FILE, &webConfigURL, &len );
 			//webConfigURL = strdup(WEBCFG_URL_FILE);
 		}
@@ -223,7 +217,16 @@ WEBCFG_STATUS webcfg_http_request(char **configData, int r_count, int status, lo
 			//Replace {mac} string from default init url with actual deviceMAC
 			WebcfgDebug("replaceMacWord to actual device mac\n");
 			webConfigURL = replaceMacWord(configURL, c, get_deviceMAC());
-			Set_Webconfig_URL(webConfigURL);
+			if(get_global_supplementarySync() == 0)
+			{
+				WebcfgInfo("Inside webcfg condition\n");
+				Set_Webconfig_URL(webConfigURL);
+			}
+			else
+			{
+				WebcfgInfo("Inside supplementary condition\n");
+				Set_Supplementary_URL(docname, webConfigURL);
+			}
 		}
 		else
 		{
@@ -233,7 +236,7 @@ WEBCFG_STATUS webcfg_http_request(char **configData, int r_count, int status, lo
 			curl_easy_cleanup(curl);
 			return WEBCFG_FAILURE;
 		}
-		WebcfgDebug("ConfigURL fetched is %s\n", webConfigURL);
+		WebcfgInfo("ConfigURL fetched is %s\n", webConfigURL);
 
 		//Update query param in the URL based on the existing doc names from db
 		getConfigDocList(docList);
