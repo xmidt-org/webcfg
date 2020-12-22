@@ -428,6 +428,7 @@ WEBCFG_STATUS addToTmpList()
 				new_node->error_code = 0;
 				new_node->trans_id = 0;
 				new_node->retry_count = 0;
+				new_node->retry_expiry_timestamp = 0;
 			}
 		}
 		else
@@ -449,6 +450,7 @@ WEBCFG_STATUS addToTmpList()
 					new_node->error_code = 0;
 					new_node->trans_id = 0;
 					new_node->retry_count = 0;
+					new_node->retry_expiry_timestamp = 0;
 
 					WebcfgDebug("new_node->name is %s\n", new_node->name);
 					WebcfgDebug("new_node->version is %lu\n", (long)new_node->version);
@@ -456,6 +458,7 @@ WEBCFG_STATUS addToTmpList()
 					WebcfgDebug("new_node->isSupplementarySync is %d\n", new_node->isSupplementarySync);
 					WebcfgDebug("new_node->error_details is %s\n", new_node->error_details);
 					WebcfgDebug("new_node->retry_count is %d\n", new_node->retry_count);
+					WebcfgDebug("new_node->retry_expiry_timestamp is %lld\n", new_node->retry_expiry_timestamp);
 				}
 
 			}
@@ -1077,6 +1080,7 @@ int process_webcfgdbblob( blob_struct_t *bd, msgpack_object *obj )
 
     return 0;
 }
+
 char * base64blobencoder(char * blob_data, size_t blob_size )
 {
 	char* b64buffer =  NULL;
@@ -1136,4 +1140,27 @@ webconfig_tmp_data_t * getTmpNode(char *docname)
 		temp= temp->next;
 	}
 	return NULL;
+}
+
+//update retry_expiry_timestamp for each doc
+WEBCFG_STATUS updateFailureTimeStamp(webconfig_tmp_data_t *temp, char *docname, long long timestamp)
+{
+	if (NULL != temp)
+	{
+		WebcfgDebug("updateFailureTimeStamp: node is pointing to temp->name %s \n",temp->name);
+		pthread_mutex_lock (&webconfig_tmp_data_mut);
+		WebcfgDebug("mutex_lock in updateFailureTimeStamp\n");
+		if( strcmp(docname, temp->name) == 0)
+		{
+			temp->retry_expiry_timestamp = timestamp;
+			WebcfgInfo("doc %s is updated with timestamp %lld\n", docname, timestamp);
+			pthread_mutex_unlock (&webconfig_tmp_data_mut);
+			WebcfgDebug("mutex_unlock in current temp details\n");
+			return WEBCFG_SUCCESS;
+		}
+		pthread_mutex_unlock (&webconfig_tmp_data_mut);
+		WebcfgDebug("mutex_unlock in updateTmpList\n");
+	}
+	WebcfgError("updateFailureTimeStamp failed as doc %s is not in tmp list\n", docname);
+	return WEBCFG_FAILURE;
 }

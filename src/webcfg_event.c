@@ -930,6 +930,7 @@ WEBCFG_STATUS retryMultipartSubdoc(webconfig_tmp_data_t *docNode, char *docName)
 							updateTmpList(docNode, gmp->name_space, gmp->etag, "pending", result, ccspStatus, 0, 1);
 							addWebConfgNotifyMsg(gmp->name_space, gmp->etag, "pending", result, get_global_transID(), 0,"status",ccspStatus, NULL, 200);
 							set_doc_fail(1);
+							updateFailureTimeStamp(docNode, gmp->name_space, getRetryExpiryTimeout());
 							WebcfgDebug("the retry flag value is %d\n", get_doc_fail());
 						}
 						else

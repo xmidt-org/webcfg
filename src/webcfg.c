@@ -60,6 +60,7 @@ bool g_shutdown  = false;
 static int g_testfile = 0;
 #endif
 static int g_supplementarySync = 0;
+static int g_retry_timer = 900;
 /*----------------------------------------------------------------------------*/
 /*                             Function Prototypes                            */
 /*----------------------------------------------------------------------------*/
@@ -132,6 +133,7 @@ void *WebConfigMultipartTask(void *status)
 	//Resetting the supplementary sync
 	set_global_supplementarySync(0);
 
+	WebcfgInfo("Before While loop\n");
 	while(1)
 	{
 		if(forced_sync)
@@ -153,13 +155,14 @@ void *WebConfigMultipartTask(void *status)
 		}
 
 		retry_flag = get_doc_fail();
-		WebcfgDebug("The retry flag value is %d\n", retry_flag);
+		WebcfgInfo("The retry flag value is %d\n", retry_flag);
 		if (retry_flag == 1)
 		{
 			clock_gettime(CLOCK_REALTIME, &ts);
-			ts.tv_sec += 900;
+			ts.tv_sec += get_retry_timer();
+			WebcfgInfo("The wait time is %lld and timeout triggers at %s\n",(long long)ts.tv_sec, printTime((long long)ts.tv_sec));
 
-			WebcfgDebug("B4 sync_condition pthread_cond_timedwait\n");
+			WebcfgInfo("B4 sync_condition pthread_cond_timedwait\n");
 			rv = pthread_cond_timedwait(&sync_condition, &sync_mutex, &ts);
 			WebcfgInfo("The retry flag value is %d\n", get_doc_fail());
 			WebcfgInfo("The value of rv %d\n", rv);
@@ -171,10 +174,11 @@ void *WebConfigMultipartTask(void *status)
 
 		if(rv == ETIMEDOUT && get_doc_fail() == 1)
 		{
-			WebcfgDebug("Inside the timedout condition\n");
+			WebcfgInfo("Inside the timedout condition\n");
 			set_doc_fail(0);
+			set_retry_timer(900);
 			failedDocsRetry();
-			WebcfgDebug("After the failedDocsRetry\n");
+			WebcfgInfo("After the failedDocsRetry\n");
 		}
 		else if(!rv && !g_shutdown)
 		{
@@ -303,6 +307,15 @@ int get_global_supplementarySync()
     return g_supplementarySync;
 }
 
+int get_retry_timer()
+{
+	return g_retry_timer;
+}
+
+void set_retry_timer(int value)
+{
+	g_retry_timer = value;
+}
 /*----------------------------------------------------------------------------*/
 /*                             Internal functions                             */
 /*----------------------------------------------------------------------------*/
@@ -601,3 +614,17 @@ void JoinThread (pthread_t threadId)
 		WebcfgError("Error joining thread threadId\n");
 	}
 }
+
+//To print the value in readable format
+char* printTime(long long time)
+{
+	struct tm  ts;
+	static char buf[80] = "";
+
+	// Format time, "ddd yymmdd hh:mm:ss zzz"
+	time_t rawtime = time;
+	ts = *localtime(&rawtime);
+	strftime(buf, sizeof(buf), "%a %y%m%d %H:%M:%S", &ts);
+	return buf;
+}
+

@@ -49,6 +49,7 @@ typedef struct webconfig_tmp_data
 	uint16_t error_code;
 	uint16_t trans_id;
 	int isSupplementarySync;
+	long long retry_expiry_timestamp;
         struct webconfig_tmp_data *next;
 } webconfig_tmp_data_t;
 
@@ -172,4 +173,5 @@ webconfig_db_data_t* decodeData(const void * data, size_t len);
  */
 const char* webcfgdbparam_strerror( int errnum );
 
+WEBCFG_STATUS updateFailureTimeStamp(webconfig_tmp_data_t *temp, char *docname, long long timestamp);
 #endif

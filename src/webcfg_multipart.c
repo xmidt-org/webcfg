@@ -45,6 +45,7 @@
 #define MAX_PARAMETERNAME_LEN		4096
 #define WEBCFG_URL_FILE 	   "webpa url" //check here.
 #define SUPPLEMENTARY_URL_FILE      "telemetry url"
+#define MAX_RETRY_TIMEOUT              900
 /*----------------------------------------------------------------------------*/
 /*                               Data Structures                              */
 /*----------------------------------------------------------------------------*/
@@ -752,6 +753,7 @@ WEBCFG_STATUS processMsgpackSubdoc(char *transaction_id)
 							else
 							{
 								set_doc_fail(1);
+								updateFailureTimeStamp(subdoc_node, mp->name_space, getRetryExpiryTimeout());
 								snprintf(result,MAX_VALUE_LEN,"crash_retrying:%s", errDetails);
 							}
 							WebcfgDebug("The result is %s\n",result);
@@ -854,7 +856,7 @@ WEBCFG_STATUS processMsgpackSubdoc(char *transaction_id)
 
 	if(success_count) //No DB update when all docs failed.
 	{
-		
+
 		webconfig_db_data_t* temp1 = NULL;
 		temp1 = get_global_db_node();
 
@@ -2081,19 +2083,42 @@ void failedDocsRetry()
 	{
 		if((temp->error_code == CCSP_CRASH_STATUS_CODE) || (temp->error_code == 204 && (temp->error_details != NULL && strstr(temp->error_details, "doc_unsupported") == NULL)) || (temp->error_code == 191) || (temp->error_code == 193) || (temp->error_code == 190))
 		{
-			WebcfgInfo("Retrying for subdoc %s error_code %lu\n", temp->name, (long)temp->error_code);
-			if(retryMultipartSubdoc(temp, temp->name) == WEBCFG_SUCCESS)
+			if(checkRetryTimer(temp->retry_expiry_timestamp))
 			{
-				WebcfgDebug("The subdoc %s set is success\n", temp->name);
+				WebcfgInfo("Retrying for subdoc %s error_code %lu\n", temp->name, (long)temp->error_code);
+				if(retryMultipartSubdoc(temp, temp->name) == WEBCFG_SUCCESS)
+				{
+					WebcfgInfo("The subdoc %s set is success\n", temp->name);
+				}
+				else
+				{
+					WebcfgInfo("The subdoc %s set is failed\n", temp->name);
+				}
 			}
 			else
 			{
-				WebcfgDebug("The subdoc %s set is failed\n", temp->name);
+				struct timespec ct;
+
+				long long present_time = 0;
+				int time_diff = 0;
+
+				clock_gettime(CLOCK_REALTIME, &ct);
+				present_time = ct.tv_sec;
+
+				//To get the exact time diff for retry from present time do the below
+				time_diff = temp->retry_expiry_timestamp - present_time;
+				WebcfgInfo("The docname is %s and diff is %d\n", temp->name, time_diff);
+
+				//To set the lowest retry timeout of all the docs
+				if(get_retry_timer() > time_diff)
+				{
+					set_retry_timer(time_diff);
+				}
 			}
 		}
 		else
 		{
-			WebcfgDebug("Retry skipped for %s (%s)\n",temp->name,temp->error_details);
+			WebcfgInfo("Retry skipped for %s (%s)\n",temp->name,temp->error_details);
 		}
 		temp= temp->next;
 	}
@@ -2141,3 +2166,41 @@ int get_multipartdoc_count()
 	}
 	return count;
 }
+
+//To set the retry_expiry_timestamp to 15 min from current time
+long long getRetryExpiryTimeout()
+{
+	struct timespec ts;
+	struct timeval tp;
+
+	gettimeofday(&tp, NULL);
+
+	ts.tv_sec = tp.tv_sec;
+	ts.tv_nsec = tp.tv_usec * 1000;
+
+	ts.tv_sec += MAX_RETRY_TIMEOUT;
+
+	return (long long)ts.tv_sec;
+}
+
+//To check the timer expiry for retry
+int checkRetryTimer( long long timestamp)
+{
+	struct timespec rt;
+
+	long long cur_time = 0;
+
+	clock_gettime(CLOCK_REALTIME, &rt);
+	cur_time = rt.tv_sec;
+
+	WebcfgInfo("The current time in device is %lld at %s\n", cur_time, printTime(cur_time));
+	WebcfgInfo("The Retry timestamp is %lld at %s\n", timestamp, printTime(timestamp));
+
+	if(cur_time >= timestamp)
+	{
+		WebcfgInfo("Retry timestamp is equal to current time\n");
+		return 1;
+	}
+	return 0;
+}
+

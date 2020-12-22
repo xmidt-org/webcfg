@@ -79,4 +79,8 @@ long timeVal_Diff(struct timespec *starttime, struct timespec *finishtime);
 void initWebConfigClient();
 pthread_t get_global_client_threadid();
 void JoinThread (pthread_t threadId);
+
+char* printTime(long long time);
+void set_retry_timer(int value);
+int get_retry_timer();
 #endif
