@@ -118,6 +118,7 @@ void *WebConfigMultipartTask(void *status)
 
 	initDB(WEBCFG_DB_FILE);
 
+	initMaintenanceTimer();
 	//For Primary sync set flag to 0
 	set_global_supplementarySync(0);
 	processWebconfgSync((int)Status, NULL);

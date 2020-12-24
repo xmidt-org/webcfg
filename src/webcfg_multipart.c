@@ -751,8 +751,29 @@ WEBCFG_STATUS processMsgpackSubdoc(char *transaction_id)
 							}
 							else
 							{
+
+								struct timespec ct;
+								long long present_time = 0;
+								long long expiry_time = 0;
+								int time_diff = 0;
+
+								expiry_time = getRetryExpiryTimeout();
 								set_doc_fail(1);
-								updateFailureTimeStamp(subdoc_node, mp->name_space, getRetryExpiryTimeout());
+
+								updateFailureTimeStamp(subdoc_node, mp->name_space, expiry_time);
+								WebcfgInfo("The retry_timer is %d and timeout generated is %lld\n", get_retry_timer(), expiry_time);
+								clock_gettime(CLOCK_REALTIME, &ct);
+								present_time = ct.tv_sec;
+
+								//To get the exact time diff for retry from present time do the below
+								time_diff = getRetryExpiryTimeout() - present_time;
+								if(get_retry_timer() > time_diff)
+								{
+									WebcfgInfo("Inside timer\n");
+									set_retry_timer(time_diff);
+									WebcfgInfo("The retry_timer is %d after set\n", get_retry_timer());
+								}
+
 								snprintf(result,MAX_VALUE_LEN,"crash_retrying:%s", errDetails);
 							}
 							WebcfgDebug("The result is %s\n",result);
