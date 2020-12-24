@@ -30,8 +30,12 @@
 
 #ifdef BUILD_YOCTO
 #define DEVICE_PROPS_FILE       "/etc/device.properties"
+#define FW_START_FILE		"/nvram/.FirmwareUpgradeStartTime"
+#define FW_END_FILE		    "/nvram/.FirmwareUpgradeEndTime"
 #else
 #define DEVICE_PROPS_FILE       "/tmp/device.properties"
+#define FW_START_FILE		"/tmp/.FirmwareUpgradeStartTime"
+#define FW_END_FILE		    "/tmp/.FirmwareUpgradeEndTime"
 #endif
 
 #define WEBCFG_FREE(__x__) if(__x__ != NULL) { free((void*)(__x__)); __x__ = NULL;} else {printf("Trying to free null pointer\n");}
@@ -83,4 +87,8 @@ void JoinThread (pthread_t threadId);
 char* printTime(long long time);
 void set_retry_timer(int value);
 int get_retry_timer();
+int checkMaintenanceTimer();
+int readFWFiles(char* file_path, long *range);
+int maintenanceSyncSeconds();
+long getTimeInSeconds(long long time);
 #endif

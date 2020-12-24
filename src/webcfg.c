@@ -45,6 +45,9 @@
 #define TEST_FILE_LOCATION		"/tmp/multipart.bin"
 #endif
 #endif
+
+#define MIN_MAINTENANCE_TIME		3600					//1hrs in seconds
+#define MAX_MAINTENANCE_TIME		14400					//4hrs in seconds
 /*----------------------------------------------------------------------------*/
 /*                               Data Structures                              */
 /*----------------------------------------------------------------------------*/
@@ -61,11 +64,15 @@ static int g_testfile = 0;
 #endif
 static int g_supplementarySync = 0;
 static int g_retry_timer = 900;
+static long g_maintenance_time = 0;
+static long g_fw_start_time = 0;
+static long g_fw_end_time = 0;
 /*----------------------------------------------------------------------------*/
 /*                             Function Prototypes                            */
 /*----------------------------------------------------------------------------*/
 void *WebConfigMultipartTask(void *status);
 int handlehttpResponse(long response_code, char *webConfigData, int retry_count, char* transaction_uuid, char* ct, size_t dataSize);
+void initMaintenanceTimer();
 /*----------------------------------------------------------------------------*/
 /*                             External Functions                             */
 /*----------------------------------------------------------------------------*/
@@ -93,8 +100,12 @@ void *WebConfigMultipartTask(void *status)
 	int forced_sync=0;
         int Status = 0;
 	int retry_flag = 0;
+	int maintenance_doc_sync = 0;
 	char* docname[64] = {0};
 	int i = 0;
+	int value = 0;
+	int wait_flag = 1;
+	time_t t;
 	struct timespec ts;
 	Status = (unsigned long)status;
 
@@ -145,6 +156,28 @@ void *WebConfigMultipartTask(void *status)
 			setForceSync("", "", 0);
 		}
 
+		if(!wait_flag)
+		{
+			if(maintenance_doc_sync == 1 && checkMaintenanceTimer() == 1 )
+			{
+				WebcfgInfo("Triggered Supplementary doc boot sync\n");
+				for(i=0; i<docs_size; i++)
+				{
+					if(docname[i] != NULL)
+					{
+						WebcfgInfo("Supplementary sync for %s\n",docname[i]);
+						processWebconfgSync((int)Status, docname[i]);
+					}
+					else
+					{
+						break;
+					}
+				}
+				initMaintenanceTimer();
+				maintenance_doc_sync = 0;
+				set_global_supplementarySync(0);
+			}
+		}
 		pthread_mutex_lock (&sync_mutex);
 
 		if (g_shutdown)
@@ -154,14 +187,28 @@ void *WebConfigMultipartTask(void *status)
 			break;
 		}
 
+		clock_gettime(CLOCK_REALTIME, &ts);
+
 		retry_flag = get_doc_fail();
 		WebcfgInfo("The retry flag value is %d\n", retry_flag);
-		if (retry_flag == 1)
-		{
-			clock_gettime(CLOCK_REALTIME, &ts);
-			ts.tv_sec += get_retry_timer();
-			WebcfgInfo("The wait time is %lld and timeout triggers at %s\n",(long long)ts.tv_sec, printTime((long long)ts.tv_sec));
 
+		if ( retry_flag == 0)
+		{
+			set_retry_timer(maintenanceSyncSeconds());
+			ts.tv_sec += get_retry_timer();
+			maintenance_doc_sync = 1;
+			WebcfgInfo("The Maintenance wait time is set\n");
+			WebcfgInfo("The wait time is %lld and timeout triggers at %s\n",(long long)ts.tv_sec, printTime((long long)ts.tv_sec));
+		}
+		else
+		{
+			ts.tv_sec += get_retry_timer();
+			WebcfgInfo("The retry wait time is set\n");
+			WebcfgInfo("The wait time is %lld and timeout triggers at %s\n",(long long)ts.tv_sec, printTime((long long)ts.tv_sec));
+		}
+
+		if(retry_flag == 1 || maintenance_doc_sync == 1)
+		{
 			WebcfgInfo("B4 sync_condition pthread_cond_timedwait\n");
 			rv = pthread_cond_timedwait(&sync_condition, &sync_mutex, &ts);
 			WebcfgInfo("The retry flag value is %d\n", get_doc_fail());
@@ -172,13 +219,21 @@ void *WebConfigMultipartTask(void *status)
 			rv = pthread_cond_wait(&sync_condition, &sync_mutex);
 		}
 
-		if(rv == ETIMEDOUT && get_doc_fail() == 1)
+		if(rv == ETIMEDOUT && !g_shutdown)
 		{
-			WebcfgInfo("Inside the timedout condition\n");
-			set_doc_fail(0);
-			set_retry_timer(900);
-			failedDocsRetry();
-			WebcfgInfo("After the failedDocsRetry\n");
+			if(get_doc_fail() == 1)
+			{
+				set_doc_fail(0);
+				set_retry_timer(900);
+				failedDocsRetry();
+				WebcfgInfo("After the failedDocsRetry\n");
+			}
+			else
+			{
+				time(&t);
+				wait_flag = 0;
+				WebcfgInfo("Supplimentary Sync Interval %d sec and syncing at %s\n",value,ctime(&t));
+			}
 		}
 		else if(!rv && !g_shutdown)
 		{
@@ -193,6 +248,7 @@ void *WebConfigMultipartTask(void *status)
 				if((ForceSyncDoc != NULL) && strlen(ForceSyncDoc)>0)
 				{
 					forced_sync = 1;
+					wait_flag = 1;
 					WebcfgDebug("Received signal interrupt to Force Sync\n");
 					WEBCFG_FREE(ForceSyncDoc);
 					WEBCFG_FREE(ForceSyncTransID);
@@ -296,6 +352,36 @@ void set_g_testfile(int value)
     g_testfile = value;
 }
 #endif
+
+long get_global_maintenance_time()
+{
+    return g_maintenance_time;
+}
+
+void set_global_maintenance_time(long value)
+{
+    g_maintenance_time = value;
+}
+
+long get_global_fw_start_time()
+{
+    return g_fw_start_time;
+}
+
+void set_global_fw_start_time(long value)
+{
+    g_fw_start_time = value;
+}
+
+long get_global_fw_end_time()
+{
+    return g_fw_end_time;
+}
+
+void set_global_fw_end_time(long value)
+{
+    g_fw_end_time = value;
+}
 
 void set_global_supplementarySync(int value)
 {
@@ -628,3 +714,168 @@ char* printTime(long long time)
 	return buf;
 }
 
+//To initialise maintenance random timer
+void initMaintenanceTimer()
+{
+	long time_val = 0;
+	long fw_start_time = 0;
+	long fw_end_time = 0;
+
+	if( readFWFiles(FW_START_FILE, &fw_start_time) != WEBCFG_SUCCESS )
+	{
+		fw_start_time = MIN_MAINTENANCE_TIME;
+		WebcfgInfo("Inside failure case start_time\n");
+	}
+
+	if( readFWFiles(FW_END_FILE, &fw_end_time) != WEBCFG_SUCCESS )
+	{
+		fw_end_time = MAX_MAINTENANCE_TIME;
+		WebcfgInfo("Inside failure case end_time\n");
+	}
+
+	if( fw_start_time == fw_end_time )
+	{
+		fw_start_time = MIN_MAINTENANCE_TIME;
+		fw_end_time = MAX_MAINTENANCE_TIME;
+		WebcfgInfo("Inside both values are equal\n");
+	}
+
+	if( fw_start_time > fw_end_time )
+	{
+		fw_start_time = fw_start_time - 86400;         //to get a time within the day
+		WebcfgInfo("Inside start time is greater than end time\n");
+	}
+
+	set_global_fw_start_time( fw_start_time );
+	set_global_fw_end_time( fw_end_time );
+
+        srand(time(0));
+        time_val = (rand() % (fw_end_time - fw_start_time+ 1)) + fw_start_time;
+
+	WebcfgInfo("The fw_start_time is %ld\n",get_global_fw_start_time());
+	WebcfgInfo("The fw_end_time is %ld\n",get_global_fw_end_time());
+
+	if( time_val <= 0)
+	{
+		time_val = time_val + 86400;         //To set a time in next day
+	}
+
+	WebcfgInfo("The value of maintenance_time_val is %ld\n",time_val);
+	set_global_maintenance_time(time_val);
+
+}
+
+//To Check whether the Maintenance time is at current time
+int checkMaintenanceTimer()
+{
+	struct timespec rt;
+
+	long long cur_time = 0;
+	long cur_time_in_sec = 0;
+
+	clock_gettime(CLOCK_REALTIME, &rt);
+	cur_time = rt.tv_sec;
+	cur_time_in_sec = getTimeInSeconds(cur_time);
+
+	WebcfgInfo("The current time in checkMaintenanceTimer is %lld at %s\n",cur_time, printTime(cur_time));
+	WebcfgInfo("The random timer in checkMaintenanceTimer is %ld\n",get_global_maintenance_time());
+
+	if(cur_time_in_sec >= get_global_maintenance_time())
+	{
+		set_global_supplementarySync(1);
+		WebcfgInfo("Rand time is equal to current time\n");
+		return 1;
+	}
+	return 0;
+}
+
+//To read the start and end time from the file
+int readFWFiles(char* file_path, long *range)
+{
+	FILE *fp = NULL;
+	char *data = NULL;
+	int ch_count=0;
+
+	fp = fopen(file_path,"r+");
+	if (fp == NULL)
+	{
+		WebcfgError("Failed to open file %s\n", file_path);
+		return WEBCFG_FAILURE;
+	}
+
+	fseek(fp, 0, SEEK_END);
+	ch_count = ftell(fp);
+	fseek(fp, 0, SEEK_SET);
+
+	data = (char *) malloc(sizeof(char) * (ch_count + 1));
+	if(NULL == data)
+	{
+		WebcfgError("Memory allocation for data failed.\n");
+		fclose(fp);
+		return WEBCFG_FAILURE;
+	}
+
+	WebcfgInfo("After data \n");
+	memset(data,0,(ch_count + 1));
+	fread(data, 1, ch_count,fp);
+
+	WebcfgInfo("The data is %s\n", data);
+
+	*range = atoi(data);
+
+	WebcfgInfo("The range is %ld\n", *range);
+	WEBCFG_FREE(data);
+	fclose(fp);
+
+	return WEBCFG_SUCCESS;
+}
+
+//To get the wait seconds for Maintenance Time
+int maintenanceSyncSeconds()
+{
+	struct timespec ct;
+	long maintenance_secs = 0;
+	long current_time_in_sec = 0;
+	long sec_to_12 = 0;
+	long long current_time = 0;
+	clock_gettime(CLOCK_REALTIME, &ct);
+
+	current_time = ct.tv_sec;
+	current_time_in_sec = getTimeInSeconds(current_time);
+
+	maintenance_secs =  get_global_maintenance_time() - current_time_in_sec;
+
+	WebcfgInfo("The current time in maintenanceSyncSeconds is %lld at %s\n",current_time, printTime(current_time));
+	WebcfgInfo("The random timer in maintenanceSyncSeconds is %ld\n",get_global_maintenance_time());
+
+	if (maintenance_secs < 0)
+	{
+		sec_to_12 = 86400 - current_time_in_sec;               //Getting the remaining time for midnight 12
+		maintenance_secs = sec_to_12 + get_global_maintenance_time();//Adding with Maintenance wait time for nextday trigger
+	}
+
+	WebcfgInfo("The maintenance Seconds is %ld\n", maintenance_secs);
+
+	return maintenance_secs;
+}
+
+//To get the Seconds from Epoch Time
+long getTimeInSeconds(long long time)
+{
+	struct tm cts;
+	time_t time_value = time;
+	long cur_time_hrs_in_sec = 0;
+	long cur_time_min_in_sec = 0;
+	long cur_time_sec_in_sec = 0;
+	long sec_of_cur_time = 0;
+
+	cts = *localtime(&time_value);
+
+	cur_time_hrs_in_sec = cts.tm_hour * 60 * 60;
+	cur_time_min_in_sec = cts.tm_min * 60;
+	cur_time_sec_in_sec = cts.tm_sec;
+
+	sec_of_cur_time = cur_time_hrs_in_sec + cur_time_min_in_sec + cur_time_sec_in_sec;
+
+	return sec_of_cur_time;
+}
