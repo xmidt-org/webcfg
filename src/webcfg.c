@@ -101,9 +101,7 @@ void *WebConfigMultipartTask(void *status)
         int Status = 0;
 	int retry_flag = 0;
 	int maintenance_doc_sync = 0;
-	char* docname[64] = {0};
 	char *syncDoc = NULL;
-	int i = 0;
 	int value = 0;
 	int wait_flag = 1;
 	time_t t;
@@ -127,20 +125,14 @@ void *WebConfigMultipartTask(void *status)
 	//For supplementary sync set flag to 1
 	set_global_supplementarySync(1);
 
-	*docname = getSupplementaryUrls();
-	int docs_size = sizeof(docname)/sizeof(*docname);
+	SupplementaryDocs_t *spDocs = NULL;
+	spDocs = get_global_spInfoHead();
 
-	for(i=0; i<docs_size; i++)
+	while(spDocs != NULL)
 	{
-		if(docname[i] != NULL)
-		{
-			WebcfgInfo("Supplementary sync for %s\n",docname[i]);
-			processWebconfgSync((int)Status, docname[i]);
-		}
-		else
-		{
-			break;
-		}
+		WebcfgInfo("Supplementary sync for %s\n",spDocs->name);
+		processWebconfgSync((int)Status, spDocs->name);
+		spDocs = spDocs->next;
 	}
 
 	//Resetting the supplementary sync
@@ -169,18 +161,16 @@ void *WebConfigMultipartTask(void *status)
 			if(maintenance_doc_sync == 1 && checkMaintenanceTimer() == 1 )
 			{
 				WebcfgInfo("Triggered Supplementary doc boot sync\n");
-				for(i=0; i<docs_size; i++)
+				SupplementaryDocs_t *sp = NULL;
+				sp = get_global_spInfoHead();
+
+				while(sp != NULL)
 				{
-					if(docname[i] != NULL)
-					{
-						WebcfgInfo("Supplementary sync for %s\n",docname[i]);
-						processWebconfgSync((int)Status, docname[i]);
-					}
-					else
-					{
-						break;
-					}
+					WebcfgInfo("Supplementary sync for %s\n",sp->name);
+					processWebconfgSync((int)Status, sp->name);
+					sp = sp->next;
 				}
+
 				initMaintenanceTimer();
 				maintenance_doc_sync = 0;
 				set_global_supplementarySync(0);
@@ -260,7 +250,7 @@ void *WebConfigMultipartTask(void *status)
 					WebcfgDebug("Received signal interrupt to Force Sync\n");
 
 					//To check poke string received is supplementary doc or not.
-					if(isSupplemetaryDoc(ForceSyncDoc) == WEBCFG_SUCCESS)
+					if(isSupplementaryDoc(ForceSyncDoc) == WEBCFG_SUCCESS)
 					{
 						WebcfgInfo("Received supplementary poke request for %s\n", ForceSyncDoc);
 						set_global_supplementarySync(1);

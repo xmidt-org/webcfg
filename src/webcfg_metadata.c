@@ -41,15 +41,17 @@ typedef struct SubDocSupportMap
 static char * supported_bits = NULL;
 static char * supported_version = NULL;
 static char * supplementary_docs = NULL;
-static char * supplementary_urls[64] = {0};
 SubDocSupportMap_t *g_sdInfoHead = NULL;
 SubDocSupportMap_t *g_sdInfoTail = NULL;
+SupplementaryDocs_t *g_spInfoHead = NULL;
+SupplementaryDocs_t *g_spInfoTail = NULL;
 /*----------------------------------------------------------------------------*/
 /*                             Function Prototypes                            */
 /*----------------------------------------------------------------------------*/
 void displaystruct();
 SubDocSupportMap_t * get_global_sdInfoHead(void);
 SubDocSupportMap_t * get_global_sdInfoTail(void);
+SupplementaryDocs_t * get_global_spInfoTail(void);
 /*----------------------------------------------------------------------------*/
 /*                             External Functions                             */
 /*----------------------------------------------------------------------------*/
@@ -114,7 +116,7 @@ void initWebcfgProperties(char * filename)
 				if( sdInfo==NULL )
 				{
 					fclose(fp);
-					WebcfgError("Unable to allocate memory");
+					WebcfgError("Unable to allocate memory\n");
 					return;
 				}
 				memset(sdInfo, 0, sizeof(SubDocSupportMap_t));
@@ -256,31 +258,33 @@ WEBCFG_STATUS isSubDocSupported(char *subDoc)
 }
 
 //To check if the doc received during poke is supplementary or not.
-WEBCFG_STATUS isSupplemetaryDoc(char *subDoc)
+WEBCFG_STATUS isSupplementaryDoc(char *subDoc)
 {
-	char* docname[64] = {0};
-	int i = 0;
+	SupplementaryDocs_t *sp = NULL;
+	sp = get_global_spInfoHead();
 
-	*docname = getSupplementaryUrls();
-	int docs_size = sizeof(docname)/sizeof(*docname);
-
-	WebcfgInfo("docs_size is %d\n", docs_size);
-	for(i=0; i<docs_size; i++)
+	while(sp != NULL)
 	{
-		if(docname[i] != NULL)
+		WebcfgInfo("Supplementary check for docname %s\n", sp->name);
+		if(strncmp(sp->name, subDoc, strlen(subDoc)) == 0)
 		{
-			WebcfgInfo("Supplementary check for docname[%d] %s\n", i, docname[i]);
-			if(strncmp(docname[i], subDoc, strlen(subDoc)) == 0)
+			WebcfgDebug("The subdoc %s is present\n",sp->name);
+			if(strncmp(sp->name, subDoc, strlen(subDoc)) == 0)
 			{
 				WebcfgInfo("%s is supplementary\n",subDoc);
 				return WEBCFG_SUCCESS;
+
+			}
+			else
+			{
+				WebcfgInfo("%s is not supplementary\n",subDoc);
+				return WEBCFG_FAILURE;
 			}
 		}
-		else
-		{
-			break;
-		}
+		sp = sp->next;
+
 	}
+	WebcfgError("%s doc is not found\n",subDoc);
 	return WEBCFG_FAILURE;
 }
 
@@ -301,6 +305,20 @@ SubDocSupportMap_t * get_global_sdInfoTail(void)
     return tmp;
 }
 
+SupplementaryDocs_t * get_global_spInfoHead(void)
+{
+    SupplementaryDocs_t *tmp = NULL;
+    tmp = g_spInfoHead;
+    return tmp;
+}
+
+SupplementaryDocs_t * get_global_spInfoTail(void)
+{
+    SupplementaryDocs_t *tmp = NULL;
+    tmp = g_spInfoTail;
+    return tmp;
+}
+
 void supplementaryUrls()
 {
 	int count = 0;
@@ -311,17 +329,40 @@ void supplementaryUrls()
 
 	while(token != NULL)
 	{
-		supplementary_urls[count] = token;
-		WebcfgInfo("The supplementary_urls[%d] is %s\n", count, supplementary_urls[count]);
+		SupplementaryDocs_t *spInfo = NULL;
+		spInfo = (SupplementaryDocs_t *)malloc(sizeof(SupplementaryDocs_t));
+
+		if(spInfo == NULL)
+		{
+			WebcfgError("Unable to allocate memory for supplementary docs\n");
+			return;
+		}
+
+		memset(spInfo, 0, sizeof(SupplementaryDocs_t));
+
+		WebcfgInfo("The value is %s\n",token);
+		spInfo->name = token;
+		spInfo->next = NULL;
+
+		if(g_spInfoTail == NULL)
+		{
+			g_spInfoHead = spInfo;
+			g_spInfoTail = spInfo;
+		}
+		else
+		{
+			SupplementaryDocs_t *temp = NULL;
+			temp = get_global_spInfoTail();
+			temp->next = spInfo;
+			g_spInfoTail = spInfo;
+		}
+
+		WebcfgInfo("The supplementary_url is %s\n", spInfo->name);
 		count++;
 		token = strtok(NULL, ",");
 	}
 }
 
-char* getSupplementaryUrls()
-{
-	return *supplementary_urls;
-}
 void displaystruct()
 {
 	SubDocSupportMap_t *temp =NULL;

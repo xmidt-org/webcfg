@@ -31,7 +31,11 @@
 /*----------------------------------------------------------------------------*/
 /*                               Data Structures                              */
 /*----------------------------------------------------------------------------*/
-
+typedef struct SupplementaryDocs
+{
+	char *name;
+	struct SupplementaryDocs *next;
+}SupplementaryDocs_t;
 /*----------------------------------------------------------------------------*/
 /*                             External Functions                             */
 /*----------------------------------------------------------------------------*/
@@ -43,7 +47,7 @@ void setsupplementaryDocs( char * value);
 char * getsupportedDocs();
 char * getsupportedVersion();
 char * getsupplementaryDocs();
-char * getSupplementaryUrls();
 void supplementaryUrls();
-WEBCFG_STATUS isSupplemetaryDoc(char *subDoc);
+SupplementaryDocs_t * get_global_spInfoHead(void);
+WEBCFG_STATUS isSupplementaryDoc(char *subDoc);
 #endif
