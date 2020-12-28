@@ -429,6 +429,7 @@ WEBCFG_STATUS addToTmpList()
 				new_node->trans_id = 0;
 				new_node->retry_count = 0;
 				new_node->retry_expiry_timestamp = 0;
+				new_node->cloud_trans_id = get_global_transID();
 			}
 		}
 		else
@@ -451,6 +452,7 @@ WEBCFG_STATUS addToTmpList()
 					new_node->trans_id = 0;
 					new_node->retry_count = 0;
 					new_node->retry_expiry_timestamp = 0;
+					new_node->cloud_trans_id = get_global_transID();
 
 					WebcfgDebug("new_node->name is %s\n", new_node->name);
 					WebcfgDebug("new_node->version is %lu\n", (long)new_node->version);
@@ -459,6 +461,7 @@ WEBCFG_STATUS addToTmpList()
 					WebcfgDebug("new_node->error_details is %s\n", new_node->error_details);
 					WebcfgDebug("new_node->retry_count is %d\n", new_node->retry_count);
 					WebcfgDebug("new_node->retry_expiry_timestamp is %lld\n", new_node->retry_expiry_timestamp);
+					WebcfgDebug("new_node->cloud_trans_id is %s\n", new_node->cloud_trans_id);
 				}
 
 			}
@@ -685,7 +688,7 @@ void delete_tmp_doc_list()
     {
         temp = head;
 	head = head->next;
-	WebcfgDebug("Delete node--> temp->name %s temp->version %lu temp->status %s temp->isSupplementarySync %d temp->error_details %s temp->error_code %lu temp->trans_id %lu temp->retry_count %d\n",temp->name, (long)temp->version, temp->status, temp->isSupplementarySync, temp->error_details, (long)temp->error_code, (long)temp->trans_id, temp->retry_count);
+	WebcfgDebug("Delete node--> temp->name %s temp->version %lu temp->status %s temp->isSupplementarySync %d temp->error_details %s temp->error_code %lu temp->trans_id %lu temp->retry_count %d temp->cloud_trans_id %s\n",temp->name, (long)temp->version, temp->status, temp->isSupplementarySync, temp->error_details, (long)temp->error_code, (long)temp->trans_id, temp->retry_count, temp->cloud_trans_id);
 	free(temp);
 	temp = NULL;
     }
@@ -707,7 +710,7 @@ void delete_tmp_docs_list()
 	//skip root delete
 	if((strcmp(temp->name, "root") !=0) && (temp->isSupplementarySync == get_global_supplementarySync()))
 	{
-		WebcfgInfo("Delete node--> temp->name %s temp->version %lu temp->status %s temp->isSupplementarySync %d temp->error_details %s temp->error_code %lu temp->trans_id %lu temp->retry_count %d\n",temp->name, (long)temp->version, temp->status, temp->isSupplementarySync, temp->error_details, (long)temp->error_code, (long)temp->trans_id, temp->retry_count);
+		WebcfgInfo("Delete node--> temp->name %s temp->version %lu temp->status %s temp->isSupplementarySync %d temp->error_details %s temp->error_code %lu temp->trans_id %lu temp->retry_count %d temp->cloud_trans_id %s\n",temp->name, (long)temp->version, temp->status, temp->isSupplementarySync, temp->error_details, (long)temp->error_code, (long)temp->trans_id, temp->retry_count, temp->cloud_trans_id);
 		deleteFromTmpList(temp->name);
 	}
 	temp = temp->next;
@@ -1134,7 +1137,7 @@ webconfig_tmp_data_t * getTmpNode(char *docname)
 		WebcfgDebug("getTmpNode: temp->name %s, temp->version %lu\n",temp->name, (long)temp->version);
 		if( strcmp(docname, temp->name) == 0)
 		{
-			WebcfgDebug("subdoc node : name %s version %lu status %s error_details %s error_code %hu trans_id %hu temp->retry_count %d\n", temp->name, (long)temp->version, temp->status, temp->error_details, temp->error_code, temp->trans_id, temp->retry_count);
+			WebcfgDebug("subdoc node : name %s version %lu status %s error_details %s error_code %hu trans_id %hu temp->retry_count %d temp->cloud_trans_id %s\n", temp->name, (long)temp->version, temp->status, temp->error_details, temp->error_code, temp->trans_id, temp->retry_count, temp->cloud_trans_id);
 			return temp;
 		}
 		temp= temp->next;

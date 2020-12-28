@@ -25,20 +25,6 @@
 
 #define ATOMIC_SET_WEBCONFIG	    3
 #define MAX_VALUE_LEN		128
-/*
-typedef struct
-{
-    uint32_t  etag;
-    char  *name_space;
-    char  *data;
-    size_t data_size;
-} multipartdocs_t;
-
-typedef struct {
-    multipartdocs_t *entries;
-    size_t   entries_count;
-} multipart_t;
-*/
 
 typedef struct multipartdocs
 {

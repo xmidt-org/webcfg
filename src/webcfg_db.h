@@ -50,6 +50,7 @@ typedef struct webconfig_tmp_data
 	uint16_t trans_id;
 	int isSupplementarySync;
 	long long retry_expiry_timestamp;
+	char * cloud_trans_id;
         struct webconfig_tmp_data *next;
 } webconfig_tmp_data_t;
 
