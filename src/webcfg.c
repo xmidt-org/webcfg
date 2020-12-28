@@ -102,6 +102,7 @@ void *WebConfigMultipartTask(void *status)
 	int retry_flag = 0;
 	int maintenance_doc_sync = 0;
 	char* docname[64] = {0};
+	char *syncDoc = NULL;
 	int i = 0;
 	int value = 0;
 	int wait_flag = 1;
@@ -151,10 +152,16 @@ void *WebConfigMultipartTask(void *status)
 		if(forced_sync)
 		{
 			WebcfgDebug("Triggered Forced sync\n");
-			processWebconfgSync((int)Status, NULL);
+			processWebconfgSync((int)Status, syncDoc);
 			WebcfgDebug("reset forced_sync after sync\n");
 			forced_sync = 0;
+			if(get_global_supplementarySync() && syncDoc !=NULL)
+			{
+				WebcfgInfo("free syncDoc\n");
+				WEBCFG_FREE(syncDoc);
+			}
 			setForceSync("", "", 0);
+			set_global_supplementarySync(0);
 		}
 
 		if(!wait_flag)
@@ -251,6 +258,15 @@ void *WebConfigMultipartTask(void *status)
 					forced_sync = 1;
 					wait_flag = 1;
 					WebcfgDebug("Received signal interrupt to Force Sync\n");
+
+					//To check poke string received is supplementary doc or not.
+					if(isSupplemetaryDoc(ForceSyncDoc) == WEBCFG_SUCCESS)
+					{
+						WebcfgInfo("Received supplementary poke request for %s\n", ForceSyncDoc);
+						set_global_supplementarySync(1);
+						syncDoc = strdup(ForceSyncDoc);
+						WebcfgInfo("syncDoc is %s\n", syncDoc);
+					}
 					WEBCFG_FREE(ForceSyncDoc);
 					WEBCFG_FREE(ForceSyncTransID);
 				}

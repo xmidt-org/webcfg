@@ -220,7 +220,7 @@ int addToEventQueue(char *buf)
             else
             {
                 event_data_t *temp = eventDataQ;
-                while(temp != NULL)
+                while(temp->next)
                 {
                     temp = temp->next;
                 }
@@ -303,15 +303,23 @@ void* processSubdocEvents()
 
 							//add to DB, update tmp list and notification based on success ack.
 							sendSuccessNotification(subdoc_node, eventParam->subdoc_name, eventParam->version, eventParam->trans_id);
-							WebcfgDebug("AddToDB subdoc_name %s version %lu\n", eventParam->subdoc_name, (long)eventParam->version);
-							checkDBList(eventParam->subdoc_name,eventParam->version, NULL);
-							WebcfgDebug("checkRootUpdate\n");
-							if(checkRootUpdate() == WEBCFG_SUCCESS)
+							//No DB update for supplementary sync as version is not required to be stored.
+							if(subdoc_node->isSupplementarySync == 0)
 							{
-								WebcfgDebug("updateRootVersionToDB\n");
-								updateRootVersionToDB();
+								WebcfgDebug("AddToDB subdoc_name %s version %lu\n", eventParam->subdoc_name, (long)eventParam->version);
+								checkDBList(eventParam->subdoc_name,eventParam->version, NULL);
+								WebcfgDebug("checkRootUpdate\n");
+								if(checkRootUpdate() == WEBCFG_SUCCESS)
+								{
+									WebcfgDebug("updateRootVersionToDB\n");
+									updateRootVersionToDB();
+								}
+								addNewDocEntry(get_successDocCount());
 							}
-							addNewDocEntry(get_successDocCount());
+							else
+							{
+								WebcfgInfo("No DB update for supplementary sync as version is not required to be stored.\n");
+							}
 						}
 						else
 						{
@@ -375,6 +383,7 @@ void* processSubdocEvents()
 						if((getDocVersionFromTmpList(subdoc_node, eventParam->subdoc_name))== eventParam->version)
 						{
 							startWebcfgTimer(doctimer_node, eventParam->subdoc_name, eventParam->trans_id, eventParam->timeout);
+							WebcfgInfo("After startWebcfgTimer\n");
 							addWebConfgNotifyMsg(eventParam->subdoc_name, eventParam->version, "pending", NULL, get_global_transID(),eventParam->timeout, "ack", 0, NULL, 200);
 						}
 						else
@@ -417,15 +426,19 @@ void* processSubdocEvents()
 							//already in tmp latest version,send success notify, updateDB
 							WebcfgInfo("tmp version %lu same as event version %lu\n",(long)tmpVersion, (long)eventParam->version); 
 							sendSuccessNotification(subdoc_node, eventParam->subdoc_name, eventParam->version, eventParam->trans_id);
-							WebcfgInfo("AddToDB subdoc_name %s version %lu\n", eventParam->subdoc_name, (long)eventParam->version);
-							checkDBList(eventParam->subdoc_name,eventParam->version, NULL);
-							WebcfgDebug("checkRootUpdate\n");
-							if(checkRootUpdate() == WEBCFG_SUCCESS)
+							//No DB update for supplementary docs
+							if(subdoc_node->isSupplementarySync == 0)
 							{
-								WebcfgDebug("updateRootVersionToDB\n");
-								updateRootVersionToDB();
+								WebcfgInfo("AddToDB subdoc_name %s version %lu\n", eventParam->subdoc_name, (long)eventParam->version);
+								checkDBList(eventParam->subdoc_name,eventParam->version, NULL);
+								WebcfgDebug("checkRootUpdate\n");
+								if(checkRootUpdate() == WEBCFG_SUCCESS)
+								{
+									WebcfgDebug("updateRootVersionToDB\n");
+									updateRootVersionToDB();
+								}
+								addNewDocEntry(get_successDocCount());
 							}
-							addNewDocEntry(get_successDocCount());
 						}
 					}
 					else
@@ -608,6 +621,7 @@ WEBCFG_STATUS startWebcfgTimer(expire_timer_t *timer_node, char *name, uint16_t 
 			WebcfgDebug("Adding events to list\n");
 			new_node->running = true;
 			new_node->subdoc_name = strdup(name);
+			WebcfgInfo("After strdup name is %s\n", name);
 			new_node->txid = transID;
 			new_node->timeout = timeout;
 			WebcfgDebug("started webcfg internal timer\n");
@@ -625,7 +639,7 @@ WEBCFG_STATUS startWebcfgTimer(expire_timer_t *timer_node, char *name, uint16_t 
 				expire_timer_t *temp = NULL;
 				WebcfgDebug("Adding next events to list\n");
 				temp = g_timer_head;
-				while(temp !=NULL)
+				while(temp->next !=NULL)
 				{
 					temp=temp->next;
 				}
@@ -642,6 +656,7 @@ WEBCFG_STATUS startWebcfgTimer(expire_timer_t *timer_node, char *name, uint16_t 
 			return WEBCFG_FAILURE;
 		}
 	}
+	WebcfgInfo("startWebcfgTimer. numOfEvents is %d\n", numOfEvents);
 	WebcfgInfo("startWebcfgTimer success\n");
 	return WEBCFG_SUCCESS;
 }
@@ -835,8 +850,8 @@ WEBCFG_STATUS retryMultipartSubdoc(webconfig_tmp_data_t *docNode, char *docName)
 		WebcfgDebug("gmp->entries_count %d\n",mp_count);
 		if(strcmp(gmp->name_space, docName) == 0)
 		{
-			WebcfgDebug("gmp->name_space %s\n", gmp->name_space);
-			WebcfgDebug("gmp->etag %lu\n" , (long)gmp->etag);
+			WebcfgInfo("gmp->name_space %s\n", gmp->name_space);
+			WebcfgInfo("gmp->etag %lu\n" , (long)gmp->etag);
 			WebcfgDebug("gmp->data %s\n" , gmp->data);
 			WebcfgDebug("gmp->data_size is %zu\n", gmp->data_size);
 
@@ -901,14 +916,22 @@ WEBCFG_STATUS retryMultipartSubdoc(webconfig_tmp_data_t *docNode, char *docName)
 							addWebConfgNotifyMsg(gmp->name_space, gmp->etag, "success", "none", get_global_transID(), 0, "status", 0, NULL, 200);
 							WebcfgDebug("deleteFromTmpList as scalar doc is applied\n");
 							deleteFromTmpList(gmp->name_space);
-							checkDBList(gmp->name_space,gmp->etag, NULL);
-							WebcfgDebug("checkRootUpdate scalar doc case\n");
-							if(checkRootUpdate() == WEBCFG_SUCCESS)
+							WebcfgInfo("docNode->isSupplementarySync is %d\n", docNode->isSupplementarySync);
+							if(docNode->isSupplementarySync == 0)
 							{
-								WebcfgDebug("updateRootVersionToDB\n");
-								updateRootVersionToDB();
+								checkDBList(gmp->name_space,gmp->etag, NULL);
+								WebcfgInfo("checkRootUpdate scalar doc case\n");
+								if(checkRootUpdate() == WEBCFG_SUCCESS)
+								{
+									WebcfgDebug("updateRootVersionToDB\n");
+									updateRootVersionToDB();
+								}
+								addNewDocEntry(get_successDocCount());
 							}
-							addNewDocEntry(get_successDocCount());
+							else
+							{
+								WebcfgInfo("retryMultipartSubdoc. No DB update is required for supplementary sync\n");
+							}
 						}
 						rv = WEBCFG_SUCCESS;
 					}
@@ -1053,6 +1076,7 @@ expire_timer_t * getTimerNode(char *docname)
 	expire_timer_t *temp = NULL;
 	temp = get_global_timer_node();
 
+	WebcfgInfo("getTimerNode. docname is %s\n", docname);
 	//Traverse through timer list & fetch required doc timer node.
 	while (NULL != temp)
 	{
@@ -1063,7 +1087,7 @@ expire_timer_t * getTimerNode(char *docname)
 		}
 		temp= temp->next;
 	}
-	WebcfgDebug("getTimerNode failed for doc %s\n", docname);
+	WebcfgInfo("getTimerNode failed for doc %s\n", docname);
 	return NULL;
 }
 

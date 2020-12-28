@@ -65,6 +65,8 @@ static char g_FirmwareVersion[64]={'\0'};
 static char g_bootTime[64]={'\0'};
 static char g_productClass[64]={'\0'};
 static char g_ModelName[64]={'\0'};
+static char g_PartnerID[64]={'\0'};
+static char g_AccountID[64]={'\0'};
 char g_RebootReason[64]={'\0'};
 static char g_transID[64]={'\0'};
 static char * g_contentLen = NULL;
@@ -170,6 +172,7 @@ WEBCFG_STATUS webcfg_http_request(char **configData, int r_count, int status, lo
 	data.size = 0;
 	void * dataVal = NULL;
 	char syncURL[256]={'\0'};
+	char docname_upper[64]={'\0'};
 
 	curl = curl_easy_init();
 	if(curl)
@@ -200,11 +203,13 @@ WEBCFG_STATUS webcfg_http_request(char **configData, int r_count, int status, lo
 		}
 		else
 		{
-
-			if(docname != NULL)
+			if(docname != NULL && strlen(docname)>0)
 			{
 				WebcfgInfo("Supplementary sync for %s\n",docname);
-				Get_Supplementary_URL(docname, configURL);
+				strcpy(docname_upper , docname);
+				docname_upper[0] = toupper(docname_upper[0]);
+				WebcfgInfo("docname is %s and in uppercase is %s\n", docname, docname_upper);
+				Get_Supplementary_URL(docname_upper, configURL);
 				WebcfgInfo("Supplementary sync \n");
 				WebcfgInfo("Supplementary sync url fetched is %s\n", configURL);
 			}
@@ -226,7 +231,7 @@ WEBCFG_STATUS webcfg_http_request(char **configData, int r_count, int status, lo
 			else
 			{
 				WebcfgInfo("Inside supplementary condition\n");
-				Set_Supplementary_URL(docname, webConfigURL);
+				Set_Supplementary_URL(docname_upper, webConfigURL);
 			}
 		}
 		else
@@ -239,8 +244,12 @@ WEBCFG_STATUS webcfg_http_request(char **configData, int r_count, int status, lo
 		}
 		WebcfgInfo("ConfigURL fetched is %s\n", webConfigURL);
 
-		//Update query param in the URL based on the existing doc names from db
-		getConfigDocList(docList);
+		if(!get_global_supplementarySync())
+		{
+			//Update query param in the URL based on the existing doc names from db
+			getConfigDocList(docList);
+		}
+
 		if(strlen(docList) > 0)
 		{
 			WebcfgInfo("docList is %s\n", docList);
@@ -560,7 +569,7 @@ WEBCFG_STATUS processMsgpackSubdoc(char *transaction_id)
 		WebcfgError("addToTmpList failed\n");
 	}
 
-	WebcfgDebug("mp->entries_count is %d\n",mp_count);
+	WebcfgInfo("mp->entries_count is %d\n",mp_count);
 
 	multipartdocs_t *mp = NULL;
 	mp = g_mp_head;
@@ -584,6 +593,7 @@ WEBCFG_STATUS processMsgpackSubdoc(char *transaction_id)
 			if(subdoc_node->isSupplementarySync == 0)
 			{
 				current_doc_count++;
+				WebcfgInfo("current_doc_count incremented to %d\n", current_doc_count);
 			}
 		}
 		WebcfgInfo("mp->name_space %s\n", mp->name_space);
@@ -596,7 +606,7 @@ WEBCFG_STATUS processMsgpackSubdoc(char *transaction_id)
 		{
 			akerIndex = mp;
 			akerSet = 1;
-			WebcfgDebug("skip aker doc and process at the end\n");
+			WebcfgInfo("skip aker doc and process at the end\n");
 			mp = mp->next;
 			continue;
 		}
@@ -714,22 +724,28 @@ WEBCFG_STATUS processMsgpackSubdoc(char *transaction_id)
 							}
 
 							WebcfgInfo("The Etag is %lu\n",(long)version );
-							//Delete tmp queue root as all docs are applied
-							WebcfgInfo("Delete tmp queue root as all docs are applied\n");
-							WebcfgDebug("root version to delete is %lu\n", (long)version);
-							deleteFromTmpList("root");
+
+							if(checkRootDelete() == WEBCFG_SUCCESS)
+							{
+								//Delete tmp queue root as all docs are applied
+								WebcfgInfo("Delete tmp queue root as all docs are applied\n");
+								WebcfgDebug("root version to delete is %lu\n", (long)version);
+								deleteFromTmpList("root");
+							}
 							WebcfgDebug("processMsgpackSubdoc is success as all the docs are applied\n");
 							rv = WEBCFG_SUCCESS;
 						}
 					}
 					else
 					{
+						WebcfgError("setValues Fail. check 9005. ccspStatus : %d\n", ccspStatus);
 						if(ccspStatus == 9005)
 						{
 							subdocStatus = isSubDocSupported(mp->name_space);
+							WebcfgInfo("After isSubDocSupported\n");
 							if(subdocStatus != WEBCFG_SUCCESS)
 							{
-								WebcfgDebug("The ccspstatus is %d\n",ccspStatus);
+								WebcfgInfo("The ccspstatus is %d\n",ccspStatus);
 								ccspStatus = 204;
 							}
 						}
@@ -738,13 +754,13 @@ WEBCFG_STATUS processMsgpackSubdoc(char *transaction_id)
 						WebcfgDebug("The errd value is %d\n",errd);
 
 						mapWdmpStatusToStatusMessage(errd, errDetails);
-						WebcfgDebug("The errDetails value is %s\n",errDetails);
+						WebcfgInfo("The errDetails value is %s\n",errDetails);
 
 						//Update error_details to tmp list and send failure notification to cloud.
 						if((ccspStatus == CCSP_CRASH_STATUS_CODE) || (ccspStatus == 204) || (ccspStatus == 191) || (ccspStatus == 193) || (ccspStatus == 190))
 						{
 							subdocStatus = isSubDocSupported(mp->name_space);
-							WebcfgDebug("ccspStatus is %d\n", ccspStatus);
+							WebcfgInfo("ccspStatus is %d\n", ccspStatus);
 							if(ccspStatus == 204 && subdocStatus != WEBCFG_SUCCESS)
 							{
 								snprintf(result,MAX_VALUE_LEN,"doc_unsupported:%s", errDetails);
@@ -776,13 +792,18 @@ WEBCFG_STATUS processMsgpackSubdoc(char *transaction_id)
 
 								snprintf(result,MAX_VALUE_LEN,"crash_retrying:%s", errDetails);
 							}
-							WebcfgDebug("The result is %s\n",result);
+							WebcfgInfo("The result is %s\n",result);
 							updateTmpList(subdoc_node, mp->name_space, mp->etag, "failed", result, ccspStatus, 0, 1);
 							addWebConfgNotifyMsg(mp->name_space, mp->etag, "failed", result, trans_id,0,"status",ccspStatus, NULL, 200);
-							WebcfgDebug("checkRootUpdate\n");
-							if((ccspStatus == 204 && subdocStatus != WEBCFG_SUCCESS) && (checkRootUpdate() == WEBCFG_SUCCESS))
+							WebcfgInfo("checkRootUpdate\n");
+							//No root update for supplementary sync
+							if(get_global_supplementarySync())
 							{
-								WebcfgDebug("updateRootVersionToDB\n");
+								WebcfgInfo("No DB update for supplementary sync\n");
+							}
+							if(!get_global_supplementarySync() && (ccspStatus == 204 && subdocStatus != WEBCFG_SUCCESS) && (checkRootUpdate() == WEBCFG_SUCCESS))
+							{
+								WebcfgInfo("updateRootVersionToDB\n");
 								updateRootVersionToDB();
 								addNewDocEntry(get_successDocCount());
 								if(NULL != reqParam)
@@ -990,7 +1011,10 @@ size_t headr_callback(char *buffer, size_t size, size_t nitems)
 					stripspaces(header_str, &final_header);
 					if(g_contentLen != NULL)
 					{
-						WEBCFG_FREE(g_contentLen);
+						if(atoi(g_contentLen) != 0)
+						{
+							WEBCFG_FREE(g_contentLen);
+						}
 					}
 					g_contentLen = strdup(final_header);
 				}
@@ -1373,6 +1397,9 @@ void createCurlHeader( struct curl_slist *list, struct curl_slist **header_list,
         char *productClass = NULL, *productClass_header = NULL;
 	char *ModelName = NULL, *ModelName_header = NULL;
 	char *systemReadyTime = NULL, *systemReadyTime_header=NULL;
+	char *telemetryVersion_header = NULL;
+	char *PartnerID = NULL, *PartnerID_header = NULL;
+	char *AccountID = NULL, *AccountID_header = NULL;
 	struct timespec cTime;
 	char currentTime[32];
 	char *currentTime_header=NULL;
@@ -1402,14 +1429,17 @@ void createCurlHeader( struct curl_slist *list, struct curl_slist **header_list,
 		WEBCFG_FREE(auth_header);
 	}
 
-	version_header = (char *) malloc(sizeof(char)*MAX_BUF_SIZE);
-	if(version_header !=NULL)
+	if(!get_global_supplementarySync())
 	{
-		refreshConfigVersionList(version, 0);
-		snprintf(version_header, MAX_BUF_SIZE, "IF-NONE-MATCH:%s", ((strlen(version)!=0) ? version : "0"));
-		WebcfgInfo("version_header formed %s\n", version_header);
-		list = curl_slist_append(list, version_header);
-		WEBCFG_FREE(version_header);
+		version_header = (char *) malloc(sizeof(char)*MAX_BUF_SIZE);
+		if(version_header !=NULL)
+		{
+			refreshConfigVersionList(version, 0);
+			snprintf(version_header, MAX_BUF_SIZE, "IF-NONE-MATCH:%s", ((strlen(version)!=0) ? version : "0"));
+			WebcfgInfo("version_header formed %s\n", version_header);
+			list = curl_slist_append(list, version_header);
+			WEBCFG_FREE(version_header);
+		}
 	}
 	list = curl_slist_append(list, "Accept: application/msgpack");
 
@@ -1422,82 +1452,85 @@ void createCurlHeader( struct curl_slist *list, struct curl_slist **header_list,
 		WEBCFG_FREE(schema_header);
 	}
 
-
-	if(supportedVersion_header == NULL)
+	if(!get_global_supplementarySync())
 	{
-		supportedVersion = getsupportedVersion();
-
-		if(supportedVersion !=NULL)
+		if(supportedVersion_header == NULL)
 		{
-			supported_version_size = strlen(supportedVersion)+strlen("X-System-Schema-Version: ");
-			supportedVersion_header = (char *) malloc(supported_version_size+1);
-			memset(supportedVersion_header,0,supported_version_size+1);
-			WebcfgDebug("supportedVersion fetched is %s\n", supportedVersion);
-			snprintf(supportedVersion_header, supported_version_size+1, "X-System-Schema-Version: %s", supportedVersion);
+			supportedVersion = getsupportedVersion();
+
+			if(supportedVersion !=NULL)
+			{
+				supported_version_size = strlen(supportedVersion)+strlen("X-System-Schema-Version: ");
+				supportedVersion_header = (char *) malloc(supported_version_size+1);
+				memset(supportedVersion_header,0,supported_version_size+1);
+				WebcfgDebug("supportedVersion fetched is %s\n", supportedVersion);
+				snprintf(supportedVersion_header, supported_version_size+1, "X-System-Schema-Version: %s", supportedVersion);
+				WebcfgInfo("supportedVersion_header formed %s\n", supportedVersion_header);
+				list = curl_slist_append(list, supportedVersion_header);
+			}
+			else
+			{
+				WebcfgInfo("supportedVersion fetched is NULL\n");
+			}
+		}
+		else
+		{
 			WebcfgInfo("supportedVersion_header formed %s\n", supportedVersion_header);
 			list = curl_slist_append(list, supportedVersion_header);
 		}
+
+		if(supportedDocs_header == NULL)
+		{
+			supportedDocs = getsupportedDocs();
+
+			if(supportedDocs !=NULL)
+			{
+				supported_doc_size = strlen(supportedDocs)+strlen("X-System-Supported-Docs: ");
+				supportedDocs_header = (char *) malloc(supported_doc_size+1);
+				memset(supportedDocs_header,0,supported_doc_size+1);
+				WebcfgDebug("supportedDocs fetched is %s\n", supportedDocs);
+				snprintf(supportedDocs_header, supported_doc_size+1, "X-System-Supported-Docs: %s", supportedDocs);
+				WebcfgInfo("supportedDocs_header formed %s\n", supportedDocs_header);
+				list = curl_slist_append(list, supportedDocs_header);
+			}
+			else
+			{
+				WebcfgInfo("SupportedDocs fetched is NULL\n");
+			}
+		}
 		else
 		{
-			WebcfgInfo("supportedVersion fetched is NULL\n");
-		}
-	}
-	else
-	{
-		WebcfgInfo("supportedVersion_header formed %s\n", supportedVersion_header);
-		list = curl_slist_append(list, supportedVersion_header);
-	}
-
-	if(supportedDocs_header == NULL)
-	{
-		supportedDocs = getsupportedDocs();
-
-		if(supportedDocs !=NULL)
-		{
-			supported_doc_size = strlen(supportedDocs)+strlen("X-System-Supported-Docs: ");
-			supportedDocs_header = (char *) malloc(supported_doc_size+1);
-			memset(supportedDocs_header,0,supported_doc_size+1);
-			WebcfgDebug("supportedDocs fetched is %s\n", supportedDocs);
-			snprintf(supportedDocs_header, supported_doc_size+1, "X-System-Supported-Docs: %s", supportedDocs);
 			WebcfgInfo("supportedDocs_header formed %s\n", supportedDocs_header);
 			list = curl_slist_append(list, supportedDocs_header);
 		}
-		else
-		{
-			WebcfgInfo("SupportedDocs fetched is NULL\n");
-		}
 	}
 	else
 	{
-		WebcfgInfo("supportedDocs_header formed %s\n", supportedDocs_header);
-		list = curl_slist_append(list, supportedDocs_header);
-	}
-
-/*	if(supplementaryDocs_header == NULL)
-	{
-		supplementaryDocs = getsupplementaryDocs();
-
-		if(supplementaryDocs !=NULL)
+		/*if(supplementaryDocs_header == NULL)
 		{
-			supplementary_docs_size = strlen(supplementaryDocs)+strlen("X-System-SupplementaryService-Sync: ");
-			supplementaryDocs_header = (char *) malloc(supplementary_docs_size+1);
-			memset(supplementaryDocs_header,0,supplementary_docs_size+1);
-			WebcfgDebug("supplementaryDocs fetched is %s\n", supplementaryDocs);
-			snprintf(supplementaryDocs_header, supplementary_docs_size+1, "X-System-SupplementaryService-Sync: %s", supplementaryDocs);
+			supplementaryDocs = getsupplementaryDocs();
+
+			if(supplementaryDocs !=NULL)
+			{
+				supplementary_docs_size = strlen(supplementaryDocs)+strlen("X-System-SupplementaryService-Sync: ");
+				supplementaryDocs_header = (char *) malloc(supplementary_docs_size+1);
+				memset(supplementaryDocs_header,0,supplementary_docs_size+1);
+				WebcfgDebug("supplementaryDocs fetched is %s\n", supplementaryDocs);
+				snprintf(supplementaryDocs_header, supplementary_docs_size+1, "X-System-SupplementaryService-Sync: %s", supplementaryDocs);
+				WebcfgInfo("supplementaryDocs_header formed %s\n", supplementaryDocs_header);
+				list = curl_slist_append(list, supplementaryDocs_header);
+			}
+			else
+			{
+				WebcfgInfo("supplementaryDocs fetched is NULL\n");
+			}
+		}
+		else
+		{
 			WebcfgInfo("supplementaryDocs_header formed %s\n", supplementaryDocs_header);
 			list = curl_slist_append(list, supplementaryDocs_header);
-		}
-		else
-		{
-			WebcfgInfo("supplementaryDocs fetched is NULL\n");
-		}
+		}*/
 	}
-	else
-	{
-		WebcfgInfo("supplementaryDocs_header formed %s\n", supplementaryDocs_header);
-		list = curl_slist_append(list, supplementaryDocs_header);
-	}*/
-
 
 	if(strlen(g_bootTime) ==0)
 	{
@@ -1700,6 +1733,73 @@ void createCurlHeader( struct curl_slist *list, struct curl_slist **header_list,
 	{
 		WebcfgError("Failed to get ModelName\n");
 	}
+
+	//Addtional headers for telemetry sync
+	if(get_global_supplementarySync())
+	{
+		telemetryVersion_header = (char *) malloc(sizeof(char)*MAX_BUF_SIZE);
+		if(telemetryVersion_header !=NULL)
+		{
+			snprintf(telemetryVersion_header, MAX_BUF_SIZE, "X-System-Telemetry-Profile-Version: %s", "2.0");
+			WebcfgInfo("telemetryVersion_header formed %s\n", telemetryVersion_header);
+			list = curl_slist_append(list, telemetryVersion_header);
+			WEBCFG_FREE(telemetryVersion_header);
+		}
+
+		if(strlen(g_PartnerID) ==0)
+		{
+			PartnerID = getPartnerID();
+			if(PartnerID !=NULL)
+			{
+			       strncpy(g_PartnerID, PartnerID, sizeof(g_PartnerID)-1);
+			       WebcfgDebug("g_PartnerID fetched is %s\n", g_PartnerID);
+			       WEBCFG_FREE(PartnerID);
+			}
+		}
+
+		if(strlen(g_PartnerID))
+		{
+			PartnerID_header = (char *) malloc(sizeof(char)*MAX_BUF_SIZE);
+			if(PartnerID_header !=NULL)
+			{
+				snprintf(PartnerID_header, MAX_BUF_SIZE, "X-System-PartnerID: %s", g_PartnerID);
+				WebcfgInfo("PartnerID_header formed %s\n", PartnerID_header);
+				list = curl_slist_append(list, PartnerID_header);
+				WEBCFG_FREE(PartnerID_header);
+			}
+		}
+		else
+		{
+			WebcfgError("Failed to get PartnerID\n");
+		}
+
+		if(strlen(g_AccountID) ==0)
+		{
+			AccountID = getAccountID();
+			if(AccountID !=NULL)
+			{
+			       strncpy(g_AccountID, AccountID, sizeof(g_AccountID)-1);
+			       WebcfgDebug("g_AccountID fetched is %s\n", g_AccountID);
+			       WEBCFG_FREE(AccountID);
+			}
+		}
+
+		if(strlen(g_AccountID))
+		{
+			AccountID_header = (char *) malloc(sizeof(char)*MAX_BUF_SIZE);
+			if(AccountID_header !=NULL)
+			{
+				snprintf(AccountID_header, MAX_BUF_SIZE, "X-System-AccountID: %s", g_AccountID);
+				WebcfgInfo("AccountID_header formed %s\n", AccountID_header);
+				list = curl_slist_append(list, AccountID_header);
+				WEBCFG_FREE(AccountID_header);
+			}
+		}
+		else
+		{
+			WebcfgError("Failed to get AccountID\n");
+		}
+	}
 	*header_list = list;
 }
 
@@ -1806,7 +1906,7 @@ void parse_multipart(char *ptr, int no_of_bytes)
 				mp_node->next = NULL;
 
 				WebcfgDebug("mp_node->etag is %ld\n",(long)mp_node->etag);
-				WebcfgDebug("mp_node->name_space is %s\n", mp_node->name_space);
+				WebcfgInfo("mp_node->name_space is %s\n", mp_node->name_space);
 				WebcfgDebug("mp_node->data is %s\n", mp_node->data);
 				WebcfgDebug("mp_node->data_size is %zu\n", mp_node->data_size);
 				WebcfgDebug("mp_node->isSupplementarySync is %d\n", mp_node->isSupplementarySync);
@@ -2014,6 +2114,45 @@ void reqParam_destroy( int paramCnt, param_t *reqObj )
 	}
 }
 
+//Root will be the first doc always in tmp list and will be deleted when all the docs are success. Delete root doc from tmp list when tmp list has one element root.
+WEBCFG_STATUS checkRootDelete()
+{
+	int count =0;
+	webconfig_tmp_data_t *temp = NULL;
+	temp = get_global_tmp_node();
+
+	while (NULL != temp)
+	{
+		if(count > 1)
+		{
+			WebcfgDebug("tmp list count is %d\n", count);
+			break;
+		}
+		WebcfgDebug("Root check ====> temp->name %s\n", temp->name);
+		if( strcmp("root", temp->name) != 0)
+		{
+			WebcfgDebug("Found doc in tmp list\n");
+			count = count+1;
+		}
+		else
+		{
+			count = 1;
+		}
+		temp= temp->next;
+	}
+
+	if(count == 1)
+	{
+		WebcfgInfo("Tmp list root doc delete is required\n");
+		return WEBCFG_SUCCESS;
+	}
+	else
+	{
+		WebcfgInfo("Tmp list root doc delete is not required\n");
+	}
+	return WEBCFG_FAILURE;
+}
+
 //Update root version to DB when tmp list has one element root.
 WEBCFG_STATUS checkRootUpdate()
 {
@@ -2029,14 +2168,19 @@ WEBCFG_STATUS checkRootUpdate()
 			break;
 		}
 		WebcfgDebug("Root check ====> temp->name %s\n", temp->name);
-		if(temp->error_code == 204 && (temp->error_details != NULL && strstr(temp->error_details, "doc_unsupported") != NULL))
+		WebcfgDebug("temp->isSupplementarySync is %d\n", temp->isSupplementarySync);
+		if((temp->error_code == 204 && (temp->error_details != NULL && strstr(temp->error_details, "doc_unsupported") != NULL)) || (temp->isSupplementarySync == 1)) //skip supplementary docs
 		{
+			if(temp->isSupplementarySync)
+			{
+				WebcfgInfo("skipping supplementary doc %s\n", temp->name);
+			}
 			WebcfgDebug("Error details: %s\n",temp->error_details);
 			WebcfgDebug("Skipping unsupported sub doc %s\n",temp->name);
 		}
 		else if( strcmp("root", temp->name) != 0)
 		{
-			WebcfgDebug("Found root in tmp list\n");
+			WebcfgDebug("Found doc in tmp list\n");
 			count = count+1;
 		}
 		else
@@ -2076,22 +2220,27 @@ void updateRootVersionToDB()
 	}
 
 	WebcfgDebug("The Etag is %lu\n",(long)version );
-	//Delete tmp queue root as all docs are applied
-	WebcfgDebug("Delete tmp queue root as all docs are applied\n");
-	WebcfgDebug("root version to delete is %lu\n", (long)version);
-	dStatus = deleteFromTmpList("root");
-	if(dStatus == 0)
+
+	//Delete root only when all the primary and supplementary docs are applied .
+	if(checkRootDelete() == WEBCFG_SUCCESS)
 	{
-		WebcfgInfo("Delete tmp queue root is success\n");
+		//Delete tmp queue root as all docs are applied
+		WebcfgDebug("Delete tmp queue root as all docs are applied\n");
+		WebcfgDebug("root version to delete is %lu\n", (long)version);
+		dStatus = deleteFromTmpList("root");
+		if(dStatus == 0)
+		{
+			WebcfgInfo("Delete tmp queue root is success\n");
+		}
+		else
+		{
+			WebcfgError("Delete tmp queue root is failed\n");
+		}
+		WebcfgDebug("free mp as all docs and root are updated to DB\n");
+		multipart_destroy(g_mp_head);
+		g_mp_head = NULL;
+		WebcfgDebug("After free mp\n");
 	}
-	else
-	{
-		WebcfgError("Delete tmp queue root is failed\n");
-	}
-	WebcfgDebug("free mp as all docs and root are updated to DB\n");
-	multipart_destroy(g_mp_head);
-	g_mp_head = NULL;
-	WebcfgDebug("After free mp\n");
 }
 
 void failedDocsRetry()
