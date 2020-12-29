@@ -340,7 +340,7 @@ void* processSubdocEvents()
 							WebcfgDebug("err_details : %s, err_code : %lu\n", err_details, (long) eventParam->err_code);
 							updateTmpList(subdoc_node, eventParam->subdoc_name, eventParam->version, "failed", err_details, eventParam->err_code, eventParam->trans_id, 0);
 							WebcfgDebug("get_global_transID is %s\n", get_global_transID());
-							addWebConfgNotifyMsg(eventParam->subdoc_name, eventParam->version, "failed", err_details, get_global_transID(),eventParam->timeout, "status", eventParam->err_code, NULL, 200);
+							addWebConfgNotifyMsg(eventParam->subdoc_name, eventParam->version, "failed", err_details, subdoc_node->cloud_trans_id, eventParam->timeout, "status", eventParam->err_code, NULL, 200);
 						}
 						else
 						{
@@ -362,7 +362,7 @@ void* processSubdocEvents()
 						docVersion = getDocVersionFromTmpList(subdoc_node, eventParam->subdoc_name);
 					}
 					WebcfgDebug("docVersion %lu\n", (long) docVersion);
-					addWebConfgNotifyMsg(eventParam->subdoc_name, docVersion, "pending", "timer_expired", get_global_transID(),eventParam->timeout, "status", 0, NULL, 200);
+					addWebConfgNotifyMsg(eventParam->subdoc_name, docVersion, "pending", "timer_expired", subdoc_node->cloud_trans_id, eventParam->timeout, "status", 0, NULL, 200);
 					WebcfgDebug("retryMultipartSubdoc for EXPIRE case\n");
 					rs = retryMultipartSubdoc(subdoc_node, eventParam->subdoc_name);
 					if(rs == WEBCFG_SUCCESS)
@@ -384,7 +384,7 @@ void* processSubdocEvents()
 						{
 							startWebcfgTimer(doctimer_node, eventParam->subdoc_name, eventParam->trans_id, eventParam->timeout);
 							WebcfgInfo("After startWebcfgTimer\n");
-							addWebConfgNotifyMsg(eventParam->subdoc_name, eventParam->version, "pending", NULL, get_global_transID(),eventParam->timeout, "ack", 0, NULL, 200);
+							addWebConfgNotifyMsg(eventParam->subdoc_name, eventParam->version, "pending", NULL, subdoc_node->cloud_trans_id,eventParam->timeout, "ack", 0, NULL, 200);
 						}
 						else
 						{
@@ -602,7 +602,7 @@ void createTimerExpiryEvent(char *docName, uint16_t transid)
 void sendSuccessNotification(webconfig_tmp_data_t *subdoc_node, char *name, uint32_t version, uint16_t txid)
 {
 	updateTmpList(subdoc_node, name, version, "success", "none", 0, txid, 0);
-	addWebConfgNotifyMsg(name, version, "success", "none", get_global_transID(),0, "status",0, NULL, 200);
+	addWebConfgNotifyMsg(name, version, "success", "none", subdoc_node->cloud_trans_id,0, "status",0, NULL, 200);
 	deleteFromTmpList(name);
 }
 
@@ -913,7 +913,7 @@ WEBCFG_STATUS retryMultipartSubdoc(webconfig_tmp_data_t *docNode, char *docName)
 							WebcfgDebug("For scalar docs, update trans_id as 0\n");
 							updateTmpList(docNode, gmp->name_space, gmp->etag, "success", "none", 0, 0, 0);
 							//send scalar success notification, delete tmp, updateDB
-							addWebConfgNotifyMsg(gmp->name_space, gmp->etag, "success", "none", get_global_transID(), 0, "status", 0, NULL, 200);
+							addWebConfgNotifyMsg(gmp->name_space, gmp->etag, "success", "none", docNode->cloud_trans_id, 0, "status", 0, NULL, 200);
 							WebcfgDebug("deleteFromTmpList as scalar doc is applied\n");
 							deleteFromTmpList(gmp->name_space);
 							WebcfgInfo("docNode->isSupplementarySync is %d\n", docNode->isSupplementarySync);
@@ -951,7 +951,7 @@ WEBCFG_STATUS retryMultipartSubdoc(webconfig_tmp_data_t *docNode, char *docName)
 							snprintf(result,MAX_VALUE_LEN,"failed_retrying:%s", errDetails);
 							WebcfgDebug("The result is %s\n",result);
 							updateTmpList(docNode, gmp->name_space, gmp->etag, "pending", result, ccspStatus, 0, 1);
-							addWebConfgNotifyMsg(gmp->name_space, gmp->etag, "pending", result, get_global_transID(), 0,"status",ccspStatus, NULL, 200);
+							addWebConfgNotifyMsg(gmp->name_space, gmp->etag, "pending", result, docNode->cloud_trans_id, 0,"status",ccspStatus, NULL, 200);
 							set_doc_fail(1);
 							updateFailureTimeStamp(docNode, gmp->name_space, getRetryExpiryTimeout());
 							WebcfgDebug("the retry flag value is %d\n", get_doc_fail());
@@ -961,7 +961,7 @@ WEBCFG_STATUS retryMultipartSubdoc(webconfig_tmp_data_t *docNode, char *docName)
 							snprintf(result,MAX_VALUE_LEN,"doc_rejected:%s", errDetails);
 							WebcfgDebug("The result is %s\n",result);
 							updateTmpList(docNode, gmp->name_space, gmp->etag, "failed", result, ccspStatus, 0, 0);
-							addWebConfgNotifyMsg(gmp->name_space, gmp->etag, "failed", result, get_global_transID(), 0, "status", ccspStatus, NULL, 200);
+							addWebConfgNotifyMsg(gmp->name_space, gmp->etag, "failed", result, docNode->cloud_trans_id, 0, "status", ccspStatus, NULL, 200);
 						}
 					}
 					reqParam_destroy(paramCount, reqParam);
@@ -1017,7 +1017,7 @@ WEBCFG_STATUS checkAndUpdateTmpRetryCount(webconfig_tmp_data_t *temp, char *docn
 				//send max retry notification to cloud only one time on the max retry attempt.
 				if((temp->retry_count == MAX_APPLY_RETRY_COUNT) && (strcmp(temp->error_details, "max_retry_reached") !=0))
 				{
-					addWebConfgNotifyMsg(temp->name, temp->version, "failed", "max_retry_reached", get_global_transID(),0,"status",0, NULL, 200);
+					addWebConfgNotifyMsg(temp->name, temp->version, "failed", "max_retry_reached", temp->cloud_trans_id, 0,"status",0, NULL, 200);
 					WebcfgDebug("update max_retry_reached to tmp list: ccsp error code %hu\n", temp->error_code);
 					updateTmpList(temp, temp->name, temp->version, "failed", "max_retry_reached", temp->error_code, 0, 1);
 				}

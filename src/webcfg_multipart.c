@@ -693,7 +693,7 @@ WEBCFG_STATUS processMsgpackSubdoc(char *transaction_id)
 							updateTmpList(subdoc_node, mp->name_space, mp->etag, "success", "none", 0, 0, 0);
 							//send success notification to cloud
 							WebcfgDebug("send notify for mp->name_space %s\n", mp->name_space);
-							addWebConfgNotifyMsg(mp->name_space, mp->etag, "success", "none", trans_id,0, "status",0, NULL, 200);
+							addWebConfgNotifyMsg(mp->name_space, mp->etag, "success", "none", subdoc_node->cloud_trans_id,0, "status",0, NULL, 200);
 							WebcfgDebug("deleteFromTmpList as doc is applied\n");
 							deleteFromTmpList(mp->name_space);
 
@@ -794,7 +794,7 @@ WEBCFG_STATUS processMsgpackSubdoc(char *transaction_id)
 							}
 							WebcfgInfo("The result is %s\n",result);
 							updateTmpList(subdoc_node, mp->name_space, mp->etag, "failed", result, ccspStatus, 0, 1);
-							addWebConfgNotifyMsg(mp->name_space, mp->etag, "failed", result, trans_id,0,"status",ccspStatus, NULL, 200);
+							addWebConfgNotifyMsg(mp->name_space, mp->etag, "failed", result, subdoc_node->cloud_trans_id, 0,"status",ccspStatus, NULL, 200);
 							WebcfgInfo("checkRootUpdate\n");
 							//No root update for supplementary sync
 							if(get_global_supplementarySync())
@@ -821,7 +821,7 @@ WEBCFG_STATUS processMsgpackSubdoc(char *transaction_id)
 							//snprintf(result,MAX_VALUE_LEN,"doc_rejected:%s", errDetails);
 							WebcfgDebug("The result is %s\n",result);
 							updateTmpList(subdoc_node, mp->name_space, mp->etag, "failed", result, ccspStatus, 0, 0);
-							addWebConfgNotifyMsg(mp->name_space, mp->etag, "failed", result, trans_id,0, "status", ccspStatus, NULL, 200);
+							addWebConfgNotifyMsg(mp->name_space, mp->etag, "failed", result, subdoc_node->cloud_trans_id,0, "status", ccspStatus, NULL, 200);
 						}
 						//print_tmp_doc_list(mp_count);
 					}
@@ -2020,7 +2020,7 @@ int update_supplementary_doc(multipartdocs_t * mp_doc)
 	{
 		if(temp->isSupplementarySync == 1)
 		{
-			if(strncasecmp(temp->name_space, mp_doc->name_space, strlen(mp_doc->name_space)) == 0)
+			if(strncmp(temp->name_space, mp_doc->name_space, strlen(mp_doc->name_space)) == 0)
 			{
 				printf("Updated\n");
 				WebcfgInfo("The temp->name_space inside update is %s\n", temp->name_space);

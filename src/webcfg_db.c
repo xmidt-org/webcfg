@@ -388,6 +388,7 @@ WEBCFG_STATUS addToTmpList()
 {
 	int retStatus = WEBCFG_FAILURE;
 	int mp_count = 0;
+	char * cloud_transaction_id = NULL;
 
 	mp_count = get_multipartdoc_count();
 	WebcfgDebug("multipartdoc count is %d\n", mp_count);
@@ -407,6 +408,7 @@ WEBCFG_STATUS addToTmpList()
 	mp_node = get_global_mp();
 
 	WebcfgInfo("The numdocs is %d\n",numOfMpDocs);
+	cloud_transaction_id = get_global_transID();
 	while(mp_node != NULL)
 	{
 		webconfig_tmp_data_t *new_node = NULL;
@@ -429,7 +431,7 @@ WEBCFG_STATUS addToTmpList()
 				new_node->trans_id = 0;
 				new_node->retry_count = 0;
 				new_node->retry_expiry_timestamp = 0;
-				new_node->cloud_trans_id = get_global_transID();
+				new_node->cloud_trans_id = strdup(cloud_transaction_id);
 			}
 		}
 		else
@@ -452,16 +454,16 @@ WEBCFG_STATUS addToTmpList()
 					new_node->trans_id = 0;
 					new_node->retry_count = 0;
 					new_node->retry_expiry_timestamp = 0;
-					new_node->cloud_trans_id = get_global_transID();
+					new_node->cloud_trans_id = strdup(cloud_transaction_id);
 
-					WebcfgDebug("new_node->name is %s\n", new_node->name);
+					WebcfgInfo("new_node->name is %s\n", new_node->name);
 					WebcfgDebug("new_node->version is %lu\n", (long)new_node->version);
 					WebcfgDebug("new_node->status is %s\n", new_node->status);
 					WebcfgDebug("new_node->isSupplementarySync is %d\n", new_node->isSupplementarySync);
 					WebcfgDebug("new_node->error_details is %s\n", new_node->error_details);
 					WebcfgDebug("new_node->retry_count is %d\n", new_node->retry_count);
 					WebcfgDebug("new_node->retry_expiry_timestamp is %lld\n", new_node->retry_expiry_timestamp);
-					WebcfgDebug("new_node->cloud_trans_id is %s\n", new_node->cloud_trans_id);
+					WebcfgInfo("new_node->cloud_trans_id is %s\n", new_node->cloud_trans_id);
 				}
 
 			}

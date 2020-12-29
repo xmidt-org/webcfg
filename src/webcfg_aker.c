@@ -250,7 +250,7 @@ void updateAkerMaxRetry(webconfig_tmp_data_t *temp, char *docname)
 		if( strcmp(docname, temp->name) == 0)
 		{
 			updateTmpList(temp, temp->name, temp->version, "failed", "aker_service_unavailable", 0, 0, 0);
-			addWebConfgNotifyMsg(temp->name, temp->version, "failed", "aker_service_unavailable", get_global_transID(),0, "status", 0, NULL, 200);
+			addWebConfgNotifyMsg(temp->name, temp->version, "failed", "aker_service_unavailable", temp->cloud_trans_id, 0, "status", 0, NULL, 200);
 			return;
 		}
 	}
@@ -351,7 +351,7 @@ AKER_STATUS processAkerSubdoc(webconfig_tmp_data_t *docNode, multipartdocs_t *ak
 				{
 					//Invalid aker request
 					updateTmpList(docNode, gmp->name_space, gmp->etag, "failed", "doc_rejected", 0, 0, 0);
-					addWebConfgNotifyMsg(gmp->name_space, gmp->etag, "failed", "doc_rejected", get_global_transID(),0, "status", 0, NULL, 200);
+					addWebConfgNotifyMsg(gmp->name_space, gmp->etag, "failed", "doc_rejected", docNode->cloud_trans_id, 0, "status", 0, NULL, 200);
 					rv = AKER_FAILURE;
 				}
 				reqParam_destroy(paramCount, reqParam);
