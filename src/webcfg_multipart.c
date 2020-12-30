@@ -581,6 +581,14 @@ WEBCFG_STATUS processMsgpackSubdoc(char *transaction_id)
 		webconfig_tmp_data_t * subdoc_node = NULL;
 		subdoc_node = getTmpNode(mp->name_space);
 
+		if(subdoc_node == NULL)
+		{
+			WebcfgError("Failed to get subdoc_node from tmp list\n");
+			mp = mp->next;
+			continue;
+		}
+
+		WebcfgInfo("check for current docs\n");
 		//Process subdocs with status "pending" which indicates docs from current sync, skip all others.
 		if(strcmp(subdoc_node->status, "pending") != 0)
 		{
@@ -1038,7 +1046,7 @@ uint32_t get_global_root()
 		g_version = strtoul(temp,NULL,0);
 		WEBCFG_FREE(temp);
 	}
-	WebcfgDebug("g_version is %lu\n", (long)g_version);
+	WebcfgInfo("g_version is %lu\n", (long)g_version);
 	return g_version;
 }
 
@@ -1906,7 +1914,7 @@ void parse_multipart(char *ptr, int no_of_bytes)
 				mp_node->next = NULL;
 
 				WebcfgDebug("mp_node->etag is %ld\n",(long)mp_node->etag);
-				WebcfgInfo("mp_node->name_space is %s\n", mp_node->name_space);
+				WebcfgInfo("mp_node->name_space is %s mp_node->etag is %ld mp_node->isSupplementarySync %d\n", mp_node->name_space, (long)mp_node->etag, mp_node->isSupplementarySync );
 				WebcfgDebug("mp_node->data is %s\n", mp_node->data);
 				WebcfgDebug("mp_node->data_size is %zu\n", mp_node->data_size);
 				WebcfgDebug("mp_node->isSupplementarySync is %d\n", mp_node->isSupplementarySync);
@@ -2176,7 +2184,7 @@ WEBCFG_STATUS checkRootUpdate()
 				WebcfgInfo("skipping supplementary doc %s\n", temp->name);
 			}
 			WebcfgDebug("Error details: %s\n",temp->error_details);
-			WebcfgDebug("Skipping unsupported sub doc %s\n",temp->name);
+			WebcfgInfo("Skipping unsupported sub doc %s\n",temp->name);
 		}
 		else if( strcmp("root", temp->name) != 0)
 		{

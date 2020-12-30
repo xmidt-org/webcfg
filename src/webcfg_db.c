@@ -391,7 +391,7 @@ WEBCFG_STATUS addToTmpList()
 	char * cloud_transaction_id = NULL;
 
 	mp_count = get_multipartdoc_count();
-	WebcfgDebug("multipartdoc count is %d\n", mp_count);
+	WebcfgInfo("multipartdoc count is %d\n", mp_count);
 	//numOfMpDocs = 0;
 	//WebcfgDebug("reset numOfMpDocs to %d\n", numOfMpDocs);
 
@@ -421,11 +421,18 @@ WEBCFG_STATUS addToTmpList()
 			{
 				memset( new_node, 0, sizeof( webconfig_tmp_data_t ) );
 
-				WebcfgDebug("Adding root doc to list\n");
+				WebcfgInfo("Adding root doc to list\n");
 				new_node->name = strdup("root");
-				new_node->version = get_global_root();
+				new_node->version = 0;
+				if(get_global_supplementarySync())
+				{
+					WebcfgInfo("Primary sync , update global root version to tmp list\n");
+					new_node->version = get_global_root();
+				}
 				new_node->status = strdup("pending");
-				new_node->isSupplementarySync = get_global_supplementarySync();
+				//For root, isSupplementarySync is always 0 as root version is for primary sync.
+				new_node->isSupplementarySync = 0;
+				WebcfgInfo("new_node->isSupplementarySync is %d\n", new_node->isSupplementarySync);
 				new_node->error_details = strdup("none");
 				new_node->error_code = 0;
 				new_node->trans_id = 0;
@@ -448,7 +455,7 @@ WEBCFG_STATUS addToTmpList()
 					WebcfgDebug("mp_node->name_space is %s\n", mp_node->name_space);
 					new_node->version = mp_node->etag;
 					new_node->status = strdup("pending");
-					new_node->isSupplementarySync = get_global_supplementarySync();
+					new_node->isSupplementarySync = mp_node->isSupplementarySync;
 					new_node->error_details = strdup("none");
 					new_node->error_code = 0;
 					new_node->trans_id = 0;
@@ -495,13 +502,13 @@ WEBCFG_STATUS addToTmpList()
 			WebcfgDebug("--->>doc %s with version %lu is added to list\n", new_node->name, (long)new_node->version);
 			numOfMpDocs = numOfMpDocs + 1;
 		}
-		WebcfgDebug("numOfMpDocs %d\n", numOfMpDocs);
+		WebcfgInfo("numOfMpDocs %d\n", numOfMpDocs);
 
-		if(mp_count+1 == numOfMpDocs)
-		{
+		//if(mp_count+1 == numOfMpDocs) //TODO:check if it can be optimized based on count.
+		//{
 			WebcfgInfo("addToTmpList success\n");
 			retStatus = WEBCFG_SUCCESS;
-		}
+		//}
 	}
 	WebcfgDebug("addToList return %d\n", retStatus);
 	return retStatus;
@@ -1144,6 +1151,7 @@ webconfig_tmp_data_t * getTmpNode(char *docname)
 		}
 		temp= temp->next;
 	}
+	WebcfgError("getTmpNode failed for doc %s\n", docname);
 	return NULL;
 }
 
