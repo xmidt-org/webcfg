@@ -222,9 +222,11 @@ int addToEventQueue(char *buf)
                 event_data_t *temp = eventDataQ;
                 while(temp->next)
                 {
+		    WebcfgInfo("Inside while eventQ\n");
                     temp = temp->next;
                 }
                 temp->next = Data;
+		WebcfgInfo("Added Data to temp->next\n");
                 pthread_mutex_unlock (&event_mut);
             }
         }
