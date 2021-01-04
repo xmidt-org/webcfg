@@ -160,7 +160,7 @@ void initWebcfgProperties(char * filename)
 			value[strlen(value)-1] = '\0';
 			setsupplementaryDocs(value);
 			value = NULL;
-			supplementaryUrls();
+			supplementaryDocs();
 		}
 		
 	}
@@ -319,13 +319,13 @@ SupplementaryDocs_t * get_global_spInfoTail(void)
     return tmp;
 }
 
-void supplementaryUrls()
+void supplementaryDocs()
 {
 	int count = 0;
-	char* url = NULL;
-	url = strndup(getsupplementaryDocs(), strlen(getsupplementaryDocs()));
+	char* docs = NULL;
+	docs = strndup(getsupplementaryDocs(), strlen(getsupplementaryDocs()));
 
-	char* token = strtok(url, ",");
+	char* token = strtok(docs, ",");
 
 	while(token != NULL)
 	{

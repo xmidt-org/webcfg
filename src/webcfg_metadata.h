@@ -47,7 +47,7 @@ void setsupplementaryDocs( char * value);
 char * getsupportedDocs();
 char * getsupportedVersion();
 char * getsupplementaryDocs();
-void supplementaryUrls();
+void supplementaryDocs();
 SupplementaryDocs_t * get_global_spInfoHead(void);
 WEBCFG_STATUS isSupplementaryDoc(char *subDoc);
 #endif
