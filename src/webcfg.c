@@ -138,7 +138,6 @@ void *WebConfigMultipartTask(void *status)
 	//Resetting the supplementary sync
 	set_global_supplementarySync(0);
 
-	WebcfgInfo("Before While loop\n");
 	while(1)
 	{
 		if(forced_sync)
@@ -149,7 +148,6 @@ void *WebConfigMultipartTask(void *status)
 			forced_sync = 0;
 			if(get_global_supplementarySync() && syncDoc !=NULL)
 			{
-				WebcfgInfo("free syncDoc\n");
 				WEBCFG_FREE(syncDoc);
 			}
 			setForceSync("", "", 0);
@@ -255,7 +253,7 @@ void *WebConfigMultipartTask(void *status)
 						WebcfgInfo("Received supplementary poke request for %s\n", ForceSyncDoc);
 						set_global_supplementarySync(1);
 						syncDoc = strdup(ForceSyncDoc);
-						WebcfgInfo("syncDoc is %s\n", syncDoc);
+						WebcfgDebug("syncDoc is %s\n", syncDoc);
 					}
 					WEBCFG_FREE(ForceSyncDoc);
 					WEBCFG_FREE(ForceSyncTransID);
