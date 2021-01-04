@@ -826,14 +826,11 @@ WEBCFG_STATUS retryMultipartSubdoc(webconfig_tmp_data_t *docNode, char *docName)
 	char result[MAX_VALUE_LEN]={0};
 	int ccspStatus=0;
 	int paramCount = 0;
-	int mp_count = 0;
 	uint16_t doc_transId = 0;
 	webcfgparam_t *pm = NULL;
 	multipartdocs_t *gmp = NULL;
 
 	gmp = get_global_mp();
-
-	mp_count = get_numOfMpDocs();
 
 	if(gmp ==NULL)
 	{
@@ -849,7 +846,6 @@ WEBCFG_STATUS retryMultipartSubdoc(webconfig_tmp_data_t *docNode, char *docName)
 
 	while( gmp != NULL)
 	{
-		WebcfgDebug("gmp->entries_count %d\n",mp_count);
 		if(strcmp(gmp->name_space, docName) == 0)
 		{
 			WebcfgInfo("gmp->name_space %s\n", gmp->name_space);
@@ -979,6 +975,7 @@ WEBCFG_STATUS retryMultipartSubdoc(webconfig_tmp_data_t *docNode, char *docName)
 		else
 		{
 			WebcfgDebug("docName %s not found in mp list\n", docName);
+			gmp = gmp->next;
 		}
 	}
 	return rv;
