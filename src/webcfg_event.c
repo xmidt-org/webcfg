@@ -222,11 +222,9 @@ int addToEventQueue(char *buf)
                 event_data_t *temp = eventDataQ;
                 while(temp->next)
                 {
-		    WebcfgInfo("Inside while eventQ\n");
                     temp = temp->next;
                 }
                 temp->next = Data;
-		WebcfgInfo("Added Data to temp->next\n");
                 pthread_mutex_unlock (&event_mut);
             }
         }
@@ -385,7 +383,6 @@ void* processSubdocEvents()
 						if((getDocVersionFromTmpList(subdoc_node, eventParam->subdoc_name))== eventParam->version)
 						{
 							startWebcfgTimer(doctimer_node, eventParam->subdoc_name, eventParam->trans_id, eventParam->timeout);
-							WebcfgInfo("After startWebcfgTimer\n");
 							addWebConfgNotifyMsg(eventParam->subdoc_name, eventParam->version, "pending", NULL, subdoc_node->cloud_trans_id,eventParam->timeout, "ack", 0, NULL, 200);
 						}
 						else
@@ -623,7 +620,6 @@ WEBCFG_STATUS startWebcfgTimer(expire_timer_t *timer_node, char *name, uint16_t 
 			WebcfgDebug("Adding events to list\n");
 			new_node->running = true;
 			new_node->subdoc_name = strdup(name);
-			WebcfgInfo("After strdup name is %s\n", name);
 			new_node->txid = transID;
 			new_node->timeout = timeout;
 			WebcfgDebug("started webcfg internal timer\n");
@@ -658,7 +654,6 @@ WEBCFG_STATUS startWebcfgTimer(expire_timer_t *timer_node, char *name, uint16_t 
 			return WEBCFG_FAILURE;
 		}
 	}
-	WebcfgInfo("startWebcfgTimer. numOfEvents is %d\n", numOfEvents);
 	WebcfgInfo("startWebcfgTimer success\n");
 	return WEBCFG_SUCCESS;
 }
@@ -1075,7 +1070,7 @@ expire_timer_t * getTimerNode(char *docname)
 	expire_timer_t *temp = NULL;
 	temp = get_global_timer_node();
 
-	WebcfgInfo("getTimerNode. docname is %s\n", docname);
+	WebcfgDebug("getTimerNode. docname is %s\n", docname);
 	//Traverse through timer list & fetch required doc timer node.
 	while (NULL != temp)
 	{
@@ -1086,7 +1081,7 @@ expire_timer_t * getTimerNode(char *docname)
 		}
 		temp= temp->next;
 	}
-	WebcfgInfo("getTimerNode failed for doc %s\n", docname);
+	WebcfgDebug("getTimerNode failed for doc %s\n", docname);
 	return NULL;
 }
 

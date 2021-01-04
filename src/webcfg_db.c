@@ -454,7 +454,7 @@ WEBCFG_STATUS addToTmpList()
 					new_node->name = strdup(mp_node->name_space);
 					WebcfgDebug("mp_node->name_space is %s\n", mp_node->name_space);
 					new_node->version = mp_node->etag;
-					new_node->status = strdup("pending");
+					new_node->status = strdup("pending_apply");
 					new_node->isSupplementarySync = mp_node->isSupplementarySync;
 					new_node->error_details = strdup("none");
 					new_node->error_code = 0;
@@ -1151,7 +1151,7 @@ webconfig_tmp_data_t * getTmpNode(char *docname)
 		}
 		temp= temp->next;
 	}
-	WebcfgError("getTmpNode failed for doc %s\n", docname);
+	WebcfgDebug("getTmpNode failed for doc %s\n", docname);
 	return NULL;
 }
 

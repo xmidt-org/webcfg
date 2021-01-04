@@ -583,14 +583,14 @@ WEBCFG_STATUS processMsgpackSubdoc(char *transaction_id)
 
 		if(subdoc_node == NULL)
 		{
-			WebcfgError("Failed to get subdoc_node from tmp list\n");
+			WebcfgDebug("Failed to get subdoc_node from tmp list\n");
 			mp = mp->next;
 			continue;
 		}
 
 		WebcfgInfo("check for current docs\n");
-		//Process subdocs with status "pending" which indicates docs from current sync, skip all others.
-		if(strcmp(subdoc_node->status, "pending") != 0)
+		//Process subdocs with status "pending_apply" which indicates docs from current sync, skip all others.
+		if(strcmp(subdoc_node->status, "pending_apply") != 0)
 		{
 			WebcfgInfo("skipped setValues for doc %s as it is already processed\n", mp->name_space);
 			mp = mp->next;
@@ -598,6 +598,8 @@ WEBCFG_STATUS processMsgpackSubdoc(char *transaction_id)
 		}
 		else
 		{
+			updateTmpList(subdoc_node, mp->name_space, subdoc_node->version, "pending", "none", 0, 0, 0);
+			//current_doc_count indicates current primary docs count.
 			if(subdoc_node->isSupplementarySync == 0)
 			{
 				current_doc_count++;
@@ -999,8 +1001,12 @@ size_t headr_callback(char *buffer, size_t size, size_t nitems)
 				{
 					strncpy(header_str, header_value, sizeof(header_str)-1);
 					stripspaces(header_str, &final_header);
-
-					strncpy(g_ETAG, final_header, sizeof(g_ETAG)-1);
+					//g_ETAG should be updated only for primary sync.
+					if(!get_global_supplementarySync())
+					{
+						strncpy(g_ETAG, final_header, sizeof(g_ETAG)-1);
+						WebcfgInfo("g_ETAG updated for primary sync is %s\n", g_ETAG);
+					}
 				}
 			}
 		}
@@ -1914,7 +1920,7 @@ void parse_multipart(char *ptr, int no_of_bytes)
 				mp_node->next = NULL;
 
 				WebcfgDebug("mp_node->etag is %ld\n",(long)mp_node->etag);
-				WebcfgInfo("mp_node->name_space is %s mp_node->etag is %ld mp_node->isSupplementarySync %d\n", mp_node->name_space, (long)mp_node->etag, mp_node->isSupplementarySync );
+				WebcfgDebug("mp_node->name_space is %s mp_node->etag is %lu mp_node->isSupplementarySync %d\n", mp_node->name_space, (long)mp_node->etag, mp_node->isSupplementarySync );
 				WebcfgDebug("mp_node->data is %s\n", mp_node->data);
 				WebcfgDebug("mp_node->data_size is %zu\n", mp_node->data_size);
 				WebcfgDebug("mp_node->isSupplementarySync is %d\n", mp_node->isSupplementarySync);
@@ -2181,7 +2187,7 @@ WEBCFG_STATUS checkRootUpdate()
 		{
 			if(temp->isSupplementarySync)
 			{
-				WebcfgInfo("skipping supplementary doc %s\n", temp->name);
+				WebcfgInfo("Skipping supplementary sub doc %s\n", temp->name);
 			}
 			else
 			{
@@ -2227,17 +2233,18 @@ void updateRootVersionToDB()
 	}
 	if(version != 0)
 	{
+		WebcfgDebug("Updating root version to DB\n");
 		checkDBList("root",version, NULL);
 	}
 
-	WebcfgDebug("The Etag is %lu\n",(long)version );
+	WebcfgInfo("The Etag is %lu\n",(long)version );
 
 	//Delete root only when all the primary and supplementary docs are applied .
 	if(checkRootDelete() == WEBCFG_SUCCESS)
 	{
 		//Delete tmp queue root as all docs are applied
-		WebcfgDebug("Delete tmp queue root as all docs are applied\n");
-		WebcfgDebug("root version to delete is %lu\n", (long)version);
+		WebcfgInfo("Delete tmp queue root as all docs are applied\n");
+		WebcfgInfo("root version to delete is %lu\n", (long)version);
 		dStatus = deleteFromTmpList("root");
 		if(dStatus == 0)
 		{
@@ -2268,11 +2275,11 @@ void failedDocsRetry()
 				WebcfgInfo("Retrying for subdoc %s error_code %lu\n", temp->name, (long)temp->error_code);
 				if(retryMultipartSubdoc(temp, temp->name) == WEBCFG_SUCCESS)
 				{
-					WebcfgInfo("The subdoc %s set is success\n", temp->name);
+					WebcfgDebug("The subdoc %s set is success\n", temp->name);
 				}
 				else
 				{
-					WebcfgInfo("The subdoc %s set is failed\n", temp->name);
+					WebcfgDebug("The subdoc %s set is failed\n", temp->name);
 				}
 			}
 			else
