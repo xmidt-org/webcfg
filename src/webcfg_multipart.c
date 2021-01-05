@@ -89,15 +89,17 @@ void set_global_transID(char *id)
 multipartdocs_t * get_global_mp(void)
 {
     multipartdocs_t *tmp = NULL;
-   // pthread_mutex_lock (&multipart_t_mut);
+    pthread_mutex_lock (&multipart_t_mut);
     tmp = g_mp_head;
-   // pthread_mutex_unlock (&multipart_t_mut);
+    pthread_mutex_unlock (&multipart_t_mut);
     return tmp;
 }
 
 void set_global_mp(multipartdocs_t *new)
 {
+	pthread_mutex_lock (&multipart_t_mut);
 	g_mp_head = new;
+	pthread_mutex_unlock (&multipart_t_mut);
 }
 
 char * get_global_contentLen(void)
@@ -553,7 +555,7 @@ WEBCFG_STATUS processMsgpackSubdoc(char *transaction_id)
 	WebcfgInfo("mp->entries_count is %d\n",mp_count);
 
 	multipartdocs_t *mp = NULL;
-	mp = g_mp_head;
+	mp = get_global_mp();
 
 	while(mp != NULL)
 	{
@@ -1905,12 +1907,12 @@ void parse_multipart(char *ptr, int no_of_bytes)
 				{
 					if(g_mp_head == NULL)
 					{
-						g_mp_head = mp_node;
+						set_global_mp(mp_node);
 					}
 					else
 					{
 						multipartdocs_t *temp = NULL;
-						temp = g_mp_head;
+						temp = get_global_mp();
 						while( temp->next != NULL)
 						{
 							WebcfgDebug("The temp->name_space is %s\n", temp->name_space);
@@ -1989,7 +1991,7 @@ void delete_mp_doc()
 		g_mp_head = NULL;
 		if(supplementary != NULL)
 		{
-			g_mp_head = supplementary;
+			set_global_mp(supplementary);
 		}
 	}
 
@@ -1998,7 +2000,7 @@ void delete_mp_doc()
 int update_supplementary_doc(multipartdocs_t * mp_doc)
 {
 	multipartdocs_t *temp = NULL;
-	temp = g_mp_head;
+	temp = get_global_mp();
 
 	while( temp != NULL)
 	{
@@ -2313,7 +2315,7 @@ int get_multipartdoc_count()
 {
 	int count = 0;
 	multipartdocs_t *temp = NULL;
-	temp = g_mp_head;
+	temp = get_global_mp();
 
 	while(temp != NULL)
 	{
