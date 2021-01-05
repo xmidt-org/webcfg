@@ -1166,7 +1166,7 @@ WEBCFG_STATUS updateFailureTimeStamp(webconfig_tmp_data_t *temp, char *docname, 
 		if( strcmp(docname, temp->name) == 0)
 		{
 			temp->retry_expiry_timestamp = timestamp;
-			WebcfgInfo("doc %s is updated with timestamp %lld\n", docname, timestamp);
+			WebcfgInfo("doc %s is updated with timestamp %s\n", docname, printTime(timestamp));
 			pthread_mutex_unlock (&webconfig_tmp_data_mut);
 			WebcfgDebug("mutex_unlock in current temp details\n");
 			return WEBCFG_SUCCESS;

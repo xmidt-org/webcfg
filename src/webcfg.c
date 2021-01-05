@@ -194,13 +194,13 @@ void *WebConfigMultipartTask(void *status)
 			ts.tv_sec += get_retry_timer();
 			maintenance_doc_sync = 1;
 			WebcfgInfo("The Maintenance wait time is set\n");
-			WebcfgInfo("The wait time is %lld and timeout triggers at %s\n",(long long)ts.tv_sec, printTime((long long)ts.tv_sec));
+			WebcfgInfo("The Maintenance Sync timeout triggers at %s\n", printTime((long long)ts.tv_sec));
 		}
 		else
 		{
 			ts.tv_sec += get_retry_timer();
 			WebcfgInfo("The retry wait time is set\n");
-			WebcfgInfo("The wait time is %lld and timeout triggers at %s\n",(long long)ts.tv_sec, printTime((long long)ts.tv_sec));
+			WebcfgInfo("The retry timeout triggers at %s\n", printTime((long long)ts.tv_sec));
 		}
 
 		if(retry_flag == 1 || maintenance_doc_sync == 1)
@@ -765,7 +765,7 @@ void initMaintenanceTimer()
 		time_val = time_val + 86400;         //To set a time in next day
 	}
 
-	WebcfgInfo("The value of maintenance_time_val is %ld\n",time_val);
+	WebcfgDebug("The value of maintenance_time_val is %ld\n",time_val);
 	set_global_maintenance_time(time_val);
 
 }
@@ -782,8 +782,8 @@ int checkMaintenanceTimer()
 	cur_time = rt.tv_sec;
 	cur_time_in_sec = getTimeInSeconds(cur_time);
 
-	WebcfgInfo("The current time in checkMaintenanceTimer is %lld at %s\n",cur_time, printTime(cur_time));
-	WebcfgInfo("The random timer in checkMaintenanceTimer is %ld\n",get_global_maintenance_time());
+	WebcfgDebug("The current time in checkMaintenanceTimer is %lld at %s\n",cur_time, printTime(cur_time));
+	WebcfgDebug("The random timer in checkMaintenanceTimer is %ld\n",get_global_maintenance_time());
 
 	if(cur_time_in_sec >= get_global_maintenance_time())
 	{
@@ -824,11 +824,11 @@ int readFWFiles(char* file_path, long *range)
 	memset(data,0,(ch_count + 1));
 	fread(data, 1, ch_count,fp);
 
-	WebcfgInfo("The data is %s\n", data);
+	WebcfgDebug("The data is %s\n", data);
 
 	*range = atoi(data);
 
-	WebcfgInfo("The range is %ld\n", *range);
+	WebcfgDebug("The range is %ld\n", *range);
 	WEBCFG_FREE(data);
 	fclose(fp);
 
@@ -850,8 +850,8 @@ int maintenanceSyncSeconds()
 
 	maintenance_secs =  get_global_maintenance_time() - current_time_in_sec;
 
-	WebcfgInfo("The current time in maintenanceSyncSeconds is %lld at %s\n",current_time, printTime(current_time));
-	WebcfgInfo("The random timer in maintenanceSyncSeconds is %ld\n",get_global_maintenance_time());
+	WebcfgDebug("The current time in maintenanceSyncSeconds is %lld at %s\n",current_time, printTime(current_time));
+	WebcfgDebug("The random timer in maintenanceSyncSeconds is %ld\n",get_global_maintenance_time());
 
 	if (maintenance_secs < 0)
 	{
@@ -859,7 +859,7 @@ int maintenanceSyncSeconds()
 		maintenance_secs = sec_to_12 + get_global_maintenance_time();//Adding with Maintenance wait time for nextday trigger
 	}
 
-	WebcfgInfo("The maintenance Seconds is %ld\n", maintenance_secs);
+	WebcfgDebug("The maintenance Seconds is %ld\n", maintenance_secs);
 
 	return maintenance_secs;
 }

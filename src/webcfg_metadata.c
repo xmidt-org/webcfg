@@ -284,7 +284,6 @@ WEBCFG_STATUS isSupplementaryDoc(char *subDoc)
 		sp = sp->next;
 
 	}
-	WebcfgError("%s doc is not found\n",subDoc);
 	return WEBCFG_FAILURE;
 }
 

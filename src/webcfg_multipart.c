@@ -191,15 +191,11 @@ WEBCFG_STATUS webcfg_http_request(char **configData, int r_count, int status, lo
 			*transaction_id = strdup(transID);
 			WEBCFG_FREE(transID);
 		}
-		//loadInitURLFromFile(&webConfigURL);
 		WebcfgInfo("The get_global_supplementarySync() is %d\n", get_global_supplementarySync());
 		if(get_global_supplementarySync() == 0)
 		{
-			//readFromFile(SUPPLEMENTARY_URL_FILE, &webConfigURL, &len );
 			Get_Webconfig_URL(configURL);
-			WebcfgInfo("Primary sync \n");
-			WebcfgInfo("primary sync url fetched is %s\n", configURL);
-			//webConfigURL = strdup(SUPPLEMENTARY_URL_FILE);
+			WebcfgDebug("primary sync url fetched is %s\n", configURL);
 		}
 		else
 		{
@@ -208,16 +204,12 @@ WEBCFG_STATUS webcfg_http_request(char **configData, int r_count, int status, lo
 				WebcfgInfo("Supplementary sync for %s\n",docname);
 				strcpy(docname_upper , docname);
 				docname_upper[0] = toupper(docname_upper[0]);
-				WebcfgInfo("docname is %s and in uppercase is %s\n", docname, docname_upper);
+				WebcfgDebug("docname is %s and in uppercase is %s\n", docname, docname_upper);
 				Get_Supplementary_URL(docname_upper, configURL);
-				WebcfgInfo("Supplementary sync \n");
-				WebcfgInfo("Supplementary sync url fetched is %s\n", configURL);
+				WebcfgDebug("Supplementary sync url fetched is %s\n", configURL);
 			}
 
-			//readFromFile(WEBCFG_URL_FILE, &webConfigURL, &len );
-			//webConfigURL = strdup(WEBCFG_URL_FILE);
 		}
-		//loadInitURLFromFile(&webConfigURL);//check here
 		if(strlen(configURL)>0)
 		{
 			//Replace {mac} string from default init url with actual deviceMAC
@@ -225,12 +217,12 @@ WEBCFG_STATUS webcfg_http_request(char **configData, int r_count, int status, lo
 			webConfigURL = replaceMacWord(configURL, c, get_deviceMAC());
 			if(get_global_supplementarySync() == 0)
 			{
-				WebcfgInfo("Inside webcfg condition\n");
+				WebcfgDebug("Inside webcfg condition\n");
 				Set_Webconfig_URL(webConfigURL);
 			}
 			else
 			{
-				WebcfgInfo("Inside supplementary condition\n");
+				WebcfgDebug("Inside supplementary condition\n");
 				Set_Supplementary_URL(docname_upper, webConfigURL);
 			}
 		}
@@ -277,7 +269,6 @@ WEBCFG_STATUS webcfg_http_request(char **configData, int r_count, int status, lo
 		if(strlen(g_interface) == 0)
 		{
 			get_webCfg_interface(&interface);
-			//interface = strdup("wlan0"); //check here.
 			if(interface !=NULL)
 		        {
 		               strncpy(g_interface, interface, sizeof(g_interface)-1);
@@ -439,12 +430,6 @@ WEBCFG_STATUS parseMultipartDocument(void *config_data, char *ct , size_t data_s
 			ptr_count++;
 		}
 		WebcfgInfo("Size of the docs is :%d\n", (num_of_parts-1));
-		/* For Subdocs count */
-
-		/*mp = (multipart_t *) malloc (sizeof(multipart_t));
-		mp->entries_count = (size_t)num_of_parts;
-		mp->entries = (multipartdocs_t *) malloc(sizeof(multipartdocs_t )*(mp->entries_count-1) );
-		memset( mp->entries, 0, sizeof(multipartdocs_t)*(mp->entries_count-1));*/
 
 		///Scanning each lines with \n as delimiter
 		delete_mp_doc();
@@ -532,16 +517,12 @@ WEBCFG_STATUS processMsgpackSubdoc(char *transaction_id)
 	int success_count = 0;
 	WEBCFG_STATUS addStatus =0;
 	WEBCFG_STATUS subdocStatus = 0;
-	//char * blob_data = NULL;
-        //size_t blob_len = -1 ;
 	char * trans_id = NULL;
 	uint16_t doc_transId = 0;
 	int backoffRetryTime = 0;
 	int max_retry_sleep = 0;
 	int backoff_max_time = 6;
 	int c=4;
-	//int backoff_max_time = 1;
-	//int c=1;
 	multipartdocs_t *akerIndex = NULL;
 	int akerSet = 0;
 	int mp_count = 0;
@@ -795,7 +776,6 @@ WEBCFG_STATUS processMsgpackSubdoc(char *transaction_id)
 								time_diff = getRetryExpiryTimeout() - present_time;
 								if(get_retry_timer() > time_diff)
 								{
-									WebcfgInfo("Inside timer\n");
 									set_retry_timer(time_diff);
 									WebcfgInfo("The retry_timer is %d after set\n", get_retry_timer());
 								}
@@ -828,7 +808,7 @@ WEBCFG_STATUS processMsgpackSubdoc(char *transaction_id)
 						}
 						else
 						{
-							//snprintf(result,MAX_VALUE_LEN,"doc_rejected:%s", errDetails);
+							snprintf(result,MAX_VALUE_LEN,"doc_rejected:%s", errDetails);
 							WebcfgDebug("The result is %s\n",result);
 							updateTmpList(subdoc_node, mp->name_space, mp->etag, "failed", result, ccspStatus, 0, 0);
 							addWebConfgNotifyMsg(mp->name_space, mp->etag, "failed", result, subdoc_node->cloud_trans_id,0, "status", ccspStatus, NULL, 200);
@@ -856,7 +836,6 @@ WEBCFG_STATUS processMsgpackSubdoc(char *transaction_id)
 	}
 	WebcfgDebug("The current_doc_count is %d\n",current_doc_count);
 	WEBCFG_FREE(trans_id);
-	//multipart_destroy(mp);
 
 	//Apply aker doc at the end when all other docs are processed.
 	if(akerSet)
@@ -1014,13 +993,11 @@ size_t headr_callback(char *buffer, size_t size, size_t nitems)
 		if( strncasecmp(CONTENT_LENGTH_HEADER, buffer, content_len) == 0 )
 		{
 			header_value = strtok(buffer, ":");
-			WebcfgInfo("After header value \n");
 			while( header_value != NULL )
 			{
 				header_value = strtok(NULL, ":");
 				if(header_value != NULL)
 				{
-					WebcfgInfo("Inside header value \n");
 					strncpy(header_str, header_value, sizeof(header_str)-1);
 					stripspaces(header_str, &final_header);
 					if(g_contentLen != NULL)
@@ -1429,9 +1406,6 @@ void createCurlHeader( struct curl_slist *list, struct curl_slist **header_list,
 	WebcfgInfo("Start of createCurlheader\n");
 	//Fetch auth JWT token from cloud.
 	getAuthToken();
-	//int len=0; char *token= NULL;//check here
-	//readFromFile("/tmp/webcfg_token", &token, &len );
-	//strcpy(get_global_auth_token(), );
 
 	WebcfgDebug("get_global_auth_token() is %s\n", get_global_auth_token());
 
@@ -1873,7 +1847,6 @@ void parse_multipart(char *ptr, int no_of_bytes)
 	else if(0 == strncasecmp(ptr,"Namespace",strlen("Namespace")))
 	{
 	        name_space = strndup(ptr+(strlen("Namespace: ")),no_of_bytes-((strlen("Namespace: "))));
-		printf("The namespace is %s\n", name_space);
 	}
 	else if(0 == strncasecmp(ptr,"Etag",strlen("Etag")))
 	{
@@ -1897,7 +1870,6 @@ void parse_multipart(char *ptr, int no_of_bytes)
 	{
 		if((get_global_supplementarySync() && strncasecmp(name_space,"wan",strlen("wan")) == 0 )|| (get_global_supplementarySync() && strncasecmp(name_space,"lan",strlen("lan")) == 0) )
 		{
-			printf("name_space is %s\n",name_space);
 			 name_space = NULL;
 			 data = NULL;
 			 etag = 0;
@@ -1933,7 +1905,6 @@ void parse_multipart(char *ptr, int no_of_bytes)
 				{
 					if(g_mp_head == NULL)
 					{
-						printf("Inside head\n");
 						g_mp_head = mp_node;
 					}
 					else
@@ -1942,7 +1913,7 @@ void parse_multipart(char *ptr, int no_of_bytes)
 						temp = g_mp_head;
 						while( temp->next != NULL)
 						{
-							printf("The temp->name_space is %s\n", temp->name_space);
+							WebcfgDebug("The temp->name_space is %s\n", temp->name_space);
 							temp = temp->next;
 						}
 						temp->next = mp_node;
@@ -2029,14 +2000,12 @@ int update_supplementary_doc(multipartdocs_t * mp_doc)
 	multipartdocs_t *temp = NULL;
 	temp = g_mp_head;
 
-	printf("Inside Update\n");
 	while( temp != NULL)
 	{
 		if(temp->isSupplementarySync == 1)
 		{
 			if(strncmp(temp->name_space, mp_doc->name_space, strlen(mp_doc->name_space)) == 0)
 			{
-				printf("Updated\n");
 				WebcfgInfo("The temp->name_space inside update is %s\n", temp->name_space);
 				temp->etag = mp_doc->etag;
 				temp->data = mp_doc->data;
@@ -2294,7 +2263,7 @@ void failedDocsRetry()
 
 				//To get the exact time diff for retry from present time do the below
 				time_diff = temp->retry_expiry_timestamp - present_time;
-				WebcfgInfo("The docname is %s and diff is %d\n", temp->name, time_diff);
+				WebcfgInfo("The docname is %s and diff is %d retry time stamp is %s\n", temp->name, time_diff, printTime(present_time+time_diff));
 
 				//To set the lowest retry timeout of all the docs
 				if(get_retry_timer() > time_diff)
@@ -2380,7 +2349,7 @@ int checkRetryTimer( long long timestamp)
 	clock_gettime(CLOCK_REALTIME, &rt);
 	cur_time = rt.tv_sec;
 
-	WebcfgInfo("The current time in device is %lld at %s\n", cur_time, printTime(cur_time));
+	WebcfgDebug("The current time in device is %lld at %s\n", cur_time, printTime(cur_time));
 	WebcfgInfo("The Retry timestamp is %lld at %s\n", timestamp, printTime(timestamp));
 
 	if(cur_time >= timestamp)
