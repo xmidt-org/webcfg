@@ -733,13 +733,12 @@ void checkTmpRootUpdate()
 {
    if((numOfMpDocs !=0) && !get_global_supplementarySync())
    {
-	WebcfgInfo("Inside tmp root Update\n");
 	webconfig_tmp_data_t * root_node = NULL;
 	root_node = getTmpNode("root");
 	WebcfgInfo("Update root version %lu to tmp list.\n", (long)get_global_root());
 	updateTmpList(root_node, "root", get_global_root(), "pending", "none", 0, 0, 0);
    }
-   WebcfgInfo("root updateTmpList done\n");
+   WebcfgDebug("root updateTmpList done\n");
 }
 
 /*----------------------------------------------------------------------------*/
