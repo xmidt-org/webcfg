@@ -892,7 +892,10 @@ size_t headr_callback(char *buffer, size_t size, size_t nitems)
 					stripspaces(header_str, &final_header);
 					if(g_contentLen != NULL)
 					{
-						WEBCFG_FREE(g_contentLen);						
+						if(atoi(g_contentLen) != 0)
+						{
+							WEBCFG_FREE(g_contentLen);
+						}
 					}
 					g_contentLen = strdup(final_header);
 				}
