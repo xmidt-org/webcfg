@@ -1938,7 +1938,7 @@ void delete_mp_doc()
 	multipartdocs_t *supplementary = NULL;
 	multipartdocs_t *support = NULL;
 
-	head = g_mp_head;
+	head = get_global_mp();
 
 	if(get_global_supplementarySync() == 0)
 	{
@@ -1969,9 +1969,11 @@ void delete_mp_doc()
 					support->isSupplementarySync = head->isSupplementarySync;
 					support->next = NULL;
 
+					pthread_mutex_lock (&multipart_t_mut);
 					if(supplementary == NULL)
 					{
 						supplementary = support;
+						pthread_mutex_unlock (&multipart_t_mut);
 					}
 					else
 					{
@@ -1982,13 +1984,16 @@ void delete_mp_doc()
 							supp_temp = supp_temp->next;
 						}
 						supp_temp->next = support;
+						pthread_mutex_unlock (&multipart_t_mut);
 					}
 				}
 				head = head->next;
 			}
 		}
 
+		pthread_mutex_lock (&multipart_t_mut);
 		g_mp_head = NULL;
+		pthread_mutex_unlock (&multipart_t_mut);
 		if(supplementary != NULL)
 		{
 			set_global_mp(supplementary);
@@ -2004,6 +2009,7 @@ int update_supplementary_doc(multipartdocs_t * mp_doc)
 
 	while( temp != NULL)
 	{
+		pthread_mutex_lock (&multipart_t_mut);
 		if(temp->isSupplementarySync == 1)
 		{
 			if(strncmp(temp->name_space, mp_doc->name_space, strlen(mp_doc->name_space)) == 0)
@@ -2012,10 +2018,12 @@ int update_supplementary_doc(multipartdocs_t * mp_doc)
 				temp->etag = mp_doc->etag;
 				temp->data = mp_doc->data;
 				temp->data_size = mp_doc->data_size;
+				pthread_mutex_unlock (&multipart_t_mut);
 				return 1;
 			}
 		}
 		temp = temp->next;
+		pthread_mutex_unlock (&multipart_t_mut);
 	}
 
 	return 0;
@@ -2239,6 +2247,7 @@ void failedDocsRetry()
 
 	while (NULL != temp)
 	{
+		pthread_mutex_lock (&multipart_t_mut);
 		if((temp->error_code == CCSP_CRASH_STATUS_CODE) || (temp->error_code == 204 && (temp->error_details != NULL && strstr(temp->error_details, "doc_unsupported") == NULL)) || (temp->error_code == 191) || (temp->error_code == 193) || (temp->error_code == 190))
 		{
 			if(checkRetryTimer(temp->retry_expiry_timestamp))
@@ -2279,6 +2288,7 @@ void failedDocsRetry()
 			WebcfgInfo("Retry skipped for %s (%s)\n",temp->name,temp->error_details);
 		}
 		temp= temp->next;
+		pthread_mutex_unlock (&multipart_t_mut);
 	}
 }
 
