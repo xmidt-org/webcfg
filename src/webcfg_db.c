@@ -427,7 +427,7 @@ WEBCFG_STATUS addToTmpList()
 				new_node->status = strdup("pending");
 				//For root, isSupplementarySync is always 0 as root version is for primary sync.
 				new_node->isSupplementarySync = 0;
-				WebcfgInfo("new_node->isSupplementarySync is %d\n", new_node->isSupplementarySync);
+				WebcfgDebug("new_node->isSupplementarySync is %d\n", new_node->isSupplementarySync);
 				new_node->error_details = strdup("none");
 				new_node->error_code = 0;
 				new_node->trans_id = 0;
