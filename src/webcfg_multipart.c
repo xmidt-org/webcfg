@@ -2204,9 +2204,14 @@ void updateRootVersionToDB()
 	{
 		WebcfgDebug("Updating root version to DB\n");
 		checkDBList("root",version, NULL);
+		//Update tmp list root as root doc from tmp list is not deleted until all docs are success.
+		webconfig_tmp_data_t * root_node = NULL;
+		root_node = getTmpNode("root");
+		WebcfgDebug("Updating root version to tmp list\n");
+		updateTmpList(root_node, "root", version, "success", "none", 0, 0, 0);
 	}
 
-	WebcfgInfo("The Etag is %lu\n",(long)version );
+	WebcfgDebug("The Etag is %lu\n",(long)version );
 
 	//Delete root only when all the primary and supplementary docs are applied .
 	if(checkRootDelete() == WEBCFG_SUCCESS)

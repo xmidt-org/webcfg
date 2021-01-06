@@ -127,7 +127,7 @@ WEBCFG_STATUS deleteFromTmpList(char* doc_name);
 
 webconfig_tmp_data_t * getTmpNode(char *docname);
 
-void delete_tmp_doc_list();
+void delete_tmp_list();
 
 int get_numOfMpDocs();
 

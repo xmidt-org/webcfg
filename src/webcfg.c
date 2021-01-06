@@ -312,7 +312,7 @@ void *WebConfigMultipartTask(void *status)
 	reset_successDocCount();
 
 	//delete tmp, db, and mp cache lists.
-	delete_tmp_doc_list();
+	delete_tmp_list();
 
 	WebcfgDebug("webcfgdb_destroy\n");
 	webcfgdb_destroy (get_global_db_node() );
@@ -820,7 +820,7 @@ int readFWFiles(char* file_path, long *range)
 		return WEBCFG_FAILURE;
 	}
 
-	WebcfgInfo("After data \n");
+	WebcfgDebug("After data \n");
 	memset(data,0,(ch_count + 1));
 	fread(data, 1, ch_count,fp);
 

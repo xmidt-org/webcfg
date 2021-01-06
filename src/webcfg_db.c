@@ -392,11 +392,6 @@ WEBCFG_STATUS addToTmpList()
 
 	mp_count = get_multipartdoc_count();
 	WebcfgInfo("multipartdoc count is %d\n", mp_count);
-	//numOfMpDocs = 0;
-	//WebcfgDebug("reset numOfMpDocs to %d\n", numOfMpDocs);
-
-	//delete_tmp_doc_list();
-	//WebcfgDebug("Deleted existing tmp list, proceed to addToTmpList\n");
 
 	WebcfgInfo("checkTmpRootUpdate, proceed to addToTmpList\n");
 	checkTmpRootUpdate();
@@ -432,7 +427,7 @@ WEBCFG_STATUS addToTmpList()
 				new_node->status = strdup("pending");
 				//For root, isSupplementarySync is always 0 as root version is for primary sync.
 				new_node->isSupplementarySync = 0;
-				WebcfgInfo("new_node->isSupplementarySync is %d\n", new_node->isSupplementarySync);
+				WebcfgDebug("new_node->isSupplementarySync is %d\n", new_node->isSupplementarySync);
 				new_node->error_details = strdup("none");
 				new_node->error_code = 0;
 				new_node->trans_id = 0;
@@ -687,7 +682,7 @@ WEBCFG_STATUS deleteFromTmpList(char* doc_name)
 	return WEBCFG_FAILURE;
 }
 
-void delete_tmp_doc_list()
+void delete_tmp_list()
 {
    webconfig_tmp_data_t *temp = NULL;
    webconfig_tmp_data_t *head = NULL;
@@ -733,13 +728,12 @@ void checkTmpRootUpdate()
 {
    if((numOfMpDocs !=0) && !get_global_supplementarySync())
    {
-	WebcfgInfo("Inside tmp root Update\n");
 	webconfig_tmp_data_t * root_node = NULL;
 	root_node = getTmpNode("root");
 	WebcfgInfo("Update root version %lu to tmp list.\n", (long)get_global_root());
 	updateTmpList(root_node, "root", get_global_root(), "pending", "none", 0, 0, 0);
    }
-   WebcfgInfo("root updateTmpList done\n");
+   WebcfgDebug("root updateTmpList done\n");
 }
 
 /*----------------------------------------------------------------------------*/

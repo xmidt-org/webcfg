@@ -265,7 +265,7 @@ WEBCFG_STATUS isSupplementaryDoc(char *subDoc)
 
 	while(sp != NULL)
 	{
-		WebcfgInfo("Supplementary check for docname %s\n", sp->name);
+		WebcfgInfo("Supplementary check for docname %s, subDoc received is %s\n", sp->name, subDoc);
 		if(strncmp(sp->name, subDoc, strlen(subDoc)) == 0)
 		{
 			WebcfgDebug("The subdoc %s is present\n",sp->name);
@@ -339,7 +339,7 @@ void supplementaryDocs()
 
 		memset(spInfo, 0, sizeof(SupplementaryDocs_t));
 
-		WebcfgInfo("The value is %s\n",token);
+		WebcfgDebug("The value is %s\n",token);
 		spInfo->name = token;
 		spInfo->next = NULL;
 
