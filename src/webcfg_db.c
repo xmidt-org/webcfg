@@ -392,11 +392,6 @@ WEBCFG_STATUS addToTmpList()
 
 	mp_count = get_multipartdoc_count();
 	WebcfgInfo("multipartdoc count is %d\n", mp_count);
-	//numOfMpDocs = 0;
-	//WebcfgDebug("reset numOfMpDocs to %d\n", numOfMpDocs);
-
-	//delete_tmp_doc_list();
-	//WebcfgDebug("Deleted existing tmp list, proceed to addToTmpList\n");
 
 	WebcfgInfo("checkTmpRootUpdate, proceed to addToTmpList\n");
 	checkTmpRootUpdate();
@@ -687,7 +682,7 @@ WEBCFG_STATUS deleteFromTmpList(char* doc_name)
 	return WEBCFG_FAILURE;
 }
 
-void delete_tmp_doc_list()
+void delete_tmp_list()
 {
    webconfig_tmp_data_t *temp = NULL;
    webconfig_tmp_data_t *head = NULL;
