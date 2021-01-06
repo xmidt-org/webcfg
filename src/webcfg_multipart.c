@@ -1829,22 +1829,21 @@ void multipart_destroy( multipartdocs_t *m )
 
 void parse_multipart(char *ptr, int no_of_bytes)
 {
-	char *Content_type = NULL;
+	char *content_type = NULL;
 	static char *name_space = NULL;
 	static char *data = NULL;
 	static uint32_t  etag = 0;
 	static size_t data_size = 0;
-	int update = 0;
 
 	/*for storing respective values */
 	if(0 == strncmp(ptr,"Content-type: ",strlen("Content-type")))
 	{
-		Content_type = strndup(ptr+(strlen("Content-type: ")),no_of_bytes-((strlen("Content-type: "))));
-		if(strncmp(Content_type, "application/msgpack",strlen("application/msgpack")) !=0)
+		content_type = strndup(ptr+(strlen("Content-type: ")),no_of_bytes-((strlen("Content-type: "))));
+		if(strncmp(content_type, "application/msgpack",strlen("application/msgpack")) !=0)
 		{
-			WebcfgError("Content-type not msgpack: %s", Content_type);
+			WebcfgError("Content-type not msgpack: %s", content_type);
 		}
-		WEBCFG_FREE(Content_type);
+		WEBCFG_FREE(content_type);
 	}
 	else if(0 == strncasecmp(ptr,"Namespace",strlen("Namespace")))
 	{
@@ -1879,154 +1878,128 @@ void parse_multipart(char *ptr, int no_of_bytes)
 		}
 		else
 		{
-			multipartdocs_t *mp_node;
-			mp_node = (multipartdocs_t *)malloc(sizeof(multipartdocs_t));
-			if(mp_node)
-			{
-				memset(mp_node, 0, sizeof(multipartdocs_t));
+			addToMpList(etag, name_space, data, data_size);
 
-				mp_node->etag = etag;
-				mp_node->name_space = name_space;
-				mp_node->data = data;
-				mp_node->data_size = data_size;
-				mp_node->isSupplementarySync = get_global_supplementarySync();
+			WEBCFG_FREE(name_space);
+			WEBCFG_FREE(data);
 
-				mp_node->next = NULL;
-
-				WebcfgDebug("mp_node->etag is %ld\n",(long)mp_node->etag);
-				WebcfgDebug("mp_node->name_space is %s mp_node->etag is %lu mp_node->isSupplementarySync %d\n", mp_node->name_space, (long)mp_node->etag, mp_node->isSupplementarySync );
-				WebcfgDebug("mp_node->data is %s\n", mp_node->data);
-				WebcfgDebug("mp_node->data_size is %zu\n", mp_node->data_size);
-				WebcfgDebug("mp_node->isSupplementarySync is %d\n", mp_node->isSupplementarySync);
-
-				if(mp_node->isSupplementarySync == 1)
-				{
-					update = update_supplementary_doc(mp_node);
-				}
-				if( update == 0)
-				{
-					if(g_mp_head == NULL)
-					{
-						set_global_mp(mp_node);
-					}
-					else
-					{
-						multipartdocs_t *temp = NULL;
-						temp = get_global_mp();
-						while( temp->next != NULL)
-						{
-							WebcfgDebug("The temp->name_space is %s\n", temp->name_space);
-							temp = temp->next;
-						}
-						temp->next = mp_node;
-					}
-				}
-			}
-
-			 name_space = NULL;
-			 data = NULL;
-			 etag = 0;
-			 data_size = 0;
+			name_space = NULL;
+			data = NULL;
+			etag = 0;
+			data_size = 0;
 		}
 	}
+}
+
+void addToMpList(uint32_t etag, char *name_space, char *data, size_t data_size)
+{
+	multipartdocs_t *mp_node;
+	mp_node = (multipartdocs_t *)malloc(sizeof(multipartdocs_t));
+	if(mp_node)
+	{
+		memset(mp_node, 0, sizeof(multipartdocs_t));
+
+		mp_node->etag = etag;
+		mp_node->name_space = strdup(name_space);
+		mp_node->data = malloc(sizeof(char) * data_size);
+		mp_node->data = memcpy(mp_node->data, data, data_size );
+		mp_node->data_size = data_size;
+		mp_node->isSupplementarySync = get_global_supplementarySync();
+		mp_node->next = NULL;
+
+		WebcfgDebug("mp_node->etag is %ld\n",(long)mp_node->etag);
+		WebcfgInfo("mp_node->name_space is %s mp_node->etag is %lu mp_node->isSupplementarySync %d\n", mp_node->name_space, (long)mp_node->etag, mp_node->isSupplementarySync);
+		WebcfgDebug("mp_node->data is %s\n", mp_node->data);
+		WebcfgDebug("mp_node->data_size is %zu\n", mp_node->data_size);
+		WebcfgDebug("mp_node->isSupplementarySync is %d\n", mp_node->isSupplementarySync);
+
+		if(get_global_mp() == NULL)
+		{
+			set_global_mp(mp_node);
+		}
+		else
+		{
+			multipartdocs_t *temp = NULL;
+			temp = get_global_mp();
+			while( temp->next != NULL)
+			{
+				WebcfgDebug("The temp->name_space is %s\n", temp->name_space);
+				temp = temp->next;
+			}
+			temp->next = mp_node;
+		}
+	}
+
 }
 
 void delete_mp_doc()
 {
 	multipartdocs_t *temp = NULL;
-	multipartdocs_t *head = NULL;
-	multipartdocs_t *supplementary = NULL;
-	multipartdocs_t *support = NULL;
+	temp = get_global_mp();
 
-	head = get_global_mp();
-
-	if(get_global_supplementarySync() == 0)
+	WebcfgInfo("Inside delete_mp_doc()\n");
+	while(temp != NULL)
 	{
-		while(head != NULL)
+		//skip root delete
+		if((temp->isSupplementarySync == get_global_supplementarySync()))
 		{
-			temp = head;
-			if( temp->isSupplementarySync == 0)
-			{
-				head = head->next;
-				WebcfgDebug("Delete mp_node--> mp_temp->name_space %s mp_temp->etag %d\n", temp->name_space, temp->etag);
-				free(temp);
-				temp = NULL;
-			}
-			else
-			{
-				support = (multipartdocs_t *)malloc(sizeof(multipartdocs_t));
-				if(support)
-				{
-					memset(support, 0, sizeof(multipartdocs_t));
-
-					support->etag = head->etag;
-					support->name_space = strndup(head->name_space, strlen(head->name_space));
-
-					support->data = malloc(sizeof(char) * head->data_size );
-					support->data = memcpy(support->data, head->data, head->data_size );
-
-					support->data_size = (size_t)head->data_size;
-					support->isSupplementarySync = head->isSupplementarySync;
-					support->next = NULL;
-
-					pthread_mutex_lock (&multipart_t_mut);
-					if(supplementary == NULL)
-					{
-						supplementary = support;
-						pthread_mutex_unlock (&multipart_t_mut);
-					}
-					else
-					{
-						multipartdocs_t *supp_temp = NULL;
-						supp_temp = supplementary;
-						while(supp_temp->next !=NULL)
-						{
-							supp_temp = supp_temp->next;
-						}
-						supp_temp->next = support;
-						pthread_mutex_unlock (&multipart_t_mut);
-					}
-				}
-				head = head->next;
-			}
+			WebcfgInfo("Delete mp node--> mp_node->name_space is %s mp_node->etag is %lu mp_node->isSupplementarySync %d\n", temp->name_space, (long)temp->etag, temp->isSupplementarySync);
+			deleteFromMpList(temp->name_space);
 		}
-
-		pthread_mutex_lock (&multipart_t_mut);
-		g_mp_head = NULL;
-		pthread_mutex_unlock (&multipart_t_mut);
-		if(supplementary != NULL)
-		{
-			set_global_mp(supplementary);
-		}
+		temp = temp->next;
 	}
 
 }
 
-int update_supplementary_doc(multipartdocs_t * mp_doc)
+//delete doc from webcfg Tmp list
+WEBCFG_STATUS deleteFromMpList(char* doc_name)
 {
-	multipartdocs_t *temp = NULL;
-	temp = get_global_mp();
+	multipartdocs_t *prev_node = NULL, *curr_node = NULL;
 
-	while( temp != NULL)
+	if( NULL == doc_name )
 	{
-		pthread_mutex_lock (&multipart_t_mut);
-		if(temp->isSupplementarySync == 1)
-		{
-			if(strncmp(temp->name_space, mp_doc->name_space, strlen(mp_doc->name_space)) == 0)
-			{
-				WebcfgInfo("The temp->name_space inside update is %s\n", temp->name_space);
-				temp->etag = mp_doc->etag;
-				temp->data = mp_doc->data;
-				temp->data_size = mp_doc->data_size;
-				pthread_mutex_unlock (&multipart_t_mut);
-				return 1;
-			}
-		}
-		temp = temp->next;
-		pthread_mutex_unlock (&multipart_t_mut);
+		WebcfgError("Invalid value for doc\n");
+		return WEBCFG_FAILURE;
 	}
+	WebcfgInfo("doc to be deleted: %s\n", doc_name);
 
-	return 0;
+	prev_node = NULL;
+	pthread_mutex_lock (&multipart_t_mut);	
+	curr_node = g_mp_head;
+
+	// Traverse to get the doc to be deleted
+	while( NULL != curr_node )
+	{
+		if(strcmp(curr_node->name_space, doc_name) == 0)
+		{
+			WebcfgDebug("Found the node to delete\n");
+			if( NULL == prev_node )
+			{
+				WebcfgDebug("need to delete first doc\n");
+				g_mp_head = curr_node->next;
+			}
+			else
+			{
+				WebcfgDebug("Traversing to find node\n");
+				prev_node->next = curr_node->next;
+			}
+
+			WebcfgDebug("Deleting the node entries\n");
+			WEBCFG_FREE( curr_node->name_space );
+			WEBCFG_FREE( curr_node->data );
+			WEBCFG_FREE( curr_node );
+			curr_node = NULL;
+			WebcfgDebug("Deleted successfully and returning..\n");
+			pthread_mutex_unlock (&multipart_t_mut);
+			return WEBCFG_SUCCESS;
+		}
+
+		prev_node = curr_node;
+		curr_node = curr_node->next;
+	}
+	pthread_mutex_unlock (&multipart_t_mut);
+	WebcfgError("Could not find the entry to delete from list\n");
+	return WEBCFG_FAILURE;
 }
 
 void print_tmp_doc_list(size_t mp_count)
@@ -2247,7 +2220,6 @@ void failedDocsRetry()
 
 	while (NULL != temp)
 	{
-		pthread_mutex_lock (&multipart_t_mut);
 		if((temp->error_code == CCSP_CRASH_STATUS_CODE) || (temp->error_code == 204 && (temp->error_details != NULL && strstr(temp->error_details, "doc_unsupported") == NULL)) || (temp->error_code == 191) || (temp->error_code == 193) || (temp->error_code == 190))
 		{
 			if(checkRetryTimer(temp->retry_expiry_timestamp))
@@ -2288,7 +2260,6 @@ void failedDocsRetry()
 			WebcfgInfo("Retry skipped for %s (%s)\n",temp->name,temp->error_details);
 		}
 		temp= temp->next;
-		pthread_mutex_unlock (&multipart_t_mut);
 	}
 }
 
