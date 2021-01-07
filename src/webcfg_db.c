@@ -719,8 +719,6 @@ void delete_tmp_docs_list()
 	}
 	temp = temp->next;
     }
-	//pthread_mutex_lock (&webconfig_tmp_data_mut); //TODO:mutex locks
-	//pthread_mutex_unlock (&webconfig_tmp_data_mut);
 }
 
 //Update tmp root for primary sync
