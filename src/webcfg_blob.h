@@ -54,7 +54,7 @@ size_t appendWebcfgEncodedData( void **appendData, void *encodedBuffer, size_t e
 
 char * webcfg_appendeddoc(char * subdoc_name, uint32_t version, char * blob_data, size_t blob_size, uint16_t *trans_id);
 
-uint16_t generateTransactionId();
+uint16_t generateRandomId();
 
 int writeToFileData(char *db_file_path, char *data, size_t size);
 

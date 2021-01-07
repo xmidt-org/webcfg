@@ -322,9 +322,11 @@ void supplementaryDocs()
 {
 	int count = 0;
 	char* docs = NULL;
-	docs = strndup(getsupplementaryDocs(), strlen(getsupplementaryDocs()));
-
-	char* token = strtok(docs, ",");
+	char* docs_var = NULL;
+	//docs = strndup(getsupplementaryDocs(), strlen(getsupplementaryDocs()));
+	docs = getsupplementaryDocs();
+	docs_var = strndup(docs,strlen(docs));
+	char* token = strtok(docs_var, ",");
 
 	while(token != NULL)
 	{
@@ -334,6 +336,7 @@ void supplementaryDocs()
 		if(spInfo == NULL)
 		{
 			WebcfgError("Unable to allocate memory for supplementary docs\n");
+			WEBCFG_FREE(docs_var);
 			return;
 		}
 
@@ -360,6 +363,7 @@ void supplementaryDocs()
 		count++;
 		token = strtok(NULL, ",");
 	}
+	WEBCFG_FREE(docs_var);
 }
 
 void displaystruct()

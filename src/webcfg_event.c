@@ -149,7 +149,7 @@ void* blobEventHandler()
 			{
 				WebcfgError("Timer expired_doc %s. No event received within timeout period\n", expired_doc);
 				//reset timer. Generate internal EXPIRE event with new trans_id and retry.
-				tx_id = generateTransactionId(1001,3000);
+				tx_id = generateRandomId(1001,3000);
 				WebcfgDebug("EXPIRE event tx_id generated is %lu\n", (long)tx_id);
 				expired_node = getTimerNode(expired_doc);
 				updateTimerList(expired_node, false, expired_doc, tx_id, 0);
