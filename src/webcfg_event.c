@@ -947,14 +947,32 @@ WEBCFG_STATUS retryMultipartSubdoc(webconfig_tmp_data_t *docNode, char *docName)
 
 						if((ccspStatus == 192) || (ccspStatus == 204) || (ccspStatus == 191) || (ccspStatus == 193) || (ccspStatus == 190))
 						{
+							struct timespec ct;
+							long long present_time = 0;
+							long long expiry_time = 0;
+							int time_diff = 0;
+
 							WebcfgError("ccspStatus is crash %d\n", ccspStatus);
 							snprintf(result,MAX_VALUE_LEN,"failed_retrying:%s", errDetails);
 							WebcfgDebug("The result is %s\n",result);
 							updateTmpList(docNode, gmp->name_space, gmp->etag, "pending", result, ccspStatus, 0, 1);
 							addWebConfgNotifyMsg(gmp->name_space, gmp->etag, "pending", result, docNode->cloud_trans_id, 0,"status",ccspStatus, NULL, 200);
+							expiry_time = getRetryExpiryTimeout();
 							set_doc_fail(1);
-							updateFailureTimeStamp(docNode, gmp->name_space, getRetryExpiryTimeout());
-							WebcfgDebug("the retry flag value is %d\n", get_doc_fail());
+							updateFailureTimeStamp(docNode, gmp->name_space, expiry_time);
+
+							clock_gettime(CLOCK_REALTIME, &ct);
+							present_time = ct.tv_sec;
+
+							//To get the exact time diff for retry from present time do the below
+							time_diff = expiry_time - present_time;
+							if(get_retry_timer() > time_diff)
+							{
+								set_retry_timer(time_diff);
+								WebcfgInfo("The retry_timer is %d after set\n", get_retry_timer());
+							}
+
+							WebcfgInfo("the retry flag value is %d\n", get_doc_fail());
 						}
 						else
 						{

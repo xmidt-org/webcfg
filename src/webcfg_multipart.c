@@ -773,7 +773,7 @@ WEBCFG_STATUS processMsgpackSubdoc(char *transaction_id)
 								present_time = ct.tv_sec;
 
 								//To get the exact time diff for retry from present time do the below
-								time_diff = getRetryExpiryTimeout() - present_time;
+								time_diff = expiry_time - present_time;
 								if(get_retry_timer() > time_diff)
 								{
 									set_retry_timer(time_diff);
