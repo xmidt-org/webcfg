@@ -43,8 +43,6 @@
 #define WEBPA_CREATE_HEADER        "/etc/parodus/parodus_create_file.sh"
 #define CCSP_CRASH_STATUS_CODE      192
 #define MAX_PARAMETERNAME_LEN		4096
-#define WEBCFG_URL_FILE 	   "webpa url" //check here.
-#define SUPPLEMENTARY_URL_FILE      "telemetry url"
 #define MAX_RETRY_TIMEOUT              900
 /*----------------------------------------------------------------------------*/
 /*                               Data Structures                              */
@@ -72,7 +70,7 @@ static char g_transID[64]={'\0'};
 static char * g_contentLen = NULL;
 static char *supportedVersion_header=NULL;
 static char *supportedDocs_header=NULL;
-//static char *supplementaryDocs_header=NULL;
+static char *supplementaryDocs_header=NULL;
 static multipartdocs_t *g_mp_head = NULL;
 pthread_mutex_t multipart_t_mut =PTHREAD_MUTEX_INITIALIZER;
 static int eventFlag = 0;
@@ -165,7 +163,7 @@ WEBCFG_STATUS webcfg_http_request(char **configData, int r_count, int status, lo
 	char *webConfigURL = NULL;
 	char *transID = NULL;
 	char docList[512] = {'\0'};
-	char configURL[256] = { 0 };//check here
+	char configURL[256] = { 0 };
 	char c[] = "{mac}";
 	int rv = 0;
 
@@ -1386,7 +1384,7 @@ void createCurlHeader( struct curl_slist *list, struct curl_slist **header_list,
 	char *FwVersion = NULL, *FwVersion_header=NULL;
 	char *supportedDocs = NULL;
 	char *supportedVersion = NULL;
-	//char *supplementaryDocs = NULL;
+	char *supplementaryDocs = NULL;
         char *productClass = NULL, *productClass_header = NULL;
 	char *ModelName = NULL, *ModelName_header = NULL;
 	char *systemReadyTime = NULL, *systemReadyTime_header=NULL;
@@ -1403,7 +1401,7 @@ void createCurlHeader( struct curl_slist *list, struct curl_slist **header_list,
 	char* ForceSyncDoc = NULL;
 	size_t supported_doc_size = 0;
 	size_t supported_version_size = 0;
-	//size_t supplementary_docs_size = 0;
+	size_t supplementary_docs_size = 0;
 
 	WebcfgInfo("Start of createCurlheader\n");
 	//Fetch auth JWT token from cloud.
@@ -1496,7 +1494,7 @@ void createCurlHeader( struct curl_slist *list, struct curl_slist **header_list,
 	}
 	else
 	{
-		/*if(supplementaryDocs_header == NULL)
+		if(supplementaryDocs_header == NULL)
 		{
 			supplementaryDocs = getsupplementaryDocs();
 
@@ -1519,7 +1517,7 @@ void createCurlHeader( struct curl_slist *list, struct curl_slist **header_list,
 		{
 			WebcfgInfo("supplementaryDocs_header formed %s\n", supplementaryDocs_header);
 			list = curl_slist_append(list, supplementaryDocs_header);
-		}*/
+		}
 	}
 
 	if(strlen(g_bootTime) ==0)
