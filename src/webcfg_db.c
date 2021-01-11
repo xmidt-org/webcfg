@@ -665,6 +665,7 @@ WEBCFG_STATUS deleteFromTmpList(char* doc_name)
 			WEBCFG_FREE( curr_node->name );
 			WEBCFG_FREE( curr_node->status );
 			WEBCFG_FREE( curr_node->error_details );
+			WEBCFG_FREE( curr_node->cloud_trans_id );
 			WEBCFG_FREE( curr_node );
 			curr_node = NULL;
 			WebcfgDebug("Deleted successfully and returning..\n");
