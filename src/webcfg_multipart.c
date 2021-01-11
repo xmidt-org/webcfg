@@ -105,6 +105,11 @@ char * get_global_contentLen(void)
 	return g_contentLen;
 }
 
+void set_global_contentLen(char * value)
+{
+	g_contentLen = value;
+}
+
 int get_global_eventFlag(void)
 {
     return eventFlag;
@@ -1002,10 +1007,11 @@ size_t headr_callback(char *buffer, size_t size, size_t nitems)
 					stripspaces(header_str, &final_header);
 					if(g_contentLen != NULL)
 					{
-						if(atoi(g_contentLen) != 0)
-						{
+						WebcfgInfo("Inside g_contentLen not Null\n");
+						//if(atoi(g_contentLen) != 0)
+						//{
 							WEBCFG_FREE(g_contentLen);
-						}
+						//}
 					}
 					g_contentLen = strdup(final_header);
 				}

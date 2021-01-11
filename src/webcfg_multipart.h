@@ -55,6 +55,7 @@ void failedDocsRetry();
 WEBCFG_STATUS validate_request_param(param_t *reqParam, int paramCount);
 void refreshConfigVersionList(char *versionsList, int http_status);
 char * get_global_contentLen(void);
+void set_global_contentLen(char * value);
 void getRootDocVersionFromDBCache(uint32_t *rt_version, char **rt_string, int *subdoclist);
 void derive_root_doc_version_string(char **rootVersion, uint32_t *root_ver, int status);
 void reset_global_eventFlag();

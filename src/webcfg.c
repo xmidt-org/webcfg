@@ -519,6 +519,7 @@ int handlehttpResponse(long response_code, char *webConfigData, int retry_count,
 				WebcfgInfo("webConfigData content length is 0\n");
 				refreshConfigVersionList(version, response_code);
 				WEBCFG_FREE(contentLength);
+				set_global_contentLen(NULL);
 				WEBCFG_FREE(transaction_uuid);
 				WEBCFG_FREE(webConfigData);
 				return 1;
