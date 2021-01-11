@@ -189,7 +189,7 @@ WEBCFG_STATUS webcfg_http_request(char **configData, int r_count, int status, lo
 		if(transID !=NULL)
 		{
 			*transaction_id = strdup(transID);
-			WEBCFG_FREE(transID);
+			WEBCFG_FREE(transID );
 		}
 		WebcfgInfo("The get_global_supplementarySync() is %d\n", get_global_supplementarySync());
 		if(get_global_supplementarySync() == 0)
