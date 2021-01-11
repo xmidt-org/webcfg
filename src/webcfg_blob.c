@@ -225,7 +225,7 @@ char * webcfg_appendeddoc(char * subdoc_name, uint32_t version, char * blob_data
 
         appenddata->subdoc_name = strdup(subdoc_name);
         appenddata->version = version;
-	*trans_id = generateTransactionId();
+	*trans_id = generateRandomId();
 	WebcfgDebug("*trans_id generated is %hu\n", *trans_id);
         appenddata->transaction_id = *trans_id;
 	WebcfgInfo("subdoc_name: %s, version: %lu, transaction_id: %hu\n", subdoc_name, (unsigned long)version, appenddata->transaction_id);
@@ -248,7 +248,7 @@ char * webcfg_appendeddoc(char * subdoc_name, uint32_t version, char * blob_data
     return finaldocdata;
 }
 
-uint16_t generateTransactionId()
+uint16_t generateRandomId()
 {
     FILE *fp;
 	uint16_t random_key,sz;
@@ -263,7 +263,7 @@ uint16_t generateTransactionId()
 		WebcfgError("fread failed.\n");
 		return 0;
 	}
-	WebcfgDebug("generateTransactionId\n %d",random_key);
+	WebcfgDebug("generateRandomId\n %d",random_key);
 	fclose(fp);		
 	return(random_key);
 }

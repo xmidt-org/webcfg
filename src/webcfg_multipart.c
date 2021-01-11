@@ -194,7 +194,7 @@ WEBCFG_STATUS webcfg_http_request(char **configData, int r_count, int status, lo
 		if(transID !=NULL)
 		{
 			*transaction_id = strdup(transID);
-			WEBCFG_FREE(transID);
+			WEBCFG_FREE(transID );
 		}
 		WebcfgInfo("The get_global_supplementarySync() is %d\n", get_global_supplementarySync());
 		if(get_global_supplementarySync() == 0)
@@ -207,7 +207,7 @@ WEBCFG_STATUS webcfg_http_request(char **configData, int r_count, int status, lo
 			if(docname != NULL && strlen(docname)>0)
 			{
 				WebcfgInfo("Supplementary sync for %s\n",docname);
-				strcpy(docname_upper , docname);
+				strncpy(docname_upper , docname,(sizeof(docname_upper)-1));
 				docname_upper[0] = toupper(docname_upper[0]);
 				WebcfgDebug("docname is %s and in uppercase is %s\n", docname, docname_upper);
 				Get_Supplementary_URL(docname_upper, configURL);
@@ -1875,6 +1875,8 @@ void parse_multipart(char *ptr, int no_of_bytes)
 	{
 		if((get_global_supplementarySync() && strncasecmp(name_space,"wan",strlen("wan")) == 0 )|| (get_global_supplementarySync() && strncasecmp(name_space,"lan",strlen("lan")) == 0) )
 		{
+			 WEBCFG_FREE(name_space);
+			 WEBCFG_FREE(data);
 			 name_space = NULL;
 			 data = NULL;
 			 etag = 0;
@@ -2217,7 +2219,9 @@ void updateRootVersionToDB()
 		}
 		WebcfgDebug("free mp as all docs and root are updated to DB\n");
 		multipart_destroy(g_mp_head);
+		pthread_mutex_lock (&multipart_t_mut);
 		g_mp_head = NULL;
+		pthread_mutex_unlock (&multipart_t_mut);
 		WebcfgDebug("After free mp\n");
 	}
 }
