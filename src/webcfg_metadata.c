@@ -56,7 +56,6 @@ SupplementaryDocs_t * get_global_spInfoTail(void);
 /*                             External Functions                             */
 /*----------------------------------------------------------------------------*/
 
-
 void initWebcfgProperties(char * filename)
 {
 	FILE *fp = NULL;
@@ -323,7 +322,6 @@ void supplementaryDocs()
 	int count = 0;
 	char* docs = NULL;
 	char* docs_var = NULL;
-	//docs = strndup(getsupplementaryDocs(), strlen(getsupplementaryDocs()));
 	docs = getsupplementaryDocs();
 	docs_var = strndup(docs,strlen(docs));
 	char* token = strtok(docs_var, ",");
@@ -375,4 +373,18 @@ void displaystruct()
 		WebcfgDebug(" %s %s\n",temp->name,temp->support);
 		temp=temp->next;
 	}
+}
+
+void supplementary_destroy( SupplementaryDocs_t *sp )
+{
+    while (sp != NULL)
+    {
+        if( NULL != sp->name )
+        {
+                WEBCFG_FREE( sp->name );
+        }
+	sp = sp->next;
+    }
+
+    WEBCFG_FREE(sp);
 }

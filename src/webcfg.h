@@ -92,4 +92,7 @@ int checkMaintenanceTimer();
 int readFWFiles(char* file_path, long *range);
 int maintenanceSyncSeconds();
 long getTimeInSeconds(long long time);
+void set_global_maintenance_time(long value);
+void set_global_fw_start_time(long value);
+void set_global_fw_end_time(long value);
 #endif

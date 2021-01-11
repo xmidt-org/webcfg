@@ -2266,6 +2266,7 @@ void failedDocsRetry()
 				{
 					set_retry_timer(time_diff);
 				}
+				set_doc_fail(1);
 			}
 		}
 		else

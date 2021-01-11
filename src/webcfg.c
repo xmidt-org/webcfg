@@ -311,6 +311,11 @@ void *WebConfigMultipartTask(void *status)
 	reset_global_eventFlag();
 	set_doc_fail( 0);
 	reset_successDocCount();
+	set_global_maintenance_time(0);
+	set_global_fw_start_time(0);
+	set_global_fw_end_time(0);
+	set_retry_timer(0);
+	set_global_supplementarySync(0);
 
 	//delete tmp, db, and mp cache lists.
 	delete_tmp_list();
@@ -320,6 +325,9 @@ void *WebConfigMultipartTask(void *status)
 
 	WebcfgDebug("multipart_destroy\n");
 	multipart_destroy(get_global_mp());
+
+	WebcfgInfo("supplementary_destroy\n");
+	supplementary_destroy(get_global_spInfoHead());
 
 	WebcfgInfo("B4 pthread_exit\n");
 	pthread_exit(0);
