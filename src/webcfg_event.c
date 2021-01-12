@@ -393,8 +393,16 @@ void* processSubdocEvents()
 				}
 				else
 				{
-					WebcfgInfo("Crash EVENT: %s,%d,%lu\n", eventParam->subdoc_name,0, (long)eventParam->version);
-					WebcfgInfo("Component restarted after crash, re-send blob.\n");
+					if ((eventParam->status !=NULL)&&(strcmp(eventParam->status, "COMP_INIT")==0))
+					{
+						WebcfgInfo("COMP_INIT EVENT: %s,%d,%lu\n", eventParam->subdoc_name,0, (long)eventParam->version);
+						WebcfgInfo("Component initialized, check and re-send blob.\n");
+					}
+					else
+					{
+						WebcfgInfo("Crash EVENT: %s,%d,%lu\n", eventParam->subdoc_name,0, (long)eventParam->version);
+						WebcfgInfo("Component restarted after crash, re-send blob.\n");
+					}
 					uint32_t tmpVersion = 0;
 
 					//If version in event and tmp are not matching, re-send blob to retry.
