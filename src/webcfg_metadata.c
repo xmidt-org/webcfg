@@ -381,7 +381,7 @@ void delete_supplementary_list()
 {
 	SupplementaryDocs_t *temp = NULL;
 	SupplementaryDocs_t *head = NULL;
-	head = get_global_sdInfoHead();
+	head = get_global_spInfoHead();
 
 	while(head != NULL)
 	{
