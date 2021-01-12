@@ -65,6 +65,7 @@ static int g_testfile = 0;
 #endif
 static int g_supplementarySync = 0;
 static int g_retry_timer = 900;
+static long g_retry_time = 0;
 static long g_maintenance_time = 0;
 static long g_fw_start_time = 0;
 static long g_fw_end_time = 0;
@@ -195,13 +196,17 @@ void *WebConfigMultipartTask(void *status)
 			ts.tv_sec += get_retry_timer();
 			maintenance_doc_sync = 1;
 			WebcfgInfo("The Maintenance wait time is set\n");
-			WebcfgInfo("The Maintenance Sync timeout triggers at %s\n", printTime((long long)ts.tv_sec));
+			WebcfgInfo("The Maintenance Sync triggers at %s\n", printTime((long long)ts.tv_sec));
 		}
 		else
 		{
+			if(get_global_retry_time() != 0)
+			{
+				set_retry_timer(retrySyncSeconds());
+			}
 			ts.tv_sec += get_retry_timer();
 			WebcfgInfo("The retry wait time is set\n");
-			WebcfgInfo("The retry timeout triggers at %s\n", printTime((long long)ts.tv_sec));
+			WebcfgInfo("The retry triggers at %s\n", printTime((long long)ts.tv_sec));
 		}
 
 		if(retry_flag == 1 || maintenance_doc_sync == 1)
@@ -222,6 +227,7 @@ void *WebConfigMultipartTask(void *status)
 			{
 				set_doc_fail(0);
 				set_retry_timer(900);
+				set_global_retry_time(0);
 				failedDocsRetry();
 				WebcfgInfo("After the failedDocsRetry\n");
 			}
@@ -312,6 +318,7 @@ void *WebConfigMultipartTask(void *status)
 	set_doc_fail( 0);
 	reset_successDocCount();
 	set_global_maintenance_time(0);
+	set_global_retry_time(0);
 	set_global_fw_start_time(0);
 	set_global_fw_end_time(0);
 	set_retry_timer(0);
@@ -324,10 +331,10 @@ void *WebConfigMultipartTask(void *status)
 	webcfgdb_destroy (get_global_db_node() );
 
 	WebcfgDebug("multipart_destroy\n");
-	multipart_destroy(get_global_mp());
+	delete_multipart();
 
 	WebcfgInfo("supplementary_destroy\n");
-	supplementary_destroy(get_global_spInfoHead());
+	delete_supplementary_list();
 
 	WebcfgInfo("B4 pthread_exit\n");
 	pthread_exit(0);
@@ -415,6 +422,16 @@ int get_retry_timer()
 void set_retry_timer(int value)
 {
 	g_retry_timer = value;
+}
+
+long get_global_retry_time()
+{
+    return g_retry_time;
+}
+
+void set_global_retry_time(long value)
+{
+    g_retry_time = value;
 }
 /*----------------------------------------------------------------------------*/
 /*                             Internal functions                             */
@@ -887,6 +904,33 @@ int maintenanceSyncSeconds()
 	WebcfgDebug("The maintenance Seconds is %ld\n", maintenance_secs);
 
 	return maintenance_secs;
+}
+
+//To get the wait seconds for Maintenance Time
+int retrySyncSeconds()
+{
+	struct timespec ct;
+	long retry_secs = 0;
+	long current_time_in_sec = 0;
+	long long current_time = 0;
+	clock_gettime(CLOCK_REALTIME, &ct);
+
+	current_time = ct.tv_sec;
+	current_time_in_sec = getTimeInSeconds(current_time);
+
+	retry_secs =  get_global_retry_time() - current_time_in_sec;
+
+	WebcfgDebug("The current time in retrySyncSeconds is %lld at %s\n",current_time, printTime(current_time));
+	WebcfgDebug("The random timer in retrySyncSeconds is %ld\n",get_global_retry_time());
+
+	if (retry_secs < 0)
+	{
+		retry_secs = 0;//Adding with Maintenance wait time for nextday trigger
+	}
+
+	WebcfgInfo("The retry Seconds is %ld\n", retry_secs);
+
+	return retry_secs;
 }
 
 //To get the Seconds from Epoch Time
