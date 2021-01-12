@@ -341,7 +341,7 @@ void supplementaryDocs()
 		memset(spInfo, 0, sizeof(SupplementaryDocs_t));
 
 		WebcfgDebug("The value is %s\n",token);
-		spInfo->name = token;
+		spInfo->name = strdup(token);
 		spInfo->next = NULL;
 
 		if(g_spInfoTail == NULL)
@@ -357,7 +357,7 @@ void supplementaryDocs()
 			g_spInfoTail = spInfo;
 		}
 
-		WebcfgInfo("The supplementary_url is %s\n", spInfo->name);
+		WebcfgInfo("The supplementary_doc[%d] is %s\n", count, spInfo->name);
 		count++;
 		token = strtok(NULL, ",");
 	}
