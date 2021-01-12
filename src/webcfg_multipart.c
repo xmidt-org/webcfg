@@ -1935,7 +1935,7 @@ void delete_mp_doc()
 	while(temp != NULL)
 	{
 		//skip root delete
-		if((temp->isSupplementarySync == get_global_supplementarySync()))
+		if(temp->isSupplementarySync == get_global_supplementarySync())
 		{
 			WebcfgInfo("Delete mp node--> mp_node->name_space is %s mp_node->etag is %lu mp_node->isSupplementarySync %d\n", temp->name_space, (long)temp->etag, temp->isSupplementarySync);
 			deleteFromMpList(temp->name_space);
