@@ -1873,27 +1873,15 @@ void parse_multipart(char *ptr, int no_of_bytes)
 
 	if(etag != 0 && name_space != NULL && data != NULL && data_size != 0 )
 	{
-		if((get_global_supplementarySync() && strncasecmp(name_space,"wan",strlen("wan")) == 0 )|| (get_global_supplementarySync() && strncasecmp(name_space,"lan",strlen("lan")) == 0) )
-		{
-			 WEBCFG_FREE(name_space);
-			 WEBCFG_FREE(data);
-			 name_space = NULL;
-			 data = NULL;
-			 etag = 0;
-			 data_size = 0;
-		}
-		else
-		{
-			addToMpList(etag, name_space, data, data_size);
+		addToMpList(etag, name_space, data, data_size);
 
-			WEBCFG_FREE(name_space);
-			WEBCFG_FREE(data);
+		WEBCFG_FREE(name_space);
+		WEBCFG_FREE(data);
 
-			name_space = NULL;
-			data = NULL;
-			etag = 0;
-			data_size = 0;
-		}
+		name_space = NULL;
+		data = NULL;
+		etag = 0;
+		data_size = 0;
 	}
 }
 
