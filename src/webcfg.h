@@ -91,8 +91,11 @@ int get_retry_timer();
 int checkMaintenanceTimer();
 int readFWFiles(char* file_path, long *range);
 int maintenanceSyncSeconds();
+int retrySyncSeconds();
 long getTimeInSeconds(long long time);
 void set_global_maintenance_time(long value);
 void set_global_fw_start_time(long value);
 void set_global_fw_end_time(long value);
+void set_global_retry_time(long value);
+long get_global_retry_time();
 #endif

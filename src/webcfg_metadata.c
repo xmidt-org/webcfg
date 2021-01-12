@@ -348,6 +348,7 @@ void supplementaryDocs()
 		{
 			g_spInfoHead = spInfo;
 			g_spInfoTail = spInfo;
+			WebcfgInfo("Inside new supplementary list\n");
 		}
 		else
 		{
@@ -362,6 +363,7 @@ void supplementaryDocs()
 		token = strtok(NULL, ",");
 	}
 	WEBCFG_FREE(docs_var);
+	WebcfgInfo("End of sp list\n");
 }
 
 void displaystruct()
@@ -375,16 +377,20 @@ void displaystruct()
 	}
 }
 
-void supplementary_destroy( SupplementaryDocs_t *sp )
+void delete_supplementary_list()
 {
-    while (sp != NULL)
-    {
-        if( NULL != sp->name )
-        {
-                WEBCFG_FREE( sp->name );
-        }
-	sp = sp->next;
-    }
+	SupplementaryDocs_t *temp = NULL;
+	SupplementaryDocs_t *head = NULL;
+	head = get_global_sdInfoHead();
 
-    WEBCFG_FREE(sp);
+	while(head != NULL)
+	{
+		temp = head;
+		head = head->next;
+		WebcfgInfo("Deleted node: temp->name:%s\n", temp->name);
+		free(temp);
+		temp = NULL;
+	}
+	g_spInfoHead = NULL;
+	g_spInfoTail = NULL;
 }

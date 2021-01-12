@@ -62,7 +62,7 @@ void reset_global_eventFlag();
 int get_global_eventFlag(void);
 void set_global_eventFlag();
 pthread_t get_global_process_threadid();
-void multipart_destroy( multipartdocs_t *m );
+void delete_multipart();
 int get_multipartdoc_count();
 WEBCFG_STATUS deleteFromMpList(char* doc_name);
 void addToMpList(uint32_t etag, char *name_space, char *data, size_t data_size);

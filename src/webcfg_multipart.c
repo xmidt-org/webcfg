@@ -782,7 +782,12 @@ WEBCFG_STATUS processMsgpackSubdoc(char *transaction_id)
 								if(get_retry_timer() > time_diff)
 								{
 									set_retry_timer(time_diff);
+									set_global_retry_time(getTimeInSeconds(expiry_time));
 									WebcfgInfo("The retry_timer is %d after set\n", get_retry_timer());
+								}
+								if(get_global_retry_time() == 0)
+								{
+									set_global_retry_time(getTimeInSeconds(present_time+900));
 								}
 
 								snprintf(result,MAX_VALUE_LEN,"crash_retrying:%s", errDetails);
@@ -1813,22 +1818,23 @@ char* generate_trans_uuid()
 	return transID;
 }
 
-void multipart_destroy( multipartdocs_t *m )
+void delete_multipart()
 {
-    while (m != NULL)
-    {
-        if( NULL != m->name_space )
-        {
-                WEBCFG_FREE( m->name_space );
-        }
-        if( NULL != m->data )
-        {
-                WEBCFG_FREE( m->data );
-        }
-	m = m->next;
-    }
+	multipartdocs_t *temp = NULL;
+	multipartdocs_t *head = NULL;
+	head = get_global_mp();
 
-    WEBCFG_FREE(m);
+	while(head != NULL)
+	{
+		temp = head;
+		head = head->next;
+		WebcfgInfo("Deleted mp node: temp->name_space:%s\n", temp->name_space);
+		free(temp);
+		temp = NULL;
+	}
+	pthread_mutex_lock (&multipart_t_mut);
+	g_mp_head = NULL;
+	pthread_mutex_unlock (&multipart_t_mut);
 }
 
 void parse_multipart(char *ptr, int no_of_bytes)
@@ -2206,10 +2212,7 @@ void updateRootVersionToDB()
 			WebcfgError("Delete tmp queue root is failed\n");
 		}
 		WebcfgDebug("free mp as all docs and root are updated to DB\n");
-		multipart_destroy(g_mp_head);
-		pthread_mutex_lock (&multipart_t_mut);
-		g_mp_head = NULL;
-		pthread_mutex_unlock (&multipart_t_mut);
+		delete_multipart();
 		WebcfgDebug("After free mp\n");
 	}
 }
@@ -2253,6 +2256,11 @@ void failedDocsRetry()
 				if(get_retry_timer() > time_diff)
 				{
 					set_retry_timer(time_diff);
+					set_global_retry_time(getTimeInSeconds(temp->retry_expiry_timestamp));
+				}
+				if(get_global_retry_time() == 0)
+				{
+					set_global_retry_time(getTimeInSeconds(present_time+900));
 				}
 				set_doc_fail(1);
 			}
