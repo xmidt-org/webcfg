@@ -125,8 +125,11 @@ void *WebConfigMultipartTask(void *status)
 
 	while(spDocs != NULL)
 	{
-		WebcfgInfo("Supplementary sync for %s\n",spDocs->name);
-		processWebconfgSync((int)Status, spDocs->name);
+		if(spDocs->name != NULL)
+		{
+			WebcfgInfo("Supplementary sync for %s\n",spDocs->name);
+			processWebconfgSync((int)Status, spDocs->name);
+		}
 		spDocs = spDocs->next;
 	}
 
@@ -159,8 +162,11 @@ void *WebConfigMultipartTask(void *status)
 
 				while(sp != NULL)
 				{
-					WebcfgInfo("Supplementary sync for %s\n",sp->name);
-					processWebconfgSync((int)Status, sp->name);
+					if(sp->name != NULL)
+					{
+						WebcfgInfo("Supplementary sync for %s\n",sp->name);
+						processWebconfgSync((int)Status, sp->name);
+					}
 					sp = sp->next;
 				}
 
