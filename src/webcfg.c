@@ -112,7 +112,10 @@ void *WebConfigMultipartTask(void *status)
 
 	initDB(WEBCFG_DB_FILE);
 
+//To disable supplementary sync for RDKV platforms
+#if !defined(RDK_PERSISTENT_PATH_VIDEO)
 	initMaintenanceTimer();
+#endif
 	//For Primary sync set flag to 0
 	set_global_supplementarySync(0);
 	processWebconfgSync((int)Status, NULL);
@@ -191,10 +194,15 @@ void *WebConfigMultipartTask(void *status)
 
 		if ( retry_flag == 0)
 		{
+		//To disable supplementary sync for RDKV platforms
+		#if !defined(RDK_PERSISTENT_PATH_VIDEO)
 			set_retry_timer(maintenanceSyncSeconds());
 			ts.tv_sec += get_retry_timer();
 			maintenance_doc_sync = 1;
 			WebcfgInfo("The Maintenance Sync triggers at %s\n", printTime((long long)ts.tv_sec));
+		#else
+			maintenance_doc_sync = 0;
+		#endif
 		}
 		else
 		{
