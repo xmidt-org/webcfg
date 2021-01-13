@@ -331,9 +331,14 @@ long getTimeInSeconds(long long time)
 	return sec_of_cur_time;
 }
 
-int updateRetryTimeDiff(long long expiry_time, long long present_time)
+int updateRetryTimeDiff(long long expiry_time)
 {
+	struct timespec ct;
 	int time_diff = 0;
+	long long present_time = 0;
+
+	clock_gettime(CLOCK_REALTIME, &ct);
+	present_time = ct.tv_sec;
 
 	time_diff = expiry_time - present_time;
 

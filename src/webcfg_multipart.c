@@ -764,8 +764,6 @@ WEBCFG_STATUS processMsgpackSubdoc(char *transaction_id)
 							else
 							{
 
-								struct timespec ct;
-								long long present_time = 0;
 								long long expiry_time = 0;
 
 								expiry_time = getRetryExpiryTimeout();
@@ -773,10 +771,8 @@ WEBCFG_STATUS processMsgpackSubdoc(char *transaction_id)
 
 								updateFailureTimeStamp(subdoc_node, mp->name_space, expiry_time);
 								WebcfgDebug("The retry_timer is %d and timeout generated is %lld\n", get_retry_timer(), expiry_time);
-								clock_gettime(CLOCK_REALTIME, &ct);
-								present_time = ct.tv_sec;
 
-								updateRetryTimeDiff(expiry_time, present_time);
+								updateRetryTimeDiff(expiry_time);
 								//To get the exact time diff for retry from present time do the below
 								snprintf(result,MAX_VALUE_LEN,"crash_retrying:%s", errDetails);
 							}
@@ -2223,17 +2219,11 @@ void failedDocsRetry()
 			}
 			else
 			{
-				struct timespec ct;
-
-				long long present_time = 0;
 				int time_diff = 0;
 
-				clock_gettime(CLOCK_REALTIME, &ct);
-				present_time = ct.tv_sec;
-
 				//To get the exact time diff for retry from present time do the below
-				time_diff = updateRetryTimeDiff(temp->retry_expiry_timestamp, present_time);
-				WebcfgInfo("The docname is %s and diff is %d retry time stamp is %s\n", temp->name, time_diff, printTime(present_time+time_diff));
+				time_diff = updateRetryTimeDiff(temp->retry_expiry_timestamp);
+				WebcfgInfo("The docname is %s and diff is %d retry time stamp is %s\n", temp->name, time_diff, printTime(temp->retry_expiry_timestamp));
 				set_doc_fail(1);
 			}
 		}
