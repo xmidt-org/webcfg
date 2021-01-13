@@ -212,6 +212,15 @@ WEBCFG_STATUS webcfg_http_request(char **configData, int r_count, int status, lo
 				WebcfgDebug("docname is %s and in uppercase is %s\n", docname, docname_upper);
 				Get_Supplementary_URL(docname_upper, configURL);
 				WebcfgDebug("Supplementary sync url fetched is %s\n", configURL);
+				if( strcmp(configURL, "NULL") == 0)
+				{
+				WebcfgInfo("Supplementary sync with cloud is disabled as configURL is NULL\n");
+				WEBCFG_FREE(data.data);
+				WEBCFG_FREE(*transaction_id);
+				curl_slist_free_all(headers_list);
+				curl_easy_cleanup(curl);
+				return WEBCFG_FAILURE;
+				}
 			}
 
 		}
@@ -235,6 +244,7 @@ WEBCFG_STATUS webcfg_http_request(char **configData, int r_count, int status, lo
 		{
 			WebcfgError("Failed to get configURL\n");
 			WEBCFG_FREE(data.data);
+			WEBCFG_FREE(*transaction_id);
 			curl_slist_free_all(headers_list);
 			curl_easy_cleanup(curl);
 			return WEBCFG_FAILURE;
@@ -265,6 +275,7 @@ WEBCFG_STATUS webcfg_http_request(char **configData, int r_count, int status, lo
 		{
 			WebcfgError("Failed to get webconfig configURL\n");
 			WEBCFG_FREE(data.data);
+			WEBCFG_FREE(*transaction_id);
 			curl_slist_free_all(headers_list);
 			curl_easy_cleanup(curl);
 			return WEBCFG_FAILURE;
@@ -521,7 +532,6 @@ WEBCFG_STATUS processMsgpackSubdoc(char *transaction_id)
 	int success_count = 0;
 	WEBCFG_STATUS addStatus =0;
 	WEBCFG_STATUS subdocStatus = 0;
-	char * trans_id = NULL;
 	uint16_t doc_transId = 0;
 	int backoffRetryTime = 0;
 	int max_retry_sleep = 0;
@@ -535,11 +545,9 @@ WEBCFG_STATUS processMsgpackSubdoc(char *transaction_id)
 	mp_count = get_multipartdoc_count();
 	if(transaction_id !=NULL)
 	{
-		trans_id = strdup(transaction_id);
-		WEBCFG_FREE(transaction_id);
-
-		strncpy(g_transID, trans_id, sizeof(g_transID)-1);
+		strncpy(g_transID, transaction_id, sizeof(g_transID)-1);
 		WebcfgDebug("g_transID is %s\n", g_transID);
+		WEBCFG_FREE(transaction_id);
 	}
         
 	WebcfgDebug("Add mp entries to tmp list\n");
@@ -844,7 +852,6 @@ WEBCFG_STATUS processMsgpackSubdoc(char *transaction_id)
 		mp = mp->next;
 	}
 	WebcfgDebug("The current_doc_count is %d\n",current_doc_count);
-	WEBCFG_FREE(trans_id);
 
 	//Apply aker doc at the end when all other docs are processed.
 	if(akerSet)

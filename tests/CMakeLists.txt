@@ -57,11 +57,20 @@ target_link_libraries (test_multipart gcov -Wl,--no-as-needed )
 #-------------------------------------------------------------------------------
 #   test_events
 #-------------------------------------------------------------------------------
-#add_test(NAME test_events COMMAND ${MEMORY_CHECK} ./test_events)
-#add_executable(test_events test_events.c ../src/webcfg_param.c ../src/webcfg_multipart.c ../src/webcfg_helpers.c ../src/webcfg.c ../src/webcfg_auth.c ../src/webcfg_notify.c ../src/webcfg_db.c ../src/webcfg_pack.c ../src/webcfg_blob.c ../src/webcfg_event.c ../src/webcfg_generic.c ../src/webcfg_client.c ../src/webcfg_aker.c ../src/webcfg_metadata.c)
-#target_link_libraries (test_events -lcunit -lmsgpackc -lcurl -lpthread  -lm -luuid -ltrower-base64 -lwdmp-c -lcimplog -lcjson -lwrp-c -llibparodus -lnanomsg)
+add_test(NAME test_events COMMAND ${MEMORY_CHECK} ./test_events)
+add_executable(test_events test_events.c ../src/webcfg_param.c ../src/webcfg_multipart.c ../src/webcfg_helpers.c ../src/webcfg.c ../src/webcfg_auth.c ../src/webcfg_notify.c ../src/webcfg_db.c ../src/webcfg_pack.c ../src/webcfg_blob.c ../src/webcfg_event.c ../src/webcfg_generic.c ../src/webcfg_client.c ../src/webcfg_aker.c ../src/webcfg_metadata.c)
+target_link_libraries (test_events -lcunit -lmsgpackc -lcurl -lpthread  -lm -luuid -ltrower-base64 -lwdmp-c -lcimplog -lcjson -lwrp-c -llibparodus -lnanomsg)
 
-#target_link_libraries (test_events gcov -Wl,--no-as-needed )
+target_link_libraries (test_events gcov -Wl,--no-as-needed )
+
+#-------------------------------------------------------------------------------
+#   test_events_supplematary
+#-------------------------------------------------------------------------------
+add_test(NAME test_events_supp COMMAND ${MEMORY_CHECK} ./test_events_supp)
+add_executable(test_events_supp test_events_supp.c ../src/webcfg_param.c ../src/webcfg_multipart.c ../src/webcfg_helpers.c ../src/webcfg.c ../src/webcfg_auth.c ../src/webcfg_notify.c ../src/webcfg_db.c ../src/webcfg_pack.c ../src/webcfg_blob.c ../src/webcfg_event.c ../src/webcfg_generic.c ../src/webcfg_client.c ../src/webcfg_aker.c ../src/webcfg_metadata.c)
+target_link_libraries (test_events_supp -lcunit -lmsgpackc -lcurl -lpthread  -lm -luuid -ltrower-base64 -lwdmp-c -lcimplog -lcjson -lwrp-c -llibparodus -lnanomsg)
+
+target_link_libraries (test_events_supp gcov -Wl,--no-as-needed )
 #-------------------------------------------------------------------------------
 #   test_metadata
 #-------------------------------------------------------------------------------
