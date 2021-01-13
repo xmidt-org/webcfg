@@ -977,7 +977,8 @@ WEBCFG_STATUS retryMultipartSubdoc(webconfig_tmp_data_t *docNode, char *docName)
 							if(get_retry_timer() > time_diff)
 							{
 								set_retry_timer(time_diff);
-								WebcfgInfo("The retry_timer is %d after set\n", get_retry_timer());
+								WebcfgDebug("The retry_timer is %d after set\n", get_retry_timer());
+								set_global_retry_time(getTimeInSeconds(expiry_time));
 							}
 							if(get_global_retry_time() == 0)
 							{

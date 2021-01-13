@@ -459,7 +459,6 @@ WEBCFG_STATUS parseMultipartDocument(void *config_data, char *ct , size_t data_s
 					}
 					index2 = ptr_lb1-str_body;
 					index1 = ptr_lb-str_body;
-					printf("The parse\n");
 					parse_multipart(str_body+index1+1,index2 - index1 - 2);
 					ptr_lb++;
 				#ifdef MULTIPART_UTILITY
@@ -578,7 +577,7 @@ WEBCFG_STATUS processMsgpackSubdoc(char *transaction_id)
 		//Process subdocs with status "pending_apply" which indicates docs from current sync, skip all others.
 		if(strcmp(subdoc_node->status, "pending_apply") != 0)
 		{
-			WebcfgInfo("skipped setValues for doc %s as it is already processed\n", mp->name_space);
+			WebcfgDebug("skipped setValues for doc %s as it is already processed\n", mp->name_space);
 			mp = mp->next;
 			continue;
 		}
@@ -589,11 +588,11 @@ WEBCFG_STATUS processMsgpackSubdoc(char *transaction_id)
 			if(subdoc_node->isSupplementarySync == 0)
 			{
 				current_doc_count++;
-				WebcfgInfo("current_doc_count incremented to %d\n", current_doc_count);
+				WebcfgDebug("current_doc_count incremented to %d\n", current_doc_count);
 			}
 		}
-		WebcfgInfo("mp->name_space %s\n", mp->name_space);
-		WebcfgInfo("mp->etag %lu\n" , (long)mp->etag);
+		WebcfgDebug("mp->name_space %s\n", mp->name_space);
+		WebcfgDebug("mp->etag %lu\n" , (long)mp->etag);
 		WebcfgDebug("mp->data %s\n" , mp->data);
 
 		WebcfgDebug("mp->data_size is %zu\n", mp->data_size);
@@ -773,7 +772,7 @@ WEBCFG_STATUS processMsgpackSubdoc(char *transaction_id)
 								set_doc_fail(1);
 
 								updateFailureTimeStamp(subdoc_node, mp->name_space, expiry_time);
-								WebcfgInfo("The retry_timer is %d and timeout generated is %lld\n", get_retry_timer(), expiry_time);
+								WebcfgDebug("The retry_timer is %d and timeout generated is %lld\n", get_retry_timer(), expiry_time);
 								clock_gettime(CLOCK_REALTIME, &ct);
 								present_time = ct.tv_sec;
 
@@ -783,7 +782,7 @@ WEBCFG_STATUS processMsgpackSubdoc(char *transaction_id)
 								{
 									set_retry_timer(time_diff);
 									set_global_retry_time(getTimeInSeconds(expiry_time));
-									WebcfgInfo("The retry_timer is %d after set\n", get_retry_timer());
+									WebcfgDebug("The retry_timer is %d after set\n", get_retry_timer());
 								}
 								if(get_global_retry_time() == 0)
 								{
@@ -1012,11 +1011,7 @@ size_t headr_callback(char *buffer, size_t size, size_t nitems)
 					stripspaces(header_str, &final_header);
 					if(g_contentLen != NULL)
 					{
-						WebcfgInfo("Inside g_contentLen not Null\n");
-						//if(atoi(g_contentLen) != 0)
-						//{
-							WEBCFG_FREE(g_contentLen);
-						//}
+						WEBCFG_FREE(g_contentLen);
 					}
 					g_contentLen = strdup(final_header);
 				}
@@ -1040,7 +1035,7 @@ uint32_t get_global_root()
 		g_version = strtoul(temp,NULL,0);
 		WEBCFG_FREE(temp);
 	}
-	WebcfgInfo("g_version is %lu\n", (long)g_version);
+	WebcfgDebug("g_version is %lu\n", (long)g_version);
 	return g_version;
 }
 
@@ -1828,7 +1823,7 @@ void delete_multipart()
 	{
 		temp = head;
 		head = head->next;
-		WebcfgInfo("Deleted mp node: temp->name_space:%s\n", temp->name_space);
+		WebcfgDebug("Deleted mp node: temp->name_space:%s\n", temp->name_space);
 		free(temp);
 		temp = NULL;
 	}
@@ -1908,7 +1903,7 @@ void addToMpList(uint32_t etag, char *name_space, char *data, size_t data_size)
 		mp_node->next = NULL;
 
 		WebcfgDebug("mp_node->etag is %ld\n",(long)mp_node->etag);
-		WebcfgInfo("mp_node->name_space is %s mp_node->etag is %lu mp_node->isSupplementarySync %d\n", mp_node->name_space, (long)mp_node->etag, mp_node->isSupplementarySync);
+		WebcfgDebug("mp_node->name_space is %s mp_node->etag is %lu mp_node->isSupplementarySync %d\n", mp_node->name_space, (long)mp_node->etag, mp_node->isSupplementarySync);
 		WebcfgDebug("mp_node->data is %s\n", mp_node->data);
 		WebcfgDebug("mp_node->data_size is %zu\n", mp_node->data_size);
 		WebcfgDebug("mp_node->isSupplementarySync is %d\n", mp_node->isSupplementarySync);
@@ -1937,7 +1932,6 @@ void delete_mp_doc()
 	multipartdocs_t *temp = NULL;
 	temp = get_global_mp();
 
-	WebcfgInfo("Inside delete_mp_doc()\n");
 	while(temp != NULL)
 	{
 		//skip root delete
@@ -2343,7 +2337,7 @@ int checkRetryTimer( long long timestamp)
 	cur_time = rt.tv_sec;
 
 	WebcfgDebug("The current time in device is %lld at %s\n", cur_time, printTime(cur_time));
-	WebcfgInfo("The Retry timestamp is %lld at %s\n", timestamp, printTime(timestamp));
+	WebcfgDebug("The Retry timestamp is %lld at %s\n", timestamp, printTime(timestamp));
 
 	if(cur_time >= timestamp)
 	{

@@ -348,7 +348,6 @@ void supplementaryDocs()
 		{
 			g_spInfoHead = spInfo;
 			g_spInfoTail = spInfo;
-			WebcfgInfo("Inside new supplementary list\n");
 		}
 		else
 		{
@@ -358,12 +357,11 @@ void supplementaryDocs()
 			g_spInfoTail = spInfo;
 		}
 
-		WebcfgInfo("The supplementary_doc[%d] is %s\n", count, spInfo->name);
+		WebcfgDebug("The supplementary_doc[%d] is %s\n", count, spInfo->name);
 		count++;
 		token = strtok(NULL, ",");
 	}
 	WEBCFG_FREE(docs_var);
-	WebcfgInfo("End of sp list\n");
 }
 
 void displaystruct()
@@ -387,7 +385,7 @@ void delete_supplementary_list()
 	{
 		temp = head;
 		head = head->next;
-		WebcfgInfo("Deleted node: temp->name:%s\n", temp->name);
+		WebcfgDebug("Deleted node: temp->name:%s\n", temp->name);
 		free(temp);
 		temp = NULL;
 	}

@@ -391,9 +391,9 @@ WEBCFG_STATUS addToTmpList()
 	char * cloud_transaction_id = NULL;
 
 	mp_count = get_multipartdoc_count();
-	WebcfgInfo("multipartdoc count is %d\n", mp_count);
+	WebcfgDebug("multipartdoc count is %d\n", mp_count);
 
-	WebcfgInfo("checkTmpRootUpdate, proceed to addToTmpList\n");
+	WebcfgDebug("checkTmpRootUpdate, proceed to addToTmpList\n");
 	checkTmpRootUpdate();
 
 	delete_tmp_docs_list();
@@ -402,7 +402,7 @@ WEBCFG_STATUS addToTmpList()
 	multipartdocs_t *mp_node = NULL;
 	mp_node = get_global_mp();
 
-	WebcfgInfo("The numdocs is %d\n",numOfMpDocs);
+	WebcfgDebug("The numdocs is %d\n",numOfMpDocs);
 	cloud_transaction_id = get_global_transID();
 	while(mp_node != NULL)
 	{
@@ -709,13 +709,13 @@ void delete_tmp_docs_list()
    webconfig_tmp_data_t *temp = NULL;
    temp = get_global_tmp_node();
 
-    WebcfgInfo("Inside delete_tmp_docs_list()\n");
+    WebcfgDebug("Inside delete_tmp_docs_list()\n");
     while(temp != NULL)
     {
 	//skip root delete
 	if((strcmp(temp->name, "root") !=0) && (temp->isSupplementarySync == get_global_supplementarySync()))
 	{
-		WebcfgInfo("Delete node--> temp->name %s temp->version %lu temp->status %s temp->isSupplementarySync %d temp->error_details %s temp->error_code %lu temp->trans_id %lu temp->retry_count %d temp->cloud_trans_id %s\n",temp->name, (long)temp->version, temp->status, temp->isSupplementarySync, temp->error_details, (long)temp->error_code, (long)temp->trans_id, temp->retry_count, temp->cloud_trans_id);
+		WebcfgDebug("Delete node--> temp->name %s temp->version %lu temp->status %s temp->isSupplementarySync %d temp->error_details %s temp->error_code %lu temp->trans_id %lu temp->retry_count %d temp->cloud_trans_id %s\n",temp->name, (long)temp->version, temp->status, temp->isSupplementarySync, temp->error_details, (long)temp->error_code, (long)temp->trans_id, temp->retry_count, temp->cloud_trans_id);
 		deleteFromTmpList(temp->name);
 	}
 	temp = temp->next;
@@ -1159,7 +1159,7 @@ WEBCFG_STATUS updateFailureTimeStamp(webconfig_tmp_data_t *temp, char *docname, 
 		if( strcmp(docname, temp->name) == 0)
 		{
 			temp->retry_expiry_timestamp = timestamp;
-			WebcfgInfo("doc %s is updated with timestamp %s\n", docname, printTime(timestamp));
+			WebcfgInfo("doc %s will retry at %s\n", docname, printTime(timestamp));
 			pthread_mutex_unlock (&webconfig_tmp_data_mut);
 			WebcfgDebug("mutex_unlock in current temp details\n");
 			return WEBCFG_SUCCESS;
