@@ -320,6 +320,9 @@ void* processSubdocEvents()
 							{
 								WebcfgInfo("No DB update for supplementary sync as version is not required to be stored.\n");
 							}
+							//root doc delete from tmp list and mp docs destroy can be done irrespective of primary/supplementary checks as all docs success can be reached during any sync.
+							WebcfgDebug("check for deleteRootAndMultipartDocs\n");
+							deleteRootAndMultipartDocs();
 						}
 						else
 						{
@@ -446,6 +449,8 @@ void* processSubdocEvents()
 								}
 								addNewDocEntry(get_successDocCount());
 							}
+							WebcfgDebug("check for deleteRootAndMultipartDocs\n");
+							deleteRootAndMultipartDocs();
 						}
 					}
 					else
@@ -608,16 +613,9 @@ void createTimerExpiryEvent(char *docName, uint16_t transid)
 //Update Tmp list and send success notification to cloud .
 void sendSuccessNotification(webconfig_tmp_data_t *subdoc_node, char *name, uint32_t version, uint16_t txid)
 {
+	updateTmpList(subdoc_node, name, version, "success", "none", 0, txid, 0);
 	addWebConfgNotifyMsg(name, version, "success", "none", subdoc_node->cloud_trans_id,0, "status",0, NULL, 200);
-	if((subdoc_node->isSupplementarySync == 1) && (validateEvent(subdoc_node, name, txid) != WEBCFG_SUCCESS))
-	{
-		WebcfgInfo("Tmp list is not deleted as new supplementary sync is received for doc %s\n", name);
-	}
-	else
-	{
-		updateTmpList(subdoc_node, name, version, "success", "none", 0, txid, 0);
-		deleteFromTmpList(name);
-	}
+	deleteFromTmpList(name);
 }
 
 //start internal timer for required doc when timeout value is received
@@ -940,6 +938,8 @@ WEBCFG_STATUS retryMultipartSubdoc(webconfig_tmp_data_t *docNode, char *docName)
 							{
 								WebcfgInfo("retryMultipartSubdoc. No DB update is required for supplementary sync\n");
 							}
+							WebcfgDebug("check for deleteRootAndMultipartDocs\n");
+							deleteRootAndMultipartDocs();
 						}
 						rv = WEBCFG_SUCCESS;
 					}

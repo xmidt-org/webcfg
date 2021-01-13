@@ -264,7 +264,7 @@ WEBCFG_STATUS isSupplementaryDoc(char *subDoc)
 
 	while(sp != NULL)
 	{
-		WebcfgInfo("Supplementary check for docname %s, subDoc received is %s\n", sp->name, subDoc);
+		WebcfgDebug("Supplementary check for docname %s, subDoc received is %s\n", sp->name, subDoc);
 		if(strncmp(sp->name, subDoc, strlen(subDoc)) == 0)
 		{
 			WebcfgDebug("The subdoc %s is present\n",sp->name);
@@ -276,7 +276,7 @@ WEBCFG_STATUS isSupplementaryDoc(char *subDoc)
 			}
 			else
 			{
-				WebcfgInfo("%s is not supplementary\n",subDoc);
+				WebcfgDebug("%s is not supplementary\n",subDoc);
 				return WEBCFG_FAILURE;
 			}
 		}
