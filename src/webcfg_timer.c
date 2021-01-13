@@ -330,3 +330,23 @@ long getTimeInSeconds(long long time)
 
 	return sec_of_cur_time;
 }
+
+int updateRetryTimeDiff(long long expiry_time, long long present_time)
+{
+	int time_diff = 0;
+
+	time_diff = expiry_time - present_time;
+
+	//To set the lowest retry timeout of all the docs
+	if(get_retry_timer() > time_diff)
+	{
+		set_retry_timer(time_diff);
+		set_global_retry_time(getTimeInSeconds(expiry_time));
+		WebcfgDebug("The retry_timer is %d after set\n", get_retry_timer());
+	}
+	if(get_global_retry_time() == 0)
+	{
+		set_global_retry_time(getTimeInSeconds(present_time+900));
+	}
+	return time_diff;
+}

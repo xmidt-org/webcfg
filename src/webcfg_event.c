@@ -959,7 +959,6 @@ WEBCFG_STATUS retryMultipartSubdoc(webconfig_tmp_data_t *docNode, char *docName)
 							struct timespec ct;
 							long long present_time = 0;
 							long long expiry_time = 0;
-							int time_diff = 0;
 
 							WebcfgError("ccspStatus is crash %d\n", ccspStatus);
 							snprintf(result,MAX_VALUE_LEN,"failed_retrying:%s", errDetails);
@@ -974,17 +973,7 @@ WEBCFG_STATUS retryMultipartSubdoc(webconfig_tmp_data_t *docNode, char *docName)
 							present_time = ct.tv_sec;
 
 							//To get the exact time diff for retry from present time do the below
-							time_diff = expiry_time - present_time;
-							if(get_retry_timer() > time_diff)
-							{
-								set_retry_timer(time_diff);
-								WebcfgDebug("The retry_timer is %d after set\n", get_retry_timer());
-								set_global_retry_time(getTimeInSeconds(expiry_time));
-							}
-							if(get_global_retry_time() == 0)
-							{
-								set_global_retry_time(getTimeInSeconds(present_time+900));
-							}
+							updateRetryTimeDiff(expiry_time, present_time);
 
 							WebcfgInfo("the retry flag value is %d\n", get_doc_fail());
 						}
