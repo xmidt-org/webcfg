@@ -796,14 +796,12 @@ WEBCFG_STATUS processMsgpackSubdoc(char *transaction_id)
 							addWebConfgNotifyMsg(mp->name_space, mp->etag, "failed", result, subdoc_node->cloud_trans_id, 0,"status",ccspStatus, NULL, 200);
 							WebcfgDebug("checkRootUpdate\n");
 							//No root update for supplementary sync
-							if(get_global_supplementarySync())
-							{
-								WebcfgInfo("No DB update for supplementary sync\n");
-							}
 							if(!get_global_supplementarySync() && (ccspStatus == 204 && subdocStatus != WEBCFG_SUCCESS) && (checkRootUpdate() == WEBCFG_SUCCESS))
 							{
 								WebcfgDebug("updateRootVersionToDB\n");
 								updateRootVersionToDB();
+								WebcfgDebug("check deleteRootAndMultipartDocs\n");
+								deleteRootAndMultipartDocs();
 								addNewDocEntry(get_successDocCount());
 								if(NULL != reqParam)
 								{
@@ -2168,7 +2166,6 @@ WEBCFG_STATUS checkRootUpdate()
 //Update root version to DB.
 void updateRootVersionToDB()
 {
-	WEBCFG_STATUS dStatus =0;
 	char * temp = strdup(g_ETAG);
 	uint32_t version=0;
 
@@ -2189,13 +2186,18 @@ void updateRootVersionToDB()
 	}
 
 	WebcfgDebug("The Etag is %lu\n",(long)version );
+}
 
+//Delete root doc from tmp list and mp cache list when all the docs are success.
+void deleteRootAndMultipartDocs()
+{
+	WEBCFG_STATUS dStatus =0;
 	//Delete root only when all the primary and supplementary docs are applied .
 	if(checkRootDelete() == WEBCFG_SUCCESS)
 	{
 		//Delete tmp queue root as all docs are applied
 		WebcfgInfo("Delete tmp queue root as all docs are applied\n");
-		WebcfgInfo("root version to delete is %lu\n", (long)version);
+		//WebcfgInfo("root version to delete is %lu\n", (long)version);
 		dStatus = deleteFromTmpList("root");
 		if(dStatus == 0)
 		{
@@ -2205,7 +2207,7 @@ void updateRootVersionToDB()
 		{
 			WebcfgError("Delete tmp queue root is failed\n");
 		}
-		WebcfgDebug("free mp as all docs and root are updated to DB\n");
+		WebcfgDebug("free mp as all docs are success\n");
 		delete_multipart();
 		WebcfgDebug("After free mp\n");
 	}
