@@ -27,6 +27,7 @@
 #include "webcfg_event.h"
 #include "webcfg_aker.h"
 #include "webcfg_metadata.h"
+#include "webcfg_timer.h"
 #include <pthread.h>
 #include <uuid/uuid.h>
 #include <math.h>
