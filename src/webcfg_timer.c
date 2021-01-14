@@ -35,6 +35,7 @@
 #include "webcfg_event.h"
 #include "webcfg_blob.h"
 #include "webcfg_timer.h"
+#include "webcfg_generic.h"
 /*----------------------------------------------------------------------------*/
 /*                                   Macros                                   */
 /*----------------------------------------------------------------------------*/
@@ -130,17 +131,35 @@ void initMaintenanceTimer()
 	long fw_start_time = 0;
 	long fw_end_time = 0;
 	uint16_t random_key = 0;
+	char *upgrade_start_time = NULL;
+	char *upgrade_end_time = NULL;
 
-	if( readFWFiles(FW_START_FILE, &fw_start_time) != WEBCFG_SUCCESS )
+	upgrade_start_time = getFirmwareUpgradeStartTime();
+
+	if( upgrade_start_time != NULL )
+	{
+		WebcfgInfo("Inside sucess case start_time %s\n",upgrade_start_time);
+		fw_start_time = atoi(upgrade_start_time);
+		WebcfgDebug("Inside sucess case fw_start_times %ld\n",fw_start_time);	
+	}
+	else
 	{
 		fw_start_time = MIN_MAINTENANCE_TIME;
-		WebcfgDebug("Inside failure case start_time\n");
+		WebcfgInfo("Inside failure case start_time \n");
 	}
-
-	if( readFWFiles(FW_END_FILE, &fw_end_time) != WEBCFG_SUCCESS )
+	
+	upgrade_end_time = getFirmwareUpgradeEndTime();
+	WebcfgInfo("The firmware upgrade end_time %s\n",upgrade_end_time);
+	if( upgrade_end_time != NULL )
+	{
+		WebcfgInfo("Inside sucess case end_time %s\n",upgrade_end_time);
+		fw_end_time = atoi(upgrade_end_time);
+		WebcfgInfo("Inside sucess case fw_end_times %ld\n",fw_end_time);	
+	}
+	else
 	{
 		fw_end_time = MAX_MAINTENANCE_TIME;
-		WebcfgDebug("Inside failure case end_time\n");
+		WebcfgInfo("Inside failure case end_time\n");
 	}
 
 	if( fw_start_time == fw_end_time )
@@ -200,7 +219,7 @@ int checkMaintenanceTimer()
 }
 
 //To read the start and end time from the file
-int readFWFiles(char* file_path, long *range)
+/*int readFWFiles(char* file_path, long *range)
 {
 	FILE *fp = NULL;
 	char *data = NULL;
@@ -252,7 +271,7 @@ int readFWFiles(char* file_path, long *range)
 	fclose(fp);
 
 	return WEBCFG_SUCCESS;
-}
+}*/
 
 //To get the wait seconds for Maintenance Time
 int maintenanceSyncSeconds()

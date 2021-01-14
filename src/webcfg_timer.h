@@ -41,7 +41,7 @@ char* printTime(long long time);
 void set_retry_timer(int value);
 int get_retry_timer();
 int checkMaintenanceTimer();
-int readFWFiles(char* file_path, long *range);
+//int readFWFiles(char* file_path, long *range);
 int maintenanceSyncSeconds();
 int retrySyncSeconds();
 long getTimeInSeconds(long long time);

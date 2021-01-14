@@ -36,6 +36,8 @@ char *__attribute__((weak)) getRebootReason(void);
 char *__attribute__((weak)) getConnClientParamName(void);
 char *__attribute__((weak)) getFirmwareVersion(void);
 char *__attribute__((weak)) get_deviceMAC(void);
+char *__attribute__((weak)) getFirmwareUpgradeStartTime(void);
+char *__attribute__((weak)) getFirmwareUpgradeEndTime(void);
 char *__attribute__((weak)) get_global_systemReadyTime(void);
 int __attribute__((weak)) setForceSync(char* pString, char *transactionId,int *session_status);
 int __attribute__((weak)) getForceSync(char** pString, char **transactionId);
@@ -101,6 +103,16 @@ char *getFirmwareVersion(void)
 char* get_deviceMAC(void)
 {
 	return NULL;
+}
+
+char *getFirmwareUpgradeStartTime(void)
+{
+    return NULL;
+}
+
+char *getFirmwareUpgradeEndTime(void)
+{
+    return NULL;
 }
 
 char *get_global_systemReadyTime(void)
