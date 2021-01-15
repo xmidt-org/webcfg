@@ -857,8 +857,8 @@ WEBCFG_STATUS retryMultipartSubdoc(webconfig_tmp_data_t *docNode, char *docName)
 	{
 		if(strcmp(gmp->name_space, docName) == 0)
 		{
-			WebcfgInfo("gmp->name_space %s\n", gmp->name_space);
-			WebcfgInfo("gmp->etag %lu\n" , (long)gmp->etag);
+			WebcfgDebug("gmp->name_space %s\n", gmp->name_space);
+			WebcfgDebug("gmp->etag %lu\n" , (long)gmp->etag);
 			WebcfgDebug("gmp->data %s\n" , gmp->data);
 			WebcfgDebug("gmp->data_size is %zu\n", gmp->data_size);
 
@@ -923,7 +923,7 @@ WEBCFG_STATUS retryMultipartSubdoc(webconfig_tmp_data_t *docNode, char *docName)
 							addWebConfgNotifyMsg(gmp->name_space, gmp->etag, "success", "none", docNode->cloud_trans_id, 0, "status", 0, NULL, 200);
 							WebcfgDebug("deleteFromTmpList as scalar doc is applied\n");
 							deleteFromTmpList(gmp->name_space);
-							WebcfgInfo("docNode->isSupplementarySync is %d\n", docNode->isSupplementarySync);
+							WebcfgDebug("docNode->isSupplementarySync is %d\n", docNode->isSupplementarySync);
 							if(docNode->isSupplementarySync == 0)
 							{
 								checkDBList(gmp->name_space,gmp->etag, NULL);
@@ -957,7 +957,6 @@ WEBCFG_STATUS retryMultipartSubdoc(webconfig_tmp_data_t *docNode, char *docName)
 						if((ccspStatus == 192) || (ccspStatus == 204) || (ccspStatus == 191) || (ccspStatus == 193) || (ccspStatus == 190))
 						{
 							long long expiry_time = 0;
-
 							WebcfgError("ccspStatus is crash %d\n", ccspStatus);
 							snprintf(result,MAX_VALUE_LEN,"failed_retrying:%s", errDetails);
 							WebcfgDebug("The result is %s\n",result);
@@ -970,7 +969,7 @@ WEBCFG_STATUS retryMultipartSubdoc(webconfig_tmp_data_t *docNode, char *docName)
 							//To get the exact time diff for retry from present time do the below
 							updateRetryTimeDiff(expiry_time);
 
-							WebcfgInfo("the retry flag value is %d\n", get_doc_fail());
+							WebcfgDebug("the retry flag value is %d\n", get_doc_fail());
 						}
 						else
 						{
@@ -1093,7 +1092,6 @@ expire_timer_t * getTimerNode(char *docname)
 	expire_timer_t *temp = NULL;
 	temp = get_global_timer_node();
 
-	WebcfgDebug("getTimerNode. docname is %s\n", docname);
 	//Traverse through timer list & fetch required doc timer node.
 	while (NULL != temp)
 	{

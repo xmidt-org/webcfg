@@ -276,7 +276,7 @@ void test_eventEXPIRE()
 
 	multipartdocs_t *multipartdocs = (multipartdocs_t *)malloc(sizeof(multipartdocs_t));
 	multipartdocs->name_space = strdup("telemetry");
-	multipartdocs->data = (multipartdocs_t *)malloc(sizeof(multipartdocs_t));
+	multipartdocs->data = (char *)malloc(64);
 	multipartdocs->isSupplementarySync = 1;
 	multipartdocs->next = NULL;
 	int len=0;
@@ -352,7 +352,7 @@ void test_eventCrashNewVersion()
 	
 	multipartdocs_t *multipartdocs = (multipartdocs_t *)malloc(sizeof(multipartdocs_t));
 	multipartdocs->name_space = strdup("telemetry");
-	multipartdocs->data = (multipartdocs_t *)malloc(sizeof(multipartdocs_t));
+	multipartdocs->data = (char*)malloc(64);
 	multipartdocs->isSupplementarySync = 1;
 	multipartdocs->next = NULL;
 	int len=0;
@@ -403,7 +403,7 @@ void test_eventCrashSameVersion()
 
 	multipartdocs_t *multipartdocs = (multipartdocs_t *)malloc(sizeof(multipartdocs_t));
 	multipartdocs->name_space = strdup("telemetry");
-	multipartdocs->data = (multipartdocs_t *)malloc(sizeof(multipartdocs_t));
+	multipartdocs->data = (char *)malloc(64);
 	multipartdocs->isSupplementarySync = 1;
 	multipartdocs->next = NULL;
 	int len=0;

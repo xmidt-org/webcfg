@@ -25,13 +25,6 @@
 /*----------------------------------------------------------------------------*/
 /*                                   Macros                                   */
 /*----------------------------------------------------------------------------*/
-#ifdef BUILD_YOCTO
-#define FW_START_FILE		"/nvram/.FirmwareUpgradeStartTime"
-#define FW_END_FILE		    "/nvram/.FirmwareUpgradeEndTime"
-#else
-#define FW_START_FILE		"/tmp/.FirmwareUpgradeStartTime"
-#define FW_END_FILE		    "/tmp/.FirmwareUpgradeEndTime"
-#endif
 
 /*----------------------------------------------------------------------------*/
 /*                             External Functions                             */
@@ -41,7 +34,6 @@ char* printTime(long long time);
 void set_retry_timer(int value);
 int get_retry_timer();
 int checkMaintenanceTimer();
-//int readFWFiles(char* file_path, long *range);
 int maintenanceSyncSeconds();
 int retrySyncSeconds();
 long getTimeInSeconds(long long time);
@@ -51,4 +43,6 @@ void set_global_fw_end_time(long value);
 void set_global_retry_time(long value);
 long get_global_retry_time();
 int updateRetryTimeDiff(long long expiry_time);
+int checkRetryTimer( long long timestamp);
+long long getRetryExpiryTimeout();
 #endif

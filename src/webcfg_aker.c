@@ -276,7 +276,6 @@ AKER_STATUS processAkerSubdoc(webconfig_tmp_data_t *docNode, multipartdocs_t *ak
 		return AKER_FAILURE;
 	}
 
-	WebcfgDebug("gmp->entries_count %d\n",get_multipartdoc_count());
 	if(strcmp(gmp->name_space, "aker") == 0)
 	{
 		WebcfgDebug("gmp->name_space %s\n", gmp->name_space);

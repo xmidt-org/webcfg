@@ -44,7 +44,6 @@
 #define WEBPA_CREATE_HEADER        "/etc/parodus/parodus_create_file.sh"
 #define CCSP_CRASH_STATUS_CODE      192
 #define MAX_PARAMETERNAME_LEN		4096
-#define MAX_RETRY_TIMEOUT              900
 /*----------------------------------------------------------------------------*/
 /*                               Data Structures                              */
 /*----------------------------------------------------------------------------*/
@@ -125,7 +124,6 @@ void set_global_eventFlag()
 {
 	eventFlag = 1;
 }
-
 /*----------------------------------------------------------------------------*/
 /*                             Function Prototypes                            */
 /*----------------------------------------------------------------------------*/
@@ -195,11 +193,12 @@ WEBCFG_STATUS webcfg_http_request(char **configData, int r_count, int status, lo
 		if(transID !=NULL)
 		{
 			*transaction_id = strdup(transID);
-			WEBCFG_FREE(transID );
+			WEBCFG_FREE(transID);
 		}
 		WebcfgInfo("The get_global_supplementarySync() is %d\n", get_global_supplementarySync());
 		if(get_global_supplementarySync() == 0)
 		{
+			//loadInitURLFromFile(&webConfigURL);
 			Get_Webconfig_URL(configURL);
 			WebcfgDebug("primary sync url fetched is %s\n", configURL);
 		}
@@ -207,7 +206,7 @@ WEBCFG_STATUS webcfg_http_request(char **configData, int r_count, int status, lo
 		{
 			if(docname != NULL && strlen(docname)>0)
 			{
-				WebcfgInfo("Supplementary sync for %s\n",docname);
+				WebcfgDebug("Supplementary sync for %s\n",docname);
 				strncpy(docname_upper , docname,(sizeof(docname_upper)-1));
 				docname_upper[0] = toupper(docname_upper[0]);
 				WebcfgDebug("docname is %s and in uppercase is %s\n", docname, docname_upper);
@@ -215,15 +214,14 @@ WEBCFG_STATUS webcfg_http_request(char **configData, int r_count, int status, lo
 				WebcfgDebug("Supplementary sync url fetched is %s\n", configURL);
 				if( strcmp(configURL, "NULL") == 0)
 				{
-				WebcfgInfo("Supplementary sync with cloud is disabled as configURL is NULL\n");
-				WEBCFG_FREE(data.data);
-				WEBCFG_FREE(*transaction_id);
-				curl_slist_free_all(headers_list);
-				curl_easy_cleanup(curl);
-				return WEBCFG_FAILURE;
+					WebcfgInfo("Supplementary sync with cloud is disabled as configURL is NULL\n");
+					WEBCFG_FREE(data.data);
+					WEBCFG_FREE(*transaction_id);
+					curl_slist_free_all(headers_list);
+					curl_easy_cleanup(curl);
+					return WEBCFG_FAILURE;
 				}
 			}
-
 		}
 		if(strlen(configURL)>0)
 		{
@@ -232,12 +230,10 @@ WEBCFG_STATUS webcfg_http_request(char **configData, int r_count, int status, lo
 			webConfigURL = replaceMacWord(configURL, c, get_deviceMAC());
 			if(get_global_supplementarySync() == 0)
 			{
-				WebcfgDebug("Inside webcfg condition\n");
 				Set_Webconfig_URL(webConfigURL);
 			}
 			else
 			{
-				WebcfgDebug("Inside supplementary condition\n");
 				Set_Supplementary_URL(docname_upper, webConfigURL);
 			}
 		}
@@ -250,7 +246,7 @@ WEBCFG_STATUS webcfg_http_request(char **configData, int r_count, int status, lo
 			curl_easy_cleanup(curl);
 			return WEBCFG_FAILURE;
 		}
-		WebcfgInfo("ConfigURL fetched is %s\n", webConfigURL);
+		WebcfgDebug("ConfigURL fetched is %s\n", webConfigURL);
 
 		if(!get_global_supplementarySync())
 		{
@@ -452,7 +448,6 @@ WEBCFG_STATUS parseMultipartDocument(void *config_data, char *ct , size_t data_s
 		delete_mp_doc();
 		while((ptr_lb - str_body) < (int)data_size)
 		{
-
 			ptr_lb = memchr(ptr_lb, '-', data_size - (ptr_lb - str_body));
 			if(0 == memcmp(ptr_lb, last_line_boundary, strlen(last_line_boundary)))
 			{
@@ -563,7 +558,7 @@ WEBCFG_STATUS processMsgpackSubdoc(char *transaction_id)
 		WebcfgError("addToTmpList failed\n");
 	}
 
-	WebcfgInfo("mp->entries_count is %d\n",mp_count);
+	WebcfgDebug("mp->entries_count is %d\n",mp_count);
 
 	multipartdocs_t *mp = NULL;
 	mp = get_global_mp();
@@ -582,7 +577,7 @@ WEBCFG_STATUS processMsgpackSubdoc(char *transaction_id)
 			continue;
 		}
 
-		WebcfgInfo("check for current docs\n");
+		WebcfgDebug("check for current docs\n");
 		//Process subdocs with status "pending_apply" which indicates docs from current sync, skip all others.
 		if(strcmp(subdoc_node->status, "pending_apply") != 0)
 		{
@@ -600,8 +595,8 @@ WEBCFG_STATUS processMsgpackSubdoc(char *transaction_id)
 				WebcfgDebug("current_doc_count incremented to %d\n", current_doc_count);
 			}
 		}
-		WebcfgDebug("mp->name_space %s\n", mp->name_space);
-		WebcfgDebug("mp->etag %lu\n" , (long)mp->etag);
+		WebcfgInfo("mp->name_space %s\n", mp->name_space);
+		WebcfgInfo("mp->etag %lu\n" , (long)mp->etag);
 		WebcfgDebug("mp->data %s\n" , mp->data);
 
 		WebcfgDebug("mp->data_size is %zu\n", mp->data_size);
@@ -610,7 +605,7 @@ WEBCFG_STATUS processMsgpackSubdoc(char *transaction_id)
 		{
 			akerIndex = mp;
 			akerSet = 1;
-			WebcfgInfo("skip aker doc and process at the end\n");
+			WebcfgDebug("skip aker doc and process at the end\n");
 			mp = mp->next;
 			continue;
 		}
@@ -700,12 +695,10 @@ WEBCFG_STATUS processMsgpackSubdoc(char *transaction_id)
 							addWebConfgNotifyMsg(mp->name_space, mp->etag, "success", "none", subdoc_node->cloud_trans_id,0, "status",0, NULL, 200);
 							WebcfgDebug("deleteFromTmpList as doc is applied\n");
 							deleteFromTmpList(mp->name_space);
-
 							if(mp->isSupplementarySync == 0)
 							{
 								checkDBList(mp->name_space,mp->etag, NULL);
 								success_count++;
-								WebcfgDebug("The success_count is %d\n",success_count);
 							}
 						}
 
@@ -742,14 +735,12 @@ WEBCFG_STATUS processMsgpackSubdoc(char *transaction_id)
 					}
 					else
 					{
-						WebcfgError("setValues Fail. check 9005. ccspStatus : %d\n", ccspStatus);
 						if(ccspStatus == 9005)
 						{
 							subdocStatus = isSubDocSupported(mp->name_space);
-							WebcfgDebug("After isSubDocSupported\n");
 							if(subdocStatus != WEBCFG_SUCCESS)
 							{
-								WebcfgInfo("The ccspstatus is %d\n",ccspStatus);
+								WebcfgDebug("The ccspstatus is %d\n",ccspStatus);
 								ccspStatus = 204;
 							}
 						}
@@ -771,18 +762,22 @@ WEBCFG_STATUS processMsgpackSubdoc(char *transaction_id)
 							}
 							else
 							{
-
 								long long expiry_time = 0;
-
 								expiry_time = getRetryExpiryTimeout();
 								set_doc_fail(1);
 
 								updateFailureTimeStamp(subdoc_node, mp->name_space, expiry_time);
 								WebcfgDebug("The retry_timer is %d and timeout generated is %lld\n", get_retry_timer(), expiry_time);
-
+								//To get the exact time diff for retry from present time.
 								updateRetryTimeDiff(expiry_time);
-								//To get the exact time diff for retry from present time do the below
-								snprintf(result,MAX_VALUE_LEN,"crash_retrying:%s", errDetails);
+								if(ccspStatus == 204 )
+								{
+									snprintf(result,MAX_VALUE_LEN,"failed_retrying:%s", errDetails);
+								}
+								else
+								{
+									snprintf(result,MAX_VALUE_LEN,"crash_retrying:%s", errDetails);
+								}
 							}
 							WebcfgDebug("The result is %s\n",result);
 							updateTmpList(subdoc_node, mp->name_space, mp->etag, "failed", result, ccspStatus, 0, 1);
@@ -1924,10 +1919,9 @@ void delete_mp_doc()
 
 	while(temp != NULL)
 	{
-		//skip root delete
 		if(temp->isSupplementarySync == get_global_supplementarySync())
 		{
-			WebcfgInfo("Delete mp node--> mp_node->name_space is %s mp_node->etag is %lu mp_node->isSupplementarySync %d\n", temp->name_space, (long)temp->etag, temp->isSupplementarySync);
+			WebcfgDebug("Delete mp node--> mp_node->name_space is %s mp_node->etag is %lu mp_node->isSupplementarySync %d\n", temp->name_space, (long)temp->etag, temp->isSupplementarySync);
 			deleteFromMpList(temp->name_space);
 		}
 		temp = temp->next;
@@ -1935,17 +1929,17 @@ void delete_mp_doc()
 
 }
 
-//delete doc from webcfg Tmp list
+//delete doc from multipart list
 WEBCFG_STATUS deleteFromMpList(char* doc_name)
 {
 	multipartdocs_t *prev_node = NULL, *curr_node = NULL;
 
 	if( NULL == doc_name )
 	{
-		WebcfgError("Invalid value for doc\n");
+		WebcfgError("Invalid value for mp doc\n");
 		return WEBCFG_FAILURE;
 	}
-	WebcfgInfo("doc to be deleted: %s\n", doc_name);
+	WebcfgDebug("mp doc to be deleted: %s\n", doc_name);
 
 	prev_node = NULL;
 	pthread_mutex_lock (&multipart_t_mut);	
@@ -1982,7 +1976,7 @@ WEBCFG_STATUS deleteFromMpList(char* doc_name)
 		curr_node = curr_node->next;
 	}
 	pthread_mutex_unlock (&multipart_t_mut);
-	WebcfgError("Could not find the entry to delete from list\n");
+	WebcfgError("Could not find the entry to delete from mp list\n");
 	return WEBCFG_FAILURE;
 }
 
@@ -2118,16 +2112,15 @@ WEBCFG_STATUS checkRootUpdate()
 			break;
 		}
 		WebcfgDebug("Root check ====> temp->name %s\n", temp->name);
-		WebcfgDebug("temp->isSupplementarySync is %d\n", temp->isSupplementarySync);
 		if((temp->error_code == 204 && (temp->error_details != NULL && strstr(temp->error_details, "doc_unsupported") != NULL)) || (temp->isSupplementarySync == 1)) //skip supplementary docs
 		{
 			if(temp->isSupplementarySync)
 			{
-				WebcfgInfo("Skipping supplementary sub doc %s\n", temp->name);
+				WebcfgDebug("Skipping supplementary sub doc %s\n", temp->name);
 			}
 			else
 			{
-				WebcfgInfo("Skipping unsupported sub doc %s\n",temp->name);
+				WebcfgDebug("Skipping unsupported sub doc %s\n",temp->name);
 			}
 			WebcfgDebug("Error details: %s\n",temp->error_details);
 		}
@@ -2188,7 +2181,7 @@ void deleteRootAndMultipartDocs()
 	if(checkRootDelete() == WEBCFG_SUCCESS)
 	{
 		//Delete tmp queue root as all docs are applied
-		WebcfgInfo("Delete tmp queue root as all docs are applied\n");
+		WebcfgDebug("Delete tmp queue root as all docs are applied\n");
 		//WebcfgInfo("root version to delete is %lu\n", (long)version);
 		dStatus = deleteFromTmpList("root");
 		if(dStatus == 0)
@@ -2232,13 +2225,13 @@ void failedDocsRetry()
 
 				//To get the exact time diff for retry from present time do the below
 				time_diff = updateRetryTimeDiff(temp->retry_expiry_timestamp);
-				WebcfgInfo("The docname is %s and diff is %d retry time stamp is %s\n", temp->name, time_diff, printTime(temp->retry_expiry_timestamp));
+				WebcfgDebug("The docname is %s and diff is %d retry time stamp is %s\n", temp->name, time_diff, printTime(temp->retry_expiry_timestamp));
 				set_doc_fail(1);
 			}
 		}
 		else
 		{
-			WebcfgInfo("Retry skipped for %s (%s)\n",temp->name,temp->error_details);
+			WebcfgDebug("Retry skipped for %s (%s)\n",temp->name,temp->error_details);
 		}
 		temp= temp->next;
 	}
@@ -2286,41 +2279,3 @@ int get_multipartdoc_count()
 	}
 	return count;
 }
-
-//To set the retry_expiry_timestamp to 15 min from current time
-long long getRetryExpiryTimeout()
-{
-	struct timespec ts;
-	struct timeval tp;
-
-	gettimeofday(&tp, NULL);
-
-	ts.tv_sec = tp.tv_sec;
-	ts.tv_nsec = tp.tv_usec * 1000;
-
-	ts.tv_sec += MAX_RETRY_TIMEOUT;
-
-	return (long long)ts.tv_sec;
-}
-
-//To check the timer expiry for retry
-int checkRetryTimer( long long timestamp)
-{
-	struct timespec rt;
-
-	long long cur_time = 0;
-
-	clock_gettime(CLOCK_REALTIME, &rt);
-	cur_time = rt.tv_sec;
-
-	WebcfgDebug("The current time in device is %lld at %s\n", cur_time, printTime(cur_time));
-	WebcfgDebug("The Retry timestamp is %lld at %s\n", timestamp, printTime(timestamp));
-
-	if(cur_time >= timestamp)
-	{
-		WebcfgInfo("Retry timestamp is equal to current time\n");
-		return 1;
-	}
-	return 0;
-}
-

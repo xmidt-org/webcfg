@@ -56,6 +56,7 @@ SupplementaryDocs_t * get_global_spInfoTail(void);
 /*                             External Functions                             */
 /*----------------------------------------------------------------------------*/
 
+
 void initWebcfgProperties(char * filename)
 {
 	FILE *fp = NULL;
@@ -270,13 +271,13 @@ WEBCFG_STATUS isSupplementaryDoc(char *subDoc)
 			WebcfgDebug("The subdoc %s is present\n",sp->name);
 			if(strncmp(sp->name, subDoc, strlen(subDoc)) == 0)
 			{
-				WebcfgInfo("%s is supplementary\n",subDoc);
+				WebcfgDebug("subDoc %s is supplementary\n",subDoc);
 				return WEBCFG_SUCCESS;
 
 			}
 			else
 			{
-				WebcfgDebug("%s is not supplementary\n",subDoc);
+				WebcfgDebug("subDoc %s is not supplementary\n",subDoc);
 				return WEBCFG_FAILURE;
 			}
 		}
@@ -323,45 +324,48 @@ void supplementaryDocs()
 	char* docs = NULL;
 	char* docs_var = NULL;
 	docs = getsupplementaryDocs();
-	docs_var = strndup(docs,strlen(docs));
-	char* token = strtok(docs_var, ",");
-
-	while(token != NULL)
+	if (docs !=NULL)
 	{
-		SupplementaryDocs_t *spInfo = NULL;
-		spInfo = (SupplementaryDocs_t *)malloc(sizeof(SupplementaryDocs_t));
+		docs_var = strndup(docs,strlen(docs));
+		char* token = strtok(docs_var, ",");
 
-		if(spInfo == NULL)
+		while(token != NULL)
 		{
-			WebcfgError("Unable to allocate memory for supplementary docs\n");
-			WEBCFG_FREE(docs_var);
-			return;
+			SupplementaryDocs_t *spInfo = NULL;
+			spInfo = (SupplementaryDocs_t *)malloc(sizeof(SupplementaryDocs_t));
+
+			if(spInfo == NULL)
+			{
+				WebcfgError("Unable to allocate memory for supplementary docs\n");
+				WEBCFG_FREE(docs_var);
+				return;
+			}
+
+			memset(spInfo, 0, sizeof(SupplementaryDocs_t));
+
+			WebcfgDebug("The value is %s\n",token);
+			spInfo->name = strdup(token);
+			spInfo->next = NULL;
+
+			if(g_spInfoTail == NULL)
+			{
+				g_spInfoHead = spInfo;
+				g_spInfoTail = spInfo;
+			}
+			else
+			{
+				SupplementaryDocs_t *temp = NULL;
+				temp = get_global_spInfoTail();
+				temp->next = spInfo;
+				g_spInfoTail = spInfo;
+			}
+
+			WebcfgDebug("The supplementary_doc[%d] is %s\n", count, spInfo->name);
+			count++;
+			token = strtok(NULL, ",");
 		}
-
-		memset(spInfo, 0, sizeof(SupplementaryDocs_t));
-
-		WebcfgDebug("The value is %s\n",token);
-		spInfo->name = strdup(token);
-		spInfo->next = NULL;
-
-		if(g_spInfoTail == NULL)
-		{
-			g_spInfoHead = spInfo;
-			g_spInfoTail = spInfo;
-		}
-		else
-		{
-			SupplementaryDocs_t *temp = NULL;
-			temp = get_global_spInfoTail();
-			temp->next = spInfo;
-			g_spInfoTail = spInfo;
-		}
-
-		WebcfgDebug("The supplementary_doc[%d] is %s\n", count, spInfo->name);
-		count++;
-		token = strtok(NULL, ",");
+		WEBCFG_FREE(docs_var);
 	}
-	WEBCFG_FREE(docs_var);
 }
 
 void displaystruct()

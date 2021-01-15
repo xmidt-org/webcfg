@@ -47,7 +47,6 @@
 #define TEST_FILE_LOCATION		"/tmp/multipart.bin"
 #endif
 #endif
-
 /*----------------------------------------------------------------------------*/
 /*                               Data Structures                              */
 /*----------------------------------------------------------------------------*/
@@ -112,7 +111,7 @@ void *WebConfigMultipartTask(void *status)
 
 	initDB(WEBCFG_DB_FILE);
 
-//To disable supplementary sync for RDKV platforms
+	//To disable supplementary sync for RDKV platforms
 #if !defined(RDK_PERSISTENT_PATH_VIDEO)
 	initMaintenanceTimer();
 #endif
@@ -190,7 +189,7 @@ void *WebConfigMultipartTask(void *status)
 		clock_gettime(CLOCK_REALTIME, &ts);
 
 		retry_flag = get_doc_fail();
-		WebcfgInfo("The retry flag value is %d\n", retry_flag);
+		WebcfgDebug("The retry flag value is %d\n", retry_flag);
 
 		if ( retry_flag == 0)
 		{
@@ -218,7 +217,7 @@ void *WebConfigMultipartTask(void *status)
 		{
 			WebcfgDebug("B4 sync_condition pthread_cond_timedwait\n");
 			rv = pthread_cond_timedwait(&sync_condition, &sync_mutex, &ts);
-			WebcfgDebug("The retry flag value is %d\n", get_doc_fail());
+			WebcfgInfo("The retry flag value is %d\n", get_doc_fail());
 			WebcfgDebug("The value of rv %d\n", rv);
 		}
 		else 
@@ -240,7 +239,7 @@ void *WebConfigMultipartTask(void *status)
 			{
 				time(&t);
 				wait_flag = 0;
-				WebcfgDebug("Supplimentary Sync Interval %d sec and syncing at %s\n",value,ctime(&t));
+				WebcfgDebug("Supplementary Sync Interval %d sec and syncing at %s\n",value,ctime(&t));
 			}
 		}
 		else if(!rv && !g_shutdown)
@@ -688,4 +687,3 @@ void JoinThread (pthread_t threadId)
 		WebcfgError("Error joining thread threadId\n");
 	}
 }
-
