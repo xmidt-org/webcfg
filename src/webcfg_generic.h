@@ -45,7 +45,8 @@ char * getConnClientParamName();
 char * getFirmwareVersion();
 char* get_deviceMAC();
 char * getRebootReason();
-
+char * getFirmwareUpgradeStartTime();
+char * getFirmwareUpgradeEndTime();
 /* Getter function to return systemReadyTime in UTC format */
 char *get_global_systemReadyTime();
 
