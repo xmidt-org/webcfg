@@ -55,6 +55,14 @@ target_link_libraries (test_multipart -lcunit -lmsgpackc -lcurl -lpthread  -lm -
 
 target_link_libraries (test_multipart gcov -Wl,--no-as-needed )
 #-------------------------------------------------------------------------------
+#   test_multipart_supplementary
+#-------------------------------------------------------------------------------
+add_test(NAME test_mul_supp COMMAND ${MEMORY_CHECK} ./test_mul_supp)
+add_executable(test_mul_supp test_mul_supp.c ../src/webcfg_param.c ../src/webcfg_multipart.c ../src/webcfg_helpers.c ../src/webcfg.c ../src/webcfg_auth.c ../src/webcfg_notify.c ../src/webcfg_db.c ../src/webcfg_pack.c ../src/webcfg_blob.c ../src/webcfg_event.c ../src/webcfg_generic.c ../src/webcfg_client.c ../src/webcfg_aker.c ../src/webcfg_metadata.c ../src/webcfg_timer.c)
+target_link_libraries (test_mul_supp -lcunit -lmsgpackc -lcurl -lpthread  -lm -luuid -ltrower-base64 -lwdmp-c -lcimplog -lcjson -llibparodus -lnanomsg -lwrp-c)
+
+target_link_libraries (test_mul_supp gcov -Wl,--no-as-needed )
+#-------------------------------------------------------------------------------
 #   test_events
 #-------------------------------------------------------------------------------
 add_test(NAME test_events COMMAND ${MEMORY_CHECK} ./test_events)
