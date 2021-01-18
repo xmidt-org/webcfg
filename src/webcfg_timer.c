@@ -201,7 +201,7 @@ int checkMaintenanceTimer()
 	if(cur_time_in_sec >= get_global_maintenance_time())
 	{
 		set_global_supplementarySync(1);
-		WebcfgInfo("Rand time is equal to current time\n");
+		WebcfgInfo("Maintenance time is equal to current time\n");
 		return 1;
 	}
 	return 0;
