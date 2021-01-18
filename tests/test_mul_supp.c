@@ -30,6 +30,7 @@
 #include <base64.h>
 #include "../src/webcfg_generic.h"
 #include "../src/webcfg_event.h"
+#include "../src/webcfg_timer.h"
 #define FILE_URL "/tmp/webcfg_url"
 
 #define UNUSED(x) (void )(x)
@@ -42,7 +43,7 @@ void printTest();
 
 char* get_deviceMAC()
 {
-	strcpy(device_mac, "b42xxxxxxxxx");
+	char *device_mac = strdup("b42xxxxxxxxx");	
 	return device_mac;
 }
 void setValues(const param_t paramVal[], const unsigned int paramCount, const int setType, char *transactionId, money_trace_spans *timeSpan, WDMP_STATUS *retStatus, int *ccspStatus)
@@ -174,40 +175,121 @@ void test_multipart()
 		printf("\nProvide config URL as argument\n");
 		return;
 	}
-
 	initWebcfgProperties(WEBCFG_PROPERTIES_FILE);
 	initWebConfigNotifyTask();
 	processWebcfgEvents();
 	initEventHandlingTask();
 	initWebConfigClient();
+	initMaintenanceTimer();
+	set_global_supplementarySync(1);
+	printTest();
+	processWebconfgSync((int)status, "telemetry");
+
+
+}
+void test_Primary_supp()
+{	
+	unsigned long status = 0;
+
+	if(url == NULL)
+	{
+		printf("\nProvide config URL as argument\n");
+		return;
+	}
+	initMaintenanceTimer();
 	set_global_supplementarySync(0);
 	printTest();
 	processWebconfgSync((int)status, NULL);
+	set_global_supplementarySync(1);
+	printTest();
+	processWebconfgSync((int)status, "telemetry");
+}
+
+void test_Initdb_Primary_primary()
+{
 	
-/*	set_global_supplementarySync(0);
-	printTest();
-	processWebconfgSync((int)status);
-	set_global_supplementarySync(1);
-	printTest();
-	processWebconfgSync((int)status);
-	set_global_supplementarySync(1);
-	printTest();
-	processWebconfgSync((int)status);
+	unsigned long status = 0;
+
+	if(url == NULL)
+	{
+		printf("\nProvide config URL as argument\n");
+		return;
+	}	
+	initDB(WEBCFG_DB_FILE);
+
 	set_global_supplementarySync(0);
 	printTest();
-	processWebconfgSync((int)status);
+	processWebconfgSync((int)status, NULL);
+
 	set_global_supplementarySync(0);
 	printTest();
-	processWebconfgSync((int)status);
-	set_global_supplementarySync(1);
-	printTest();
-	processWebconfgSync((int)status);
+	processWebconfgSync((int)status, NULL);
+
+}
+void test_Initdb_Primary_supp()
+{
+	
+	unsigned long status = 0;
+
+	if(url == NULL)
+	{
+		printf("\nProvide config URL as argument\n");
+		return;
+	}	
+	initDB(WEBCFG_DB_FILE);
+
 	set_global_supplementarySync(0);
 	printTest();
-	processWebconfgSync((int)status);
+	processWebconfgSync((int)status, NULL);
+
 	set_global_supplementarySync(1);
 	printTest();
-	processWebconfgSync((int)status);*/
+	processWebconfgSync((int)status, "telemetry");
+
+}
+void test_supp_supp()
+{
+	
+	unsigned long status = 0;
+
+	if(url == NULL)
+	{
+		printf("\nProvide config URL as argument\n");
+		return;
+	}	
+	
+
+	set_global_supplementarySync(1);
+	printTest();
+	processWebconfgSync((int)status, "telemetry");
+
+	set_global_supplementarySync(1);
+	printTest();
+	processWebconfgSync((int)status, "telemetry");
+
+}
+void test_pri_supp_pri()
+{
+	unsigned long status = 0;
+
+	if(url == NULL)
+	{
+		printf("\nProvide config URL as argument\n");
+		return;
+	}	
+	
+	initMaintenanceTimer();
+	set_global_supplementarySync(0);
+	printTest();
+	processWebconfgSync((int)status, NULL);
+
+	set_global_supplementarySync(1);
+	printTest();
+	processWebconfgSync((int)status, "telemetry");
+
+	set_global_supplementarySync(0);
+	printTest();
+	processWebconfgSync((int)status, NULL);
 
 }
 
@@ -227,6 +309,11 @@ void add_suites( CU_pSuite *suite )
 {
     *suite = CU_add_suite( "tests", NULL, NULL );
     CU_add_test( *suite, "Full", test_multipart);
+    CU_add_test( *suite, "Full", test_Primary_supp);
+    CU_add_test( *suite, "Full", test_Initdb_Primary_primary);
+    CU_add_test( *suite, "Full", test_Initdb_Primary_supp);
+    CU_add_test( *suite, "Full", test_supp_supp);
+    CU_add_test( *suite, "Full", test_pri_supp_pri);
 }
 
 /*----------------------------------------------------------------------------*/
