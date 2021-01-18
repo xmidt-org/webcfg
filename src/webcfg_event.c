@@ -25,6 +25,7 @@
 #include "webcfg_db.h"
 #include "webcfg_param.h"
 #include "webcfg_blob.h"
+#include "webcfg_timer.h"
 /*----------------------------------------------------------------------------*/
 /*                                   Macros                                   */
 /*----------------------------------------------------------------------------*/
@@ -856,8 +857,8 @@ WEBCFG_STATUS retryMultipartSubdoc(webconfig_tmp_data_t *docNode, char *docName)
 	{
 		if(strcmp(gmp->name_space, docName) == 0)
 		{
-			WebcfgInfo("gmp->name_space %s\n", gmp->name_space);
-			WebcfgInfo("gmp->etag %lu\n" , (long)gmp->etag);
+			WebcfgDebug("gmp->name_space %s\n", gmp->name_space);
+			WebcfgDebug("gmp->etag %lu\n" , (long)gmp->etag);
 			WebcfgDebug("gmp->data %s\n" , gmp->data);
 			WebcfgDebug("gmp->data_size is %zu\n", gmp->data_size);
 
@@ -922,7 +923,7 @@ WEBCFG_STATUS retryMultipartSubdoc(webconfig_tmp_data_t *docNode, char *docName)
 							addWebConfgNotifyMsg(gmp->name_space, gmp->etag, "success", "none", docNode->cloud_trans_id, 0, "status", 0, NULL, 200);
 							WebcfgDebug("deleteFromTmpList as scalar doc is applied\n");
 							deleteFromTmpList(gmp->name_space);
-							WebcfgInfo("docNode->isSupplementarySync is %d\n", docNode->isSupplementarySync);
+							WebcfgDebug("docNode->isSupplementarySync is %d\n", docNode->isSupplementarySync);
 							if(docNode->isSupplementarySync == 0)
 							{
 								checkDBList(gmp->name_space,gmp->etag, NULL);
@@ -955,11 +956,7 @@ WEBCFG_STATUS retryMultipartSubdoc(webconfig_tmp_data_t *docNode, char *docName)
 
 						if((ccspStatus == 192) || (ccspStatus == 204) || (ccspStatus == 191) || (ccspStatus == 193) || (ccspStatus == 190))
 						{
-							struct timespec ct;
-							long long present_time = 0;
 							long long expiry_time = 0;
-							int time_diff = 0;
-
 							WebcfgError("ccspStatus is crash %d\n", ccspStatus);
 							snprintf(result,MAX_VALUE_LEN,"failed_retrying:%s", errDetails);
 							WebcfgDebug("The result is %s\n",result);
@@ -969,23 +966,10 @@ WEBCFG_STATUS retryMultipartSubdoc(webconfig_tmp_data_t *docNode, char *docName)
 							set_doc_fail(1);
 							updateFailureTimeStamp(docNode, gmp->name_space, expiry_time);
 
-							clock_gettime(CLOCK_REALTIME, &ct);
-							present_time = ct.tv_sec;
-
 							//To get the exact time diff for retry from present time do the below
-							time_diff = expiry_time - present_time;
-							if(get_retry_timer() > time_diff)
-							{
-								set_retry_timer(time_diff);
-								WebcfgDebug("The retry_timer is %d after set\n", get_retry_timer());
-								set_global_retry_time(getTimeInSeconds(expiry_time));
-							}
-							if(get_global_retry_time() == 0)
-							{
-								set_global_retry_time(getTimeInSeconds(present_time+900));
-							}
+							updateRetryTimeDiff(expiry_time);
 
-							WebcfgInfo("the retry flag value is %d\n", get_doc_fail());
+							WebcfgDebug("the retry flag value is %d\n", get_doc_fail());
 						}
 						else
 						{
@@ -1108,7 +1092,6 @@ expire_timer_t * getTimerNode(char *docname)
 	expire_timer_t *temp = NULL;
 	temp = get_global_timer_node();
 
-	WebcfgDebug("getTimerNode. docname is %s\n", docname);
 	//Traverse through timer list & fetch required doc timer node.
 	while (NULL != temp)
 	{

@@ -68,7 +68,4 @@ int get_multipartdoc_count();
 WEBCFG_STATUS deleteFromMpList(char* doc_name);
 void addToMpList(uint32_t etag, char *name_space, char *data, size_t data_size);
 void delete_mp_doc();
-void delete_tmp_docs_list();
-int checkRetryTimer( long long timestamp);
-long long getRetryExpiryTimeout();
 #endif

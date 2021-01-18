@@ -24,7 +24,7 @@
 #include "webcfg_log.h"
 #include "webcfg_db.h"
 #include "webcfg_pack.h"
-
+#include "webcfg_timer.h"
 /*----------------------------------------------------------------------------*/
 /*                                   Macros                                   */
 /*----------------------------------------------------------------------------*/
@@ -397,7 +397,7 @@ WEBCFG_STATUS addToTmpList()
 	checkTmpRootUpdate();
 
 	delete_tmp_docs_list();
-	WebcfgInfo("Deleted existing tmp list based on sync type, proceed to addToTmpList\n");
+	WebcfgDebug("Deleted existing tmp list based on sync type, proceed to addToTmpList\n");
 
 	multipartdocs_t *mp_node = NULL;
 	mp_node = get_global_mp();
@@ -416,7 +416,7 @@ WEBCFG_STATUS addToTmpList()
 			{
 				memset( new_node, 0, sizeof( webconfig_tmp_data_t ) );
 
-				WebcfgInfo("Adding root doc to list\n");
+				WebcfgDebug("Adding root doc to list\n");
 				new_node->name = strdup("root");
 				new_node->version = 0;
 				if(!get_global_supplementarySync())
@@ -499,11 +499,8 @@ WEBCFG_STATUS addToTmpList()
 		}
 		WebcfgDebug("numOfMpDocs %d\n", numOfMpDocs);
 
-		//if(mp_count+1 == numOfMpDocs) //TODO:check if it can be optimized based on count.
-		//{
 			WebcfgDebug("addToTmpList success\n");
 			retStatus = WEBCFG_SUCCESS;
-		//}
 	}
 	WebcfgDebug("addToList return %d\n", retStatus);
 	return retStatus;
@@ -729,7 +726,7 @@ void checkTmpRootUpdate()
    {
 	webconfig_tmp_data_t * root_node = NULL;
 	root_node = getTmpNode("root");
-	WebcfgInfo("Update root version %lu to tmp list.\n", (long)get_global_root());
+	WebcfgDebug("Update root version %lu to tmp list.\n", (long)get_global_root());
 	updateTmpList(root_node, "root", get_global_root(), "pending", "none", 0, 0, 0);
    }
    WebcfgDebug("root updateTmpList done\n");
@@ -1085,7 +1082,6 @@ int process_webcfgdbblob( blob_struct_t *bd, msgpack_object *obj )
 
     return 0;
 }
-
 char * base64blobencoder(char * blob_data, size_t blob_size )
 {
 	char* b64buffer =  NULL;
@@ -1159,7 +1155,7 @@ WEBCFG_STATUS updateFailureTimeStamp(webconfig_tmp_data_t *temp, char *docname, 
 		if( strcmp(docname, temp->name) == 0)
 		{
 			temp->retry_expiry_timestamp = timestamp;
-			WebcfgInfo("doc %s will retry at %s\n", docname, printTime(timestamp));
+			WebcfgInfo("doc %s retry timestamp updated as %s\n", docname, printTime(timestamp));
 			pthread_mutex_unlock (&webconfig_tmp_data_mut);
 			WebcfgDebug("mutex_unlock in current temp details\n");
 			return WEBCFG_SUCCESS;

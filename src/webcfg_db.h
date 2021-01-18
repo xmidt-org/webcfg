@@ -129,6 +129,8 @@ webconfig_tmp_data_t * getTmpNode(char *docname);
 
 void delete_tmp_list();
 
+void delete_tmp_docs_list();
+
 int get_numOfMpDocs();
 
 int get_successDocCount();
