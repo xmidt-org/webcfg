@@ -48,6 +48,9 @@ typedef struct webconfig_tmp_data
 	int retry_count;
 	uint16_t error_code;
 	uint16_t trans_id;
+	int isSupplementarySync;
+	long long retry_timestamp;
+	char * cloud_trans_id;
         struct webconfig_tmp_data *next;
 } webconfig_tmp_data_t;
 
@@ -114,7 +117,7 @@ webconfig_tmp_data_t * get_global_tmp_node(void);
 
 void set_global_tmp_node(webconfig_tmp_data_t *new);
 
-WEBCFG_STATUS addToTmpList( multipart_t *mp);
+WEBCFG_STATUS addToTmpList();
 
 void addToDBList(webconfig_db_data_t *webcfgdb);
 
@@ -124,7 +127,9 @@ WEBCFG_STATUS deleteFromTmpList(char* doc_name);
 
 webconfig_tmp_data_t * getTmpNode(char *docname);
 
-void delete_tmp_doc_list();
+void delete_tmp_list();
+
+void delete_tmp_docs_list();
 
 int get_numOfMpDocs();
 
@@ -141,6 +146,10 @@ char * get_DB_BLOB_base64();
 void checkDBList(char *docname, uint32_t version,char *rootstr);
 
 WEBCFG_STATUS updateDBlist(char *docname, uint32_t version,char *rootstr);
+
+void checkTmpList();
+
+void checkTmpRootUpdate();
 
 int writebase64ToDBFile(char *base64_file_path, char *data);
 
@@ -167,4 +176,5 @@ webconfig_db_data_t* decodeData(const void * data, size_t len);
  */
 const char* webcfgdbparam_strerror( int errnum );
 
+WEBCFG_STATUS updateFailureTimeStamp(webconfig_tmp_data_t *temp, char *docname, long long timestamp);
 #endif

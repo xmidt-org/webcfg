@@ -33,6 +33,8 @@
 #include "webcfg_aker.h"
 #include "webcfg_metadata.h"
 #include "webcfg_event.h"
+#include "webcfg_blob.h"
+#include "webcfg_timer.h"
 /*----------------------------------------------------------------------------*/
 /*                                   Macros                                   */
 /*----------------------------------------------------------------------------*/
@@ -59,6 +61,7 @@ bool g_shutdown  = false;
 #ifdef MULTIPART_UTILITY
 static int g_testfile = 0;
 #endif
+static int g_supplementarySync = 0;
 /*----------------------------------------------------------------------------*/
 /*                             Function Prototypes                            */
 /*----------------------------------------------------------------------------*/
@@ -91,6 +94,11 @@ void *WebConfigMultipartTask(void *status)
 	int forced_sync=0;
         int Status = 0;
 	int retry_flag = 0;
+	int maintenance_doc_sync = 0;
+	char *syncDoc = NULL;
+	int value = 0;
+	int wait_flag = 1;
+	time_t t;
 	struct timespec ts;
 	Status = (unsigned long)status;
 
@@ -103,19 +111,72 @@ void *WebConfigMultipartTask(void *status)
 
 	initDB(WEBCFG_DB_FILE);
 
-	processWebconfgSync((int)Status);
+	//To disable supplementary sync for RDKV platforms
+#if !defined(RDK_PERSISTENT_PATH_VIDEO)
+	initMaintenanceTimer();
+#endif
+	//For Primary sync set flag to 0
+	set_global_supplementarySync(0);
+	processWebconfgSync((int)Status, NULL);
+
+	//For supplementary sync set flag to 1
+	set_global_supplementarySync(1);
+
+	SupplementaryDocs_t *spDocs = NULL;
+	spDocs = get_global_spInfoHead();
+
+	while(spDocs != NULL)
+	{
+		if(spDocs->name != NULL)
+		{
+			WebcfgInfo("Supplementary sync for %s\n",spDocs->name);
+			processWebconfgSync((int)Status, spDocs->name);
+		}
+		spDocs = spDocs->next;
+	}
+
+	//Resetting the supplementary sync
+	set_global_supplementarySync(0);
 
 	while(1)
 	{
 		if(forced_sync)
 		{
 			WebcfgDebug("Triggered Forced sync\n");
-			processWebconfgSync((int)Status);
+			processWebconfgSync((int)Status, syncDoc);
 			WebcfgDebug("reset forced_sync after sync\n");
 			forced_sync = 0;
+			if(get_global_supplementarySync() && syncDoc !=NULL)
+			{
+				WEBCFG_FREE(syncDoc);
+			}
 			setForceSync("", "", 0);
+			set_global_supplementarySync(0);
 		}
 
+		if(!wait_flag)
+		{
+			if(maintenance_doc_sync == 1 && checkMaintenanceTimer() == 1 )
+			{
+				WebcfgDebug("Triggered Supplementary doc boot sync\n");
+				SupplementaryDocs_t *sp = NULL;
+				sp = get_global_spInfoHead();
+
+				while(sp != NULL)
+				{
+					if(sp->name != NULL)
+					{
+						WebcfgInfo("Supplementary sync for %s\n",sp->name);
+						processWebconfgSync((int)Status, sp->name);
+					}
+					sp = sp->next;
+				}
+
+				initMaintenanceTimer();
+				maintenance_doc_sync = 0;
+				set_global_supplementarySync(0);
+			}
+		}
 		pthread_mutex_lock (&sync_mutex);
 
 		if (g_shutdown)
@@ -125,29 +186,61 @@ void *WebConfigMultipartTask(void *status)
 			break;
 		}
 
+		clock_gettime(CLOCK_REALTIME, &ts);
+
 		retry_flag = get_doc_fail();
 		WebcfgDebug("The retry flag value is %d\n", retry_flag);
-		if (retry_flag == 1)
-		{
-			clock_gettime(CLOCK_REALTIME, &ts);
-			ts.tv_sec += 900;
 
+		if ( retry_flag == 0)
+		{
+		//To disable supplementary sync for RDKV platforms
+		#if !defined(RDK_PERSISTENT_PATH_VIDEO)
+			set_retry_timer(maintenanceSyncSeconds());
+			ts.tv_sec += get_retry_timer();
+			maintenance_doc_sync = 1;
+			WebcfgInfo("The Maintenance Sync triggers at %s\n", printTime((long long)ts.tv_sec));
+		#else
+			maintenance_doc_sync = 0;
+		#endif
+		}
+		else
+		{
+			if(get_global_retry_timestamp() != 0)
+			{
+				set_retry_timer(retrySyncSeconds());
+			}
+			ts.tv_sec += get_retry_timer();
+			WebcfgDebug("The retry triggers at %s\n", printTime((long long)ts.tv_sec));
+		}
+
+		if(retry_flag == 1 || maintenance_doc_sync == 1)
+		{
 			WebcfgDebug("B4 sync_condition pthread_cond_timedwait\n");
 			rv = pthread_cond_timedwait(&sync_condition, &sync_mutex, &ts);
-			WebcfgInfo("The retry flag value is %d\n", get_doc_fail());
-			WebcfgInfo("The value of rv %d\n", rv);
+			WebcfgDebug("The retry flag value is %d\n", get_doc_fail());
+			WebcfgDebug("The value of rv %d\n", rv);
 		}
 		else 
 		{
 			rv = pthread_cond_wait(&sync_condition, &sync_mutex);
 		}
 
-		if(rv == ETIMEDOUT && get_doc_fail() == 1)
+		if(rv == ETIMEDOUT && !g_shutdown)
 		{
-			WebcfgDebug("Inside the timedout condition\n");
-			set_doc_fail(0);
-			failedDocsRetry();
-			WebcfgDebug("After the failedDocsRetry\n");
+			if(get_doc_fail() == 1)
+			{
+				set_doc_fail(0);
+				set_retry_timer(900);
+				set_global_retry_timestamp(0);
+				failedDocsRetry();
+				WebcfgDebug("After the failedDocsRetry\n");
+			}
+			else
+			{
+				time(&t);
+				wait_flag = 0;
+				WebcfgDebug("Supplementary Sync Interval %d sec and syncing at %s\n",value,ctime(&t));
+			}
 		}
 		else if(!rv && !g_shutdown)
 		{
@@ -162,7 +255,17 @@ void *WebConfigMultipartTask(void *status)
 				if((ForceSyncDoc != NULL) && strlen(ForceSyncDoc)>0)
 				{
 					forced_sync = 1;
+					wait_flag = 1;
 					WebcfgDebug("Received signal interrupt to Force Sync\n");
+
+					//To check poke string received is supplementary doc or not.
+					if(isSupplementaryDoc(ForceSyncDoc) == WEBCFG_SUCCESS)
+					{
+						WebcfgInfo("Received supplementary poke request for %s\n", ForceSyncDoc);
+						set_global_supplementarySync(1);
+						syncDoc = strdup(ForceSyncDoc);
+						WebcfgDebug("syncDoc is %s\n", syncDoc);
+					}
 					WEBCFG_FREE(ForceSyncDoc);
 					WEBCFG_FREE(ForceSyncTransID);
 				}
@@ -218,15 +321,24 @@ void *WebConfigMultipartTask(void *status)
 	reset_global_eventFlag();
 	set_doc_fail( 0);
 	reset_successDocCount();
+	set_global_maintenance_time(0);
+	set_global_retry_timestamp(0);
+	set_global_fw_start_time(0);
+	set_global_fw_end_time(0);
+	set_retry_timer(0);
+	set_global_supplementarySync(0);
 
 	//delete tmp, db, and mp cache lists.
-	delete_tmp_doc_list();
+	delete_tmp_list();
 
 	WebcfgDebug("webcfgdb_destroy\n");
 	webcfgdb_destroy (get_global_db_node() );
 
 	WebcfgDebug("multipart_destroy\n");
-	multipart_destroy(get_global_mp());
+	delete_multipart();
+
+	WebcfgDebug("supplementary_destroy\n");
+	delete_supplementary_list();
 
 	WebcfgInfo("B4 pthread_exit\n");
 	pthread_exit(0);
@@ -265,10 +377,21 @@ void set_g_testfile(int value)
     g_testfile = value;
 }
 #endif
+
+void set_global_supplementarySync(int value)
+{
+    g_supplementarySync = value;
+}
+
+int get_global_supplementarySync()
+{
+    return g_supplementarySync;
+}
+
 /*----------------------------------------------------------------------------*/
 /*                             Internal functions                             */
 /*----------------------------------------------------------------------------*/
-void processWebconfgSync(int status)
+void processWebconfgSync(int status, char* docname)
 {
 	int retry_count=0;
 	int r_count=0;
@@ -283,6 +406,7 @@ void processWebconfgSync(int status)
 	WebcfgDebug("========= Start of processWebconfgSync =============\n");
 	while(1)
 	{
+		transaction_uuid =NULL;
 		#ifdef MULTIPART_UTILITY
 		if(testUtility()==1)
 		{
@@ -296,7 +420,7 @@ void processWebconfgSync(int status)
 			retry_count=0;
 			break;
 		}
-		configRet = webcfg_http_request(&webConfigData, r_count, status, &res_code, &transaction_uuid, ct, &dataSize);
+		configRet = webcfg_http_request(&webConfigData, r_count, status, &res_code, &transaction_uuid, ct, &dataSize, docname);
 		if(configRet == 0)
 		{
 			rv = handlehttpResponse(res_code, webConfigData, retry_count, transaction_uuid, ct, dataSize);
@@ -309,7 +433,7 @@ void processWebconfgSync(int status)
 		else
 		{
 			WebcfgError("Failed to get webConfigData from cloud\n");
-			//WEBCFG_FREE(transaction_uuid);
+			WEBCFG_FREE(transaction_uuid);
 		}
 		WebcfgInfo("webcfg_http_request BACKOFF_SLEEP_DELAY_SEC is %d seconds\n", BACKOFF_SLEEP_DELAY_SEC);
 		sleep(BACKOFF_SLEEP_DELAY_SEC);
@@ -377,6 +501,7 @@ int handlehttpResponse(long response_code, char *webConfigData, int retry_count,
 				WebcfgInfo("webConfigData content length is 0\n");
 				refreshConfigVersionList(version, response_code);
 				WEBCFG_FREE(contentLength);
+				set_global_contentLen(NULL);
 				WEBCFG_FREE(transaction_uuid);
 				WEBCFG_FREE(webConfigData);
 				return 1;

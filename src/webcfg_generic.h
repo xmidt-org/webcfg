@@ -39,11 +39,14 @@ char * getDeviceBootTime();
 char * getSerialNumber();
 char * getProductClass();
 char * getModelName();
+char * getPartnerID();
+char * getAccountID();
 char * getConnClientParamName();
 char * getFirmwareVersion();
 char* get_deviceMAC();
 char * getRebootReason();
-
+char * getFirmwareUpgradeStartTime();
+char * getFirmwareUpgradeEndTime();
 /* Getter function to return systemReadyTime in UTC format */
 char *get_global_systemReadyTime();
 
@@ -52,6 +55,8 @@ int setForceSync(char* pString, char *transactionId,int *session_status);
 int getForceSync(char** pString, char **transactionId);
 int Get_Webconfig_URL( char *pString);
 int Set_Webconfig_URL( char *pString);
+int Get_Supplementary_URL( char *name, char *pString);
+int Set_Supplementary_URL( char *name, char *pString);
 
 /**
  * @brief setValues interface sets the parameter value.

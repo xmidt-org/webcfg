@@ -24,20 +24,17 @@
 #define WEBCFG_FREE(__x__) if(__x__ != NULL) { free((void*)(__x__)); __x__ = NULL;} else {printf("Trying to free null pointer\n");}
 
 #define ATOMIC_SET_WEBCONFIG	    3
-#define MAX_VALUE_LEN			128
-typedef struct
+#define MAX_VALUE_LEN		128
+
+typedef struct multipartdocs
 {
     uint32_t  etag;
     char  *name_space;
     char  *data;
     size_t data_size;
+    int isSupplementarySync; 
+    struct multipartdocs *next;
 } multipartdocs_t;
-
-typedef struct {
-    multipartdocs_t *entries;
-    size_t   entries_count;
-} multipart_t;
-
 
 int readFromFile(char *filename, char **data, int *len);
 WEBCFG_STATUS parseMultipartDocument(void *config_data, char *ct , size_t data_size, char* trans_uuid);
@@ -46,22 +43,29 @@ void print_tmp_doc_list(size_t mp_count);
 void loadInitURLFromFile(char **url);
 uint32_t get_global_root();
 WEBCFG_STATUS checkRootUpdate();
+WEBCFG_STATUS checkRootDelete();
 void updateRootVersionToDB();
+void deleteRootAndMultipartDocs();
 char * get_global_transID(void);
 char* generate_trans_uuid();
 void set_global_transID(char *id);
-multipart_t * get_global_mp(void);
-void set_global_mp(multipart_t *new);
+multipartdocs_t * get_global_mp(void);
+void set_global_mp(multipartdocs_t *new);
 void reqParam_destroy( int paramCnt, param_t *reqObj );
 void failedDocsRetry();
 WEBCFG_STATUS validate_request_param(param_t *reqParam, int paramCount);
 void refreshConfigVersionList(char *versionsList, int http_status);
 char * get_global_contentLen(void);
+void set_global_contentLen(char * value);
 void getRootDocVersionFromDBCache(uint32_t *rt_version, char **rt_string, int *subdoclist);
 void derive_root_doc_version_string(char **rootVersion, uint32_t *root_ver, int status);
 void reset_global_eventFlag();
 int get_global_eventFlag(void);
 void set_global_eventFlag();
 pthread_t get_global_process_threadid();
-void multipart_destroy( multipart_t *m );
+void delete_multipart();
+int get_multipartdoc_count();
+WEBCFG_STATUS deleteFromMpList(char* doc_name);
+void addToMpList(uint32_t etag, char *name_space, char *data, size_t data_size);
+void delete_mp_doc();
 #endif

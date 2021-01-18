@@ -16,6 +16,7 @@
 #include <errno.h>
 #include <string.h>
 #include <stdlib.h>
+#include <ctype.h>
 #include "webcfg_log.h"
 #include "webcfg_metadata.h"
 #include "webcfg_multipart.h"
@@ -39,14 +40,18 @@ typedef struct SubDocSupportMap
 /*----------------------------------------------------------------------------*/
 static char * supported_bits = NULL;
 static char * supported_version = NULL;
+static char * supplementary_docs = NULL;
 SubDocSupportMap_t *g_sdInfoHead = NULL;
 SubDocSupportMap_t *g_sdInfoTail = NULL;
+SupplementaryDocs_t *g_spInfoHead = NULL;
+SupplementaryDocs_t *g_spInfoTail = NULL;
 /*----------------------------------------------------------------------------*/
 /*                             Function Prototypes                            */
 /*----------------------------------------------------------------------------*/
 void displaystruct();
 SubDocSupportMap_t * get_global_sdInfoHead(void);
 SubDocSupportMap_t * get_global_sdInfoTail(void);
+SupplementaryDocs_t * get_global_spInfoTail(void);
 /*----------------------------------------------------------------------------*/
 /*                             External Functions                             */
 /*----------------------------------------------------------------------------*/
@@ -111,7 +116,7 @@ void initWebcfgProperties(char * filename)
 				if( sdInfo==NULL )
 				{
 					fclose(fp);
-					WebcfgError("Unable to allocate memory");
+					WebcfgError("Unable to allocate memory\n");
 					return;
 				}
 				memset(sdInfo, 0, sizeof(SubDocSupportMap_t));
@@ -148,12 +153,34 @@ void initWebcfgProperties(char * filename)
 			}
 
 		}
+		if(NULL != (value =strstr(str,"WEBCONFIG_SUPPLEMENTARY_DOCS")))
+		{
+			WebcfgDebug("The value stored is %s\n", str);
+			value = value + strlen("WEBCONFIG_SUPPLEMENTARY_DOCS=");
+			value[strlen(value)-1] = '\0';
+			setsupplementaryDocs(value);
+			value = NULL;
+			supplementaryDocs();
+		}
+		
 	}
 	fclose(fp);
 
 	if(g_sdInfoHead != NULL)
 	{
 		displaystruct();
+	}
+}
+
+void setsupplementaryDocs( char * value)
+{
+	if(value != NULL)
+	{
+		supplementary_docs = strdup(value);
+	}
+	else
+	{
+		supplementary_docs = NULL;
 	}
 }
 
@@ -193,6 +220,12 @@ char * getsupportedVersion()
       return supported_version;
 }
 
+char * getsupplementaryDocs()
+{
+      WebcfgDebug("The value in supplementary_docs get is %s\n",supplementary_docs);
+      return supplementary_docs;
+}
+
 WEBCFG_STATUS isSubDocSupported(char *subDoc)
 {
 
@@ -224,6 +257,36 @@ WEBCFG_STATUS isSubDocSupported(char *subDoc)
 	return WEBCFG_FAILURE;
 }
 
+//To check if the doc received during poke is supplementary or not.
+WEBCFG_STATUS isSupplementaryDoc(char *subDoc)
+{
+	SupplementaryDocs_t *sp = NULL;
+	sp = get_global_spInfoHead();
+
+	while(sp != NULL)
+	{
+		WebcfgDebug("Supplementary check for docname %s, subDoc received is %s\n", sp->name, subDoc);
+		if(strncmp(sp->name, subDoc, strlen(subDoc)) == 0)
+		{
+			WebcfgDebug("The subdoc %s is present\n",sp->name);
+			if(strncmp(sp->name, subDoc, strlen(subDoc)) == 0)
+			{
+				WebcfgDebug("subDoc %s is supplementary\n",subDoc);
+				return WEBCFG_SUCCESS;
+
+			}
+			else
+			{
+				WebcfgDebug("subDoc %s is not supplementary\n",subDoc);
+				return WEBCFG_FAILURE;
+			}
+		}
+		sp = sp->next;
+
+	}
+	return WEBCFG_FAILURE;
+}
+
 /*----------------------------------------------------------------------------*/
 /*                             Internal functions                             */
 /*----------------------------------------------------------------------------*/
@@ -241,6 +304,70 @@ SubDocSupportMap_t * get_global_sdInfoTail(void)
     return tmp;
 }
 
+SupplementaryDocs_t * get_global_spInfoHead(void)
+{
+    SupplementaryDocs_t *tmp = NULL;
+    tmp = g_spInfoHead;
+    return tmp;
+}
+
+SupplementaryDocs_t * get_global_spInfoTail(void)
+{
+    SupplementaryDocs_t *tmp = NULL;
+    tmp = g_spInfoTail;
+    return tmp;
+}
+
+void supplementaryDocs()
+{
+	int count = 0;
+	char* docs = NULL;
+	char* docs_var = NULL;
+	docs = getsupplementaryDocs();
+	if (docs !=NULL)
+	{
+		docs_var = strndup(docs,strlen(docs));
+		char* token = strtok(docs_var, ",");
+
+		while(token != NULL)
+		{
+			SupplementaryDocs_t *spInfo = NULL;
+			spInfo = (SupplementaryDocs_t *)malloc(sizeof(SupplementaryDocs_t));
+
+			if(spInfo == NULL)
+			{
+				WebcfgError("Unable to allocate memory for supplementary docs\n");
+				WEBCFG_FREE(docs_var);
+				return;
+			}
+
+			memset(spInfo, 0, sizeof(SupplementaryDocs_t));
+
+			WebcfgDebug("The value is %s\n",token);
+			spInfo->name = strdup(token);
+			spInfo->next = NULL;
+
+			if(g_spInfoTail == NULL)
+			{
+				g_spInfoHead = spInfo;
+				g_spInfoTail = spInfo;
+			}
+			else
+			{
+				SupplementaryDocs_t *temp = NULL;
+				temp = get_global_spInfoTail();
+				temp->next = spInfo;
+				g_spInfoTail = spInfo;
+			}
+
+			WebcfgDebug("The supplementary_doc[%d] is %s\n", count, spInfo->name);
+			count++;
+			token = strtok(NULL, ",");
+		}
+		WEBCFG_FREE(docs_var);
+	}
+}
+
 void displaystruct()
 {
 	SubDocSupportMap_t *temp =NULL;
@@ -250,4 +377,22 @@ void displaystruct()
 		WebcfgDebug(" %s %s\n",temp->name,temp->support);
 		temp=temp->next;
 	}
+}
+
+void delete_supplementary_list()
+{
+	SupplementaryDocs_t *temp = NULL;
+	SupplementaryDocs_t *head = NULL;
+	head = get_global_spInfoHead();
+
+	while(head != NULL)
+	{
+		temp = head;
+		head = head->next;
+		WebcfgDebug("Deleted node: temp->name:%s\n", temp->name);
+		free(temp);
+		temp = NULL;
+	}
+	g_spInfoHead = NULL;
+	g_spInfoTail = NULL;
 }

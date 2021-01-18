@@ -64,10 +64,12 @@ bool get_global_shutdown();
 void set_global_shutdown(bool shutdown);
 pthread_cond_t *get_global_sync_condition(void);
 pthread_mutex_t *get_global_sync_mutex(void);
+int get_global_supplementarySync();
+void set_global_supplementarySync(int value);
 
 void initWebConfigMultipartTask(unsigned long status);
-void processWebconfgSync(int Status);
-WEBCFG_STATUS webcfg_http_request(char **configData, int r_count, int status, long *code, char **transaction_id,char* contentType, size_t* dataSize);
+void processWebconfgSync(int Status, char* docname);
+WEBCFG_STATUS webcfg_http_request(char **configData, int r_count, int status, long *code, char **transaction_id,char* contentType, size_t* dataSize, char* docname);
 
 void webcfgStrncpy(char *destStr, const char *srcStr, size_t destSize);
 

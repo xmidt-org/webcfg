@@ -13,49 +13,36 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __WEBCFG_BLOB_H__
-#define __WEBCFG_BLOB_H__
+#ifndef __WEBCFG_TIMER_H__
+#define __WEBCFG_TIMER_H__
 
 #include <stdint.h>
-
+#include <string.h>
+#include <stdbool.h>
+#include <pthread.h>
+#include <time.h>
+#include <ctype.h>
 /*----------------------------------------------------------------------------*/
 /*                                   Macros                                   */
 /*----------------------------------------------------------------------------*/
-/* none */
-
-/*----------------------------------------------------------------------------*/
-/*                               Data Structures                              */
-/*----------------------------------------------------------------------------*/
-
-//for doc append
-typedef struct appenddoc_struct{
-    char * subdoc_name;
-    uint32_t  version;
-    uint16_t   transaction_id;
-    size_t *count;
-}appenddoc_t;
 
 /*----------------------------------------------------------------------------*/
 /*                             External Functions                             */
 /*----------------------------------------------------------------------------*/
-
-/**
- *  Packs portmapping append config doc.
- *
- *  @param 
- *
- *  @return 0 if the operation was a success, error otherwise
- */
-
-ssize_t webcfg_pack_appenddoc(const appenddoc_t *appenddocData,void **data);
-
-
-size_t appendWebcfgEncodedData( void **appendData, void *encodedBuffer, size_t encodedSize, void *metadataPack, size_t metadataSize );
-
-char * webcfg_appendeddoc(char * subdoc_name, uint32_t version, char * blob_data, size_t blob_size, uint16_t *trans_id);
-
-uint16_t generateRandomId();
-
-int writeToFileData(char *db_file_path, char *data, size_t size);
-
+void initMaintenanceTimer();
+char* printTime(long long time);
+void set_retry_timer(int value);
+int get_retry_timer();
+int checkMaintenanceTimer();
+int maintenanceSyncSeconds();
+int retrySyncSeconds();
+long getTimeInSeconds(long long time);
+void set_global_maintenance_time(long value);
+void set_global_fw_start_time(long value);
+void set_global_fw_end_time(long value);
+void set_global_retry_timestamp(long value);
+long get_global_retry_timestamp();
+int updateRetryTimeDiff(long long expiry_time);
+int checkRetryTimer( long long timestamp);
+long long getRetryExpiryTimeout();
 #endif

@@ -31,7 +31,11 @@
 /*----------------------------------------------------------------------------*/
 /*                               Data Structures                              */
 /*----------------------------------------------------------------------------*/
-
+typedef struct SupplementaryDocs
+{
+	char *name;
+	struct SupplementaryDocs *next;
+}SupplementaryDocs_t;
 /*----------------------------------------------------------------------------*/
 /*                             External Functions                             */
 /*----------------------------------------------------------------------------*/
@@ -39,6 +43,12 @@ WEBCFG_STATUS isSubDocSupported(char *subDoc);
 void initWebcfgProperties(char * filename);
 void setsupportedDocs( char * value);
 void setsupportedVersion( char * value);
+void setsupplementaryDocs( char * value);
 char * getsupportedDocs();
 char * getsupportedVersion();
+char * getsupplementaryDocs();
+void supplementaryDocs();
+void delete_supplementary_list();
+SupplementaryDocs_t * get_global_spInfoHead(void);
+WEBCFG_STATUS isSupplementaryDoc(char *subDoc);
 #endif
