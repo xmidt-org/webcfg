@@ -328,7 +328,6 @@ void test_checkRetryTimer()
 	long long present_time = 0;
 	clock_gettime(CLOCK_REALTIME, &ct);
 	present_time = ct.tv_sec;
-	present_time = present_time;
 	time_diff=checkRetryTimer(present_time);
 	CU_ASSERT_EQUAL(1,time_diff);
 
