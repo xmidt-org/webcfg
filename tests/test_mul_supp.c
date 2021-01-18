@@ -268,7 +268,7 @@ void test_supp_supp()
 	processWebconfgSync((int)status, "telemetry");
 
 }
-void test_pri_supp_pri()
+void test_prim_supp_prim()
 {
 	unsigned long status = 0;
 
@@ -292,7 +292,61 @@ void test_pri_supp_pri()
 	processWebconfgSync((int)status, NULL);
 
 }
+void test_updateRetryTime()
+{
 
+	int time_diff = 0;
+	struct timespec ct;
+	long long present_time = 0;
+	clock_gettime(CLOCK_REALTIME, &ct);
+	present_time = ct.tv_sec;
+	present_time = present_time+5;
+	time_diff=updateRetryTimeDiff(present_time);
+	CU_ASSERT_EQUAL(5,time_diff);
+}
+
+void test_updateRetryTimefailed()
+{
+	long long expiry_time = 0;
+	int time_diff = 0;
+	expiry_time = getRetryExpiryTimeout();
+	time_diff=updateRetryTimeDiff(expiry_time);
+	CU_ASSERT_EQUAL(900,time_diff);
+}
+
+void test_checkMaintenanceTimer()
+{
+	int time=0;	
+	time =checkMaintenanceTimer();
+	CU_ASSERT_EQUAL(1,time);
+}
+
+void test_checkRetryTimer()
+{
+	int time_diff = 0;
+	struct timespec ct;
+	long long present_time = 0;
+	clock_gettime(CLOCK_REALTIME, &ct);
+	present_time = ct.tv_sec;
+	present_time = present_time;
+	time_diff=checkRetryTimer(present_time);
+	CU_ASSERT_EQUAL(1,time_diff);
+
+}
+
+void test_retrySyncSeconds()
+{
+	int sec=0;	
+	sec =retrySyncSeconds();
+	CU_ASSERT_EQUAL(5,sec)
+}
+
+void test_maintenanceSyncSeconds()
+{
+	int sec=0;	
+	sec =maintenanceSyncSeconds();
+	CU_ASSERT_FATAL( 0 != sec);
+}
 void printTest()
 {
 	int count = get_global_supplementarySync();
@@ -313,7 +367,13 @@ void add_suites( CU_pSuite *suite )
     CU_add_test( *suite, "Full", test_Initdb_Primary_primary);
     CU_add_test( *suite, "Full", test_Initdb_Primary_supp);
     CU_add_test( *suite, "Full", test_supp_supp);
-    CU_add_test( *suite, "Full", test_pri_supp_pri);
+    CU_add_test( *suite, "Full", test_prim_supp_prim);
+    CU_add_test( *suite, "Full", test_updateRetryTime);
+    CU_add_test( *suite, "Full",test_updateRetryTimefailed);
+    CU_add_test( *suite, "Full",test_checkMaintenanceTimer);
+    CU_add_test( *suite, "Full",test_checkRetryTimer);
+    CU_add_test( *suite, "Full",test_retrySyncSeconds);
+    CU_add_test( *suite, "Full",test_maintenanceSyncSeconds);
 }
 
 /*----------------------------------------------------------------------------*/
