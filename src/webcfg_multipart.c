@@ -216,7 +216,6 @@ WEBCFG_STATUS webcfg_http_request(char **configData, int r_count, int status, lo
 				{
 					WebcfgInfo("Supplementary sync with cloud is disabled as configURL is NULL\n");
 					WEBCFG_FREE(data.data);
-					WEBCFG_FREE(*transaction_id);
 					curl_slist_free_all(headers_list);
 					curl_easy_cleanup(curl);
 					return WEBCFG_FAILURE;
@@ -240,8 +239,7 @@ WEBCFG_STATUS webcfg_http_request(char **configData, int r_count, int status, lo
 		else
 		{
 			WebcfgError("Failed to get configURL\n");
-			WEBCFG_FREE(data.data);
-			WEBCFG_FREE(*transaction_id);
+			WEBCFG_FREE(data.data);			
 			curl_slist_free_all(headers_list);
 			curl_easy_cleanup(curl);
 			return WEBCFG_FAILURE;
@@ -271,8 +269,7 @@ WEBCFG_STATUS webcfg_http_request(char **configData, int r_count, int status, lo
 		else
 		{
 			WebcfgError("Failed to get webconfig configURL\n");
-			WEBCFG_FREE(data.data);
-			WEBCFG_FREE(*transaction_id);
+			WEBCFG_FREE(data.data);			
 			curl_slist_free_all(headers_list);
 			curl_easy_cleanup(curl);
 			return WEBCFG_FAILURE;
