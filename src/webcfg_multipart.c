@@ -692,7 +692,10 @@ WEBCFG_STATUS processMsgpackSubdoc(char *transaction_id)
 							updateTmpList(subdoc_node, mp->name_space, mp->etag, "success", "none", 0, 0, 0);
 							//send success notification to cloud
 							WebcfgDebug("send notify for mp->name_space %s\n", mp->name_space);
-							addWebConfgNotifyMsg(mp->name_space, mp->etag, "success", "none", subdoc_node->cloud_trans_id,0, "status",0, NULL, 200);
+							if(subdoc_node !=NULL && subdoc_node->cloud_trans_id !=NULL)
+							{
+								addWebConfgNotifyMsg(mp->name_space, mp->etag, "success", "none", subdoc_node->cloud_trans_id,0, "status",0, NULL, 200);
+							}
 							WebcfgDebug("deleteFromTmpList as doc is applied\n");
 							deleteFromTmpList(mp->name_space);
 							if(mp->isSupplementarySync == 0)
@@ -781,7 +784,10 @@ WEBCFG_STATUS processMsgpackSubdoc(char *transaction_id)
 							}
 							WebcfgDebug("The result is %s\n",result);
 							updateTmpList(subdoc_node, mp->name_space, mp->etag, "failed", result, ccspStatus, 0, 1);
-							addWebConfgNotifyMsg(mp->name_space, mp->etag, "failed", result, subdoc_node->cloud_trans_id, 0,"status",ccspStatus, NULL, 200);
+							if(subdoc_node !=NULL && subdoc_node->cloud_trans_id !=NULL)
+							{
+								addWebConfgNotifyMsg(mp->name_space, mp->etag, "failed", result, subdoc_node->cloud_trans_id, 0,"status",ccspStatus, NULL, 200);
+							}
 							WebcfgDebug("checkRootUpdate\n");
 							//No root update for supplementary sync
 							if(!get_global_supplementarySync() && (ccspStatus == 204 && subdocStatus != WEBCFG_SUCCESS) && (checkRootUpdate() == WEBCFG_SUCCESS))
@@ -806,7 +812,10 @@ WEBCFG_STATUS processMsgpackSubdoc(char *transaction_id)
 							snprintf(result,MAX_VALUE_LEN,"doc_rejected:%s", errDetails);
 							WebcfgDebug("The result is %s\n",result);
 							updateTmpList(subdoc_node, mp->name_space, mp->etag, "failed", result, ccspStatus, 0, 0);
-							addWebConfgNotifyMsg(mp->name_space, mp->etag, "failed", result, subdoc_node->cloud_trans_id,0, "status", ccspStatus, NULL, 200);
+							if(subdoc_node !=NULL && subdoc_node->cloud_trans_id !=NULL)
+							{
+								addWebConfgNotifyMsg(mp->name_space, mp->etag, "failed", result, subdoc_node->cloud_trans_id,0, "status", ccspStatus, NULL, 200);
+							}
 						}
 						//print_tmp_doc_list(mp_count);
 					}

@@ -350,7 +350,10 @@ AKER_STATUS processAkerSubdoc(webconfig_tmp_data_t *docNode, multipartdocs_t *ak
 				{
 					//Invalid aker request
 					updateTmpList(docNode, gmp->name_space, gmp->etag, "failed", "doc_rejected", 0, 0, 0);
-					addWebConfgNotifyMsg(gmp->name_space, gmp->etag, "failed", "doc_rejected", docNode->cloud_trans_id, 0, "status", 0, NULL, 200);
+					if(docNode !=NULL && docNode->cloud_trans_id !=NULL)
+					{
+						addWebConfgNotifyMsg(gmp->name_space, gmp->etag, "failed", "doc_rejected", docNode->cloud_trans_id, 0, "status", 0, NULL, 200);
+					}
 					rv = AKER_FAILURE;
 				}
 				reqParam_destroy(paramCount, reqParam);
