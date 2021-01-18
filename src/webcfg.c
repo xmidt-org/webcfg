@@ -205,19 +205,19 @@ void *WebConfigMultipartTask(void *status)
 		}
 		else
 		{
-			if(get_global_retry_time() != 0)
+			if(get_global_retry_timestamp() != 0)
 			{
 				set_retry_timer(retrySyncSeconds());
 			}
 			ts.tv_sec += get_retry_timer();
-			WebcfgInfo("The retry triggers at %s\n", printTime((long long)ts.tv_sec));
+			WebcfgDebug("The retry triggers at %s\n", printTime((long long)ts.tv_sec));
 		}
 
 		if(retry_flag == 1 || maintenance_doc_sync == 1)
 		{
 			WebcfgDebug("B4 sync_condition pthread_cond_timedwait\n");
 			rv = pthread_cond_timedwait(&sync_condition, &sync_mutex, &ts);
-			WebcfgInfo("The retry flag value is %d\n", get_doc_fail());
+			WebcfgDebug("The retry flag value is %d\n", get_doc_fail());
 			WebcfgDebug("The value of rv %d\n", rv);
 		}
 		else 
@@ -231,7 +231,7 @@ void *WebConfigMultipartTask(void *status)
 			{
 				set_doc_fail(0);
 				set_retry_timer(900);
-				set_global_retry_time(0);
+				set_global_retry_timestamp(0);
 				failedDocsRetry();
 				WebcfgDebug("After the failedDocsRetry\n");
 			}
@@ -322,7 +322,7 @@ void *WebConfigMultipartTask(void *status)
 	set_doc_fail( 0);
 	reset_successDocCount();
 	set_global_maintenance_time(0);
-	set_global_retry_time(0);
+	set_global_retry_timestamp(0);
 	set_global_fw_start_time(0);
 	set_global_fw_end_time(0);
 	set_retry_timer(0);

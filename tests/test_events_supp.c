@@ -177,7 +177,7 @@ void test_eventACK()
 	tmpData->error_code = 0;
 	tmpData->error_details = strdup("success");
 	tmpData->isSupplementarySync=1;
-	tmpData->retry_expiry_timestamp=0;
+	tmpData->retry_timestamp=0;
 	tmpData->cloud_trans_id=strdup("abcdef");
 	tmpData->next = NULL;
 	set_global_tmp_node(tmpData);
@@ -203,7 +203,7 @@ void test_eventTimeout()
 	tmpData->error_code = 0;
 	tmpData->error_details = strdup("success");
 	tmpData->isSupplementarySync=1;
-	tmpData->retry_expiry_timestamp=0;
+	tmpData->retry_timestamp=0;
 	tmpData->cloud_trans_id=strdup("abcdef");
 	tmpData->next = NULL;
 	set_global_tmp_node(tmpData);
@@ -236,7 +236,7 @@ void test_eventNACK()
 	tmpData->error_code = 0;
 	tmpData->error_details = strdup("success");
 	tmpData->isSupplementarySync=1;
-	tmpData->retry_expiry_timestamp=0;
+	tmpData->retry_timestamp=0;
 	tmpData->cloud_trans_id=strdup("abcdef");
 	tmpData->next = NULL;
 	set_global_tmp_node(tmpData);
@@ -269,7 +269,7 @@ void test_eventEXPIRE()
 	tmpData->error_code = 0;
 	tmpData->error_details = strdup("success");
 	tmpData->isSupplementarySync=1;
-	tmpData->retry_expiry_timestamp=0;
+	tmpData->retry_timestamp=0;
 	tmpData->cloud_trans_id=strdup("abcdef");
 	tmpData->next = NULL;
 
@@ -323,7 +323,7 @@ void test_eventCrash()
 	tmpData->error_code = 0;
 	tmpData->error_details = strdup("crash");
 	tmpData->isSupplementarySync=1;
-	tmpData->retry_expiry_timestamp=0;
+	tmpData->retry_timestamp=0;
 	tmpData->cloud_trans_id=strdup("abcdef");
 	tmpData->next = NULL;
 	set_global_tmp_node(tmpData);
@@ -346,7 +346,7 @@ void test_eventCrashNewVersion()
 	tmpData->error_details = strdup("crash");
 	
 	tmpData->isSupplementarySync=1;
-	tmpData->retry_expiry_timestamp=0;
+	tmpData->retry_timestamp=0;
 	tmpData->cloud_trans_id=strdup("abcdef");
 	tmpData->next = NULL;
 	
@@ -397,7 +397,7 @@ void test_eventCrashSameVersion()
 	tmpData->error_code = 0;
 	tmpData->error_details = strdup("crash");
 	tmpData->isSupplementarySync=1;
-	tmpData->retry_expiry_timestamp=0;
+	tmpData->retry_timestamp=0;
 	tmpData->cloud_trans_id=strdup("abcdef");
 	tmpData->next = NULL;
 
@@ -447,7 +447,7 @@ void err_invalidACK()
 	tmpData->error_code = 0;
 	tmpData->error_details = strdup("success");
 	tmpData->isSupplementarySync=1;
-	tmpData->retry_expiry_timestamp=0;
+	tmpData->retry_timestamp=0;
 	tmpData->cloud_trans_id=strdup("a2b3c4d5e6f");
 	tmpData->next = NULL;
 	set_global_tmp_node(tmpData);
@@ -480,7 +480,7 @@ void test_adveventACKEnabled()
 	tmpData->error_code = 0;
 	tmpData->error_details = strdup("success");
 	tmpData->isSupplementarySync=1;
-	tmpData->retry_expiry_timestamp=0;
+	tmpData->retry_timestamp=0;
 	tmpData->cloud_trans_id=strdup("abcdef");
 	tmpData->next = NULL;
 	set_global_tmp_node(tmpData);
@@ -503,7 +503,7 @@ void test_adveventACKDisabled()
 	tmpData->error_code = 0;
 	tmpData->error_details = strdup("success");
 	tmpData->isSupplementarySync=1;
-	tmpData->retry_expiry_timestamp=0;
+	tmpData->retry_timestamp=0;
 	tmpData->cloud_trans_id=strdup("abcdef");
 	tmpData->next = NULL;
 	set_global_tmp_node(tmpData);

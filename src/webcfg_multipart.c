@@ -2207,7 +2207,7 @@ void failedDocsRetry()
 	{
 		if((temp->error_code == CCSP_CRASH_STATUS_CODE) || (temp->error_code == 204 && (temp->error_details != NULL && strstr(temp->error_details, "doc_unsupported") == NULL)) || (temp->error_code == 191) || (temp->error_code == 193) || (temp->error_code == 190))
 		{
-			if(checkRetryTimer(temp->retry_expiry_timestamp))
+			if(checkRetryTimer(temp->retry_timestamp))
 			{
 				WebcfgInfo("Retrying for subdoc %s error_code %lu\n", temp->name, (long)temp->error_code);
 				if(retryMultipartSubdoc(temp, temp->name) == WEBCFG_SUCCESS)
@@ -2224,8 +2224,8 @@ void failedDocsRetry()
 				int time_diff = 0;
 
 				//To get the exact time diff for retry from present time do the below
-				time_diff = updateRetryTimeDiff(temp->retry_expiry_timestamp);
-				WebcfgDebug("The docname is %s and diff is %d retry time stamp is %s\n", temp->name, time_diff, printTime(temp->retry_expiry_timestamp));
+				time_diff = updateRetryTimeDiff(temp->retry_timestamp);
+				WebcfgDebug("The docname is %s and diff is %d retry time stamp is %s\n", temp->name, time_diff, printTime(temp->retry_timestamp));
 				set_doc_fail(1);
 			}
 		}

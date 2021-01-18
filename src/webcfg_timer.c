@@ -42,7 +42,7 @@
 /*                            File Scoped Variables                           */
 /*----------------------------------------------------------------------------*/
 static int g_retry_timer = 900;
-static long g_retry_time = 0;
+static long g_retry_timestamp = 0;
 static long g_maintenance_time = 0;
 static long g_fw_start_time = 0;
 static long g_fw_end_time = 0;
@@ -93,14 +93,14 @@ void set_retry_timer(int value)
 	g_retry_timer = value;
 }
 
-long get_global_retry_time()
+long get_global_retry_timestamp()
 {
-    return g_retry_time;
+    return g_retry_timestamp;
 }
 
-void set_global_retry_time(long value)
+void set_global_retry_timestamp(long value)
 {
-    g_retry_time = value;
+    g_retry_timestamp = value;
 }
 
 //To print the value in readable format
@@ -248,10 +248,10 @@ int retrySyncSeconds()
 	current_time = ct.tv_sec;
 	current_time_in_sec = getTimeInSeconds(current_time);
 
-	retry_secs =  get_global_retry_time() - current_time_in_sec;
+	retry_secs =  get_global_retry_timestamp() - current_time_in_sec;
 
 	WebcfgDebug("The current time in retrySyncSeconds is %lld at %s\n",current_time, printTime(current_time));
-	WebcfgDebug("The random timer in retrySyncSeconds is %ld\n",get_global_retry_time());
+	WebcfgDebug("The random timer in retrySyncSeconds is %ld\n",get_global_retry_timestamp());
 
 	if (retry_secs < 0)
 	{
@@ -299,17 +299,17 @@ int updateRetryTimeDiff(long long expiry_time)
 	if(get_retry_timer() > time_diff)
 	{
 		set_retry_timer(time_diff);
-		set_global_retry_time(getTimeInSeconds(expiry_time));
+		set_global_retry_timestamp(getTimeInSeconds(expiry_time));
 		WebcfgDebug("The retry_timer is %d after set\n", get_retry_timer());
 	}
-	if(get_global_retry_time() == 0)
+	if(get_global_retry_timestamp() == 0)
 	{
-		set_global_retry_time(getTimeInSeconds(present_time+900));
+		set_global_retry_timestamp(getTimeInSeconds(present_time+900));
 	}
 	return time_diff;
 }
 
-//To set the retry_expiry_timestamp to 15 min from current time
+//To set the retry_timestamp to 15 min from current time
 long long getRetryExpiryTimeout()
 {
 	struct timespec ts;

@@ -474,7 +474,7 @@ void test_eventCrashNewVersionWithoutRetry()
 	tmpData->error_details = strdup("crash");
 	tmpData->next = NULL;
 	set_global_tmp_node(tmpData);
-	numLoops = 2;
+	//numLoops = 2;
 	initWebConfigNotifyTask();
 	processWebcfgEvents();
 	webcfgCallback("homessid,0,309708942", NULL);
@@ -485,6 +485,7 @@ void test_eventCrashNewVersionWithoutRetry()
 		WEBCFG_FREE(tmpData->status);
 		WEBCFG_FREE(tmpData->error_details);
 		WEBCFG_FREE(tmpData);
+
 	}
 }
 
@@ -704,7 +705,7 @@ void add_suites( CU_pSuite *suite )
 	CU_add_test( *suite, "Invalid Version Timeout Event\n",test_invalidVersionTimeout);
 	CU_add_test( *suite, "NACK Event\n", test_eventNACK);
 	CU_add_test( *suite, "Invalid Version NACK Event\n",test_invalidVersionNACK);
-	/*CU_add_test( *suite, "EXPIRE Event without retry\n", test_eventEXPIREWithoutRetry);
+	CU_add_test( *suite, "EXPIRE Event without retry\n", test_eventEXPIREWithoutRetry);
 	CU_add_test( *suite, "EXPIRE Event\n", test_eventEXPIRE);
 	CU_add_test( *suite, "Crash Event\n", test_eventCrash);
 	CU_add_test( *suite, "Crash Event New Version\n", test_eventCrashNewVersion);
@@ -716,7 +717,7 @@ void add_suites( CU_pSuite *suite )
 	CU_add_test( *suite, "ACK enabled Event\n", test_eventACKEnabled);
 	CU_add_test( *suite, "ACK disabled Event\n", test_eventACKDisabled);
 	CU_add_test( *suite, "adv ACK enabled Event\n", test_adveventACKEnabled);
-	CU_add_test( *suite, "adv ACK disabled Event\n", test_adveventACKDisabled);*/
+	CU_add_test( *suite, "adv ACK disabled Event\n", test_adveventACKDisabled);
 }
 
 /*----------------------------------------------------------------------------*/

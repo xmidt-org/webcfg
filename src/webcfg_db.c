@@ -432,7 +432,7 @@ WEBCFG_STATUS addToTmpList()
 				new_node->error_code = 0;
 				new_node->trans_id = 0;
 				new_node->retry_count = 0;
-				new_node->retry_expiry_timestamp = 0;
+				new_node->retry_timestamp = 0;
 				new_node->cloud_trans_id = strdup(cloud_transaction_id);
 			}
 		}
@@ -455,7 +455,7 @@ WEBCFG_STATUS addToTmpList()
 					new_node->error_code = 0;
 					new_node->trans_id = 0;
 					new_node->retry_count = 0;
-					new_node->retry_expiry_timestamp = 0;
+					new_node->retry_timestamp = 0;
 					new_node->cloud_trans_id = strdup(cloud_transaction_id);
 
 					WebcfgDebug("new_node->name is %s\n", new_node->name);
@@ -464,7 +464,7 @@ WEBCFG_STATUS addToTmpList()
 					WebcfgDebug("new_node->isSupplementarySync is %d\n", new_node->isSupplementarySync);
 					WebcfgDebug("new_node->error_details is %s\n", new_node->error_details);
 					WebcfgDebug("new_node->retry_count is %d\n", new_node->retry_count);
-					WebcfgDebug("new_node->retry_expiry_timestamp is %lld\n", new_node->retry_expiry_timestamp);
+					WebcfgDebug("new_node->retry_timestamp is %lld\n", new_node->retry_timestamp);
 					WebcfgDebug("new_node->cloud_trans_id is %s\n", new_node->cloud_trans_id);
 				}
 
@@ -1144,7 +1144,7 @@ webconfig_tmp_data_t * getTmpNode(char *docname)
 	return NULL;
 }
 
-//update retry_expiry_timestamp for each doc
+//update retry_timestamp for each doc
 WEBCFG_STATUS updateFailureTimeStamp(webconfig_tmp_data_t *temp, char *docname, long long timestamp)
 {
 	if (NULL != temp)
@@ -1154,7 +1154,7 @@ WEBCFG_STATUS updateFailureTimeStamp(webconfig_tmp_data_t *temp, char *docname, 
 		WebcfgDebug("mutex_lock in updateFailureTimeStamp\n");
 		if( strcmp(docname, temp->name) == 0)
 		{
-			temp->retry_expiry_timestamp = timestamp;
+			temp->retry_timestamp = timestamp;
 			WebcfgInfo("doc %s retry timestamp updated as %s\n", docname, printTime(timestamp));
 			pthread_mutex_unlock (&webconfig_tmp_data_mut);
 			WebcfgDebug("mutex_unlock in current temp details\n");
