@@ -406,6 +406,7 @@ void processWebconfgSync(int status, char* docname)
 	WebcfgDebug("========= Start of processWebconfgSync =============\n");
 	while(1)
 	{
+		transaction_uuid =NULL;
 		#ifdef MULTIPART_UTILITY
 		if(testUtility()==1)
 		{
@@ -432,7 +433,7 @@ void processWebconfgSync(int status, char* docname)
 		else
 		{
 			WebcfgError("Failed to get webConfigData from cloud\n");
-			//WEBCFG_FREE(transaction_uuid);
+			WEBCFG_FREE(transaction_uuid);
 		}
 		WebcfgInfo("webcfg_http_request BACKOFF_SLEEP_DELAY_SEC is %d seconds\n", BACKOFF_SLEEP_DELAY_SEC);
 		sleep(BACKOFF_SLEEP_DELAY_SEC);
