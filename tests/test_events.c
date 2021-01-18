@@ -176,6 +176,9 @@ void test_eventACK()
 	tmpData->retry_count = 0;
 	tmpData->error_code = 0;
 	tmpData->error_details = strdup("success");
+	tmpData->isSupplementarySync=0;
+	tmpData->retry_timestamp=0;
+	tmpData->cloud_trans_id=strdup("abcdef");
 	tmpData->next = NULL;
 	set_global_tmp_node(tmpData);
 	numLoops = 2;
@@ -195,6 +198,9 @@ void test_invalidVersionACK()
 	tmpData->retry_count = 0;
 	tmpData->error_code = 0;
 	tmpData->error_details = strdup("success");
+	tmpData->isSupplementarySync=0;
+	tmpData->retry_timestamp=0;
+	tmpData->cloud_trans_id=strdup("abcdef");
 	tmpData->next = NULL;
 	set_global_tmp_node(tmpData);
 	numLoops = 2;
@@ -207,6 +213,7 @@ void test_invalidVersionACK()
 		WEBCFG_FREE(tmpData->name);
 		WEBCFG_FREE(tmpData->status);
 		WEBCFG_FREE(tmpData->error_details);
+		WEBCFG_FREE(tmpData->cloud_trans_id);
 		WEBCFG_FREE(tmpData);
 	}
 }
@@ -224,6 +231,9 @@ void test_eventTimeout()
 	tmpData->retry_count = 0;
 	tmpData->error_code = 0;
 	tmpData->error_details = strdup("success");
+	tmpData->isSupplementarySync=0;
+	tmpData->retry_timestamp=0;
+	tmpData->cloud_trans_id=strdup("abcdef");
 	tmpData->next = NULL;
 	set_global_tmp_node(tmpData);
 	numLoops = 2;
@@ -236,6 +246,7 @@ void test_eventTimeout()
 		WEBCFG_FREE(tmpData->name);
 		WEBCFG_FREE(tmpData->status);
 		WEBCFG_FREE(tmpData->error_details);
+		WEBCFG_FREE(tmpData->cloud_trans_id);
 		WEBCFG_FREE(tmpData);
 	}
 }
@@ -250,6 +261,9 @@ void test_invalidVersionTimeout()
 	tmpData->retry_count = 0;
 	tmpData->error_code = 0;
 	tmpData->error_details = strdup("success");
+	tmpData->isSupplementarySync=0;
+	tmpData->retry_timestamp=0;
+	tmpData->cloud_trans_id=strdup("abcdef");
 	tmpData->next = NULL;
 	set_global_tmp_node(tmpData);
 	numLoops = 2;
@@ -262,6 +276,7 @@ void test_invalidVersionTimeout()
 		WEBCFG_FREE(tmpData->name);
 		WEBCFG_FREE(tmpData->status);
 		WEBCFG_FREE(tmpData->error_details);
+		WEBCFG_FREE(tmpData->cloud_trans_id);
 		WEBCFG_FREE(tmpData);
 	}
 }
@@ -277,6 +292,9 @@ void test_eventNACK()
 	tmpData->retry_count = 0;
 	tmpData->error_code = 0;
 	tmpData->error_details = strdup("success");
+	tmpData->isSupplementarySync=0;
+	tmpData->retry_timestamp=0;
+	tmpData->cloud_trans_id=strdup("abcdef");
 	tmpData->next = NULL;
 	set_global_tmp_node(tmpData);
 	set_global_transID("1234567");
@@ -290,6 +308,7 @@ void test_eventNACK()
 		WEBCFG_FREE(tmpData->name);
 		WEBCFG_FREE(tmpData->status);
 		WEBCFG_FREE(tmpData->error_details);
+		WEBCFG_FREE(tmpData->cloud_trans_id);
 		WEBCFG_FREE(tmpData);
 	}
 }
@@ -304,6 +323,9 @@ void test_invalidVersionNACK()
 	tmpData->retry_count = 0;
 	tmpData->error_code = 0;
 	tmpData->error_details = strdup("success");
+	tmpData->isSupplementarySync=0;
+	tmpData->retry_timestamp=0;
+	tmpData->cloud_trans_id=strdup("abcdef");
 	tmpData->next = NULL;
 	set_global_tmp_node(tmpData);
 	numLoops = 2;
@@ -316,6 +338,7 @@ void test_invalidVersionNACK()
 		WEBCFG_FREE(tmpData->name);
 		WEBCFG_FREE(tmpData->status);
 		WEBCFG_FREE(tmpData->error_details);
+		WEBCFG_FREE(tmpData->cloud_trans_id);
 		WEBCFG_FREE(tmpData);
 	}
 }
@@ -331,6 +354,9 @@ void test_eventEXPIRE()
 	tmpData->retry_count = 0;
 	tmpData->error_code = 0;
 	tmpData->error_details = strdup("success");
+	tmpData->isSupplementarySync=0;
+	tmpData->retry_timestamp=0;
+	tmpData->cloud_trans_id=strdup("abcdef");
 	tmpData->next = NULL;
 
 	multipartdocs_t *multipartdocs = (multipartdocs_t *)malloc(sizeof(multipartdocs_t));
@@ -378,6 +404,9 @@ void test_eventEXPIREWithoutRetry()
 	tmpData->retry_count = 0;
 	tmpData->error_code = 0;
 	tmpData->error_details = strdup("success");
+	tmpData->isSupplementarySync=0;
+	tmpData->retry_timestamp=0;
+	tmpData->cloud_trans_id=strdup("abcdef");
 	tmpData->next = NULL;
 
 	set_global_tmp_node(tmpData);
@@ -392,6 +421,7 @@ void test_eventEXPIREWithoutRetry()
 		WEBCFG_FREE(tmpData->name);
 		WEBCFG_FREE(tmpData->status);
 		WEBCFG_FREE(tmpData->error_details);
+		WEBCFG_FREE(tmpData->cloud_trans_id);
 		WEBCFG_FREE(tmpData);
 	}
 }
@@ -407,6 +437,9 @@ void test_eventCrash()
 	tmpData->retry_count = 0;
 	tmpData->error_code = 0;
 	tmpData->error_details = strdup("crash");
+	tmpData->isSupplementarySync=0;
+	tmpData->retry_timestamp=0;
+	tmpData->cloud_trans_id=strdup("abcdef");
 	tmpData->next = NULL;
 	set_global_tmp_node(tmpData);
 	numLoops = 2;
@@ -426,6 +459,9 @@ void test_eventCrashNewVersion()
 	tmpData->retry_count = 0;
 	tmpData->error_code = 0;
 	tmpData->error_details = strdup("crash");
+	tmpData->isSupplementarySync=0;
+	tmpData->retry_timestamp=0;
+	tmpData->cloud_trans_id=strdup("abcdef");
 	tmpData->next = NULL;
 
 	multipartdocs_t *multipartdocs = (multipartdocs_t *)malloc(sizeof(multipartdocs_t));
@@ -472,6 +508,9 @@ void test_eventCrashNewVersionWithoutRetry()
 	tmpData->retry_count = 0;
 	tmpData->error_code = 0;
 	tmpData->error_details = strdup("crash");
+	tmpData->isSupplementarySync=0;
+	tmpData->retry_timestamp=0;
+	tmpData->cloud_trans_id=strdup("abcdef");
 	tmpData->next = NULL;
 	set_global_tmp_node(tmpData);
 	numLoops = 2;
@@ -484,6 +523,7 @@ void test_eventCrashNewVersionWithoutRetry()
 		WEBCFG_FREE(tmpData->name);
 		WEBCFG_FREE(tmpData->status);
 		WEBCFG_FREE(tmpData->error_details);
+		WEBCFG_FREE(tmpData->cloud_trans_id);
 		WEBCFG_FREE(tmpData);
 
 	}
@@ -499,6 +539,9 @@ void test_eventCrashSameVersion()
 	tmpData->retry_count = 0;
 	tmpData->error_code = 0;
 	tmpData->error_details = strdup("crash");
+	tmpData->isSupplementarySync=0;
+	tmpData->retry_timestamp=0;
+	tmpData->cloud_trans_id=strdup("abcdef");
 	tmpData->next = NULL;
 
 	multipartdocs_t *multipartdocs = (multipartdocs_t *)malloc(sizeof(multipartdocs_t));
@@ -545,6 +588,9 @@ void test_eventCrashSameVersionWithoutRetry()
 	tmpData->retry_count = 0;
 	tmpData->error_code = 0;
 	tmpData->error_details = strdup("crash");
+	tmpData->isSupplementarySync=0;
+	tmpData->retry_timestamp=0;
+	tmpData->cloud_trans_id=strdup("abcdef");
 	tmpData->next = NULL;
 
 	set_global_tmp_node(tmpData);
@@ -558,6 +604,7 @@ void test_eventCrashSameVersionWithoutRetry()
 		WEBCFG_FREE(tmpData->name);
 		WEBCFG_FREE(tmpData->status);
 		WEBCFG_FREE(tmpData->error_details);
+		WEBCFG_FREE(tmpData->cloud_trans_id);
 		WEBCFG_FREE(tmpData);
 	}
 }
@@ -572,6 +619,9 @@ void test_eventCrashLatestVersion()
 	tmpData->retry_count = 0;
 	tmpData->error_code = 0;
 	tmpData->error_details = strdup("crash");
+	tmpData->isSupplementarySync=0;
+	tmpData->retry_timestamp=0;
+	tmpData->cloud_trans_id=strdup("abcdef");
 	tmpData->next = NULL;
 
 	set_global_tmp_node(tmpData);
@@ -585,6 +635,7 @@ void test_eventCrashLatestVersion()
 		WEBCFG_FREE(tmpData->name);
 		WEBCFG_FREE(tmpData->status);
 		WEBCFG_FREE(tmpData->error_details);
+		WEBCFG_FREE(tmpData->cloud_trans_id);
 		WEBCFG_FREE(tmpData);
 	}
 }
@@ -599,6 +650,9 @@ void err_invalidACK()
 	tmpData->retry_count = 0;
 	tmpData->error_code = 0;
 	tmpData->error_details = strdup("success");
+	tmpData->isSupplementarySync=0;
+	tmpData->retry_timestamp=0;
+	tmpData->cloud_trans_id=strdup("abcdef");
 	tmpData->next = NULL;
 	set_global_tmp_node(tmpData);
 	numLoops = 2;
@@ -611,6 +665,7 @@ void err_invalidACK()
 		WEBCFG_FREE(tmpData->name);
 		WEBCFG_FREE(tmpData->status);
 		WEBCFG_FREE(tmpData->error_details);
+		WEBCFG_FREE(tmpData->cloud_trans_id);
 		WEBCFG_FREE(tmpData);
 	}
 }
@@ -627,6 +682,9 @@ void test_eventACKEnabled()
 	tmpData->retry_count = 0;
 	tmpData->error_code = 0;
 	tmpData->error_details = strdup("success");
+	tmpData->isSupplementarySync=0;
+	tmpData->retry_timestamp=0;
+	tmpData->cloud_trans_id=strdup("abcdef");
 	tmpData->next = NULL;
 	set_global_tmp_node(tmpData);
 	numLoops = 2;
@@ -647,6 +705,9 @@ void test_eventACKDisabled()
 	tmpData->retry_count = 0;
 	tmpData->error_code = 0;
 	tmpData->error_details = strdup("success");
+	tmpData->isSupplementarySync=0;
+	tmpData->retry_timestamp=0;
+	tmpData->cloud_trans_id=strdup("abcdef");
 	tmpData->next = NULL;
 	set_global_tmp_node(tmpData);
 	numLoops = 2;
@@ -667,6 +728,9 @@ void test_adveventACKEnabled()
 	tmpData->retry_count = 0;
 	tmpData->error_code = 0;
 	tmpData->error_details = strdup("success");
+	tmpData->isSupplementarySync=0;
+	tmpData->retry_timestamp=0;
+	tmpData->cloud_trans_id=strdup("abcdef");
 	tmpData->next = NULL;
 	set_global_tmp_node(tmpData);
 	numLoops = 2;
@@ -687,6 +751,9 @@ void test_adveventACKDisabled()
 	tmpData->retry_count = 0;
 	tmpData->error_code = 0;
 	tmpData->error_details = strdup("success");
+	tmpData->isSupplementarySync=0;
+	tmpData->retry_timestamp=0;
+	tmpData->cloud_trans_id=strdup("abcdef");
 	tmpData->next = NULL;
 	set_global_tmp_node(tmpData);
 	numLoops = 2;
@@ -705,19 +772,19 @@ void add_suites( CU_pSuite *suite )
 	CU_add_test( *suite, "Invalid Version Timeout Event\n",test_invalidVersionTimeout);
 	CU_add_test( *suite, "NACK Event\n", test_eventNACK);
 	CU_add_test( *suite, "Invalid Version NACK Event\n",test_invalidVersionNACK);
-	/*CU_add_test( *suite, "EXPIRE Event without retry\n", test_eventEXPIREWithoutRetry);
+	CU_add_test( *suite, "EXPIRE Event without retry\n", test_eventEXPIREWithoutRetry);
 	CU_add_test( *suite, "EXPIRE Event\n", test_eventEXPIRE);
 	CU_add_test( *suite, "Crash Event\n", test_eventCrash);
 	CU_add_test( *suite, "Crash Event New Version\n", test_eventCrashNewVersion);
-	CU_add_test( *suite, "Crash Event New Version without retry\n", test_eventCrashNewVersionWithoutRetry);
+	//CU_add_test( *suite, "Crash Event New Version without retry\n", test_eventCrashNewVersionWithoutRetry);
 	CU_add_test( *suite, "Crash Event same version\n", test_eventCrashSameVersion);
-	CU_add_test( *suite, "Crash Event same version without retry\n", test_eventCrashSameVersionWithoutRetry);
-	CU_add_test( *suite, "Crash Event Latest version\n",test_eventCrashLatestVersion);
+	//CU_add_test( *suite, "Crash Event same version without retry\n", test_eventCrashSameVersionWithoutRetry);
+	//CU_add_test( *suite, "Crash Event Latest version\n",test_eventCrashLatestVersion);
 	CU_add_test( *suite, "Invalid ACK Event\n",err_invalidACK);
 	CU_add_test( *suite, "ACK enabled Event\n", test_eventACKEnabled);
 	CU_add_test( *suite, "ACK disabled Event\n", test_eventACKDisabled);
 	CU_add_test( *suite, "adv ACK enabled Event\n", test_adveventACKEnabled);
-	CU_add_test( *suite, "adv ACK disabled Event\n", test_adveventACKDisabled);*/
+	CU_add_test( *suite, "adv ACK disabled Event\n", test_adveventACKDisabled);
 }
 
 /*----------------------------------------------------------------------------*/
