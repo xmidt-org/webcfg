@@ -704,19 +704,19 @@ void add_suites( CU_pSuite *suite )
 	CU_add_test( *suite, "Invalid Version Timeout Event\n",test_invalidVersionTimeout);
 	CU_add_test( *suite, "NACK Event\n", test_eventNACK);
 	CU_add_test( *suite, "Invalid Version NACK Event\n",test_invalidVersionNACK);
-	/*CU_add_test( *suite, "EXPIRE Event without retry\n", test_eventEXPIREWithoutRetry);
+	CU_add_test( *suite, "EXPIRE Event without retry\n", test_eventEXPIREWithoutRetry);
 	CU_add_test( *suite, "EXPIRE Event\n", test_eventEXPIRE);
 	CU_add_test( *suite, "Crash Event\n", test_eventCrash);
 	CU_add_test( *suite, "Crash Event New Version\n", test_eventCrashNewVersion);
-	CU_add_test( *suite, "Crash Event New Version without retry\n", test_eventCrashNewVersionWithoutRetry);
+	//CU_add_test( *suite, "Crash Event New Version without retry\n", test_eventCrashNewVersionWithoutRetry);
 	CU_add_test( *suite, "Crash Event same version\n", test_eventCrashSameVersion);
-	CU_add_test( *suite, "Crash Event same version without retry\n", test_eventCrashSameVersionWithoutRetry);
-	CU_add_test( *suite, "Crash Event Latest version\n",test_eventCrashLatestVersion);
+	//CU_add_test( *suite, "Crash Event same version without retry\n", test_eventCrashSameVersionWithoutRetry);
+	//CU_add_test( *suite, "Crash Event Latest version\n",test_eventCrashLatestVersion);
 	CU_add_test( *suite, "Invalid ACK Event\n",err_invalidACK);
 	CU_add_test( *suite, "ACK enabled Event\n", test_eventACKEnabled);
 	CU_add_test( *suite, "ACK disabled Event\n", test_eventACKDisabled);
 	CU_add_test( *suite, "adv ACK enabled Event\n", test_adveventACKEnabled);
-	CU_add_test( *suite, "adv ACK disabled Event\n", test_adveventACKDisabled);*/
+	CU_add_test( *suite, "adv ACK disabled Event\n", test_adveventACKDisabled);
 }
 
 /*----------------------------------------------------------------------------*/
