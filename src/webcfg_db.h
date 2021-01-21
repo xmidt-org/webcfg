@@ -133,6 +133,8 @@ void delete_tmp_docs_list();
 
 int get_numOfMpDocs();
 
+void reset_numOfMpDocs();
+
 int get_successDocCount();
 
 void reset_successDocCount();

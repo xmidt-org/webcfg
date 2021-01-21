@@ -352,6 +352,11 @@ int get_numOfMpDocs()
     return numOfMpDocs;
 }
 
+void reset_numOfMpDocs()
+{
+    numOfMpDocs = 0;
+}
+
 int get_successDocCount()
 {
     return success_doc_count;
@@ -361,7 +366,6 @@ void reset_successDocCount()
 {
     success_doc_count = 0;
 }
-
 
 int get_doc_fail()
 {
