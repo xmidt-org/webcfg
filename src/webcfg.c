@@ -320,6 +320,7 @@ void *WebConfigMultipartTask(void *status)
 
 	reset_global_eventFlag();
 	set_doc_fail( 0);
+	reset_numOfMpDocs();
 	reset_successDocCount();
 	set_global_maintenance_time(0);
 	set_global_retry_timestamp(0);
