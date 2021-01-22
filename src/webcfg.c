@@ -98,6 +98,7 @@ void *WebConfigMultipartTask(void *status)
 	char *syncDoc = NULL;
 	int value = 0;
 	int wait_flag = 1;
+	int maintenance_count = 0;
 	time_t t;
 	struct timespec ts;
 	Status = (unsigned long)status;
@@ -173,7 +174,8 @@ void *WebConfigMultipartTask(void *status)
 				}
 
 				initMaintenanceTimer();
-				maintenance_doc_sync = 0;
+				maintenance_doc_sync = 0;//Maintenance trigger flag
+				maintenance_count = 1;//Maintenance count to restrict one sync per day
 				set_global_supplementarySync(0);
 			}
 		}
@@ -195,8 +197,7 @@ void *WebConfigMultipartTask(void *status)
 		{
 		//To disable supplementary sync for RDKV platforms
 		#if !defined(RDK_PERSISTENT_PATH_VIDEO)
-			set_retry_timer(maintenanceSyncSeconds());
-			ts.tv_sec += get_retry_timer();
+			ts.tv_sec += getMaintenanceSyncSeconds(maintenance_count);
 			maintenance_doc_sync = 1;
 			WebcfgInfo("The Maintenance Sync triggers at %s\n", printTime((long long)ts.tv_sec));
 		#else
@@ -239,6 +240,7 @@ void *WebConfigMultipartTask(void *status)
 			{
 				time(&t);
 				wait_flag = 0;
+				maintenance_count = 0;
 				WebcfgDebug("Supplementary Sync Interval %d sec and syncing at %s\n",value,ctime(&t));
 			}
 		}
@@ -319,13 +321,11 @@ void *WebConfigMultipartTask(void *status)
 	JoinThread (get_global_client_threadid());
 
 	reset_global_eventFlag();
-	set_doc_fail( 0);
+	set_doc_fail(0);
 	reset_numOfMpDocs();
 	reset_successDocCount();
 	set_global_maintenance_time(0);
 	set_global_retry_timestamp(0);
-	set_global_fw_start_time(0);
-	set_global_fw_end_time(0);
 	set_retry_timer(0);
 	set_global_supplementarySync(0);
 
