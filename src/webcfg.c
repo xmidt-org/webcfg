@@ -202,6 +202,8 @@ void *WebConfigMultipartTask(void *status)
 			WebcfgInfo("The Maintenance Sync triggers at %s\n", printTime((long long)ts.tv_sec));
 		#else
 			maintenance_doc_sync = 0;
+			maintenance_count = 0;
+			WebcfgDebug("maintenance_count is %d\n", maintenance_count);
 		#endif
 		}
 		else
