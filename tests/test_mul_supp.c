@@ -343,7 +343,7 @@ void test_retrySyncSeconds()
 void test_maintenanceSyncSeconds()
 {
 	int sec=0;	
-	sec =maintenanceSyncSeconds();
+	sec =getMaintenanceSyncSeconds(0);
 	CU_ASSERT_FATAL( 0 != sec);
 }
 void printTest()

@@ -44,8 +44,6 @@
 static int g_retry_timer = 900;
 static long g_retry_timestamp = 0;
 static long g_maintenance_time = 0;
-static long g_fw_start_time = 0;
-static long g_fw_end_time = 0;
 /*----------------------------------------------------------------------------*/
 /*                             Function Prototypes                            */
 /*----------------------------------------------------------------------------*/
@@ -61,26 +59,6 @@ long get_global_maintenance_time()
 void set_global_maintenance_time(long value)
 {
     g_maintenance_time = value;
-}
-
-long get_global_fw_start_time()
-{
-    return g_fw_start_time;
-}
-
-void set_global_fw_start_time(long value)
-{
-    g_fw_start_time = value;
-}
-
-long get_global_fw_end_time()
-{
-    return g_fw_end_time;
-}
-
-void set_global_fw_end_time(long value)
-{
-    g_fw_end_time = value;
 }
 
 int get_retry_timer()
@@ -164,14 +142,11 @@ void initMaintenanceTimer()
 		fw_start_time = fw_start_time - 86400;         //to get a time within the day
 	}
 
-	set_global_fw_start_time( fw_start_time );
-	set_global_fw_end_time( fw_end_time );
-
         random_key = generateRandomId();
         time_val = (random_key % (fw_end_time - fw_start_time+ 1)) + fw_start_time;
 
-	WebcfgInfo("Firmware Upgrade start time is %ld\n",get_global_fw_start_time());
-	WebcfgInfo("Firmware Upgrade end time is %ld\n",get_global_fw_end_time());
+	WebcfgInfo("Firmware Upgrade start time is %ld\n",fw_start_time);
+	WebcfgInfo("Firmware Upgrade end time is %ld\n",fw_end_time);
 
 	if( time_val <= 0)
 	{
@@ -208,7 +183,7 @@ int checkMaintenanceTimer()
 }
 
 //To get the wait seconds for Maintenance Time
-int maintenanceSyncSeconds()
+int getMaintenanceSyncSeconds(int maintenance_count)
 {
 	struct timespec ct;
 	long maintenance_secs = 0;
@@ -225,7 +200,8 @@ int maintenanceSyncSeconds()
 	WebcfgDebug("The current time in maintenanceSyncSeconds is %lld at %s\n",current_time, printTime(current_time));
 	WebcfgDebug("The random timer in maintenanceSyncSeconds is %ld\n",get_global_maintenance_time());
 
-	if (maintenance_secs < 0)
+	// to shift maintenance sync to next day when already sync happened
+	if (maintenance_secs < 0 || maintenance_count == 1 )
 	{
 		sec_to_12 = 86400 - current_time_in_sec; //Getting the remaining time for midnight 12
 		maintenance_secs = sec_to_12 + get_global_maintenance_time();//Adding with Maintenance wait time for nextday trigger
