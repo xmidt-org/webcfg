@@ -320,7 +320,7 @@ int handlehttpResponse(long response_code, char *webConfigData, int retry_count,
 	{
 		WebcfgInfo("webConfig is not in sync with cloud. response_code:%ld\n", response_code);
 
-		if(webConfigData !=NULL)
+		if(webConfigData !=NULL && (strlen(webConfigData)>0))
 		{
 			WebcfgDebug("webConfigData fetched successfully\n");
 			WebcfgDebug("parseMultipartDocument\n");
@@ -339,7 +339,9 @@ int handlehttpResponse(long response_code, char *webConfigData, int retry_count,
 		}
 		else
 		{
-			WebcfgError("webConfigData is empty, need to do curl retry to server\n");
+			WebcfgError("webConfigData is empty\n");
+			WEBCFG_FREE(transaction_uuid);
+			return 1;
 		}
 	}
 	else if(response_code == 204)
