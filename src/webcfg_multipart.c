@@ -130,14 +130,12 @@ void set_global_eventFlag()
 size_t writer_callback_fn(void *buffer, size_t size, size_t nmemb, struct token_data *data);
 size_t headr_callback(char *buffer, size_t size, size_t nitems);
 void stripspaces(char *str, char **final_str);
-void createCurlHeader( struct curl_slist *list, struct curl_slist **header_list, int status, char ** trans_uuid);
 void parse_multipart(char *ptr, int no_of_bytes );
 void addToDBList(webconfig_db_data_t *webcfgdb);
 char* generate_trans_uuid();
 WEBCFG_STATUS processMsgpackSubdoc(char *transaction_id);
 void loadInitURLFromFile(char **url);
 static void get_webCfg_interface(char **interface);
-char *replaceMacWord(const char *s, const char *macW, const char *deviceMACW);
 WEBCFG_STATUS checkAkerDoc();
 /*----------------------------------------------------------------------------*/
 /*                             External Functions                             */
