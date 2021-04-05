@@ -456,7 +456,12 @@ WEBCFG_STATUS parseMultipartDocument(void *config_data, char *ct , size_t data_s
 				while(0 != num_of_parts % 2)
 				{
 					ptr_lb1 = memchr(ptr_lb+1, '\n', data_size - (ptr_lb - str_body));
-					while(0 != memcmp(ptr_lb1-1, "\r",1 )){
+				#ifdef MULTIPART_UTILITY
+					if(0 != memcmp(ptr_lb1-1, "\r",1 ))
+				#else
+					while(0 != memcmp(ptr_lb1-1, "\r",1 ))
+				#endif
+					{
 					ptr_lb1 = memchr(ptr_lb1+1, '\n', data_size - (ptr_lb - str_body));
 					}
 					index2 = ptr_lb1-str_body;
