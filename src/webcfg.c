@@ -460,6 +460,8 @@ int handlehttpResponse(long response_code, char *webConfigData, int retry_count,
 	char *db_root_string = NULL;
 	int subdocList = 0;
 	char *contentLength = NULL;
+	uint16_t errorcode = 0;
+	char* result =  NULL;
 
 	if(response_code == 304)
 	{
@@ -509,6 +511,10 @@ int handlehttpResponse(long response_code, char *webConfigData, int retry_count,
 				WEBCFG_FREE(webConfigData);
 				return 1;
 			}
+			errorcode = getStatusErrorCodeAndMessage(WEBCONFIG_DATA_EMPTY, &result);
+			WebcfgInfo("The error_details is %s and err_code is %d\n", result, errorcode);
+			addWebConfgNotifyMsg("root", db_root_version, "failed", result, transaction_uuid ,0, "status", errorcode, db_root_string, response_code);
+			WEBCFG_FREE(result);
 		}
 	}
 	else if(response_code == 204)

@@ -26,6 +26,7 @@
 #include "webcfg_param.h"
 #include "webcfg_blob.h"
 #include "webcfg_timer.h"
+#include <errno.h>
 /*----------------------------------------------------------------------------*/
 /*                                   Macros                                   */
 /*----------------------------------------------------------------------------*/
@@ -265,6 +266,8 @@ void* processSubdocEvents()
 	webconfig_tmp_data_t * subdoc_node = NULL;
 	expire_timer_t * doctimer_node = NULL;
 	char * cloud_trans_id = NULL;
+	uint16_t err = 0;
+	char* errmsg = NULL;
 
 	while(FOREVER())
 	{
@@ -389,6 +392,13 @@ void* processSubdocEvents()
 					}
 					else
 					{
+						if(subdoc_node->retry_count < 3)
+						{
+							err = getStatusErrorCodeAndMessage(SUBDOC_RETRY_FAILED, &errmsg);
+							WebcfgInfo("The error_details is %s and err_code is %d\n", errmsg, err);
+							addWebConfgNotifyMsg(subdoc_node->name, 0, "failed", errmsg, NULL ,0, "status", err, NULL, 200);
+							WEBCFG_FREE(errmsg);
+						}
 						WebcfgError("retryMultipartSubdoc failed\n");
 					}
 				}
@@ -453,6 +463,13 @@ void* processSubdocEvents()
 							}
 							else
 							{
+								if(subdoc_node->retry_count < 3)
+								{
+									err = getStatusErrorCodeAndMessage(SUBDOC_RETRY_FAILED, &errmsg);
+									WebcfgInfo("The error_details is %s and err_code is %d\n", errmsg, err);
+									addWebConfgNotifyMsg(subdoc_node->name, 0, "failed", errmsg, NULL ,0, "status", err, NULL, 200);
+									WEBCFG_FREE(errmsg);
+								}
 								WebcfgError("retryMultipartSubdoc failed\n");
 							}
 						}
@@ -495,6 +512,13 @@ void* processSubdocEvents()
 							}
 							else
 							{
+								if(subdoc_node->retry_count < 3)
+								{
+									err = getStatusErrorCodeAndMessage(SUBDOC_RETRY_FAILED, &errmsg);
+									WebcfgInfo("The error_details is %s and err_code is %d\n", errmsg, err);
+									addWebConfgNotifyMsg(subdoc_node->name, 0, "failed", errmsg, NULL ,0, "status", err, NULL, 200);
+									WEBCFG_FREE(errmsg);
+								}
 								WebcfgError("retryMultipartSubdoc failed\n");
 							}
 						}
@@ -540,6 +564,8 @@ int parseEventData(char* str, event_params_t **val)
 	char *err_code = NULL;
 	char *subdoc_name = NULL, *status = NULL;
 	char *process_name = NULL, *failure_reason = NULL;
+	uint16_t err = 0;
+	char* result = NULL;
 
 	if(str !=NULL)
 	{
@@ -610,6 +636,12 @@ int parseEventData(char* str, event_params_t **val)
 			return WEBCFG_SUCCESS;
 		}		
 	}
+
+	err = getStatusErrorCodeAndMessage(COMPONENT_EVENT_PARSE_FAILURE, &result);
+	WebcfgInfo("The error_details is %s and err_code is %d\n", result, err);
+	addWebConfgNotifyMsg(NULL, 0, "failed", result, NULL ,0, "status", err, NULL, 200);
+	WEBCFG_FREE(result);
+
 	return WEBCFG_FAILURE;
 
 }
@@ -872,11 +904,17 @@ WEBCFG_STATUS retryMultipartSubdoc(webconfig_tmp_data_t *docNode, char *docName)
 	uint16_t doc_transId = 0;
 	webcfgparam_t *pm = NULL;
 	multipartdocs_t *gmp = NULL;
+	uint16_t err = 0;
+	char * errmsg = NULL;
 
 	gmp = get_global_mp();
 
 	if(gmp ==NULL)
 	{
+		err = getStatusErrorCodeAndMessage(FAILED_TO_SET_BLOB, &errmsg);
+		WebcfgInfo("The error_details is %s and err_code is %d\n", errmsg, err);
+		addWebConfgNotifyMsg("root", 0, "failed", errmsg, NULL ,0, "status", err, NULL, 200);
+		WEBCFG_FREE(errmsg);
 		WebcfgError("Multipart mp cache is NULL\n");
 		return rv;
 	}
@@ -898,6 +936,7 @@ WEBCFG_STATUS retryMultipartSubdoc(webconfig_tmp_data_t *docNode, char *docName)
 
 			WebcfgDebug("--------------decode root doc-------------\n");
 			pm = webcfgparam_convert( gmp->data, gmp->data_size+1 );
+			err = errno;
 			if ( NULL != pm)
 			{
 				paramCount = (int)pm->entries_count;
@@ -1028,6 +1067,13 @@ WEBCFG_STATUS retryMultipartSubdoc(webconfig_tmp_data_t *docNode, char *docName)
 			}
 			else
 			{
+				strncpy(errDetails,webcfgparam_strerror(err),MAX_VALUE_LEN);
+				snprintf(result,MAX_VALUE_LEN,"decode_root_failure:%s", errDetails);
+				updateTmpList(docNode, gmp->name_space, gmp->etag, "failed", result, 111, 0, 0);
+				if(docNode !=NULL && docNode->cloud_trans_id !=NULL)
+				{
+					addWebConfgNotifyMsg(gmp->name_space, gmp->etag, "failed", result, docNode->cloud_trans_id,0, "status", 111, NULL, 200);
+				}
 				WebcfgError("--------------decode root doc failed-------------\n");
 			}
 			break;
@@ -1087,6 +1133,7 @@ WEBCFG_STATUS checkAndUpdateTmpRetryCount(webconfig_tmp_data_t *temp, char *docn
 			return WEBCFG_SUCCESS;
 		}
 	}
+
 	WebcfgError("checkAndUpdateTmpRetryCount failed for doc %s\n", docname);
 	return WEBCFG_FAILURE;
 }
