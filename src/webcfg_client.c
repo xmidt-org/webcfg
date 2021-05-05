@@ -153,29 +153,45 @@ void* parodus_receive()
 {
 	int rtn;
 	wrp_msg_t *wrp_msg = NULL;
+	uint16_t err = 0;
+	char * errmsg = NULL;
+	static int sleep_counter = 0;
 
 	while(1)
 	{
 		if (get_global_shutdown())
 		{
 			WebcfgDebug("g_shutdown true, break libparodus_receive\n");
+			sleep_counter = 0;
 			break;
 		}
 		rtn = libparodus_receive (webcfg_instance, &wrp_msg, 2000);
 		if (rtn == 1)
 		{
+			sleep_counter = 0;
 			continue;
 		}
 
 		if (rtn != 0)
 		{
-			WebcfgError ("Libparodus failed to recieve message: '%s'\n",libparodus_strerror(rtn));
+			WebcfgError ("Libparodus failed to receive message: '%s'\n",libparodus_strerror(rtn));
 			sleep(5);
+			sleep_counter++;
+			if(get_send_aker_flag() && (sleep_counter == 6))
+			{
+				err = getStatusErrorCodeAndMessage(LIBPARODUS_RECEIVE_FAILURE, &errmsg);
+				WebcfgInfo("The error_details is %s and err_code is %d\n", errmsg, err);
+				addWebConfgNotifyMsg("aker", 0, "failed", errmsg, NULL ,0, "status", err, NULL, 200);
+				WEBCFG_FREE(errmsg);
+				sleep_counter = 0;
+			}
 			continue;
 		}
 
 		if(wrp_msg != NULL)
 		{
+			set_send_aker_flag(false);
+			sleep_counter = 0;
 			WebcfgDebug("Message received with type %d\n",wrp_msg->msg_type);
 			WebcfgDebug("transaction_uuid %s\n", wrp_msg->u.crud.transaction_uuid );
 			if ((wrp_msg->msg_type == WRP_MSG_TYPE__UPDATE) ||(wrp_msg->msg_type == WRP_MSG_TYPE__DELETE))

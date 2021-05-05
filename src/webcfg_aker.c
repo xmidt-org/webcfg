@@ -26,7 +26,6 @@
 #include "webcfg_generic.h"
 #include "webcfg_event.h"
 #include "webcfg_blob.h"
-#include "webcfg_notify.h"
 #include "webcfg_param.h"
 #include <wrp-c.h>
 #include <wdmp-c.h>
@@ -54,6 +53,7 @@ int akerDocVersion=0;
 uint16_t akerTransId=0;
 int wakeFlag = 0;
 char *aker_status = NULL;
+bool send_aker_flag = false;
 pthread_mutex_t client_mut=PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t client_con=PTHREAD_COND_INITIALIZER;
 /*----------------------------------------------------------------------------*/
@@ -77,6 +77,16 @@ pthread_cond_t *get_global_client_con(void)
 pthread_mutex_t *get_global_client_mut(void)
 {
     return &client_mut;
+}
+
+bool get_send_aker_flag()
+{
+    return send_aker_flag;
+}
+
+void set_send_aker_flag(bool flag)
+{
+    send_aker_flag = flag;
 }
 
 int akerwait__ (unsigned int secs)
@@ -187,8 +197,6 @@ WEBCFG_STATUS checkAkerStatus()
 	char source[MAX_BUF_SIZE/4] = {'\0'};
 	char dest[MAX_BUF_SIZE/4] = {'\0'};
 	char *transaction_uuid = NULL;
-	uint16_t err = 0;
-	char * errmsg = NULL;
 
 	msg = (wrp_msg_t *)malloc(sizeof(wrp_msg_t));
 	if(msg != NULL)
@@ -236,10 +244,6 @@ WEBCFG_STATUS checkAkerStatus()
 		}
 		else
 		{
-			err = getStatusErrorCodeAndMessage(LIBPARODUS_RECEIVE_FAILURE, &errmsg);
-			WebcfgInfo("The error_details is %s and err_code is %d\n", errmsg, err);
-			addWebConfgNotifyMsg("aker", 0, "failed", errmsg, NULL ,0, "status", err, NULL, 200);
-			WEBCFG_FREE(errmsg);
 			WebcfgError("Failed to send aker retrieve req: '%s'\n",libparodus_strerror(sendStatus));
 		}
 
