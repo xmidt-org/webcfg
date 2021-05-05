@@ -132,6 +132,7 @@ size_t writer_callback_fn(void *buffer, size_t size, size_t nmemb, struct token_
 size_t headr_callback(char *buffer, size_t size, size_t nitems);
 void stripspaces(char *str, char **final_str);
 void parse_multipart(char *ptr, int no_of_bytes );
+void line_parser(char *ptr, int no_of_bytes);
 void addToDBList(webconfig_db_data_t *webcfgdb);
 char* generate_trans_uuid();
 WEBCFG_STATUS processMsgpackSubdoc(char *transaction_id);
@@ -459,50 +460,41 @@ WEBCFG_STATUS parseMultipartDocument(void *config_data, char *ct , size_t data_s
 				WebcfgDebug("last line boundary \n");
 				break;
 			}
-			if(0 == memcmp(ptr_lb, line_boundary, strlen(line_boundary)))
+			else if(0 == memcmp(ptr_lb, line_boundary, strlen(line_boundary)))
 			{
 				ptr_lb = ptr_lb+(strlen(line_boundary))-1;
+				ptr_lb1 = ptr_lb+1;
 				num_of_parts = 1;
 				while(0 != num_of_parts % 2)
 				{
-					ptr_lb1 = memchr(ptr_lb+1, '\n', data_size - (ptr_lb - str_body));
-
-					while(0 != memcmp(ptr_lb1-1, "\r",1 ))
+					ptr_lb1 = memchr(ptr_lb1, '-', data_size - (ptr_lb1 - str_body));
+					if(0 == memcmp(ptr_lb1, last_line_boundary, strlen(last_line_boundary)))
 					{
-						ptr_lb1 = memchr(ptr_lb1+1, '\n', data_size - (ptr_lb - str_body));
-						#ifdef MULTIPART_UTILITY
-							if(get_g_testfile())
-							{
-							    break;
-							}
-						#endif
-					}
-					index2 = ptr_lb1-str_body;
-					index1 = ptr_lb-str_body;
-					parse_multipart(str_body+index1+1,index2 - index1 - 2);
-					ptr_lb++;
-				#ifdef MULTIPART_UTILITY
-					if(0 == memcmp(ptr_lb+get_g_testfile(), last_line_boundary, strlen(last_line_boundary)))
-				#else
-					if(0 == memcmp(ptr_lb, last_line_boundary, strlen(last_line_boundary)))
-				#endif
-					{
-						WebcfgDebug("last line boundary inside \n");
+						//num_of_parts++;
+						index2 = ptr_lb1-str_body;
+						index1 = ptr_lb-str_body;
+						line_parser(str_body+index1,index2 - index1 - 2);
+						//printf("The 2nd pointer in last line is %s\n",str_body+index1+1);
+						//printf("the value size is %d\n", index2 - index1 - 2);
 						break;
 					}
-					if(0 == memcmp(ptr_lb1+1, "-", 1) && 0 == memcmp(ptr_lb1+1, line_boundary, strlen(line_boundary)))
+					else if(0 == memcmp(ptr_lb1, line_boundary, strlen(line_boundary)))
 					{
-						WebcfgDebug(" line boundary inside \n");
+						//printf("The 2nd pointer is %s\n", ptr_lb1);
+						index2 = ptr_lb1-str_body;
+						index1 = ptr_lb-str_body;
+						line_parser(str_body+index1,index2 - index1 - 2);
+						//printf("The 2nd pointer is %s\n",str_body+index1+1);
+						//printf("the value size is %d\n", index2 - index1 - 2);
 						num_of_parts++;
 						count++;
 					}
-					ptr_lb = memchr(ptr_lb, '\n', data_size - (ptr_lb - str_body));
-}
+					ptr_lb1 = memchr(ptr_lb1, '\n', data_size - (ptr_lb1 - str_body));
+					ptr_lb1++;
+				}
 			}
-			else
-			{
-				ptr_lb++;
-			}
+			ptr_lb = memchr(ptr_lb, '\n', data_size - (ptr_lb - str_body));
+			ptr_lb++;
 		}
 		WEBCFG_FREE(str_body);
 		WEBCFG_FREE(line_boundary);
@@ -1861,6 +1853,43 @@ void delete_multipart()
 	pthread_mutex_lock (&multipart_t_mut);
 	g_mp_head = NULL;
 	pthread_mutex_unlock (&multipart_t_mut);
+}
+
+void line_parser(char *ptr, int no_of_bytes)
+{
+	char* str_body = NULL;
+	str_body = malloc(sizeof(char) * no_of_bytes + 1);
+	str_body = memcpy(str_body, ptr, no_of_bytes + 1);
+
+	char *ptr_lb=str_body;
+	char *ptr_lb1=str_body;
+	int index1=0, index2 =0;
+	int count = 0;
+
+	while((ptr_lb - str_body) < no_of_bytes)
+	{
+		if(count < 4)
+		{
+			ptr_lb1 =  memchr(ptr_lb+1, '\n', no_of_bytes - (ptr_lb - str_body));
+			if(0 != memcmp(ptr_lb1-1, "\r",1 ))
+			{
+				ptr_lb1 = memchr(ptr_lb1+1, '\n', no_of_bytes - (ptr_lb - str_body));
+			}
+			index2 = ptr_lb1-str_body;
+			index1 = ptr_lb-str_body;
+			parse_multipart(str_body+index1+1,index2 - index1 - 2);
+			ptr_lb++;
+			ptr_lb = memchr(ptr_lb, '\n', no_of_bytes - (ptr_lb - str_body));
+			count++;
+		}
+		else
+		{
+			index2 = no_of_bytes+1;
+			index1 = ptr_lb-str_body;
+			parse_multipart(str_body+index1+1,index2 - index1 - 2);
+			break;
+		}
+	}
 }
 
 void parse_multipart(char *ptr, int no_of_bytes)
