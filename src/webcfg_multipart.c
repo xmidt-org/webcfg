@@ -772,6 +772,8 @@ WEBCFG_STATUS processMsgpackSubdoc(char *transaction_id)
 						mapWdmpStatusToStatusMessage(errd, errDetails);
 						WebcfgDebug("The errDetails value is %s\n",errDetails);
 
+						WebcfgInfo("subdoc_name and err_code : %s %d\n",mp->name_space,ccspStatus);
+						WebcfgInfo("failure_reason %s\n",errDetails);
 						//Update error_details to tmp list and send failure notification to cloud.
 						if((ccspStatus == CCSP_CRASH_STATUS_CODE) || (ccspStatus == 204) || (ccspStatus == 191) || (ccspStatus == 193) || (ccspStatus == 190))
 						{

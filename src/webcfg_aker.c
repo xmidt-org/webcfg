@@ -375,6 +375,11 @@ AKER_STATUS processAkerSubdoc(webconfig_tmp_data_t *docNode, multipartdocs_t *ak
 				{
 					//Invalid aker request
 					updateTmpList(docNode, gmp->name_space, gmp->etag, "failed", "doc_rejected", 0, 0, 0);
+					if(docNode != NULL)
+					{
+						WebcfgInfo("subdoc_name and err_code : %s %lu\n",docNode->name, (long)docNode->error_code);
+						WebcfgInfo("failure_reason %s\n", docNode->error_details);
+					}
 					if(docNode !=NULL && docNode->cloud_trans_id !=NULL)
 					{
 						addWebConfgNotifyMsg(gmp->name_space, gmp->etag, "failed", "doc_rejected", docNode->cloud_trans_id, 0, "status", 0, NULL, 200);
