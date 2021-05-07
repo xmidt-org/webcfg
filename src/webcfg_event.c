@@ -343,6 +343,8 @@ void* processSubdocEvents()
 							stopWebcfgTimer(doctimer_node, eventParam->subdoc_name, eventParam->trans_id);
 							snprintf(err_details, sizeof(err_details),"NACK:%s,%s",((NULL != eventParam->process_name) ? eventParam->process_name : "unknown"), ((NULL != eventParam->failure_reason) ? eventParam->failure_reason : "unknown"));
 							WebcfgDebug("err_details : %s, err_code : %lu\n", err_details, (long) eventParam->err_code);
+							WebcfgInfo("subdoc_name and err_code : %s %lu\n", eventParam->subdoc_name, (long) eventParam->err_code);
+							WebcfgInfo("failure_reason %s\n", err_details);
 							updateTmpList(subdoc_node, eventParam->subdoc_name, eventParam->version, "failed", err_details, eventParam->err_code, eventParam->trans_id, 0);
 							WebcfgDebug("get_global_transID is %s\n", get_global_transID());
 							if(subdoc_node !=NULL && subdoc_node->cloud_trans_id !=NULL)
