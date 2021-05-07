@@ -20,6 +20,7 @@
 #include <wrp-c.h>
 #include <libparodus.h>
 #include "webcfg_db.h"
+#include "webcfg_notify.h"
 /*----------------------------------------------------------------------------*/
 /*                                   Macros                                   */
 /*----------------------------------------------------------------------------*/
@@ -45,4 +46,6 @@ void updateAkerMaxRetry(webconfig_tmp_data_t *temp, char *docname);
 int akerwait__ (unsigned int secs);
 pthread_cond_t *get_global_client_con(void);
 pthread_mutex_t *get_global_client_mut(void);
+bool get_send_aker_flag();
+void set_send_aker_flag(bool flag);
 #endif
