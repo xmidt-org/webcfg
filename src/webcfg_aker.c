@@ -382,7 +382,7 @@ AKER_STATUS processAkerSubdoc(webconfig_tmp_data_t *docNode, multipartdocs_t *ak
 					}
 					if(docNode !=NULL && docNode->cloud_trans_id !=NULL)
 					{
-						addWebConfgNotifyMsg(gmp->name_space, gmp->etag, "failed", "doc_rejected", docNode->cloud_trans_id, 0, "status", 0, NULL, 200);
+						addWebConfgNotifyMsg(gmp->name_space, gmp->etag, "failed", "doc_rejected", docNode->cloud_trans_id, 0, "status", 411, NULL, 200);
 					}
 					rv = AKER_FAILURE;
 				}
