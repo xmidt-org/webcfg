@@ -24,9 +24,14 @@
 #include "../src/webcfg_param.h"
 #include "../src/webcfg_multipart.h"
 #include "../src/webcfg_timer.h"
+#include "../src/webcfg_notify.h"
 #define UNUSED(x) (void )(x)
 //mock functions
 
+bool get_global_shutdown()
+{
+	return false;
+}
 int akerwait__ (unsigned int secs)
 {
 	UNUSED(secs);
@@ -93,20 +98,15 @@ void setValues(const param_t paramVal[], const unsigned int paramCount, const in
 	return;
 }
 
-void addWebConfgNotifyMsg(char *docname, uint32_t version, char *status, char *error_details, char *transaction_uuid, uint32_t timeout,char* type, uint16_t error_code, char *root_string, long response_code)
+
+void sendNotification(char *payload, char *source, char *destination)
 {
-	UNUSED(docname);
-	UNUSED(version);
-	UNUSED(status);
-	UNUSED(error_details);
-	UNUSED(transaction_uuid);
-	UNUSED(timeout);
-	UNUSED(type);
-	UNUSED(error_code);
-	UNUSED(root_string);
-	UNUSED(response_code);
+	WEBCFG_FREE(payload);
+	WEBCFG_FREE(source);
+	UNUSED(destination);
 	return;
 }
+
 WDMP_STATUS mapStatus(int ret)
 {
 	UNUSED(ret);
