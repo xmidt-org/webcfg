@@ -1901,7 +1901,7 @@ void parse_multipart(char *ptr, int no_of_bytes)
 	static char *data = NULL;
 	static uint32_t  etag = 0;
 	static size_t data_size = 0;
-	int flag = 0;
+	static int flag = 0;
 
 	/*for storing respective values */
 	if(0 == strncmp(ptr,"Content-type: ",strlen("Content-type")))
@@ -1933,10 +1933,10 @@ void parse_multipart(char *ptr, int no_of_bytes)
 		data = memcpy(data, ptr, no_of_bytes );
 		//store doc size of each sub doc
 		data_size = no_of_bytes;
-		flag = 1;
+		flag++;
 	}
 
-	if(flag)
+	if(flag == 2)
 	{
 		if(etag == 0 || name_space == NULL || data == NULL)
 		{
@@ -1950,6 +1950,7 @@ void parse_multipart(char *ptr, int no_of_bytes)
 				WEBCFG_FREE(result);
 			}
 		}
+		flag = 0;
 	}
 
 	if(etag != 0 && name_space != NULL && data != NULL && data_size != 0 )

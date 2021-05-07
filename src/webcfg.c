@@ -330,6 +330,7 @@ void *WebConfigMultipartTask(void *status)
 	set_global_retry_timestamp(0);
 	set_retry_timer(0);
 	set_global_supplementarySync(0);
+	set_send_aker_flag(false);
 
 	//delete tmp, db, and mp cache lists.
 	delete_tmp_list();
