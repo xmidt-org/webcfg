@@ -22,6 +22,25 @@
 #include "webcfg.h"
 #include "webcfg_db.h"
 
+typedef enum
+{
+	DECODE_ROOT_FAILURE,
+	INCORRECT_BLOB_TYPE,
+	BLOB_PARAM_VALIDATION_FAILURE,
+	WEBCONFIG_DATA_EMPTY,
+	MULTIPART_BOUNDARY_NULL,
+	INVALID_CONTENT_TYPE,
+	ADD_TO_CACHE_LIST_FAILURE,
+	FAILED_TO_SET_BLOB,
+	MULTIPART_CACHE_NULL,
+	AKER_SUBDOC_PROCESSING_FAILED,
+	AKER_RESPONSE_PARSE_FAILURE,
+	INVALID_AKER_RESPONSE,
+	LIBPARODUS_RECEIVE_FAILURE,
+	COMPONENT_EVENT_PARSE_FAILURE,
+	SUBDOC_RETRY_FAILED
+} WEBCFG_ERROR_CODE;
+
 typedef struct _notify_params
 {
 	char * name;
@@ -41,4 +60,5 @@ pthread_t get_global_notify_threadid();
 void addWebConfgNotifyMsg(char *docname, uint32_t version, char *status, char *error_details, char *transaction_uuid, uint32_t timeout,char* type, uint16_t error_code, char *root_string, long response_code);
 pthread_cond_t *get_global_notify_con(void);
 pthread_mutex_t *get_global_notify_mut(void);
+uint16_t getStatusErrorCodeAndMessage(WEBCFG_ERROR_CODE status, char** result);
 #endif
