@@ -279,7 +279,6 @@ AKER_STATUS processAkerSubdoc(webconfig_tmp_data_t *docNode, multipartdocs_t *ak
 	multipartdocs_t *gmp = NULL;
 	uint16_t err = 0;
 	char* result = NULL;
-	char errDetails[MAX_VALUE_LEN]={0};
 	char errMsg[MAX_VALUE_LEN]={0};
 
 	gmp = akerIndex;
@@ -392,8 +391,9 @@ AKER_STATUS processAkerSubdoc(webconfig_tmp_data_t *docNode, multipartdocs_t *ak
 		}
 		else
 		{
-			strncpy(errDetails,webcfgparam_strerror(err),MAX_VALUE_LEN);
-			snprintf(errMsg,MAX_VALUE_LEN,"decode_root_failure:%s", errDetails);
+			char * msg = NULL;
+			msg = (char *)webcfgparam_strerror(err);
+			snprintf(errMsg,MAX_VALUE_LEN,"decode_root_failure:%s", msg);
 			updateTmpList(docNode, gmp->name_space, gmp->etag, "failed", errMsg, 111, 0, 0);
 			if(docNode !=NULL && docNode->cloud_trans_id !=NULL)
 			{

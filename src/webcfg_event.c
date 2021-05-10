@@ -1069,8 +1069,9 @@ WEBCFG_STATUS retryMultipartSubdoc(webconfig_tmp_data_t *docNode, char *docName)
 			}
 			else
 			{
-				strncpy(errDetails,webcfgparam_strerror(err),MAX_VALUE_LEN);
-				snprintf(result,MAX_VALUE_LEN,"decode_root_failure:%s", errDetails);
+				char * msg = NULL;
+				msg = (char *)webcfgparam_strerror(err);
+				snprintf(result,MAX_VALUE_LEN,"decode_root_failure:%s", msg);
 				updateTmpList(docNode, gmp->name_space, gmp->etag, "failed", result, 111, 0, 0);
 				if(docNode !=NULL && docNode->cloud_trans_id !=NULL)
 				{

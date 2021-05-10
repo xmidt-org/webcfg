@@ -858,8 +858,9 @@ WEBCFG_STATUS processMsgpackSubdoc(char *transaction_id)
 		}
 		else
 		{
-			strncpy(errDetails,webcfgparam_strerror(err),MAX_VALUE_LEN);
-			snprintf(result,MAX_VALUE_LEN,"decode_root_failure:%s", errDetails);
+			char * msg = NULL;
+			msg = (char *)webcfgparam_strerror(err);
+			snprintf(result,MAX_VALUE_LEN,"decode_root_failure:%s", msg);
 			updateTmpList(subdoc_node, mp->name_space, mp->etag, "failed", result, 111, 0, 0);
 			if(subdoc_node !=NULL && subdoc_node->cloud_trans_id !=NULL)
 			{
