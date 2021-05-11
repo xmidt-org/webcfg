@@ -513,7 +513,7 @@ int handlehttpResponse(long response_code, char *webConfigData, int retry_count,
 				return 1;
 			}
 			errorcode = getStatusErrorCodeAndMessage(WEBCONFIG_DATA_EMPTY, &result);
-			WebcfgInfo("The error_details is %s and err_code is %d\n", result, errorcode);
+			WebcfgDebug("The error_details is %s and err_code is %d\n", result, errorcode);
 			addWebConfgNotifyMsg("root", db_root_version, "failed", result, transaction_uuid ,0, "status", errorcode, db_root_string, response_code);
 			WEBCFG_FREE(result);
 		}

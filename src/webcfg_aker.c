@@ -279,15 +279,22 @@ AKER_STATUS processAkerSubdoc(webconfig_tmp_data_t *docNode, multipartdocs_t *ak
 	multipartdocs_t *gmp = NULL;
 	uint16_t err = 0;
 	char* result = NULL;
-	char errMsg[MAX_VALUE_LEN]={0};
+	char* errMsg = NULL;
 
 	gmp = akerIndex;
 
 	if(gmp ==NULL)
 	{
 		err = getStatusErrorCodeAndMessage(AKER_SUBDOC_PROCESSING_FAILED, &result);
-		WebcfgInfo("The error_details is %s and err_code is %d\n", result, err);
-		addWebConfgNotifyMsg("aker", 0, "failed", result, NULL ,0, "status", err, NULL, 200);
+		WebcfgDebug("The error_details is %s and err_code is %d\n", result, err);
+		if(docNode!=NULL)
+		{
+			updateTmpList(docNode, "aker", docNode->version, "failed", result, err, 0, 0);
+			if(docNode->cloud_trans_id !=NULL)
+			{
+				addWebConfgNotifyMsg("aker", docNode->version, "failed", result, docNode->cloud_trans_id ,0, "status", err, NULL, 200);
+			}
+		}
 		WEBCFG_FREE(result);
 
 		WebcfgError("processAkerSubdoc failed as mp cache is NULL\n");
@@ -347,8 +354,12 @@ AKER_STATUS processAkerSubdoc(webconfig_tmp_data_t *docNode, multipartdocs_t *ak
 					else
 					{
 						err = getStatusErrorCodeAndMessage(INCORRECT_BLOB_TYPE, &result);
-						WebcfgInfo("The error_details is %s and err_code is %d\n", result, err);
-						addWebConfgNotifyMsg(gmp->name_space, gmp->etag, "failed", result, NULL ,0, "status", err, NULL, 200);
+						WebcfgDebug("The error_details is %s and err_code is %d\n", result, err);
+						updateTmpList(docNode, gmp->name_space, gmp->etag, "failed", result, err, 0, 0);
+						if(docNode != NULL && docNode->cloud_trans_id != NULL )
+						{
+							addWebConfgNotifyMsg(gmp->name_space, gmp->etag, "failed", result, docNode->cloud_trans_id ,0, "status", err, NULL, 200);
+						}
 						WEBCFG_FREE(result);
 
 						WebcfgError("blob type is incorrect\n");
@@ -381,7 +392,10 @@ AKER_STATUS processAkerSubdoc(webconfig_tmp_data_t *docNode, multipartdocs_t *ak
 					}
 					if(docNode !=NULL && docNode->cloud_trans_id !=NULL)
 					{
-						addWebConfgNotifyMsg(gmp->name_space, gmp->etag, "failed", "doc_rejected", docNode->cloud_trans_id, 0, "status", 411, NULL, 200);
+						err = getStatusErrorCodeAndMessage(AKER_SUBDOC_PROCESSING_FAILED, &result);
+						addWebConfgNotifyMsg(gmp->name_space, gmp->etag, "failed", "doc_rejected", docNode->cloud_trans_id, 0, "status", err, NULL, 200);
+
+						WEBCFG_FREE(result);
 					}
 					rv = AKER_FAILURE;
 				}
@@ -393,11 +407,12 @@ AKER_STATUS processAkerSubdoc(webconfig_tmp_data_t *docNode, multipartdocs_t *ak
 		{
 			char * msg = NULL;
 			msg = (char *)webcfgparam_strerror(err);
-			snprintf(errMsg,MAX_VALUE_LEN,"decode_root_failure:%s", msg);
-			updateTmpList(docNode, gmp->name_space, gmp->etag, "failed", errMsg, 111, 0, 0);
+			err = getStatusErrorCodeAndMessage(DECODE_ROOT_FAILURE, &errMsg);
+			snprintf(result,MAX_VALUE_LEN,"%s:%s", errMsg, msg);
+			updateTmpList(docNode, gmp->name_space, gmp->etag, "failed", result, err, 0, 0);
 			if(docNode !=NULL && docNode->cloud_trans_id !=NULL)
 			{
-				addWebConfgNotifyMsg(gmp->name_space, gmp->etag, "failed", errMsg, docNode->cloud_trans_id,0, "status", 111, NULL, 200);
+				addWebConfgNotifyMsg(gmp->name_space, gmp->etag, "failed", result, docNode->cloud_trans_id,0, "status", err, NULL, 200);
 			}
 			WebcfgError("--------------decode root doc failed-------------\n");
 		}
@@ -492,8 +507,8 @@ static char *decodePayload(char *payload)
 	else
 	{
 		err = getStatusErrorCodeAndMessage(AKER_RESPONSE_PARSE_FAILURE, &errmsg);
-		WebcfgInfo("The error_details is %s and err_code is %d\n", errmsg, err);
-		addWebConfgNotifyMsg("aker", 0, "failed", errmsg, NULL ,0, "status", err, NULL, 200);
+		WebcfgDebug("The error_details is %s and err_code is %d\n", errmsg, err);
+		addWebConfgNotifyMsg("aker", akerDocVersion, "failed", errmsg, get_global_transID(),0, "status", err, NULL, 200);
 		WEBCFG_FREE(errmsg);
 		WebcfgError("Failed to decode msgpack data\n");
 	}
@@ -556,8 +571,8 @@ static void handleAkerStatus(int status, char *payload)
 		break;
 		default:
 			err = getStatusErrorCodeAndMessage(INVALID_AKER_RESPONSE, &result);
-			WebcfgInfo("The error_details is %s and err_code is %d\n", result, err);
-			addWebConfgNotifyMsg("aker", 0, "failed", result, NULL ,0, "status", err, NULL, 200);
+			WebcfgDebug("The error_details is %s and err_code is %d\n", result, err);
+			addWebConfgNotifyMsg("aker", akerDocVersion, "failed", result, get_global_transID() ,0, "status", err, NULL, 200);
 			WEBCFG_FREE(result);
 			WebcfgError("Invalid status code %d\n",status);
 			return;

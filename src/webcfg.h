@@ -51,6 +51,25 @@ typedef enum
     WEBCFG_SUCCESS = 0,
     WEBCFG_FAILURE
 } WEBCFG_STATUS;
+
+typedef enum
+{
+	DECODE_ROOT_FAILURE,
+	INCORRECT_BLOB_TYPE,
+	BLOB_PARAM_VALIDATION_FAILURE,
+	WEBCONFIG_DATA_EMPTY,
+	MULTIPART_BOUNDARY_NULL,
+	INVALID_CONTENT_TYPE,
+	ADD_TO_CACHE_LIST_FAILURE,
+	FAILED_TO_SET_BLOB,
+	MULTIPART_CACHE_NULL,
+	AKER_SUBDOC_PROCESSING_FAILED,
+	AKER_RESPONSE_PARSE_FAILURE,
+	INVALID_AKER_RESPONSE,
+	LIBPARODUS_RECEIVE_FAILURE,
+	COMPONENT_EVENT_PARSE_FAILURE,
+	SUBDOC_RETRY_FAILED
+} WEBCFG_ERROR_CODE;
 /*----------------------------------------------------------------------------*/
 /*                             External Functions                             */
 /*----------------------------------------------------------------------------*/

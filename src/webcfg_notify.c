@@ -311,11 +311,16 @@ uint16_t getStatusErrorCodeAndMessage(WEBCFG_ERROR_CODE status, char** result)
 {
 	uint16_t ret = 0;
 
-	if (status == INCORRECT_BLOB_TYPE) 
+	if (status == DECODE_ROOT_FAILURE)
+	{
+		*result = strdup("decode_root_failure");
+		ret = 111;
+	}
+	else if (status == INCORRECT_BLOB_TYPE)
 	{
 		*result = strdup("incorrect_blob_type");
 		ret = 211;
-	} 
+	}
 	else if (status == BLOB_PARAM_VALIDATION_FAILURE) 
 	{
 		*result = strdup("blob_param_validation_failure");
@@ -383,6 +388,7 @@ uint16_t getStatusErrorCodeAndMessage(WEBCFG_ERROR_CODE status, char** result)
 	}
 	else
 	{
+		WebcfgError("Error detected is unknown\n");
 		*result = strdup("Unknown Error");
 	}
 

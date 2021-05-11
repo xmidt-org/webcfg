@@ -180,8 +180,8 @@ void* parodus_receive()
 			if(get_send_aker_flag() && (sleep_counter == 6))
 			{
 				err = getStatusErrorCodeAndMessage(LIBPARODUS_RECEIVE_FAILURE, &errmsg);
-				WebcfgInfo("The error_details is %s and err_code is %d\n", errmsg, err);
-				addWebConfgNotifyMsg("aker", 0, "failed", errmsg, NULL ,0, "status", err, NULL, 200);
+				WebcfgDebug("The error_details is %s and err_code is %d\n", errmsg, err);
+				addWebConfgNotifyMsg("aker", 0, "failed", errmsg, get_global_transID() ,0, "status", err, NULL, 200);
 				WEBCFG_FREE(errmsg);
 				sleep_counter = 0;
 			}
