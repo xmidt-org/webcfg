@@ -415,6 +415,7 @@ AKER_STATUS processAkerSubdoc(webconfig_tmp_data_t *docNode, multipartdocs_t *ak
 				addWebConfgNotifyMsg(gmp->name_space, gmp->etag, "failed", result, docNode->cloud_trans_id,0, "status", err, NULL, 200);
 			}
 			WebcfgError("--------------decode root doc failed-------------\n");
+			WEBCFG_FREE(errMsg);
 		}
 	}
 	else
@@ -506,9 +507,18 @@ static char *decodePayload(char *payload)
 	}
 	else
 	{
+		webconfig_tmp_data_t * docNode = NULL;
 		err = getStatusErrorCodeAndMessage(AKER_RESPONSE_PARSE_FAILURE, &errmsg);
 		WebcfgDebug("The error_details is %s and err_code is %d\n", errmsg, err);
-		addWebConfgNotifyMsg("aker", akerDocVersion, "failed", errmsg, get_global_transID(),0, "status", err, NULL, 200);
+		docNode = getTmpNode("aker");
+		if(docNode !=NULL)
+		{
+			updateTmpList(docNode, "aker", docNode->version, "failed", errmsg, err, 0, 0);
+			if(docNode->cloud_trans_id !=NULL)
+			{
+				addWebConfgNotifyMsg("aker", docNode->version, "failed", errmsg, docNode->cloud_trans_id,0, "status", err, NULL, 200);
+			}
+		}
 		WEBCFG_FREE(errmsg);
 		WebcfgError("Failed to decode msgpack data\n");
 	}
@@ -559,6 +569,8 @@ static void handleAkerStatus(int status, char *payload)
 	char *eventData = NULL;
 	uint16_t err = 0;
 	char* result = NULL;
+	webconfig_tmp_data_t * docNode = NULL;
+
 	switch(status)
 	{
 		case 201:
@@ -572,7 +584,15 @@ static void handleAkerStatus(int status, char *payload)
 		default:
 			err = getStatusErrorCodeAndMessage(INVALID_AKER_RESPONSE, &result);
 			WebcfgDebug("The error_details is %s and err_code is %d\n", result, err);
-			addWebConfgNotifyMsg("aker", akerDocVersion, "failed", result, get_global_transID() ,0, "status", err, NULL, 200);
+			docNode = getTmpNode("aker");
+			if(docNode !=NULL)
+			{
+				updateTmpList(docNode, "aker", docNode->version, "failed", result, err, 0, 0);
+				if(docNode->cloud_trans_id !=NULL)
+				{
+					addWebConfgNotifyMsg("aker", docNode->version, "failed", result, docNode->cloud_trans_id,0, "status", err, NULL, 200);
+				}
+			}
 			WEBCFG_FREE(result);
 			WebcfgError("Invalid status code %d\n",status);
 			return;

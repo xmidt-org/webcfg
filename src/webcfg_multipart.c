@@ -45,6 +45,7 @@
 #define WEBPA_CREATE_HEADER        "/etc/parodus/parodus_create_file.sh"
 #define CCSP_CRASH_STATUS_CODE      192
 #define MAX_PARAMETERNAME_LEN		4096
+#define SUBDOC_TAG_COUNT            4
 /*----------------------------------------------------------------------------*/
 /*                               Data Structures                              */
 /*----------------------------------------------------------------------------*/
@@ -451,7 +452,7 @@ WEBCFG_STATUS parseMultipartDocument(void *config_data, char *ct , size_t data_s
 		}
 		WebcfgInfo("Size of the docs is :%d\n", (num_of_parts-1));
 
-		///Scanning each lines with \n as delimiter
+		///Subdoc contents are retrieved with boundary as delimiter
 		delete_mp_doc();
 		while((ptr_lb - str_body) < (int)data_size)
 		{
@@ -471,22 +472,16 @@ WEBCFG_STATUS parseMultipartDocument(void *config_data, char *ct , size_t data_s
 					ptr_lb1 = memchr(ptr_lb1, '-', data_size - (ptr_lb1 - str_body));
 					if(0 == memcmp(ptr_lb1, last_line_boundary, strlen(last_line_boundary)))
 					{
-						//num_of_parts++;
 						index2 = ptr_lb1-str_body;
 						index1 = ptr_lb-str_body;
 						line_parser(str_body+index1,index2 - index1 - 2);
-						//printf("The 2nd pointer in last line is %s\n",str_body+index1+1);
-						//printf("the value size is %d\n", index2 - index1 - 2);
 						break;
 					}
 					else if(0 == memcmp(ptr_lb1, line_boundary, strlen(line_boundary)))
 					{
-						//printf("The 2nd pointer is %s\n", ptr_lb1);
 						index2 = ptr_lb1-str_body;
 						index1 = ptr_lb-str_body;
 						line_parser(str_body+index1,index2 - index1 - 2);
-						//printf("The 2nd pointer is %s\n",str_body+index1+1);
-						//printf("the value size is %d\n", index2 - index1 - 2);
 						num_of_parts++;
 						count++;
 					}
@@ -1876,6 +1871,7 @@ void delete_multipart()
 	pthread_mutex_unlock (&multipart_t_mut);
 }
 
+//Segregation of each subdoc elements line by line
 void line_parser(char *ptr, int no_of_bytes)
 {
 	char* str_body = NULL;
@@ -1889,7 +1885,7 @@ void line_parser(char *ptr, int no_of_bytes)
 
 	while((ptr_lb - str_body) < no_of_bytes)
 	{
-		if(count < 4)
+		if(count < SUBDOC_TAG_COUNT)
 		{
 			ptr_lb1 =  memchr(ptr_lb+1, '\n', no_of_bytes - (ptr_lb - str_body));
 			if(0 != memcmp(ptr_lb1-1, "\r",1 ))
@@ -1903,7 +1899,7 @@ void line_parser(char *ptr, int no_of_bytes)
 			ptr_lb = memchr(ptr_lb, '\n', no_of_bytes - (ptr_lb - str_body));
 			count++;
 		}
-		else
+		else             //For data bin segregation
 		{
 			index2 = no_of_bytes+1;
 			index1 = ptr_lb-str_body;

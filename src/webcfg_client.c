@@ -179,9 +179,18 @@ void* parodus_receive()
 			sleep_counter++;
 			if(get_send_aker_flag() && (sleep_counter == 6))
 			{
+				webconfig_tmp_data_t * docNode = NULL;
 				err = getStatusErrorCodeAndMessage(LIBPARODUS_RECEIVE_FAILURE, &errmsg);
 				WebcfgDebug("The error_details is %s and err_code is %d\n", errmsg, err);
-				addWebConfgNotifyMsg("aker", 0, "failed", errmsg, get_global_transID() ,0, "status", err, NULL, 200);
+				docNode = getTmpNode("aker");
+				if(docNode !=NULL)
+				{
+					updateTmpList(docNode, "aker", docNode->version, "failed", errmsg, err, 0, 0);
+					if(docNode->cloud_trans_id !=NULL)
+					{
+						addWebConfgNotifyMsg("aker", docNode->version, "failed", errmsg, docNode->cloud_trans_id,0, "status", err, NULL, 200);
+					}
+				}
 				WEBCFG_FREE(errmsg);
 				sleep_counter = 0;
 			}
