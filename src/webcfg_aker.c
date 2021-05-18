@@ -280,6 +280,7 @@ AKER_STATUS processAkerSubdoc(webconfig_tmp_data_t *docNode, multipartdocs_t *ak
 	uint16_t err = 0;
 	char* result = NULL;
 	char* errMsg = NULL;
+	char value[MAX_VALUE_LEN]={0};
 
 	gmp = akerIndex;
 
@@ -408,11 +409,11 @@ AKER_STATUS processAkerSubdoc(webconfig_tmp_data_t *docNode, multipartdocs_t *ak
 			char * msg = NULL;
 			msg = (char *)webcfgparam_strerror(err);
 			err = getStatusErrorCodeAndMessage(DECODE_ROOT_FAILURE, &errMsg);
-			snprintf(result,MAX_VALUE_LEN,"%s:%s", errMsg, msg);
-			updateTmpList(docNode, gmp->name_space, gmp->etag, "failed", result, err, 0, 0);
+			snprintf(value,MAX_VALUE_LEN,"%s:%s", errMsg, msg);
+			updateTmpList(docNode, gmp->name_space, gmp->etag, "failed", value, err, 0, 0);
 			if(docNode !=NULL && docNode->cloud_trans_id !=NULL)
 			{
-				addWebConfgNotifyMsg(gmp->name_space, gmp->etag, "failed", result, docNode->cloud_trans_id,0, "status", err, NULL, 200);
+				addWebConfgNotifyMsg(gmp->name_space, gmp->etag, "failed", value, docNode->cloud_trans_id,0, "status", err, NULL, 200);
 			}
 			WebcfgError("--------------decode root doc failed-------------\n");
 			WEBCFG_FREE(errMsg);
