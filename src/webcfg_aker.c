@@ -380,6 +380,7 @@ AKER_STATUS processAkerSubdoc(webconfig_tmp_data_t *docNode, multipartdocs_t *ak
 				if(ret == WDMP_SUCCESS)
 				{
 					WebcfgDebug("aker doc send success\n");
+					set_send_aker_flag(true);
 					rv = AKER_SUCCESS;
 				}
 				else

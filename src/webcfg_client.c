@@ -177,7 +177,7 @@ void* parodus_receive()
 			WebcfgError ("Libparodus failed to receive message: '%s'\n",libparodus_strerror(rtn));
 			sleep(5);
 			sleep_counter++;
-			if(get_send_aker_flag() && (sleep_counter == 6))
+			if(get_send_aker_flag() && (sleep_counter == 14))
 			{
 				webconfig_tmp_data_t * docNode = NULL;
 				err = getStatusErrorCodeAndMessage(LIBPARODUS_RECEIVE_FAILURE, &errmsg);
@@ -193,6 +193,7 @@ void* parodus_receive()
 				}
 				WEBCFG_FREE(errmsg);
 				sleep_counter = 0;
+				set_send_aker_flag(false);
 			}
 			continue;
 		}
