@@ -1060,7 +1060,7 @@ WEBCFG_STATUS retryMultipartSubdoc(webconfig_tmp_data_t *docNode, char *docName)
 						if((ccspStatus == 192) || (ccspStatus == 204) || (ccspStatus == 191) || (ccspStatus == 193) || (ccspStatus == 190))
 						{
 							long long expiry_time = 0;
-							WebcfgError("ccspStatus is crash %d\n", ccspStatus);
+							WebcfgDebug("ccspStatus is crash %d\n", ccspStatus);
 							snprintf(result,MAX_VALUE_LEN,"failed_retrying:%s", errDetails);
 							WebcfgDebug("The result is %s\n",result);
 							updateTmpList(docNode, gmp->name_space, gmp->etag, "pending", result, ccspStatus, 0, 1);
