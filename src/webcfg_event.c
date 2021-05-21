@@ -938,7 +938,7 @@ WEBCFG_STATUS retryMultipartSubdoc(webconfig_tmp_data_t *docNode, char *docName)
 			updateTmpList(docNode, docName, docNode->version, "failed", errmsg, err, 0, 0);
 			if(docNode->cloud_trans_id != NULL)
 			{
-				addWebConfgNotifyMsg(docName, 0, "failed", errmsg, docNode->cloud_trans_id ,0, "status", err, NULL, 200);
+				addWebConfgNotifyMsg(docName, docNode->version, "failed", errmsg, docNode->cloud_trans_id ,0, "status", err, NULL, 200);
 			}
 		}
 		WEBCFG_FREE(errmsg);
