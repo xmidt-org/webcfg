@@ -621,6 +621,15 @@ WEBCFG_STATUS processMsgpackSubdoc(char *transaction_id)
 							success_count++;
 						}
 
+						if(mp == NULL)
+						{
+							if(NULL != reqParam)
+							{
+								reqParam_destroy(paramCount, reqParam);
+							}
+							webcfgparam_destroy( pm );
+							break;
+						}
 						WebcfgDebug("The mp->entries_count %d\n",(int)mp->entries_count);
 						WebcfgDebug("The count %d\n",success_count);
 						if(success_count ==(int) mp->entries_count-1)
