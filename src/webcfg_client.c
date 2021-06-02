@@ -177,6 +177,7 @@ void* parodus_receive()
 			WebcfgError ("Libparodus failed to receive message: '%s'\n",libparodus_strerror(rtn));
 			sleep(5);
 			sleep_counter++;
+			//waiting 70s (14*5sec) to get response from aker and then to send receive failure notification
 			if(get_send_aker_flag() && (sleep_counter == 14))
 			{
 				webconfig_tmp_data_t * docNode = NULL;

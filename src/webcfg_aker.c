@@ -395,6 +395,7 @@ AKER_STATUS processAkerSubdoc(webconfig_tmp_data_t *docNode, multipartdocs_t *ak
 					if(docNode !=NULL && docNode->cloud_trans_id !=NULL)
 					{
 						err = getStatusErrorCodeAndMessage(AKER_SUBDOC_PROCESSING_FAILED, &result);
+						updateTmpList(docNode, gmp->name_space, gmp->etag, "failed", "doc_rejected", err, 0, 0);
 						addWebConfgNotifyMsg(gmp->name_space, gmp->etag, "failed", "doc_rejected", docNode->cloud_trans_id, 0, "status", err, NULL, 200);
 
 						WEBCFG_FREE(result);

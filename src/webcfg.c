@@ -512,10 +512,19 @@ int handlehttpResponse(long response_code, char *webConfigData, int retry_count,
 				WEBCFG_FREE(webConfigData);
 				return 1;
 			}
-			errorcode = getStatusErrorCodeAndMessage(WEBCONFIG_DATA_EMPTY, &result);
-			WebcfgDebug("The error_details is %s and err_code is %d\n", result, errorcode);
-			addWebConfgNotifyMsg("root", db_root_version, "failed", result, transaction_uuid ,0, "status", errorcode, db_root_string, response_code);
-			WEBCFG_FREE(result);
+			if(retry_count == 3)
+			{
+				getRootDocVersionFromDBCache(&db_root_version, &db_root_string, &subdocList);
+				errorcode = getStatusErrorCodeAndMessage(WEBCONFIG_DATA_EMPTY, &result);
+				WebcfgDebug("The error_details is %s and err_code is %d\n", result, errorcode);
+				addWebConfgNotifyMsg("root", db_root_version, "failed", result, transaction_uuid ,0, "status", errorcode, db_root_string, response_code);
+				if(db_root_string !=NULL)
+				{
+					WEBCFG_FREE(db_root_string);
+				}
+				WEBCFG_FREE(result);
+				retry_count = 0;
+			}
 		}
 	}
 	else if(response_code == 204)
