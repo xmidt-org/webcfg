@@ -523,7 +523,6 @@ int handlehttpResponse(long response_code, char *webConfigData, int retry_count,
 					WEBCFG_FREE(db_root_string);
 				}
 				WEBCFG_FREE(result);
-				retry_count = 0;
 			}
 		}
 	}

@@ -385,8 +385,7 @@ AKER_STATUS processAkerSubdoc(webconfig_tmp_data_t *docNode, multipartdocs_t *ak
 				}
 				else
 				{
-					//Invalid aker request
-					updateTmpList(docNode, gmp->name_space, gmp->etag, "failed", "doc_rejected", 0, 0, 0);
+
 					if(docNode != NULL)
 					{
 						WebcfgInfo("subdoc_name and err_code : %s %lu\n",docNode->name, (long)docNode->error_code);
@@ -395,6 +394,7 @@ AKER_STATUS processAkerSubdoc(webconfig_tmp_data_t *docNode, multipartdocs_t *ak
 					if(docNode !=NULL && docNode->cloud_trans_id !=NULL)
 					{
 						err = getStatusErrorCodeAndMessage(AKER_SUBDOC_PROCESSING_FAILED, &result);
+						//Invalid aker request
 						updateTmpList(docNode, gmp->name_space, gmp->etag, "failed", "doc_rejected", err, 0, 0);
 						addWebConfgNotifyMsg(gmp->name_space, gmp->etag, "failed", "doc_rejected", docNode->cloud_trans_id, 0, "status", err, NULL, 200);
 
@@ -585,6 +585,7 @@ static void handleAkerStatus(int status, char *payload)
 			snprintf(data,sizeof(data),"aker,%hu,%u,NACK,%u,aker,%d,%s",akerTransId,akerDocVersion,0,status,payload);
 		break;
 		default:
+			WebcfgError("Invalid status code %d\n",status);
 			err = getStatusErrorCodeAndMessage(INVALID_AKER_RESPONSE, &result);
 			WebcfgDebug("The error_details is %s and err_code is %d\n", result, err);
 			docNode = getTmpNode("aker");
@@ -597,7 +598,6 @@ static void handleAkerStatus(int status, char *payload)
 				}
 			}
 			WEBCFG_FREE(result);
-			WebcfgError("Invalid status code %d\n",status);
 			return;
 	}
 	WebcfgDebug("data: %s\n",data);
