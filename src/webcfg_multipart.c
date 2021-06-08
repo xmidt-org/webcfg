@@ -1952,7 +1952,7 @@ void parse_multipart(char *ptr, int no_of_bytes)
 		flag++;
 	}
 
-	//Used to skip the new line of "parameters" strstr extraction which comes before the bin data 
+	//To skip empty line between Namespace and Parameters fields in multipart response 
 	if(flag == 2)
 	{
 		if(etag == 0 || name_space == NULL || data == NULL)
@@ -1967,7 +1967,7 @@ void parse_multipart(char *ptr, int no_of_bytes)
 				WEBCFG_FREE(result);
 			}
 		}
-		flag = 0;//resetted for next subdoc 
+		flag = 0;//reset for next subdoc 
 	}
 
 	if(etag != 0 && name_space != NULL && data != NULL && data_size != 0 )
