@@ -357,6 +357,8 @@ WEBCFG_STATUS webcfg_http_request(char **configData, int r_count, int status, lo
 				{
 					if(strncmp(ct, "multipart/mixed", 15) !=0)
 					{
+						WebcfgError("Content-Type is not multipart/mixed. Invalid\n");
+
 						uint16_t err = 0;
 						char* result = NULL;
 
@@ -365,7 +367,6 @@ WEBCFG_STATUS webcfg_http_request(char **configData, int r_count, int status, lo
 						WebcfgDebug("The error_details is %s and err_code is %d\n", result, err);
 						addWebConfgNotifyMsg("root", version, "failed", result, *transaction_id ,0, "status", err, NULL, 200);
 						WEBCFG_FREE(result);
-						WebcfgError("Content-Type is not multipart/mixed. Invalid\n");
 					}
 					else
 					{
@@ -509,11 +510,11 @@ WEBCFG_STATUS parseMultipartDocument(void *config_data, char *ct , size_t data_s
 	}
     else
     {
+		WebcfgError("Multipart Boundary is NULL\n");
 		uint32_t version = strtoul(g_ETAG, NULL, 0);
 		err = getStatusErrorCodeAndMessage(MULTIPART_BOUNDARY_NULL, &result);
 		addWebConfgNotifyMsg("root", version, "failed", result, trans_uuid ,0, "status", err, NULL, 200);
 		WEBCFG_FREE(result);
-		WebcfgError("Multipart Boundary is NULL\n");
 		return WEBCFG_FAILURE;
     }
 }
@@ -563,13 +564,13 @@ WEBCFG_STATUS processMsgpackSubdoc(char *transaction_id)
 	}
 	else
 	{
+		WebcfgError("addToTmpList failed\n");
 		uint32_t version = strtoul(g_ETAG,NULL,0);
 		err = getStatusErrorCodeAndMessage(ADD_TO_CACHE_LIST_FAILURE, &errmsg);
 		WebcfgDebug("The error_details is %s and err_code is %d\n", errmsg, err);
 		addWebConfgNotifyMsg("root", version, "failed", errmsg, get_global_transID() ,0, "status", err, NULL, 200);
 		WEBCFG_FREE(errmsg);
 		err = 0;
-		WebcfgError("addToTmpList failed\n");
 	}
 
 	WebcfgDebug("mp->entries_count is %d\n",mp_count);
@@ -840,6 +841,7 @@ WEBCFG_STATUS processMsgpackSubdoc(char *transaction_id)
 				}
 				else
 				{
+					WebcfgError("Update retry count failed for doc %s\n", mp->name_space);
 					err = getStatusErrorCodeAndMessage(FAILED_TO_SET_BLOB, &errmsg);
 					WebcfgDebug("The error_details is %s and err_code is %d\n", errmsg, err);
 					updateTmpList(subdoc_node, mp->name_space, mp->etag, "failed", errmsg, err, 0, 0);
@@ -848,7 +850,6 @@ WEBCFG_STATUS processMsgpackSubdoc(char *transaction_id)
 						addWebConfgNotifyMsg(mp->name_space, mp->etag, "failed", errmsg,  subdoc_node->cloud_trans_id ,0, "status", err, NULL, 200);
 					}
 					WEBCFG_FREE(errmsg);
-					WebcfgError("Update retry count failed for doc %s\n", mp->name_space);
 				}
 
 				if(NULL != reqParam)
@@ -868,6 +869,7 @@ WEBCFG_STATUS processMsgpackSubdoc(char *transaction_id)
 		}
 		else
 		{
+			WebcfgError("--------------decode root doc failed-------------\n");
 			char * msg = NULL;
 			msg = (char *)webcfgparam_strerror(err);
 			err = getStatusErrorCodeAndMessage(DECODE_ROOT_FAILURE, &errmsg);
@@ -879,7 +881,6 @@ WEBCFG_STATUS processMsgpackSubdoc(char *transaction_id)
 				addWebConfgNotifyMsg(mp->name_space, mp->etag, "failed", result, subdoc_node->cloud_trans_id,0, "status", err, NULL, 200);
 			}
 			WEBCFG_FREE(errmsg);
-			WebcfgError("--------------decode root doc failed-------------\n");
 		}
 		mp = mp->next;
 	}
@@ -1951,6 +1952,7 @@ void parse_multipart(char *ptr, int no_of_bytes)
 		flag++;
 	}
 
+	//Used to skip the new line of "parameters" strstr extraction which comes before the bin data 
 	if(flag == 2)
 	{
 		if(etag == 0 || name_space == NULL || data == NULL)
@@ -1965,7 +1967,7 @@ void parse_multipart(char *ptr, int no_of_bytes)
 				WEBCFG_FREE(result);
 			}
 		}
-		flag = 0;
+		flag = 0;//resetted for next subdoc 
 	}
 
 	if(etag != 0 && name_space != NULL && data != NULL && data_size != 0 )

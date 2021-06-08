@@ -1083,6 +1083,7 @@ WEBCFG_STATUS retryMultipartSubdoc(webconfig_tmp_data_t *docNode, char *docName)
 			}
 			else
 			{
+				WebcfgError("--------------decode root doc failed-------------\n");
 				char * msg = NULL;
 				msg = (char *)webcfgparam_strerror(err);
 				err = getStatusErrorCodeAndMessage(DECODE_ROOT_FAILURE, &errmsg);
@@ -1093,7 +1094,6 @@ WEBCFG_STATUS retryMultipartSubdoc(webconfig_tmp_data_t *docNode, char *docName)
 					addWebConfgNotifyMsg(gmp->name_space, gmp->etag, "failed", result, docNode->cloud_trans_id,0, "status", err, NULL, 200);
 				}
 				WEBCFG_FREE(errmsg);
-				WebcfgError("--------------decode root doc failed-------------\n");
 			}
 			break;
 		}

@@ -286,6 +286,7 @@ AKER_STATUS processAkerSubdoc(webconfig_tmp_data_t *docNode, multipartdocs_t *ak
 
 	if(gmp ==NULL)
 	{
+		WebcfgError("processAkerSubdoc failed as mp cache is NULL\n");
 		err = getStatusErrorCodeAndMessage(AKER_SUBDOC_PROCESSING_FAILED, &result);
 		WebcfgDebug("The error_details is %s and err_code is %d\n", result, err);
 		if(docNode!=NULL)
@@ -298,7 +299,6 @@ AKER_STATUS processAkerSubdoc(webconfig_tmp_data_t *docNode, multipartdocs_t *ak
 		}
 		WEBCFG_FREE(result);
 
-		WebcfgError("processAkerSubdoc failed as mp cache is NULL\n");
 		return AKER_FAILURE;
 	}
 
@@ -354,6 +354,7 @@ AKER_STATUS processAkerSubdoc(webconfig_tmp_data_t *docNode, multipartdocs_t *ak
 					}
 					else
 					{
+						WebcfgError("blob type is incorrect\n");
 						err = getStatusErrorCodeAndMessage(INCORRECT_BLOB_TYPE, &result);
 						WebcfgDebug("The error_details is %s and err_code is %d\n", result, err);
 						updateTmpList(docNode, gmp->name_space, gmp->etag, "failed", result, err, 0, 0);
@@ -363,7 +364,6 @@ AKER_STATUS processAkerSubdoc(webconfig_tmp_data_t *docNode, multipartdocs_t *ak
 						}
 						WEBCFG_FREE(result);
 
-						WebcfgError("blob type is incorrect\n");
 						WEBCFG_FREE(reqParam);
 						webcfgparam_destroy( pm );
 						return rv;
@@ -408,6 +408,7 @@ AKER_STATUS processAkerSubdoc(webconfig_tmp_data_t *docNode, multipartdocs_t *ak
 		}
 		else
 		{
+			WebcfgError("--------------decode root doc failed-------------\n");
 			char * msg = NULL;
 			msg = (char *)webcfgparam_strerror(err);
 			err = getStatusErrorCodeAndMessage(DECODE_ROOT_FAILURE, &errMsg);
@@ -417,7 +418,6 @@ AKER_STATUS processAkerSubdoc(webconfig_tmp_data_t *docNode, multipartdocs_t *ak
 			{
 				addWebConfgNotifyMsg(gmp->name_space, gmp->etag, "failed", value, docNode->cloud_trans_id,0, "status", err, NULL, 200);
 			}
-			WebcfgError("--------------decode root doc failed-------------\n");
 			WEBCFG_FREE(errMsg);
 		}
 	}
@@ -510,6 +510,7 @@ static char *decodePayload(char *payload)
 	}
 	else
 	{
+		WebcfgError("Failed to decode msgpack data\n");
 		webconfig_tmp_data_t * docNode = NULL;
 		err = getStatusErrorCodeAndMessage(AKER_RESPONSE_PARSE_FAILURE, &errmsg);
 		WebcfgDebug("The error_details is %s and err_code is %d\n", errmsg, err);
@@ -523,7 +524,6 @@ static char *decodePayload(char *payload)
 			}
 		}
 		WEBCFG_FREE(errmsg);
-		WebcfgError("Failed to decode msgpack data\n");
 	}
 	msgpack_unpacked_destroy(&result);
 	return decodedPayload;
