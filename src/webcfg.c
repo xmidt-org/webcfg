@@ -58,6 +58,7 @@
 pthread_mutex_t sync_mutex=PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t sync_condition=PTHREAD_COND_INITIALIZER;
 bool g_shutdown  = false;
+pthread_t* g_mpthreadId;
 #ifdef MULTIPART_UTILITY
 static int g_testfile = 0;
 #endif
@@ -77,6 +78,7 @@ void initWebConfigMultipartTask(unsigned long status)
 	pthread_t threadId;
 
 	err = pthread_create(&threadId, NULL, WebConfigMultipartTask, (void *) status);
+	g_mpthreadId = &threadId; 
 	if (err != 0) 
 	{
 		WebcfgError("Error creating WebConfigMultipartTask thread :[%s]\n", strerror(err));
@@ -344,6 +346,7 @@ void *WebConfigMultipartTask(void *status)
 	delete_supplementary_list();
 
 	WebcfgInfo("B4 pthread_exit\n");
+	g_mpthreadId = NULL;
 	pthread_exit(0);
 	WebcfgDebug("After pthread_exit\n");
 	return NULL;
@@ -357,6 +360,11 @@ pthread_cond_t *get_global_sync_condition(void)
 pthread_mutex_t *get_global_sync_mutex(void)
 {
     return &sync_mutex;
+}
+
+pthread_t *get_global_mpThreadId(void)
+{
+    return g_mpthreadId;
 }
 
 bool get_global_shutdown()
