@@ -83,6 +83,7 @@ bool get_global_shutdown();
 void set_global_shutdown(bool shutdown);
 pthread_cond_t *get_global_sync_condition(void);
 pthread_mutex_t *get_global_sync_mutex(void);
+pthread_t *get_global_mpThreadId(void);
 int get_global_supplementarySync();
 void set_global_supplementarySync(int value);
 
