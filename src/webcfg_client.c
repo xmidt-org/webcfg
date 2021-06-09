@@ -153,29 +153,56 @@ void* parodus_receive()
 {
 	int rtn;
 	wrp_msg_t *wrp_msg = NULL;
+	uint16_t err = 0;
+	char * errmsg = NULL;
+	static int sleep_counter = 0;
 
 	while(1)
 	{
 		if (get_global_shutdown())
 		{
 			WebcfgDebug("g_shutdown true, break libparodus_receive\n");
+			sleep_counter = 0;
 			break;
 		}
 		rtn = libparodus_receive (webcfg_instance, &wrp_msg, 2000);
 		if (rtn == 1)
 		{
+			sleep_counter = 0;
 			continue;
 		}
 
 		if (rtn != 0)
 		{
-			WebcfgError ("Libparodus failed to recieve message: '%s'\n",libparodus_strerror(rtn));
+			WebcfgError ("Libparodus failed to receive message: '%s'\n",libparodus_strerror(rtn));
 			sleep(5);
+			sleep_counter++;
+			//waiting 70s (14*5sec) to get response from aker and then to send receive failure notification
+			if(get_send_aker_flag() && (sleep_counter == 14))
+			{
+				webconfig_tmp_data_t * docNode = NULL;
+				err = getStatusErrorCodeAndMessage(LIBPARODUS_RECEIVE_FAILURE, &errmsg);
+				WebcfgDebug("The error_details is %s and err_code is %d\n", errmsg, err);
+				docNode = getTmpNode("aker");
+				if(docNode !=NULL)
+				{
+					updateTmpList(docNode, "aker", docNode->version, "failed", errmsg, err, 0, 0);
+					if(docNode->cloud_trans_id !=NULL)
+					{
+						addWebConfgNotifyMsg("aker", docNode->version, "failed", errmsg, docNode->cloud_trans_id,0, "status", err, NULL, 200);
+					}
+				}
+				WEBCFG_FREE(errmsg);
+				sleep_counter = 0;
+				set_send_aker_flag(false);
+			}
 			continue;
 		}
 
 		if(wrp_msg != NULL)
 		{
+			set_send_aker_flag(false);
+			sleep_counter = 0;
 			WebcfgDebug("Message received with type %d\n",wrp_msg->msg_type);
 			WebcfgDebug("transaction_uuid %s\n", wrp_msg->u.crud.transaction_uuid );
 			if ((wrp_msg->msg_type == WRP_MSG_TYPE__UPDATE) ||(wrp_msg->msg_type == WRP_MSG_TYPE__DELETE))

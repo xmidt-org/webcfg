@@ -307,3 +307,90 @@ void free_notify_params_struct(notify_params_t *param)
     }
 }
 
+uint16_t getStatusErrorCodeAndMessage(WEBCFG_ERROR_CODE status, char** result)
+{
+	uint16_t ret = 0;
+
+	if (status == DECODE_ROOT_FAILURE)
+	{
+		*result = strdup("decode_root_failure");
+		ret = 111;
+	}
+	else if (status == INCORRECT_BLOB_TYPE)
+	{
+		*result = strdup("incorrect_blob_type");
+		ret = 211;
+	}
+	else if (status == BLOB_PARAM_VALIDATION_FAILURE) 
+	{
+		*result = strdup("blob_param_validation_failure");
+		ret = 211;
+	}
+	else if (status == WEBCONFIG_DATA_EMPTY) 
+	{
+		*result = strdup("webconfig_data_empty");
+		ret = 211;
+	}
+	else if (status == MULTIPART_BOUNDARY_NULL) 
+	{
+		*result = strdup("multipart_boundary_NULL");
+		ret = 211;
+	}
+	else if (status == INVALID_CONTENT_TYPE)
+	{
+		*result = strdup("invalid_content_type");
+		ret = 211;
+	}
+	else if (status == ADD_TO_CACHE_LIST_FAILURE)
+	{
+		*result = strdup("add_to_cache_list_failure");
+		ret = 311;
+	}
+	else if (status == FAILED_TO_SET_BLOB)
+	{
+		*result = strdup("failed_to_set_blob");
+		ret = 311;
+	}
+	else if (status == MULTIPART_CACHE_NULL)
+	{
+		*result = strdup("multipart_cache_NULL");
+		ret = 311;
+	}
+	else if (status == AKER_SUBDOC_PROCESSING_FAILED)
+	{
+		*result = strdup("aker_subdoc_processing_failed");
+		ret = 411;
+	}
+	else if (status == AKER_RESPONSE_PARSE_FAILURE)
+	{
+		*result = strdup("aker_response_parse_failure");
+		ret = 411;
+	}
+	else if (status == INVALID_AKER_RESPONSE)
+	{
+		*result = strdup("invalid_aker_response");
+		ret = 411;
+	}
+	else if (status == LIBPARODUS_RECEIVE_FAILURE)
+	{
+		*result = strdup("libparodus_receive_failure");
+		ret = 411;
+	}
+	else if (status == COMPONENT_EVENT_PARSE_FAILURE)
+	{
+		*result = strdup("component_event_parse_failure");
+		ret = 511;
+	}
+	else if (status == SUBDOC_RETRY_FAILED)
+	{
+		*result = strdup("subdoc_retry_failed");
+		ret = 611;
+	}
+	else
+	{
+		WebcfgError("Error detected is unknown\n");
+		*result = strdup("Unknown Error");
+	}
+
+	return ret;
+}

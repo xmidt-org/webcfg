@@ -330,6 +330,7 @@ void *WebConfigMultipartTask(void *status)
 	set_global_retry_timestamp(0);
 	set_retry_timer(0);
 	set_global_supplementarySync(0);
+	set_send_aker_flag(false);
 
 	//delete tmp, db, and mp cache lists.
 	delete_tmp_list();
@@ -460,6 +461,8 @@ int handlehttpResponse(long response_code, char *webConfigData, int retry_count,
 	char *db_root_string = NULL;
 	int subdocList = 0;
 	char *contentLength = NULL;
+	uint16_t errorcode = 0;
+	char* result =  NULL;
 
 	if(response_code == 304)
 	{
@@ -508,6 +511,18 @@ int handlehttpResponse(long response_code, char *webConfigData, int retry_count,
 				WEBCFG_FREE(transaction_uuid);
 				WEBCFG_FREE(webConfigData);
 				return 1;
+			}
+			if(retry_count == 3)
+			{
+				getRootDocVersionFromDBCache(&db_root_version, &db_root_string, &subdocList);
+				errorcode = getStatusErrorCodeAndMessage(WEBCONFIG_DATA_EMPTY, &result);
+				WebcfgDebug("The error_details is %s and err_code is %d\n", result, errorcode);
+				addWebConfgNotifyMsg("root", db_root_version, "failed", result, transaction_uuid ,0, "status", errorcode, db_root_string, response_code);
+				if(db_root_string !=NULL)
+				{
+					WEBCFG_FREE(db_root_string);
+				}
+				WEBCFG_FREE(result);
 			}
 		}
 	}

@@ -15,6 +15,7 @@
  */
 #include <string.h>
 #include <stdlib.h>
+#include <errno.h>
 #include "webcfg_multipart.h"
 #include "webcfg_param.h"
 #include "webcfg_log.h"
@@ -44,6 +45,7 @@
 #define WEBPA_CREATE_HEADER        "/etc/parodus/parodus_create_file.sh"
 #define CCSP_CRASH_STATUS_CODE      192
 #define MAX_PARAMETERNAME_LEN		4096
+#define SUBDOC_TAG_COUNT            4
 /*----------------------------------------------------------------------------*/
 /*                               Data Structures                              */
 /*----------------------------------------------------------------------------*/
@@ -131,6 +133,7 @@ size_t writer_callback_fn(void *buffer, size_t size, size_t nmemb, struct token_
 size_t headr_callback(char *buffer, size_t size, size_t nitems);
 void stripspaces(char *str, char **final_str);
 void parse_multipart(char *ptr, int no_of_bytes );
+void line_parser(char *ptr, int no_of_bytes);
 void addToDBList(webconfig_db_data_t *webcfgdb);
 char* generate_trans_uuid();
 WEBCFG_STATUS processMsgpackSubdoc(char *transaction_id);
@@ -355,6 +358,15 @@ WEBCFG_STATUS webcfg_http_request(char **configData, int r_count, int status, lo
 					if(strncmp(ct, "multipart/mixed", 15) !=0)
 					{
 						WebcfgError("Content-Type is not multipart/mixed. Invalid\n");
+
+						uint16_t err = 0;
+						char* result = NULL;
+
+						uint32_t version = strtoul(g_ETAG,NULL,0);
+						err = getStatusErrorCodeAndMessage(INVALID_CONTENT_TYPE, &result);
+						WebcfgDebug("The error_details is %s and err_code is %d\n", result, err);
+						addWebConfgNotifyMsg("root", version, "failed", result, *transaction_id ,0, "status", err, NULL, 200);
+						WEBCFG_FREE(result);
 					}
 					else
 					{
@@ -393,6 +405,8 @@ WEBCFG_STATUS parseMultipartDocument(void *config_data, char *ct , size_t data_s
 	int boundary_len =0;
 	int count =0;
 	int status =0;
+	uint16_t err = 0;
+	char* result = NULL;
 	
 	WebcfgInfo("ct is %s\n", ct );
 	// fetch boundary
@@ -439,7 +453,7 @@ WEBCFG_STATUS parseMultipartDocument(void *config_data, char *ct , size_t data_s
 		}
 		WebcfgInfo("Size of the docs is :%d\n", (num_of_parts-1));
 
-		///Scanning each lines with \n as delimiter
+		///Subdoc contents are retrieved with boundary as delimiter
 		delete_mp_doc();
 		while((ptr_lb - str_body) < (int)data_size)
 		{
@@ -449,50 +463,35 @@ WEBCFG_STATUS parseMultipartDocument(void *config_data, char *ct , size_t data_s
 				WebcfgDebug("last line boundary \n");
 				break;
 			}
-			if(0 == memcmp(ptr_lb, line_boundary, strlen(line_boundary)))
+			else if(0 == memcmp(ptr_lb, line_boundary, strlen(line_boundary)))
 			{
 				ptr_lb = ptr_lb+(strlen(line_boundary))-1;
+				ptr_lb1 = ptr_lb+1;
 				num_of_parts = 1;
 				while(0 != num_of_parts % 2)
 				{
-					ptr_lb1 = memchr(ptr_lb+1, '\n', data_size - (ptr_lb - str_body));
-
-					while(0 != memcmp(ptr_lb1-1, "\r",1 ))
+					ptr_lb1 = memchr(ptr_lb1, '-', data_size - (ptr_lb1 - str_body));
+					if(0 == memcmp(ptr_lb1, last_line_boundary, strlen(last_line_boundary)))
 					{
-						ptr_lb1 = memchr(ptr_lb1+1, '\n', data_size - (ptr_lb - str_body));
-						#ifdef MULTIPART_UTILITY
-							if(get_g_testfile())
-							{
-							    break;
-							}
-						#endif
-					}
-					index2 = ptr_lb1-str_body;
-					index1 = ptr_lb-str_body;
-					parse_multipart(str_body+index1+1,index2 - index1 - 2);
-					ptr_lb++;
-				#ifdef MULTIPART_UTILITY
-					if(0 == memcmp(ptr_lb+get_g_testfile(), last_line_boundary, strlen(last_line_boundary)))
-				#else
-					if(0 == memcmp(ptr_lb, last_line_boundary, strlen(last_line_boundary)))
-				#endif
-					{
-						WebcfgDebug("last line boundary inside \n");
+						index2 = ptr_lb1-str_body;
+						index1 = ptr_lb-str_body;
+						line_parser(str_body+index1,index2 - index1 - 2);
 						break;
 					}
-					if(0 == memcmp(ptr_lb1+1, "-", 1) && 0 == memcmp(ptr_lb1+1, line_boundary, strlen(line_boundary)))
+					else if(0 == memcmp(ptr_lb1, line_boundary, strlen(line_boundary)))
 					{
-						WebcfgDebug(" line boundary inside \n");
+						index2 = ptr_lb1-str_body;
+						index1 = ptr_lb-str_body;
+						line_parser(str_body+index1,index2 - index1 - 2);
 						num_of_parts++;
 						count++;
 					}
-					ptr_lb = memchr(ptr_lb, '\n', data_size - (ptr_lb - str_body));
-}
+					ptr_lb1 = memchr(ptr_lb1, '\n', data_size - (ptr_lb1 - str_body));
+					ptr_lb1++;
+				}
 			}
-			else
-			{
-				ptr_lb++;
-			}
+			ptr_lb = memchr(ptr_lb, '\n', data_size - (ptr_lb - str_body));
+			ptr_lb++;
 		}
 		WEBCFG_FREE(str_body);
 		WEBCFG_FREE(line_boundary);
@@ -512,6 +511,10 @@ WEBCFG_STATUS parseMultipartDocument(void *config_data, char *ct , size_t data_s
     else
     {
 		WebcfgError("Multipart Boundary is NULL\n");
+		uint32_t version = strtoul(g_ETAG, NULL, 0);
+		err = getStatusErrorCodeAndMessage(MULTIPART_BOUNDARY_NULL, &result);
+		addWebConfgNotifyMsg("root", version, "failed", result, trans_uuid ,0, "status", err, NULL, 200);
+		WEBCFG_FREE(result);
 		return WEBCFG_FAILURE;
     }
 }
@@ -540,6 +543,9 @@ WEBCFG_STATUS processMsgpackSubdoc(char *transaction_id)
 	int akerSet = 0;
 	int mp_count = 0;
 	int current_doc_count = 0;
+	int err = 0;
+	char * errmsg = NULL;
+	
 
 	mp_count = get_multipartdoc_count();
 	if(transaction_id !=NULL)
@@ -559,6 +565,12 @@ WEBCFG_STATUS processMsgpackSubdoc(char *transaction_id)
 	else
 	{
 		WebcfgError("addToTmpList failed\n");
+		uint32_t version = strtoul(g_ETAG,NULL,0);
+		err = getStatusErrorCodeAndMessage(ADD_TO_CACHE_LIST_FAILURE, &errmsg);
+		WebcfgDebug("The error_details is %s and err_code is %d\n", errmsg, err);
+		addWebConfgNotifyMsg("root", version, "failed", errmsg, get_global_transID() ,0, "status", err, NULL, 200);
+		WEBCFG_FREE(errmsg);
+		err = 0;
 	}
 
 	WebcfgDebug("mp->entries_count is %d\n",mp_count);
@@ -569,6 +581,7 @@ WEBCFG_STATUS processMsgpackSubdoc(char *transaction_id)
 	while(mp != NULL)
 	{
 		ret = WDMP_FAILURE;
+		err = 0;
 
 		webconfig_tmp_data_t * subdoc_node = NULL;
 		subdoc_node = getTmpNode(mp->name_space);
@@ -615,6 +628,7 @@ WEBCFG_STATUS processMsgpackSubdoc(char *transaction_id)
 
 		WebcfgDebug("--------------decode root doc-------------\n");
 		pm = webcfgparam_convert( mp->data, mp->data_size+1 );
+		err = errno;
 		if ( NULL != pm)
 		{
 			paramCount = (int)pm->entries_count;
@@ -828,6 +842,14 @@ WEBCFG_STATUS processMsgpackSubdoc(char *transaction_id)
 				else
 				{
 					WebcfgError("Update retry count failed for doc %s\n", mp->name_space);
+					err = getStatusErrorCodeAndMessage(FAILED_TO_SET_BLOB, &errmsg);
+					WebcfgDebug("The error_details is %s and err_code is %d\n", errmsg, err);
+					updateTmpList(subdoc_node, mp->name_space, mp->etag, "failed", errmsg, err, 0, 0);
+					if(subdoc_node !=NULL && subdoc_node->cloud_trans_id !=NULL)
+					{
+						addWebConfgNotifyMsg(mp->name_space, mp->etag, "failed", errmsg,  subdoc_node->cloud_trans_id ,0, "status", err, NULL, 200);
+					}
+					WEBCFG_FREE(errmsg);
 				}
 
 				if(NULL != reqParam)
@@ -835,11 +857,30 @@ WEBCFG_STATUS processMsgpackSubdoc(char *transaction_id)
 					reqParam_destroy(paramCount, reqParam);
 				}
 			}
+			else
+			{
+				err = getStatusErrorCodeAndMessage(BLOB_PARAM_VALIDATION_FAILURE, &errmsg);
+				WebcfgDebug("The error_details is %s and err_code is %d\n", errmsg, err);
+				updateTmpList(subdoc_node, mp->name_space, mp->etag, "failed", errmsg, err, 0, 0);
+				addWebConfgNotifyMsg(mp->name_space, mp->etag, "failed", errmsg, get_global_transID() ,0, "status", err, NULL, 200);
+				WEBCFG_FREE(errmsg);
+			}
 			webcfgparam_destroy( pm );
 		}
 		else
 		{
 			WebcfgError("--------------decode root doc failed-------------\n");
+			char * msg = NULL;
+			msg = (char *)webcfgparam_strerror(err);
+			err = getStatusErrorCodeAndMessage(DECODE_ROOT_FAILURE, &errmsg);
+			snprintf(result,MAX_VALUE_LEN,"%s:%s", errmsg, msg);
+
+			updateTmpList(subdoc_node, mp->name_space, mp->etag, "failed", result, err, 0, 0);
+			if(subdoc_node !=NULL && subdoc_node->cloud_trans_id !=NULL)
+			{
+				addWebConfgNotifyMsg(mp->name_space, mp->etag, "failed", result, subdoc_node->cloud_trans_id,0, "status", err, NULL, 200);
+			}
+			WEBCFG_FREE(errmsg);
 		}
 		mp = mp->next;
 	}
@@ -1831,6 +1872,44 @@ void delete_multipart()
 	pthread_mutex_unlock (&multipart_t_mut);
 }
 
+//Segregation of each subdoc elements line by line
+void line_parser(char *ptr, int no_of_bytes)
+{
+	char* str_body = NULL;
+	str_body = malloc(sizeof(char) * no_of_bytes + 1);
+	str_body = memcpy(str_body, ptr, no_of_bytes + 1);
+
+	char *ptr_lb=str_body;
+	char *ptr_lb1=str_body;
+	int index1=0, index2 =0;
+	int count = 0;
+
+	while((ptr_lb - str_body) < no_of_bytes)
+	{
+		if(count < SUBDOC_TAG_COUNT)
+		{
+			ptr_lb1 =  memchr(ptr_lb+1, '\n', no_of_bytes - (ptr_lb - str_body));
+			if(0 != memcmp(ptr_lb1-1, "\r",1 ))
+			{
+				ptr_lb1 = memchr(ptr_lb1+1, '\n', no_of_bytes - (ptr_lb - str_body));
+			}
+			index2 = ptr_lb1-str_body;
+			index1 = ptr_lb-str_body;
+			parse_multipart(str_body+index1+1,index2 - index1 - 2);
+			ptr_lb++;
+			ptr_lb = memchr(ptr_lb, '\n', no_of_bytes - (ptr_lb - str_body));
+			count++;
+		}
+		else             //For data bin segregation
+		{
+			index2 = no_of_bytes+1;
+			index1 = ptr_lb-str_body;
+			parse_multipart(str_body+index1+1,index2 - index1 - 2);
+			break;
+		}
+	}
+}
+
 void parse_multipart(char *ptr, int no_of_bytes)
 {
 	char *content_type = NULL;
@@ -1838,6 +1917,7 @@ void parse_multipart(char *ptr, int no_of_bytes)
 	static char *data = NULL;
 	static uint32_t  etag = 0;
 	static size_t data_size = 0;
+	static int flag = 0;
 
 	/*for storing respective values */
 	if(0 == strncmp(ptr,"Content-type: ",strlen("Content-type")))
@@ -1869,6 +1949,25 @@ void parse_multipart(char *ptr, int no_of_bytes)
 		data = memcpy(data, ptr, no_of_bytes );
 		//store doc size of each sub doc
 		data_size = no_of_bytes;
+		flag++;
+	}
+
+	//To skip empty line between Namespace and Parameters fields in multipart response 
+	if(flag == 2)
+	{
+		if(etag == 0 || name_space == NULL || data == NULL)
+		{
+			uint16_t err = 0;
+			char* result = NULL;
+			if(name_space != NULL)
+			{
+				err = getStatusErrorCodeAndMessage(MULTIPART_CACHE_NULL, &result);
+				WebcfgDebug("The error_details is %s and err_code is %d\n", result, err);
+				addWebConfgNotifyMsg(name_space, 0, "failed", result, get_global_transID(),0, "status", err, NULL, 200);
+				WEBCFG_FREE(result);
+			}
+		}
+		flag = 0;//reset for next subdoc 
 	}
 
 	if(etag != 0 && name_space != NULL && data != NULL && data_size != 0 )
@@ -1889,6 +1988,7 @@ void addToMpList(uint32_t etag, char *name_space, char *data, size_t data_size)
 {
 	multipartdocs_t *mp_node;
 	mp_node = (multipartdocs_t *)malloc(sizeof(multipartdocs_t));
+
 	if(mp_node)
 	{
 		memset(mp_node, 0, sizeof(multipartdocs_t));
