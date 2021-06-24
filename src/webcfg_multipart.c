@@ -792,14 +792,7 @@ WEBCFG_STATUS processMsgpackSubdoc(char *transaction_id)
 								WebcfgDebug("The retry_timer is %d and timeout generated is %lld\n", get_retry_timer(), expiry_time);
 								//To get the exact time diff for retry from present time.
 								updateRetryTimeDiff(expiry_time);
-								if(ccspStatus == 204 )
-								{
-									snprintf(result,MAX_VALUE_LEN,"failed_retrying:%s", errDetails);
-								}
-								else
-								{
-									snprintf(result,MAX_VALUE_LEN,"crash_retrying:%s", errDetails);
-								}
+								snprintf(result,MAX_VALUE_LEN,"failed_retrying:%s", errDetails);
 							}
 							WebcfgDebug("The result is %s\n",result);
 							updateTmpList(subdoc_node, mp->name_space, mp->etag, "failed", result, ccspStatus, 0, 1);
