@@ -1964,8 +1964,17 @@ void parse_multipart(char *ptr, int no_of_bytes)
 				err = getStatusErrorCodeAndMessage(MULTIPART_CACHE_NULL, &result);
 				WebcfgDebug("The error_details is %s and err_code is %d\n", result, err);
 				addWebConfgNotifyMsg(name_space, 0, "failed", result, get_global_transID(),0, "status", err, NULL, 200);
+				WEBCFG_FREE(name_space);
+				name_space = NULL;
 				WEBCFG_FREE(result);
 			}
+			if(data!=NULL)
+			{
+				WEBCFG_FREE(data);
+				data = NULL;
+			}
+			etag = 0;
+			data_size = 0;
 		}
 		flag = 0;//reset for next subdoc 
 	}
