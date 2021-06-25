@@ -496,6 +496,13 @@ WEBCFG_STATUS parseMultipartDocument(void *config_data, char *ct , size_t data_s
 		WEBCFG_FREE(str_body);
 		WEBCFG_FREE(line_boundary);
 		WEBCFG_FREE(last_line_boundary);
+
+		if(get_multipartdoc_count() == 0)
+		{
+			WebcfgError("Multipart list is empty\n");
+			return WEBCFG_FAILURE;
+		}
+
 		status = processMsgpackSubdoc(trans_uuid);
 		if(status ==0)
 		{
