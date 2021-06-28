@@ -1917,9 +1917,6 @@ void subdoc_parser(char *ptr, int no_of_bytes)
 	if(etag != 0 && name_space != NULL && data != NULL && data_size != 0 )
 	{
 		addToMpList(etag, name_space, data, data_size);
-
-		WEBCFG_FREE(name_space);
-		WEBCFG_FREE(data);
 	}
 	else
 	{
@@ -1930,14 +1927,12 @@ void subdoc_parser(char *ptr, int no_of_bytes)
 			err = getStatusErrorCodeAndMessage(MULTIPART_CACHE_NULL, &result);
 			WebcfgDebug("The error_details is %s and err_code is %d\n", result, err);
 			addWebConfgNotifyMsg(name_space, 0, "failed", result, get_global_transID(),0, "status", err, NULL, 200);
-			WEBCFG_FREE(name_space);
 			WEBCFG_FREE(result);
 		}
-		if(data != NULL)
-		{
-			WEBCFG_FREE(data);
-		}
 	}
+
+	WEBCFG_FREE(name_space);
+	WEBCFG_FREE(data);
 }
 
 void line_parser(char *ptr, int no_of_bytes, char **name_space, uint32_t *etag, char **data, size_t *data_size)
