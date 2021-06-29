@@ -1931,8 +1931,15 @@ void subdoc_parser(char *ptr, int no_of_bytes)
 		}
 	}
 
-	WEBCFG_FREE(name_space);
-	WEBCFG_FREE(data);
+	if(name_space != NULL)
+	{
+		WEBCFG_FREE(name_space);
+	}
+
+	if(data != NULL)
+	{
+		WEBCFG_FREE(data);
+	}
 }
 
 void line_parser(char *ptr, int no_of_bytes, char **name_space, uint32_t *etag, char **data, size_t *data_size)
