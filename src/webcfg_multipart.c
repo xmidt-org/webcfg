@@ -132,8 +132,8 @@ void set_global_eventFlag()
 size_t writer_callback_fn(void *buffer, size_t size, size_t nmemb, struct token_data *data);
 size_t headr_callback(char *buffer, size_t size, size_t nitems);
 void stripspaces(char *str, char **final_str);
-void parse_multipart(char *ptr, int no_of_bytes );
-void line_parser(char *ptr, int no_of_bytes);
+void line_parser(char *ptr, int no_of_bytes, char **name_space, uint32_t *etag, char **data, size_t *data_size);
+void subdoc_parser(char *ptr, int no_of_bytes);
 void addToDBList(webconfig_db_data_t *webcfgdb);
 char* generate_trans_uuid();
 WEBCFG_STATUS processMsgpackSubdoc(char *transaction_id);
@@ -475,14 +475,14 @@ WEBCFG_STATUS parseMultipartDocument(void *config_data, char *ct , size_t data_s
 					{
 						index2 = ptr_lb1-str_body;
 						index1 = ptr_lb-str_body;
-						line_parser(str_body+index1,index2 - index1 - 2);
+						subdoc_parser(str_body+index1,index2 - index1 - 2);
 						break;
 					}
 					else if(0 == memcmp(ptr_lb1, line_boundary, strlen(line_boundary)))
 					{
 						index2 = ptr_lb1-str_body;
 						index1 = ptr_lb-str_body;
-						line_parser(str_body+index1,index2 - index1 - 2);
+						subdoc_parser(str_body+index1,index2 - index1 - 2);
 						num_of_parts++;
 						count++;
 					}
@@ -496,6 +496,13 @@ WEBCFG_STATUS parseMultipartDocument(void *config_data, char *ct , size_t data_s
 		WEBCFG_FREE(str_body);
 		WEBCFG_FREE(line_boundary);
 		WEBCFG_FREE(last_line_boundary);
+
+		if(get_multipartdoc_count() == 0)
+		{
+			WebcfgError("Multipart list is empty\n");
+			return WEBCFG_FAILURE;
+		}
+
 		status = processMsgpackSubdoc(trans_uuid);
 		if(status ==0)
 		{
@@ -792,14 +799,7 @@ WEBCFG_STATUS processMsgpackSubdoc(char *transaction_id)
 								WebcfgDebug("The retry_timer is %d and timeout generated is %lld\n", get_retry_timer(), expiry_time);
 								//To get the exact time diff for retry from present time.
 								updateRetryTimeDiff(expiry_time);
-								if(ccspStatus == 204 )
-								{
-									snprintf(result,MAX_VALUE_LEN,"failed_retrying:%s", errDetails);
-								}
-								else
-								{
-									snprintf(result,MAX_VALUE_LEN,"crash_retrying:%s", errDetails);
-								}
+								snprintf(result,MAX_VALUE_LEN,"failed_retrying:%s", errDetails);
 							}
 							WebcfgDebug("The result is %s\n",result);
 							updateTmpList(subdoc_node, mp->name_space, mp->etag, "failed", result, ccspStatus, 0, 1);
@@ -1873,8 +1873,13 @@ void delete_multipart()
 }
 
 //Segregation of each subdoc elements line by line
-void line_parser(char *ptr, int no_of_bytes)
+void subdoc_parser(char *ptr, int no_of_bytes)
 {
+	char *name_space = NULL;
+	char *data = NULL;
+	uint32_t  etag = 0;
+	size_t data_size = 0;
+
 	char* str_body = NULL;
 	str_body = malloc(sizeof(char) * no_of_bytes + 1);
 	str_body = memcpy(str_body, ptr, no_of_bytes + 1);
@@ -1895,7 +1900,7 @@ void line_parser(char *ptr, int no_of_bytes)
 			}
 			index2 = ptr_lb1-str_body;
 			index1 = ptr_lb-str_body;
-			parse_multipart(str_body+index1+1,index2 - index1 - 2);
+			line_parser(str_body+index1+1,index2 - index1 - 2, &name_space, &etag, &data, &data_size);
 			ptr_lb++;
 			ptr_lb = memchr(ptr_lb, '\n', no_of_bytes - (ptr_lb - str_body));
 			count++;
@@ -1904,20 +1909,42 @@ void line_parser(char *ptr, int no_of_bytes)
 		{
 			index2 = no_of_bytes+1;
 			index1 = ptr_lb-str_body;
-			parse_multipart(str_body+index1+1,index2 - index1 - 2);
+			line_parser(str_body+index1+1,index2 - index1 - 2, &name_space, &etag, &data, &data_size);
 			break;
 		}
 	}
+
+	if(etag != 0 && name_space != NULL && data != NULL && data_size != 0 )
+	{
+		addToMpList(etag, name_space, data, data_size);
+	}
+	else
+	{
+		uint16_t err = 0;
+		char* result = NULL;
+		if(name_space != NULL)
+		{
+			err = getStatusErrorCodeAndMessage(MULTIPART_CACHE_NULL, &result);
+			WebcfgDebug("The error_details is %s and err_code is %d\n", result, err);
+			addWebConfgNotifyMsg(name_space, 0, "failed", result, get_global_transID(),0, "status", err, NULL, 200);
+			WEBCFG_FREE(result);
+		}
+	}
+
+	if(name_space != NULL)
+	{
+		WEBCFG_FREE(name_space);
+	}
+
+	if(data != NULL)
+	{
+		WEBCFG_FREE(data);
+	}
 }
 
-void parse_multipart(char *ptr, int no_of_bytes)
+void line_parser(char *ptr, int no_of_bytes, char **name_space, uint32_t *etag, char **data, size_t *data_size)
 {
 	char *content_type = NULL;
-	static char *name_space = NULL;
-	static char *data = NULL;
-	static uint32_t  etag = 0;
-	static size_t data_size = 0;
-	static int flag = 0;
 
 	/*for storing respective values */
 	if(0 == strncmp(ptr,"Content-type: ",strlen("Content-type")))
@@ -1931,57 +1958,26 @@ void parse_multipart(char *ptr, int no_of_bytes)
 	}
 	else if(0 == strncasecmp(ptr,"Namespace",strlen("Namespace")))
 	{
-	        name_space = strndup(ptr+(strlen("Namespace: ")),no_of_bytes-((strlen("Namespace: "))));
+	        *name_space = strndup(ptr+(strlen("Namespace: ")),no_of_bytes-((strlen("Namespace: "))));
 	}
 	else if(0 == strncasecmp(ptr,"Etag",strlen("Etag")))
 	{
 	        char * temp = strndup(ptr+(strlen("Etag: ")),no_of_bytes-((strlen("Etag: "))));
 		if(temp)
 		{
-			etag = strtoul(temp,0,0);
-			WebcfgDebug("The Etag version is %lu\n",(long)etag);
+			*etag = strtoul(temp,0,0);
+			WebcfgDebug("The Etag version is %lu\n",(long)*etag);
 			WEBCFG_FREE(temp);
 		}
 	}
 	else if(strstr(ptr,"parameters"))
 	{
-		data = malloc(sizeof(char) * no_of_bytes );
-		data = memcpy(data, ptr, no_of_bytes );
+		*data = malloc(sizeof(char) * no_of_bytes );
+		*data = memcpy(*data, ptr, no_of_bytes );
 		//store doc size of each sub doc
-		data_size = no_of_bytes;
-		flag++;
+		*data_size = no_of_bytes;
 	}
 
-	//To skip empty line between Namespace and Parameters fields in multipart response 
-	if(flag == 2)
-	{
-		if(etag == 0 || name_space == NULL || data == NULL)
-		{
-			uint16_t err = 0;
-			char* result = NULL;
-			if(name_space != NULL)
-			{
-				err = getStatusErrorCodeAndMessage(MULTIPART_CACHE_NULL, &result);
-				WebcfgDebug("The error_details is %s and err_code is %d\n", result, err);
-				addWebConfgNotifyMsg(name_space, 0, "failed", result, get_global_transID(),0, "status", err, NULL, 200);
-				WEBCFG_FREE(result);
-			}
-		}
-		flag = 0;//reset for next subdoc 
-	}
-
-	if(etag != 0 && name_space != NULL && data != NULL && data_size != 0 )
-	{
-		addToMpList(etag, name_space, data, data_size);
-
-		WEBCFG_FREE(name_space);
-		WEBCFG_FREE(data);
-
-		name_space = NULL;
-		data = NULL;
-		etag = 0;
-		data_size = 0;
-	}
 }
 
 void addToMpList(uint32_t etag, char *name_space, char *data, size_t data_size)
