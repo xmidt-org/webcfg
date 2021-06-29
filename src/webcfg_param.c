@@ -34,6 +34,7 @@ enum {
     PM_INVALID_FIRST_ELEMENT    = HELPERS_INVALID_FIRST_ELEMENT,
     PM_INVALID_DATATYPE,
     PM_INVALID_PM_OBJECT,
+    PM_INVALID_BLOB_OBJECT,
 };
 
 /*----------------------------------------------------------------------------*/
@@ -92,6 +93,7 @@ const char* webcfgparam_strerror( int errnum )
         { .v = PM_INVALID_FIRST_ELEMENT,            .txt = "Invalid first element." },
         { .v = PM_INVALID_DATATYPE,                 .txt = "Invalid 'datatype' value." },
         { .v = PM_INVALID_PM_OBJECT,                .txt = "Invalid 'parameters' array." },
+	{ .v = PM_INVALID_BLOB_OBJECT,              .txt = "Invalid 'blob' object." },
         { .v = 0, .txt = NULL }
     };
     int i = 0;
@@ -179,6 +181,7 @@ int process_webcfgparam( webcfgparam_t *pm, msgpack_object *obj )
         pm->entries_count = array->size;
         pm->entries = (wparam_t *) malloc( sizeof(wparam_t) * pm->entries_count );
         if( NULL == pm->entries ) {
+            errno = PM_OUT_OF_MEMORY;
             pm->entries_count = 0;
 	    WebcfgError("pm->entries is NULL\n");
             return -1;
@@ -192,6 +195,7 @@ int process_webcfgparam( webcfgparam_t *pm, msgpack_object *obj )
                 return -1;
             }
             if( 0 != process_params(&pm->entries[i], &array->ptr[i].via.map) ) {
+		errno = PM_INVALID_BLOB_OBJECT;
 		WebcfgError("process_params failed\n");
                 return -1;
             }
