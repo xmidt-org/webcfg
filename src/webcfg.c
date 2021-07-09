@@ -58,6 +58,7 @@
 pthread_mutex_t sync_mutex=PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t sync_condition=PTHREAD_COND_INITIALIZER;
 bool g_shutdown  = false;
+bool bootSyncInProgress = false;
 pthread_t* g_mpthreadId;
 #ifdef MULTIPART_UTILITY
 static int g_testfile = 0;
@@ -120,6 +121,7 @@ void *WebConfigMultipartTask(void *status)
 #endif
 	//For Primary sync set flag to 0
 	set_global_supplementarySync(0);
+	set_bootSync(true);
 	processWebconfgSync((int)Status, NULL);
 
 	//For supplementary sync set flag to 1
@@ -140,6 +142,7 @@ void *WebConfigMultipartTask(void *status)
 
 	//Resetting the supplementary sync
 	set_global_supplementarySync(0);
+	set_bootSync(false);
 
 	while(1)
 	{
@@ -376,6 +379,16 @@ bool get_global_shutdown()
 void set_global_shutdown(bool shutdown)
 {
     g_shutdown = shutdown;
+}
+
+bool get_bootSync()
+{
+    return bootSyncInProgress;
+}
+
+void set_bootSync(bool bootsync)
+{
+   bootSyncInProgress  = bootsync;
 }
 
 #ifdef MULTIPART_UTILITY
