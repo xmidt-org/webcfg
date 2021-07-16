@@ -721,7 +721,7 @@ WEBCFG_STATUS processMsgpackSubdoc(char *transaction_id)
 								addWebConfgNotifyMsg(mp->name_space, mp->etag, "success", "none", subdoc_node->cloud_trans_id,0, "status",0, NULL, 200);
 							}
 							WebcfgDebug("deleteFromTmpList as doc is applied\n");
-							deleteFromTmpList(mp->name_space);
+							//deleteFromTmpList(mp->name_space);
 							if(mp->isSupplementarySync == 0)
 							{
 								checkDBList(mp->name_space,mp->etag, NULL);
@@ -752,9 +752,10 @@ WEBCFG_STATUS processMsgpackSubdoc(char *transaction_id)
 							if(checkRootDelete() == WEBCFG_SUCCESS)
 							{
 								//Delete tmp queue root as all docs are applied
+								webconfig_tmp_data_t *next_node = NULL;
 								WebcfgInfo("Delete tmp queue root as all docs are applied\n");
 								WebcfgDebug("root version to delete is %lu\n", (long)version);
-								deleteFromTmpList("root");
+								delete_tmp_list(); 
 							}
 							WebcfgDebug("processMsgpackSubdoc is success as all the docs are applied\n");
 							rv = WEBCFG_SUCCESS;
@@ -2168,34 +2169,30 @@ void reqParam_destroy( int paramCnt, param_t *reqObj )
 	}
 }
 
-//Root will be the first doc always in tmp list and will be deleted when all the docs are success. Delete root doc from tmp list when tmp list has one element root.
+//Root will be the first doc always in tmp list and will be deleted when all the docs are success. Delete root doc from tmp list when all primary and supplementary docs are success.
 WEBCFG_STATUS checkRootDelete()
 {
-	int count =0;
 	webconfig_tmp_data_t *temp = NULL;
 	temp = get_global_tmp_node();
-
+	int docSuccess =0;
 	while (NULL != temp)
 	{
-		if(count > 1)
-		{
-			WebcfgDebug("tmp list count is %d\n", count);
-			break;
-		}
 		WebcfgDebug("Root check ====> temp->name %s\n", temp->name);
 		if( strcmp("root", temp->name) != 0)
 		{
-			WebcfgDebug("Found doc in tmp list\n");
-			count = count+1;
-		}
-		else
-		{
-			count = 1;
+			if(strcmp("success", temp->status) == 0)
+			{
+				docSuccess = 1;
+			}
+			else
+			{
+				docSuccess = 0;
+				break;
+			}
 		}
 		temp= temp->next;
 	}
-
-	if(count == 1)
+	if( docSuccess == 1)
 	{
 		WebcfgInfo("Tmp list root doc delete is required\n");
 		return WEBCFG_SUCCESS;
@@ -2207,20 +2204,14 @@ WEBCFG_STATUS checkRootDelete()
 	return WEBCFG_FAILURE;
 }
 
-//Update root version to DB when tmp list has one element root.
+//Update root version to DB when all primary docs are success.
 WEBCFG_STATUS checkRootUpdate()
 {
-	int count =0;
 	webconfig_tmp_data_t *temp = NULL;
 	temp = get_global_tmp_node();
-
+	int docSuccess =0;
 	while (NULL != temp)
 	{
-		if(count > 1)
-		{
-			WebcfgDebug("tmp list count is %d\n", count);
-			break;
-		}
 		WebcfgDebug("Root check ====> temp->name %s\n", temp->name);
 		if((temp->error_code == 204 && (temp->error_details != NULL && strstr(temp->error_details, "doc_unsupported") != NULL)) || (temp->isSupplementarySync == 1)) //skip supplementary docs
 		{
@@ -2236,17 +2227,23 @@ WEBCFG_STATUS checkRootUpdate()
 		}
 		else if( strcmp("root", temp->name) != 0)
 		{
-			WebcfgDebug("Found doc in tmp list\n");
-			count = count+1;
+			if(strcmp("success", temp->status) == 0)
+			{
+				docSuccess = 1;
+			}			
+			else
+			{
+				docSuccess = 0;
+				break;
+			}
 		}
 		else
 		{
-			count = 1;
-		}
+			WebcfgDebug("docs not found in templist\n");
+		}	
 		temp= temp->next;
 	}
-
-	if(count == 1)
+	if( docSuccess == 1)
 	{
 		WebcfgInfo("root DB update is required\n");
 		return WEBCFG_SUCCESS;
@@ -2254,7 +2251,7 @@ WEBCFG_STATUS checkRootUpdate()
 	else
 	{
 		WebcfgInfo("root DB update is not required\n");
-	}
+	}		
 	return WEBCFG_FAILURE;
 }
 
@@ -2286,22 +2283,14 @@ void updateRootVersionToDB()
 //Delete root doc from tmp list and mp cache list when all the docs are success.
 void deleteRootAndMultipartDocs()
 {
-	WEBCFG_STATUS dStatus =0;
+	webconfig_tmp_data_t *next_node = NULL;
 	//Delete root only when all the primary and supplementary docs are applied .
 	if(checkRootDelete() == WEBCFG_SUCCESS)
 	{
 		//Delete tmp queue root as all docs are applied
 		WebcfgDebug("Delete tmp queue root as all docs are applied\n");
 		//WebcfgInfo("root version to delete is %lu\n", (long)version);
-		dStatus = deleteFromTmpList("root");
-		if(dStatus == 0)
-		{
-			WebcfgInfo("Delete tmp queue root is success\n");
-		}
-		else
-		{
-			WebcfgError("Delete tmp queue root is failed\n");
-		}
+		delete_tmp_list();
 		WebcfgDebug("free mp as all docs are success\n");
 		delete_multipart();
 		WebcfgDebug("After free mp\n");

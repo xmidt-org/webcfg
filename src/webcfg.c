@@ -164,6 +164,21 @@ void *WebConfigMultipartTask(void *status)
 		{
 			if(maintenance_doc_sync == 1 && checkMaintenanceTimer() == 1 )
 			{
+				char *ForceSyncDoc = NULL;
+				char* ForceSyncTransID = NULL;
+				getForceSync(&ForceSyncDoc, &ForceSyncTransID);
+				if((ForceSyncDoc == NULL) && (ForceSyncTransID == NULL) && (!forced_sync) && (!get_bootSync()))
+				{	
+					release_success_docs_tmplist();
+				}
+				if(ForceSyncDoc != NULL)
+				{
+					WEBCFG_FREE(ForceSyncDoc);
+				}
+				if(ForceSyncTransID !=NULL)
+				{
+					WEBCFG_FREE(ForceSyncTransID);
+				}
 				WebcfgDebug("Triggered Supplementary doc boot sync\n");
 				SupplementaryDocs_t *sp = NULL;
 				sp = get_global_spInfoHead();
