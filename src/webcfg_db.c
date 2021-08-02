@@ -617,7 +617,7 @@ WEBCFG_STATUS updateTmpList(webconfig_tmp_data_t *temp, char *docname, uint32_t 
 				WebcfgDebug("updateTmpList: reset temp->retry_count\n");
 				temp->retry_count = 0;
 			}
-			WebcfgInfo("doc %s is updated to version %lu status %s error_details %s error_code %lu trans_id %lu temp->retry_count %d\n", docname, (long)temp->version, temp->status, temp->error_details, (long)temp->error_code, (long)temp->trans_id, temp->retry_count);
+			WebcfgDebug("doc %s is updated to version %lu status %s error_details %s error_code %lu trans_id %lu temp->retry_count %d\n", docname, (long)temp->version, temp->status, temp->error_details, (long)temp->error_code, (long)temp->trans_id, temp->retry_count);
 			pthread_mutex_unlock (&webconfig_tmp_data_mut);
 			WebcfgDebug("mutex_unlock in current temp details\n");
 			return WEBCFG_SUCCESS;

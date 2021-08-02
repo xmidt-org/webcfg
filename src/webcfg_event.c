@@ -214,7 +214,7 @@ int addToEventQueue(char *buf)
             {
                 eventDataQ = Data;
 
-                WebcfgInfo("Producer added Data\n");
+                WebcfgDebug("Producer added Data\n");
                 pthread_cond_signal(&event_con);
                 pthread_mutex_unlock (&event_mut);
                 WebcfgDebug("mutex unlock in producer event thread\n");
@@ -280,14 +280,14 @@ void* processSubdocEvents()
 			pthread_mutex_unlock (&event_mut);
 			WebcfgDebug("mutex unlock in event consumer thread\n");
 
-			WebcfgInfo("Data->data is %s\n", Data->data);
+			WebcfgDebug("Data->data is %s\n", Data->data);
 			rv = parseEventData(Data->data, &eventParam);
 			if(rv == WEBCFG_SUCCESS)
 			{
 				subdoc_node = getTmpNode(eventParam->subdoc_name);
 				doctimer_node = getTimerNode(eventParam->subdoc_name);
 
-				WebcfgInfo("Event detection\n");
+				WebcfgDebug("Event detection\n");
 				if (((eventParam->status !=NULL) && (strcmp(eventParam->status, "ACK")==0 || (strcmp(eventParam->status, "ACK;enabled")==0) || (strcmp(eventParam->status, "ACK;disabled")==0))) && (eventParam->timeout == 0))
 				{
 					//Based on ACK event if mesh/cujo is enabled then connected client notification need to be turned OFF
@@ -297,8 +297,8 @@ void* processSubdocEvents()
 						handleConnectedClientNotify(eventParam->status);
 					}
 				
-					WebcfgInfo("ACK EVENT: %s,%lu,%lu,ACK,%lu %s\n", eventParam->subdoc_name,(long)eventParam->trans_id, (long)eventParam->version, (long)eventParam->timeout, "(doc apply success)");
-					WebcfgInfo("doc apply success, proceed to add to DB\n");
+					WebcfgDebug("ACK EVENT: %s,%lu,%lu,ACK,%lu %s\n", eventParam->subdoc_name,(long)eventParam->trans_id, (long)eventParam->version, (long)eventParam->timeout, "(doc apply success)");
+					WebcfgDebug("doc apply success, proceed to add to DB\n");
 					if( validateEvent(subdoc_node, eventParam->subdoc_name, eventParam->trans_id) == WEBCFG_SUCCESS)
 					{
 						//version in event &tmp are not same indicates latest doc is not yet applied
@@ -414,7 +414,7 @@ void* processSubdocEvents()
 				else if (eventParam->timeout != 0)
 				{
 					WebcfgInfo("TIMEOUT EVENT: %s,%lu,%lu,ACK,%lu %s\n", eventParam->subdoc_name,(long)eventParam->trans_id, (long)eventParam->version, (long)eventParam->timeout,"(doc apply need time)");
-					WebcfgInfo("doc apply need time, start timer.\n");
+					WebcfgDebug("doc apply need time, start timer.\n");
 					if( validateEvent(subdoc_node, eventParam->subdoc_name, eventParam->trans_id) == WEBCFG_SUCCESS)
 					{
 						if((getDocVersionFromTmpList(subdoc_node, eventParam->subdoc_name))== eventParam->version)
@@ -442,12 +442,12 @@ void* processSubdocEvents()
 				{
 					if ((eventParam->status !=NULL)&&(strcmp(eventParam->status, "COMP_INIT")==0))
 					{
-						WebcfgInfo("COMP_INIT EVENT: %s,%d,%lu\n", eventParam->subdoc_name,0, (long)eventParam->version);
+						WebcfgDebug("COMP_INIT EVENT: %s,%d,%lu\n", eventParam->subdoc_name,0, (long)eventParam->version);
 						WebcfgInfo("Component initialized, check and re-send blob.\n");
 					}
 					else
 					{
-						WebcfgInfo("Crash EVENT: %s,%d,%lu\n", eventParam->subdoc_name,0, (long)eventParam->version);
+						WebcfgDebug("Crash EVENT: %s,%d,%lu\n", eventParam->subdoc_name,0, (long)eventParam->version);
 						WebcfgInfo("Component restarted after crash, re-send blob.\n");
 					}
 					uint32_t tmpVersion = 0;
@@ -455,12 +455,12 @@ void* processSubdocEvents()
 					//If version in event and tmp are not matching, re-send blob to retry.
 					if(checkDBVersion(eventParam->subdoc_name, eventParam->version) !=WEBCFG_SUCCESS)
 					{
-						WebcfgInfo("DB and event version are not same, check tmp list\n");
+						WebcfgDebug("DB and event version are not same, check tmp list\n");
 						tmpVersion = getDocVersionFromTmpList(subdoc_node, eventParam->subdoc_name);
 						if (tmpVersion == 0)
 						{
 							//tmpVersion=0 indicate already doc is applied & doc is not available in tmp list
-							WebcfgInfo("tmpVersion is 0, DB already in latest version\n");
+							WebcfgDebug("tmpVersion is 0, DB already in latest version\n");
 						}
 						else if(tmpVersion != eventParam->version)
 						{
@@ -513,7 +513,7 @@ void* processSubdocEvents()
 					}
 					else
 					{
-						WebcfgInfo("DB and event version are same, check tmp list\n");
+						WebcfgDebug("DB and event version are same, check tmp list\n");
 						tmpVersion = getDocVersionFromTmpList(subdoc_node, eventParam->subdoc_name);
 						//tmpVersion=0 indicate already doc is applied & deleted frm tmp list
 						if((tmpVersion !=0) && (tmpVersion != eventParam->version))
@@ -655,7 +655,7 @@ int parseEventData(char* str, event_params_t **val)
 				WebcfgDebug("param->err_code %lu\n", (long)param->err_code);
 			}
 
-			WebcfgInfo("param->subdoc_name %s param->trans_id %lu param->version %lu param->status %s param->timeout %lu\n", param->subdoc_name, (long)param->trans_id, (long)param->version, param->status, (long)param->timeout);
+			WebcfgDebug("param->subdoc_name %s param->trans_id %lu param->version %lu param->status %s param->timeout %lu\n", param->subdoc_name, (long)param->trans_id, (long)param->version, param->status, (long)param->timeout);
 			*val = param;
 			WEBCFG_FREE(token);
 			return WEBCFG_SUCCESS;
@@ -796,7 +796,7 @@ WEBCFG_STATUS deleteFromTimerList(char* doc_name)
 		WebcfgError("Invalid value for timer doc\n");
 		return WEBCFG_FAILURE;
 	}
-	WebcfgInfo("timer doc to be deleted: %s\n", doc_name);
+	WebcfgDebug("timer doc to be deleted: %s\n", doc_name);
 
 	prev_node = NULL;
 	pthread_mutex_lock (&expire_timer_mut);
@@ -826,9 +826,9 @@ WEBCFG_STATUS deleteFromTimerList(char* doc_name)
 			WEBCFG_FREE( curr_node->subdoc_name );
 			WEBCFG_FREE( curr_node );
 			curr_node = NULL;
-			WebcfgInfo("Deleted timer successfully and returning..\n");
+			WebcfgDebug("Deleted timer successfully and returning..\n");
 			numOfEvents =numOfEvents - 1;
-			WebcfgInfo("numOfEvents after delete is %d\n", numOfEvents);
+			WebcfgDebug("numOfEvents after delete is %d\n", numOfEvents);
 			pthread_mutex_unlock (&expire_timer_mut);
 			return WEBCFG_SUCCESS;
 		}
@@ -857,7 +857,7 @@ WEBCFG_STATUS stopWebcfgTimer(expire_timer_t *temp, char *name, uint16_t trans_i
 					WebcfgDebug("delete timer for sub doc %s\n", name);
 					if(deleteFromTimerList(name) == WEBCFG_SUCCESS)
 					{
-						WebcfgInfo("stopped timer for doc %s\n", name);
+						WebcfgDebug("stopped timer for doc %s\n", name);
 						return WEBCFG_SUCCESS;
 					}
 					else
@@ -1182,7 +1182,7 @@ WEBCFG_STATUS validateEvent(webconfig_tmp_data_t *temp, char *docname, uint16_t 
 		{
 			if(txid == temp->trans_id)
 			{
-				WebcfgInfo("Valid event. Event txid %hu matches with temp trans_id %hu doc %s\n", txid, temp->trans_id, temp->name);
+				WebcfgDebug("Valid event. Event txid %hu matches with temp trans_id %hu doc %s\n", txid, temp->trans_id, temp->name);
 				return WEBCFG_SUCCESS;
 			}
 			else
