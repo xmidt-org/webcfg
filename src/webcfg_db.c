@@ -247,6 +247,9 @@ void webcfgdb_destroy( webconfig_db_data_t *pm )
 		}
 		WEBCFG_FREE( pm );
 	}
+	pthread_mutex_lock (&webconfig_db_mut);
+    	webcfgdb_data = NULL;
+    	pthread_mutex_unlock (&webconfig_db_mut);
 }
 
 void webcfgdbblob_destroy( blob_struct_t *bd )
