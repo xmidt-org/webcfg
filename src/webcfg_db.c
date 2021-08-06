@@ -16,6 +16,9 @@
 #include <errno.h>
 #include <string.h>
 #include <stdlib.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <unistd.h>
 #include <msgpack.h>
 #include <pthread.h>
 #include "webcfg_helpers.h"
@@ -77,35 +80,52 @@ int process_webcfgdbblobparams( blob_data_t *e, msgpack_object_map *map );
 WEBCFG_STATUS initDB(char * db_file_path )
 {
      FILE *fp = NULL;
+     int fd ;
      size_t sz = 0;
      char *data = NULL;
+     off_t ch_count;
      size_t len = 0;
-     int ch_count=0;
+     struct stat st;
      webconfig_db_data_t* dm = NULL;
-
+	
      WebcfgDebug("DB file path is %s\n", db_file_path);
-     fp = fopen(db_file_path,"rb");
+     fd = open(db_file_path,O_RDONLY);
 
-     if (fp == NULL)
+     if (fd == -1)
      {
 	WebcfgError("Failed to open file %s\n", db_file_path);
 	return WEBCFG_FAILURE;
      }
+
+     fp = fdopen(fd, "r");
+     if (fp == NULL) {
+     	WebcfgError("Failed to open file %s\n", db_file_path);
+	return WEBCFG_FAILURE; 
+     }
      
-     fseek(fp, 0, SEEK_END);
-     ch_count = ftell(fp);
-     if (ch_count == (int)-1)
+     /* Ensure that the file is a regular file */
+     if ((fstat(fd, &st) != 0) || (!S_ISREG(st.st_mode))) {
+	WebcfgError("The file is nor regular file \n");
+	return WEBCFG_FAILURE;  
+     }
+  
+     
+     fseeko(fp, 0, SEEK_END);
+     ch_count = ftello(fp);
+     if (ch_count == -1)
      {
          WebcfgError("fread failed.\n");
 	 fclose(fp);
+	 close(fd);
          return WEBCFG_FAILURE;
      }
-     fseek(fp, 0, SEEK_SET);
+     fseeko(fp, 0, SEEK_SET);
      data = (char *) malloc(sizeof(char) * (ch_count + 1));
      if(NULL == data)
      {
          WebcfgError("Memory allocation for data failed.\n");
          fclose(fp);
+         close(fd);
          return WEBCFG_FAILURE;
      }
      memset(data,0,(ch_count + 1));
@@ -113,13 +133,14 @@ WEBCFG_STATUS initDB(char * db_file_path )
      if (sz == (size_t)-1) 
 	{	
 		fclose(fp);
+                close(fd);
 		WebcfgError("fread failed.\n");
 		WEBCFG_FREE(data);
 		return WEBCFG_FAILURE;
 	}
      len = ch_count;
      fclose(fp);
-
+     close(fd);	
      dm = decodeData((void *)data, len);
      if(NULL == dm)
      {
