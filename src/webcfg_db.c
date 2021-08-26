@@ -100,9 +100,10 @@ WEBCFG_STATUS initDB(char * db_file_path )
      fp = fdopen(fd, "r");
      if (fp == NULL) {
      	WebcfgError("Failed to open file %s\n", db_file_path);
-	return WEBCFG_FAILURE; 
+	return WEBCFG_FAILURE;
+	close(fd);
      }
-     
+	
      /* Ensure that the file is a regular file */
      if ((fstat(fd, &st) != 0) || (!S_ISREG(st.st_mode))) {
 	WebcfgError("The file is not regular file \n");
