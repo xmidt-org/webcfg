@@ -16,6 +16,9 @@
 #include <errno.h>
 #include <string.h>
 #include <stdlib.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <unistd.h>
 #include <msgpack.h>
 #include <pthread.h>
 #include "webcfg_helpers.h"
@@ -77,35 +80,55 @@ int process_webcfgdbblobparams( blob_data_t *e, msgpack_object_map *map );
 WEBCFG_STATUS initDB(char * db_file_path )
 {
      FILE *fp = NULL;
+     int fd ;
      size_t sz = 0;
      char *data = NULL;
+     off_t ch_count;
      size_t len = 0;
-     int ch_count=0;
+     struct stat st;
      webconfig_db_data_t* dm = NULL;
-
+	
      WebcfgDebug("DB file path is %s\n", db_file_path);
-     fp = fopen(db_file_path,"rb");
+     fd = open(db_file_path,O_RDONLY);
 
-     if (fp == NULL)
+     if (fd == -1)
      {
 	WebcfgError("Failed to open file %s\n", db_file_path);
 	return WEBCFG_FAILURE;
      }
+
+     fp = fdopen(fd, "r");
+     if (fp == NULL) {
+     	WebcfgError("Failed to open file %s\n", db_file_path);
+	close(fd);	     
+	return WEBCFG_FAILURE;	
+     }
+	
+     /* Ensure that the file is a regular file */
+     if ((fstat(fd, &st) != 0) || (!S_ISREG(st.st_mode))) {
+	WebcfgError("The file is not regular file \n");
+	fclose(fp);
+	close(fd);	     
+	return WEBCFG_FAILURE;  
+     }
+  
      
-     fseek(fp, 0, SEEK_END);
-     ch_count = ftell(fp);
-     if (ch_count == (int)-1)
+     fseeko(fp, 0, SEEK_END);
+     ch_count = ftello(fp);
+     if (ch_count == -1)
      {
          WebcfgError("fread failed.\n");
 	 fclose(fp);
+	 close(fd);
          return WEBCFG_FAILURE;
      }
-     fseek(fp, 0, SEEK_SET);
+     fseeko(fp, 0, SEEK_SET);
      data = (char *) malloc(sizeof(char) * (ch_count + 1));
      if(NULL == data)
      {
          WebcfgError("Memory allocation for data failed.\n");
          fclose(fp);
+         close(fd);
          return WEBCFG_FAILURE;
      }
      memset(data,0,(ch_count + 1));
@@ -113,13 +136,14 @@ WEBCFG_STATUS initDB(char * db_file_path )
      if (sz == (size_t)-1) 
 	{	
 		fclose(fp);
+                close(fd);
 		WebcfgError("fread failed.\n");
 		WEBCFG_FREE(data);
 		return WEBCFG_FAILURE;
 	}
      len = ch_count;
      fclose(fp);
-
+     close(fd);	
      dm = decodeData((void *)data, len);
      if(NULL == dm)
      {
@@ -247,6 +271,9 @@ void webcfgdb_destroy( webconfig_db_data_t *pm )
 		}
 		WEBCFG_FREE( pm );
 	}
+	pthread_mutex_lock (&webconfig_db_mut);
+    	webcfgdb_data = NULL;
+    	pthread_mutex_unlock (&webconfig_db_mut);
 }
 
 void webcfgdbblob_destroy( blob_struct_t *bd )
@@ -696,14 +723,14 @@ void delete_tmp_list()
     {
         temp = head;
 	head = head->next;
-	WebcfgDebug("Delete node--> temp->name %s temp->version %lu temp->status %s temp->isSupplementarySync %d temp->error_details %s temp->error_code %lu temp->trans_id %lu temp->retry_count %d temp->cloud_trans_id %s\n",temp->name, (long)temp->version, temp->status, temp->isSupplementarySync, temp->error_details, (long)temp->error_code, (long)temp->trans_id, temp->retry_count, temp->cloud_trans_id);
+	WebcfgInfo("Delete node--> temp->name %s temp->version %lu temp->status %s temp->isSupplementarySync %d temp->error_details %s temp->error_code %lu temp->trans_id %lu temp->retry_count %d temp->cloud_trans_id %s\n",temp->name, (long)temp->version, temp->status, temp->isSupplementarySync, temp->error_details, (long)temp->error_code, (long)temp->trans_id, temp->retry_count, temp->cloud_trans_id);
 	free(temp);
 	temp = NULL;
     }
 	pthread_mutex_lock (&webconfig_tmp_data_mut);
     	g_head = NULL;
 	pthread_mutex_unlock (&webconfig_tmp_data_mut);
-    	WebcfgDebug("mutex_unlock Deleted all docs from tmp list\n");
+    	WebcfgInfo("mutex_unlock Deleted all docs from tmp list\n");
 }
 //Delete all docs other than root from tmp list based on sync type primary/secondary
 void delete_tmp_docs_list()
@@ -731,12 +758,12 @@ void release_success_docs_tmplist()
    webconfig_tmp_data_t *temp = NULL, *next_node;
    temp = get_global_tmp_node();
 
-    WebcfgDebug("Inside release_success_docs_list()\n");
+    WebcfgInfo("Inside release_success_docs_list()\n");
     while(temp != NULL)
     {
 	if((temp->status != NULL) && (strcmp(temp->status, "success") ==0))
 	{
-		WebcfgDebug("Delete node--> temp->name %s temp->version %lu temp->status %s temp->isSupplementarySync %d temp->error_details %s temp->error_code %lu temp->trans_id %lu temp->retry_count %d temp->cloud_trans_id %s\n",temp->name, (long)temp->version, temp->status, temp->isSupplementarySync, temp->error_details, (long)temp->error_code, (long)temp->trans_id, temp->retry_count, temp->cloud_trans_id);
+		WebcfgInfo("Delete node--> temp->name %s temp->version %lu temp->status %s temp->isSupplementarySync %d temp->error_details %s temp->error_code %lu temp->trans_id %lu temp->retry_count %d temp->cloud_trans_id %s\n",temp->name, (long)temp->version, temp->status, temp->isSupplementarySync, temp->error_details, (long)temp->error_code, (long)temp->trans_id, temp->retry_count, temp->cloud_trans_id);
 		deleteFromTmpList(temp->name,&next_node);
 		temp = next_node;
 		continue;	

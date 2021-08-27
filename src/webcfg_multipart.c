@@ -752,7 +752,6 @@ WEBCFG_STATUS processMsgpackSubdoc(char *transaction_id)
 							if(checkRootDelete() == WEBCFG_SUCCESS)
 							{
 								//Delete tmp queue root as all docs are applied
-								webconfig_tmp_data_t *next_node = NULL;
 								WebcfgInfo("Delete tmp queue root as all docs are applied\n");
 								WebcfgDebug("root version to delete is %lu\n", (long)version);
 								delete_tmp_list(); 
@@ -2177,7 +2176,7 @@ WEBCFG_STATUS checkRootDelete()
 	int docSuccess =0;
 	while (NULL != temp)
 	{
-		WebcfgDebug("Root check ====> temp->name %s\n", temp->name);
+		WebcfgInfo("Root check ====> temp->name %s\n", temp->name);
 		if( strcmp("root", temp->name) != 0)
 		{
 			if(strcmp("success", temp->status) == 0)
@@ -2212,7 +2211,7 @@ WEBCFG_STATUS checkRootUpdate()
 	int docSuccess =0;
 	while (NULL != temp)
 	{
-		WebcfgDebug("Root check ====> temp->name %s\n", temp->name);
+		WebcfgInfo("Root check ====> temp->name %s\n", temp->name);
 		if((temp->error_code == 204 && (temp->error_details != NULL && strstr(temp->error_details, "doc_unsupported") != NULL)) || (temp->isSupplementarySync == 1)) //skip supplementary docs
 		{
 			if(temp->isSupplementarySync)
@@ -2283,17 +2282,16 @@ void updateRootVersionToDB()
 //Delete root doc from tmp list and mp cache list when all the docs are success.
 void deleteRootAndMultipartDocs()
 {
-	webconfig_tmp_data_t *next_node = NULL;
 	//Delete root only when all the primary and supplementary docs are applied .
 	if(checkRootDelete() == WEBCFG_SUCCESS)
 	{
 		//Delete tmp queue root as all docs are applied
-		WebcfgDebug("Delete tmp queue root as all docs are applied\n");
+		WebcfgInfo("Delete tmp queue root as all docs are applied\n");
 		//WebcfgInfo("root version to delete is %lu\n", (long)version);
 		delete_tmp_list();
-		WebcfgDebug("free mp as all docs are success\n");
+		WebcfgInfo("free mp as all docs are success\n");
 		delete_multipart();
-		WebcfgDebug("After free mp\n");
+		WebcfgInfo("After free mp\n");
 	}
 }
 
