@@ -133,7 +133,10 @@ void initWebcfgProperties(char * filename)
 				strncpy(sdInfo->name,subtoken,(sizeof(sdInfo->name)-1));
 				subtoken = strtok(NULL,":");//skip 1st value
 				subtoken = strtok(NULL,":");//true or false
-				strncpy(sdInfo->support,subtoken,(sizeof(sdInfo->support)-1));
+				if(subtoken != NULL)
+				{
+					strncpy(sdInfo->support,subtoken,(sizeof(sdInfo->support)-1));//To handle subtoken null case
+				}
 				token =strtok_r(p,",",&p);
 				sdInfo->next = NULL;
 
