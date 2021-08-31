@@ -723,15 +723,16 @@ void delete_tmp_list()
     {
         temp = head;
 	head = head->next;
-	WebcfgInfo("Delete node--> temp->name %s temp->version %lu temp->status %s temp->isSupplementarySync %d temp->error_details %s temp->error_code %lu temp->trans_id %lu temp->retry_count %d temp->cloud_trans_id %s\n",temp->name, (long)temp->version, temp->status, temp->isSupplementarySync, temp->error_details, (long)temp->error_code, (long)temp->trans_id, temp->retry_count, temp->cloud_trans_id);
+	WebcfgDebug("Delete node--> temp->name %s temp->version %lu temp->status %s temp->isSupplementarySync %d temp->error_details %s temp->error_code %lu temp->trans_id %lu temp->retry_count %d temp->cloud_trans_id %s\n",temp->name, (long)temp->version, temp->status, temp->isSupplementarySync, temp->error_details, (long)temp->error_code, (long)temp->trans_id, temp->retry_count, temp->cloud_trans_id);
 	free(temp);
 	temp = NULL;
     }
 	pthread_mutex_lock (&webconfig_tmp_data_mut);
     	g_head = NULL;
 	pthread_mutex_unlock (&webconfig_tmp_data_mut);
-    	WebcfgInfo("mutex_unlock Deleted all docs from tmp list\n");
+    	WebcfgDebug("mutex_unlock Deleted all docs from tmp list\n");
 }
+
 //Delete all docs other than root from tmp list based on sync type primary/secondary
 void delete_tmp_docs_list()
 {
@@ -741,6 +742,7 @@ void delete_tmp_docs_list()
     WebcfgDebug("Inside delete_tmp_docs_list()\n");
     while(temp != NULL)
     {
+	WebcfgInfo("temp->name %s\n", temp->name);
 	//skip root delete
 	if((strcmp(temp->name, "root") !=0) && (temp->isSupplementarySync == get_global_supplementarySync()))
 	{
@@ -752,18 +754,19 @@ void delete_tmp_docs_list()
 	temp = temp->next;
     }
 }
+
 // To release success tmp docs during every maintenance window when few docs are failed in list .
 void release_success_docs_tmplist()
 {
    webconfig_tmp_data_t *temp = NULL, *next_node;
    temp = get_global_tmp_node();
 
-    WebcfgInfo("Inside release_success_docs_list()\n");
+    WebcfgDebug("Inside release_success_docs_list()\n");
     while(temp != NULL)
     {
 	if((temp->status != NULL) && (strcmp(temp->status, "success") ==0))
 	{
-		WebcfgInfo("Delete node--> temp->name %s temp->version %lu temp->status %s temp->isSupplementarySync %d temp->error_details %s temp->error_code %lu temp->trans_id %lu temp->retry_count %d temp->cloud_trans_id %s\n",temp->name, (long)temp->version, temp->status, temp->isSupplementarySync, temp->error_details, (long)temp->error_code, (long)temp->trans_id, temp->retry_count, temp->cloud_trans_id);
+		WebcfgDebug("Delete node--> temp->name %s temp->version %lu temp->status %s temp->isSupplementarySync %d temp->error_details %s temp->error_code %lu temp->trans_id %lu temp->retry_count %d temp->cloud_trans_id %s\n",temp->name, (long)temp->version, temp->status, temp->isSupplementarySync, temp->error_details, (long)temp->error_code, (long)temp->trans_id, temp->retry_count, temp->cloud_trans_id);
 		deleteFromTmpList(temp->name,&next_node);
 		temp = next_node;
 		continue;	

@@ -168,7 +168,8 @@ void *WebConfigMultipartTask(void *status)
 				char* ForceSyncTransID = NULL;
 				getForceSync(&ForceSyncDoc, &ForceSyncTransID);
 				if((ForceSyncDoc == NULL) && (ForceSyncTransID == NULL) && (!forced_sync) && (!get_bootSync()))
-				{	
+				{
+					WebcfgInfo("release success docs at every maintenance window\n");	
 					release_success_docs_tmplist();
 				}
 				if(ForceSyncDoc != NULL)
