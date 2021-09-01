@@ -88,7 +88,7 @@ pthread_mutex_t *get_global_sync_mutex(void);
 pthread_t *get_global_mpThreadId(void);
 int get_global_supplementarySync();
 void set_global_supplementarySync(int value);
-
+void *WebConfigMultipartTask(void *status);
 void initWebConfigMultipartTask(unsigned long status);
 void processWebconfgSync(int Status, char* docname);
 WEBCFG_STATUS webcfg_http_request(char **configData, int r_count, int status, long *code, char **transaction_id,char* contentType, size_t* dataSize, char* docname);
