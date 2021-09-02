@@ -271,9 +271,6 @@ void webcfgdb_destroy( webconfig_db_data_t *pm )
 		}
 		WEBCFG_FREE( pm );
 	}
-	pthread_mutex_lock (&webconfig_db_mut);
-    	webcfgdb_data = NULL;
-    	pthread_mutex_unlock (&webconfig_db_mut);
 }
 
 void webcfgdbblob_destroy( blob_struct_t *bd )
@@ -365,6 +362,13 @@ webconfig_tmp_data_t * get_global_tmp_node(void)
     tmp = g_head;
     pthread_mutex_unlock (&webconfig_tmp_data_mut);
     return tmp;
+}
+
+void reset_db_node()
+{
+	pthread_mutex_lock (&webconfig_db_mut);
+    	webcfgdb_data = NULL;
+    	pthread_mutex_unlock (&webconfig_db_mut);
 }
 
 void set_global_tmp_node(webconfig_tmp_data_t *new)
