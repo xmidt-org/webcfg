@@ -13,7 +13,7 @@
 #endif
 #include "webcfg.h"
 #include "webcfg_log.h"
-
+#include "webcfg_rbus.h"
 #define WEBCFG_COMPONENT_NAME "webconfig"
 /*----------------------------------------------------------------------------*/
 /*                             Function Prototypes                            */
@@ -48,6 +48,13 @@ int main()
 	const char *pComponentName = WEBCFG_COMPONENT_NAME;
 	WebcfgInfo("********** Starting component: %s **********\n ", pComponentName); 
 	curl_global_init(CURL_GLOBAL_DEFAULT);
+
+	if(isRbusEnabled())
+	{
+		WalInfo("webconfigRbusInit\n");
+		webconfigRbusInit(pComponentName);
+		regWebConfigDataModel();
+	}
 
 	WebcfgInfo("WebConfig Rfc is enabled, starting WebConfigMultipartTask\n");
 	WebConfigMultipartTask(0);

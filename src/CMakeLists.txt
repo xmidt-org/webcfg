@@ -13,8 +13,8 @@
 #   limitations under the License.
 
 set(PROJ_WEBCFG webcfg)
-set(HEADERS webcfg.h webcfg_param.h webcfg_pack.h webcfg_multipart.h webcfg_auth.h webcfg_notify.h webcfg_generic.h webcfg_db.h webcfg_log.h webcfg_blob.h webcfg_event.h webcfg_aker.h webcfg_metadata.h webcfg_timer.h)
-set(SOURCES main.c webcfg_helpers.c webcfg.c webcfg_param.c webcfg_pack.c webcfg_multipart.c webcfg_auth.c webcfg_notify.c webcfg_db.c webcfg_generic.c webcfg_blob.c webcfg_event.c webcfg_client.c webcfg_aker.c webcfg_metadata.c webcfg_timer.c)
+set(HEADERS webcfg.h webcfg_param.h webcfg_pack.h webcfg_multipart.h webcfg_auth.h webcfg_notify.h webcfg_generic.h webcfg_db.h webcfg_log.h webcfg_blob.h webcfg_event.h webcfg_aker.h webcfg_metadata.h webcfg_timer.h webcfg_rbus.h)
+set(SOURCES main.c webcfg_helpers.c webcfg.c webcfg_param.c webcfg_pack.c webcfg_multipart.c webcfg_auth.c webcfg_notify.c webcfg_db.c webcfg_generic.c webcfg_blob.c webcfg_event.c webcfg_client.c webcfg_aker.c webcfg_metadata.c webcfg_timer.c webcfg_rbus.c)
 
 #Support webcfg lib for backward compatibility
 #if (NOT WEBCONFIG_BIN_SUPPORT)
@@ -33,7 +33,7 @@ install (FILES ${HEADERS} DESTINATION include/${PROJ_WEBCFG})
 #if (WEBCONFIG_BIN_SUPPORT)
 add_executable(webconfig ${SOURCES} ${HEADERS})
 #set_property(TARGET ${PROJ_WEBCFG} PROPERTY C_STANDARD 99)
-set(COMMON_LIBS -lwrp-c -lpthread -lwdmp-c -lmsgpackc -ltrower-base64 -lm -lcjson -lrt -luuid -llibparodus -lnanomsg -lcimplog -lcurl)
+set(COMMON_LIBS -lwrp-c -lpthread -lwdmp-c -lmsgpackc -ltrower-base64 -lm -lcjson -lrt -luuid -llibparodus -lnanomsg -lcimplog -lcurl -lrbus)
 target_link_libraries (webconfig ${CMAKE_THREAD_LIBS_INIT} ${COMMON_LIBS})
 install (TARGETS webconfig DESTINATION bin)
 #endif()
