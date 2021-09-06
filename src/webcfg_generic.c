@@ -23,6 +23,7 @@
 /*                                   Macros                                   */
 /*----------------------------------------------------------------------------*/
 #define UNUSED(x) (void )(x)
+#define WEBCFG_EVENT_NAME "webconfigSignal"
 /*----------------------------------------------------------------------------*/
 /*                             Function Prototypes                            */
 /*----------------------------------------------------------------------------*/
@@ -183,13 +184,43 @@ void sendNotification(char *payload, char *source, char *destination)
 
 int registerWebcfgEvent(WebConfigEventCallback webcfgEventCB)
 {
-    UNUSED(webcfgEventCB);
-    return 0;
+	int ret = 0;
+	if(isRbusEnabled())
+	{
+		char user_data[64] = {0};
+		strncpy(user_data,WEBCFG_EVENT_NAME,sizeof(user_data)-1);
+
+		ret = rbusEvent_Subscribe(rbus_handle, WEBCFG_EVENT_NAME, webcfgEventCB, user_data);
+		if(ret != RBUS_ERROR_SUCCESS)
+		{
+			WebcfgError("Unable to subscribe to event %s with rbus error code : %d\n", WEBCFG_EVENT_NAME, ret);
+		}
+		WebcfgInfo("registerWebcfgEvent : subscribe to %s ret value is %d\n",WEBCFG_EVENT_NAME,ret);
+	}
+	else
+	{
+		UNUSED(webcfgEventCB);
+	}
+	return ret;
 }
 
 int unregisterWebcfgEvent()
 {
-    return 0;
+	int ret = 0 ;
+	if(isRbusEnabled())
+	{
+		ret = rbusEvent_Unsubscribe(rbus_handle, WEBCFG_EVENT_NAME);
+		if ( ret != RBUS_ERROR_SUCCESS )
+		{
+			WebcfgError("%s Unsubscribe failed\n",WEBCFG_EVENT_NAME);
+			return ;
+		}
+		else
+		{
+			WebcfgInfo("%s Unsubscribe with rbus successful\n",WEBCFG_EVENT_NAME);
+		}
+	}
+	return ret;
 }
 
 WDMP_STATUS mapStatus(int ret)
