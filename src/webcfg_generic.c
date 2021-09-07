@@ -167,13 +167,28 @@ int Set_Supplementary_URL( char *name, char *pString)
 
 void setValues(const param_t paramVal[], const unsigned int paramCount, const int setType, char *transactionId, money_trace_spans *timeSpan, WDMP_STATUS *retStatus, int *ccspStatus)
 {
-	UNUSED(paramVal);
-	UNUSED(paramCount);
-	UNUSED(setType);
-	UNUSED(transactionId);
-	UNUSED(timeSpan);
-	UNUSED(retStatus);
-	UNUSED(ccspStatus);
+	if(isRbusEnabled())
+	{
+		int ccspRetStatus = 0;
+		WDMP_STATUS ret = 0;
+		WebcfgInfo("B4 setValues_rbus\n");
+		setValues_rbus(paramVal, paramCount, setType, transactionId, timeSpan, &ret, &ccspRetStatus);
+		WebcfgInfo("After setValues_rbus\n");
+		WebcfgInfo("ret is %d\n", (int)ret);
+		*retStatus = ret;
+		*ccspStatus = ccspRetStatus;
+		WebcfgInfo("ccspStatus %d retStatus is %d\n", *ccspStatus, (int)*retStatus);
+	}
+	else
+	{
+		UNUSED(paramVal);
+		UNUSED(paramCount);
+		UNUSED(setType);
+		UNUSED(transactionId);
+		UNUSED(timeSpan);
+		UNUSED(retStatus);
+		UNUSED(ccspStatus);
+	}
 	return;
 }
 
@@ -229,8 +244,25 @@ int unregisterWebcfgEvent()
 
 WDMP_STATUS mapStatus(int ret)
 {
-	UNUSED(ret);
-	return 0;
+	if(isRbusEnabled())
+	{
+		switch (ret)
+		{
+			case CCSP_Msg_Bus_OK:
+				return WDMP_SUCCESS;
+			case CCSP_Msg_BUS_TIMEOUT:
+				return WDMP_ERR_TIMEOUT;
+			case CCSP_ERR_INVALID_PARAMETER_VALUE:
+				return WDMP_ERR_INVALID_PARAMETER_VALUE;
+			default:
+			return WDMP_FAILURE;
+		}
+	}
+	else
+	{
+		UNUSED(ret);
+	}
+	return ret;
 }
 
 void setAttributes(param_t *attArr, const unsigned int paramCount, money_trace_spans *timeSpan, WDMP_STATUS *retStatus)

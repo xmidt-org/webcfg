@@ -32,6 +32,7 @@
 #include <cimplog.h>
 #include "webcfg.h"
 #include "webcfg_log.h"
+#include "webcfg_generic.h"
 
 #define buffLen 1024
 #define maxParamLen 128
@@ -47,14 +48,16 @@
 #define WEBCFG_URL_PARAM "Device.X_RDK_WebConfig.URL"
 #define WEBCFG_FORCESYNC_PARAM "Device.X_RDK_WebConfig.ForceSync"
 
-/*#define CCSP_Msg_Bus_OK             100
+#define CCSP_Msg_Bus_OK             100
 #define CCSP_Msg_Bus_OOM            101
 #define CCSP_Msg_Bus_ERROR          102
 
 #define CCSP_Msg_BUS_CANNOT_CONNECT 190
 #define CCSP_Msg_BUS_TIMEOUT        191
 #define CCSP_Msg_BUS_NOT_EXIST      192
-#define CCSP_Msg_BUS_NOT_SUPPORT    193*/
+#define CCSP_Msg_BUS_NOT_SUPPORT    193
+#define CCSP_ERR_UNSUPPORTED_PROTOCOL 9013
+#define CCSP_ERR_INVALID_PARAMETER_VALUE 9007
 
 bool isRbusEnabled();
 
@@ -67,6 +70,8 @@ rbusError_t rbus_GetValueFromDB( char* paramName, char** paramValue);
 rbusError_t rbus_StoreValueIntoDB(char *paramName, char *value);
 
 void getValues_rbus(const char *paramName[], const unsigned int paramCount, int index, money_trace_spans *timeSpan, param_t ***paramArr, int *retValCount, int *retStatus);
+void setValues_rbus(const param_t paramVal[], const unsigned int paramCount, const int setType,char *transactionId, money_trace_spans *timeSpan, WDMP_STATUS *retStatus, int *ccspRetStatus);
+
 DATA_TYPE mapRbusToWdmpDataType(rbusValueType_t rbusType);
 int mapRbusStatus(int Rbus_error_code);
 #endif

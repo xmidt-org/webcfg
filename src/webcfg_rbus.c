@@ -503,7 +503,6 @@ WEBCFG_STATUS regWebConfigDataModel()
 	return status;
 }
 
-
 //maps rbus rbusValueType_t to WDMP datatype
 DATA_TYPE mapRbusToWdmpDataType(rbusValueType_t rbusType)
 {
@@ -561,3 +560,182 @@ DATA_TYPE mapRbusToWdmpDataType(rbusValueType_t rbusType)
 	WebcfgInfo("mapRbusToWdmpDataType : wdmp_type is %d\n", wdmp_type);
 	return wdmp_type;
 }
+
+static rbusValueType_t mapWdmpToRbusDataType(DATA_TYPE wdmpType)
+{
+	DATA_TYPE rbusType = RBUS_NONE;
+
+	switch (wdmpType)
+	{
+		case WDMP_INT:
+			rbusType = RBUS_INT32;
+			break;
+		case WDMP_UINT:
+			rbusType = RBUS_UINT32;
+			break;
+		case WDMP_LONG:
+			rbusType = RBUS_INT64;
+			break;
+		case WDMP_ULONG:
+			rbusType = RBUS_UINT64;
+			break;
+		case WDMP_FLOAT:
+			rbusType = RBUS_SINGLE;
+			break;
+		case WDMP_DOUBLE:
+			rbusType = RBUS_DOUBLE;
+			break;
+		case WDMP_DATETIME:
+			rbusType = RBUS_DATETIME;
+			break;
+		case WDMP_BOOLEAN:
+			rbusType = RBUS_BOOLEAN;
+			break;
+		case WDMP_STRING:
+			rbusType = RBUS_STRING;
+			break;
+		case WDMP_BYTE:
+			rbusType = RBUS_BYTES;
+			break;
+		case WDMP_NONE:
+		default:
+			rbusType = RBUS_NONE;
+			break;
+	}
+
+	WebcfgInfo("mapWdmpToRbusDataType : rbusType is %d\n", rbusType);
+	return rbusType;
+}
+
+//To map Rbus error code to Ccsp error codes.
+int mapRbusToCcspStatus(int Rbus_error_code)
+{
+    int CCSP_error_code = CCSP_Msg_Bus_ERROR;
+    switch (Rbus_error_code)
+    {
+        case  RBUS_ERROR_SUCCESS  : CCSP_error_code = CCSP_Msg_Bus_OK; break;
+        case  RBUS_ERROR_BUS_ERROR  : CCSP_error_code = CCSP_Msg_Bus_ERROR; break;
+        case  RBUS_ERROR_INVALID_INPUT  : CCSP_error_code = CCSP_ERR_INVALID_PARAMETER_VALUE; break;
+        case  RBUS_ERROR_NOT_INITIALIZED  : CCSP_error_code = CCSP_Msg_Bus_ERROR; break;
+        case  RBUS_ERROR_OUT_OF_RESOURCES  : CCSP_error_code = CCSP_Msg_Bus_OOM; break;
+        case  RBUS_ERROR_DESTINATION_NOT_FOUND  : CCSP_error_code = CCSP_Msg_BUS_CANNOT_CONNECT; break;
+        case  RBUS_ERROR_DESTINATION_NOT_REACHABLE  : CCSP_error_code = CCSP_Msg_BUS_CANNOT_CONNECT; break;
+        case  RBUS_ERROR_DESTINATION_RESPONSE_FAILURE  : CCSP_error_code = CCSP_Msg_BUS_TIMEOUT; break;
+        case  RBUS_ERROR_INVALID_RESPONSE_FROM_DESTINATION  : CCSP_error_code = CCSP_ERR_UNSUPPORTED_PROTOCOL; break;
+        case  RBUS_ERROR_INVALID_OPERATION  : CCSP_error_code = CCSP_Msg_BUS_NOT_SUPPORT; break;
+        case  RBUS_ERROR_INVALID_EVENT : CCSP_error_code = CCSP_Msg_BUS_NOT_SUPPORT; break;
+        case  RBUS_ERROR_INVALID_HANDLE : CCSP_error_code = CCSP_Msg_BUS_NOT_SUPPORT; break;
+        case  RBUS_ERROR_SESSION_ALREADY_EXIST : CCSP_error_code = CCSP_Msg_BUS_NOT_SUPPORT; break;
+    }
+    return CCSP_error_code;
+}
+
+//To map Rbus error code to Ccsp error codes.
+/*int mapRbusStatus(int Rbus_error_code)
+{
+    int CCSP_error_code = WDMP_BUS_ERROR;
+    switch (Rbus_error_code)
+    {
+        case  RBUS_ERROR_SUCCESS  : CCSP_error_code = WDMP_SUCCESS; break;
+        case  RBUS_ERROR_BUS_ERROR  : CCSP_error_code = WDMP_FAILURE; break;
+        case  RBUS_ERROR_INVALID_INPUT  : CCSP_error_code = WDMP_ERR_INVALID_PARAMETER_VALUE; break;
+        case  RBUS_ERROR_NOT_INITIALIZED  : CCSP_error_code = WDMP_FAILURE; break;
+        case  RBUS_ERROR_OUT_OF_RESOURCES  : CCSP_error_code = WDMP_BUS_OOM; break;
+        case  RBUS_ERROR_DESTINATION_NOT_FOUND  : CCSP_error_code = WDMP_BUS_CANNOT_CONNECT; break;
+        case  RBUS_ERROR_DESTINATION_NOT_REACHABLE  : CCSP_error_code = WDMP_BUS_CANNOT_CONNECT; break;
+        case  RBUS_ERROR_DESTINATION_RESPONSE_FAILURE  : CCSP_error_code = WDMP_ERR_TIMEOUT; break;
+        case  RBUS_ERROR_INVALID_RESPONSE_FROM_DESTINATION  : CCSP_error_code = WDMP_ERR_UNSUPPORTED_PROTOCOL; break;
+        case  RBUS_ERROR_INVALID_OPERATION  : CCSP_error_code = WDMP_BUS_NOT_SUPPORT; break;
+        case  RBUS_ERROR_INVALID_EVENT : CCSP_error_code = WDMP_BUS_NOT_SUPPORT; break;
+        case  RBUS_ERROR_INVALID_HANDLE : CCSP_error_code = WDMP_BUS_NOT_SUPPORT; break;
+        case  RBUS_ERROR_SESSION_ALREADY_EXIST : CCSP_error_code = WDMP_BUS_NOT_SUPPORT; break;
+    }
+    return CCSP_error_code;
+}*/
+
+
+void setValues_rbus(const param_t paramVal[], const unsigned int paramCount, const int setType,char *transactionId, money_trace_spans *timeSpan, WDMP_STATUS *retStatus, int *ccspRetStatus)
+{
+	int cnt = 0;
+	int isInvalid = 0;
+	bool isCommit = true;
+	int sessionId = 0;
+	rbusError_t ret = RBUS_ERROR_BUS_ERROR;
+	rbusProperty_t properties = NULL, last = NULL;
+	rbusValue_t setVal[paramCount];
+	char const* setNames[paramCount];
+	*retStatus = WDMP_FAILURE;
+
+	if(!rbus_handle)
+	{
+		WebcfgError("setValues_rbus Failed as rbus_handle is not initialized\n");
+		return;
+	}
+
+	for(cnt=0; cnt<paramCount; cnt++)
+	{
+		rbusValue_Init(&setVal[cnt]);
+
+		setNames[cnt] = paramVal[cnt].name;
+		WebcfgInfo("paramName to be set is %s paramCount %d\n", paramVal[cnt].name, paramCount);
+		WebcfgInfo("paramVal is %s\n", paramVal[cnt].value);
+
+		rbusValueType_t type = mapWdmpToRbusDataType(paramVal[cnt].type);
+
+		if (type == RBUS_NONE)
+		{
+			WebcfgError("Invalid data type\n");
+			isInvalid = 1;
+			break;
+		}
+
+		rbusValue_SetFromString(setVal[cnt], type, paramVal[cnt].value);
+
+		rbusProperty_t next;
+		rbusProperty_Init(&next, setNames[cnt], setVal[cnt]);
+
+		WebcfgInfo("Property Name[%d] is %s\n", cnt, rbusProperty_GetName(next));
+		WebcfgInfo("Value type[%d] is %d\n", cnt, rbusValue_GetType(setVal[cnt]));
+
+		if(properties == NULL)
+		{
+			properties = last = next;
+		}
+		else
+		{
+			rbusProperty_SetNext(last, next);
+			last=next;
+		}
+	}
+
+	if(!isInvalid)
+	{
+		isCommit = true;
+		sessionId = 0;
+
+		rbusSetOptions_t opts = {isCommit,sessionId};
+
+		ret = rbus_setMulti(rbus_handle, paramCount, properties, &opts);
+		WebcfgInfo("The ret status for rbus_setMulti is %d\n", ret);
+	}
+	else
+	{
+		ret = RBUS_ERROR_INVALID_INPUT;
+		WebcfgError("Invalid input. ret %d\n", ret);
+	}
+
+	*ccspRetStatus = mapRbusToCcspStatus((int)ret);
+	WebcfgInfo("ccspRetStatus is %d\n", *ccspRetStatus);
+
+        *retStatus = mapStatus(*ccspRetStatus);
+
+	WebcfgInfo("paramCount is %d\n", paramCount);
+        for (cnt = 0; cnt < paramCount; cnt++)
+        {
+            rbusValue_Release(setVal[cnt]);
+        }
+	WebcfgInfo("After Value free\n");
+        rbusProperty_Release(properties);
+	WebcfgInfo("After properties free\n");
+}
+
