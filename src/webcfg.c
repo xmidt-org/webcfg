@@ -342,6 +342,8 @@ void *WebConfigMultipartTask(void *status)
 
 	WebcfgDebug("webcfgdb_destroy\n");
 	webcfgdb_destroy (get_global_db_node() );
+	reset_db_node();
+	
 
 	WebcfgDebug("multipart_destroy\n");
 	delete_multipart();
