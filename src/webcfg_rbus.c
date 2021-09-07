@@ -33,8 +33,6 @@ static char* forceSyncVal = NULL ;
 
 static bool isRbus = false ;
 
-void (*rbusnotifyCbFnPtr)(NotifyData*) = NULL;
-
 typedef struct
 {
     char *paramName;
@@ -88,7 +86,7 @@ WEBCFG_STATUS webconfigRbusInit(const char *pComponentName)
 	return WEBCFG_SUCCESS;
 }
 
-static void webpaRbus_Uninit()
+void webpaRbus_Uninit()
 {
     rbus_close(rbus_handle);
 }
@@ -99,7 +97,8 @@ static void webpaRbus_Uninit()
 rbusError_t webcfgDataSetHandler(rbusHandle_t handle, rbusProperty_t prop, rbusSetHandlerOptions_t* opts) {
 
     WebcfgInfo("Inside webcfgDataSetHandler\n");
-
+    (void) handle;
+    (void) opts;
     char const* paramName = rbusProperty_GetName(prop);
     if((strncmp(paramName,  WEBCFG_RFC_PARAM, maxParamLen) != 0) &&
 	(strncmp(paramName, WEBCFG_URL_PARAM, maxParamLen) != 0) &&
@@ -131,11 +130,11 @@ rbusError_t webcfgDataSetHandler(rbusHandle_t handle, rbusProperty_t prop, rbusS
             {
 		    if(paramval == true)
 		    {
-			tmpchar = strdup("true");
+			strcpy(tmpchar, "true");
 		    }
 		    else
 		    {
-			tmpchar = strdup("false");
+			strcpy(tmpchar, "false");
                     }
 		    WebcfgInfo("tmpchar is %s\n", tmpchar);
 		    retPsmSet = rbus_StoreValueIntoDB( WEBCFG_RFC_PARAM, tmpchar );
@@ -154,7 +153,7 @@ rbusError_t webcfgDataSetHandler(rbusHandle_t handle, rbusProperty_t prop, rbusS
 	    else
 	    {
 		WebcfgError("set value type is invalid\n");
-                retStatus = RBUS_ERROR_INVALID_INPUT;
+                return RBUS_ERROR_INVALID_INPUT;
 	    }
         } else {
             WebcfgError("Unexpected value type for property %s \n", paramName);
@@ -237,7 +236,6 @@ rbusError_t webcfgDataGetHandler(rbusHandle_t handle, rbusProperty_t property, r
     (void) handle;
     (void) opts;
     char const* propertyName;
-    char* componentName = NULL;
     rbusError_t retPsmGet = RBUS_ERROR_BUS_ERROR;
 
     propertyName = strdup(rbusProperty_GetName(property));
@@ -264,7 +262,7 @@ rbusError_t webcfgDataGetHandler(rbusHandle_t handle, rbusProperty_t property, r
 			WebcfgInfo("B4 char to bool conversion\n");
 			if(((strcmp (tmpchar, "true") == 0)) || (strcmp (tmpchar, "TRUE") == 0))
 			{
-				*RfcVal = true;
+				RfcVal = true;
 			}
 			free(tmpchar);
 		}
@@ -297,7 +295,7 @@ rbusError_t webcfgDataGetHandler(rbusHandle_t handle, rbusProperty_t property, r
 		}
 	}
         rbusProperty_SetValue(property, value);
-	WebcfgInfo("URL value fetched is %s\n", value);
+	//WebcfgInfo("URL value fetched is %s\n", value);
         rbusValue_Release(value);
 
     }else if(strncmp(propertyName, WEBCFG_FORCESYNC_PARAM, maxParamLen) == 0) {
@@ -305,7 +303,7 @@ rbusError_t webcfgDataGetHandler(rbusHandle_t handle, rbusProperty_t property, r
         rbusValue_Init(&value);
         rbusValue_SetString(value, "");
         rbusProperty_SetValue(property, value);
-	WebcfgInfo("forceSyncVal value fetched is %s\n", value);
+	//WebcfgInfo("forceSyncVal value fetched is %s\n", value);
         rbusValue_Release(value);
     }
 
@@ -326,7 +324,7 @@ rbusError_t rbus_StoreValueIntoDB(char *paramName, char *value)
 	char recordName[ 256] = {'\0'};
 	char psmName[256] = {'\0'};
 	rbusParamVal_t val[1];
-	bool commit = TRUE;
+	bool commit = 1;
 	rbusError_t errorcode = RBUS_ERROR_INVALID_INPUT;
 	rbus_error_t err = RTMESSAGE_BUS_SUCCESS;
 
@@ -350,7 +348,7 @@ rbusError_t rbus_StoreValueIntoDB(char *paramName, char *value)
 	rbusMessage_SetString(request, val[0].paramName); //param details
 	rbusMessage_SetInt32(request, val[0].type);
 	rbusMessage_SetString(request, val[0].paramValue);
-	rbusMessage_SetString(request, commit ? "TRUE" : "FALSE");
+	rbusMessage_SetString(request, commit ? "1" : "0");
 
 
 	if((err = rbus_invokeRemoteMethod(psmName, METHOD_SETPARAMETERVALUES, request, 6000, &response)) != RTMESSAGE_BUS_SUCCESS)
@@ -367,7 +365,7 @@ rbusError_t rbus_StoreValueIntoDB(char *paramName, char *value)
             WebcfgInfo("Response from the remote method is [%d]!", ret);
             errorcode = (rbusError_t) ret;
 
-            if((errorcode == RBUS_ERROR_SUCCESS) || (errorcode == CCSP_SUCCESS)) //legacy error codes returned from component PSM.
+            if((errorcode == RBUS_ERROR_SUCCESS) || (errorcode == 100)) //legacy error codes returned from component PSM.
             {
                 errorcode = RBUS_ERROR_SUCCESS;
                 WebcfgInfo("Successfully Set the Value");
@@ -426,7 +424,7 @@ rbusError_t rbus_GetValueFromDB( char* paramName, char** paramValue)
 	    WebcfgInfo("Response from the remote method is [%d]!\n",ret);
             errorcode = (rbusError_t) ret;
 
-	    if((errorcode == RBUS_ERROR_SUCCESS) || (errorcode == CCSP_SUCCESS)) //legacy error code from component.
+	    if((errorcode == RBUS_ERROR_SUCCESS) || (errorcode == 100)) //legacy error code from component.
             {
                 WebcfgInfo("Successfully Get the Value\n");
 		errorcode = RBUS_ERROR_SUCCESS;
@@ -476,7 +474,7 @@ WEBCFG_STATUS regWebConfigDataModel()
 	rbusError_t ret = RBUS_ERROR_SUCCESS;
 	WEBCFG_STATUS status = WEBCFG_SUCCESS;
 
-	WebcfgInfo("Registering parameters deRfc %s, deForceSync %s, deURL %s\n", WEBCFG_RFC_PARAM, WEBCFG_FORCESYNC_PARAM, WEBCFG_URL_PARAM;
+	WebcfgInfo("Registering parameters deRfc %s, deForceSync %s, deURL %s\n", WEBCFG_RFC_PARAM, WEBCFG_FORCESYNC_PARAM, WEBCFG_URL_PARAM);
 	if(!rbus_handle)
 	{
 		WebcfgError("regWebConfigDataModel Failed in getting bus handles\n");
@@ -505,256 +503,6 @@ WEBCFG_STATUS regWebConfigDataModel()
 	return status;
 }
 
-void getValues_rbus(const char *paramName[], const unsigned int paramCount, int index, money_trace_spans *timeSpan, param_t ***paramArr, int *retValCount, int *retStatus)
-{
-	int cnt1=0;
-	int resCount = 0;
-	rbusError_t rc;
-	rbusProperty_t props = NULL;
-	char* paramValue = NULL;
-	char *pName = NULL;
-	int i =0;
-	int val_size = 0;
-	int startIndex = 0;
-	rbusValue_t paramValue_t = NULL;
-	rbusValueType_t type_t;
-	int cnt=0;
-	int retIndex=0;
-	int error = 0;
-	int ret = 0;
-	int numComponents = 0;
-	char **componentName = NULL;
-	int compRet = 0;
-
-	char parameterName[MAX_PARAMETERNAME_LEN] = {'\0'};
-
-	for(cnt1 = 0; cnt1 < paramCount; cnt1++)
-	{
-		WebcfgInfo("rbus_getExt paramName[%d] : %s paramCount %d\n",cnt1,paramName[cnt1], paramCount);
-		//walStrncpy(parameterName,paramName[cnt1],sizeof(parameterName));
-		retIndex=IndexMpa_WEBPAtoCPE(paramName[cnt1]);
-		if(retIndex == -1)
-		{
-			if(strstr(paramName[cnt1], PARAM_RADIO_OBJECT) != NULL)
-			{
-				ret = CCSP_ERR_INVALID_RADIO_INDEX; //need to return rbus error
-				WebcfgError("%s has invalid Radio index, Valid indexes are 10000 and 10100. ret = %d\n", paramName[cnt1],ret);
-			}
-			else
-			{
-				ret = CCSP_ERR_INVALID_WIFI_INDEX;
-				WebcfgError("%s has invalid WiFi index, Valid range is between 10001-10008 and 10101-10108. ret = %d\n",paramName[cnt1], ret);
-			}
-			error = 1;
-			break;
-		}
-
-		WebcfgInfo("After mapping paramName[%d] : %s\n",cnt1,paramName[cnt1]);
-
-	}
-
-	//disc component
-	for(cnt1 = 0; cnt1 < paramCount; cnt1++)
-	{
-		WebcfgInfo("paramName[%d] : %s\n",cnt1,paramName[cnt1]);
-
-		rc = rbus_discoverComponentName(rbus_handle,paramCount,paramName,&numComponents,&componentName);
-		WebcfgInfo("rc is %d\n", rc);
-		if(RBUS_ERROR_SUCCESS == rc)
-		{
-			WebcfgInfo ("Discovered components are,\n");
-			for(i=0;i<numComponents;i++)
-			{
-				WebcfgInfo("rbus_discoverComponentName %s: %s\n", paramName[i],componentName[i]);
-				//free(componentName[i]);
-			}
-			//free(componentName);
-		}
-		else
-		{
-			WebcfgError ("Failed to discover component array. Error Code = %d\n", rc);
-		}
-
-		compRet = 1;
-	}
-
-	//testing.
-	if(compRet == 1)
-	{
-		*retStatus = mapRbusStatus(rc);
-		WebcfgError("disc comp *retStatus returning %d\n", *retStatus);
-		return;
-	}
-
-	if(error == 1)
-	{
-		WebcfgError("error 1. returning ret %d\n", ret);
-		/*for (cnt1 = 0; cnt1 < paramCount; cnt1++)
-		{
-			WEBCFG_FREE(paramName[cnt1]);
-		}
-		WebcfgError("Free paramName\n");
-		WEBCFG_FREE(paramName);*/
-		WebcfgError("*retstatus\n");
-		*retStatus = ret;
-		WebcfgError("*retStatus returning %d\n", *retStatus);
-		return;
-	}
-
-	if(!rbus_handle)
-	{
-		WebcfgError("getValues_rbus Failed as rbus_handle is not initialized\n");
-		return;
-	}
-	rc = rbus_getExt(rbus_handle, paramCount, paramName, &resCount, &props);
-	WebcfgInfo("After rbus_getExt\n");
-
-	WebcfgInfo("rbus_getExt rc=%d resCount=%d\n", rc, resCount);
-
-	if(RBUS_ERROR_SUCCESS != rc)
-	{
-		WebcfgError("Failed to get value\n");
-	}
-	if(props)
-	{
-		rbusProperty_t next = props;
-		val_size = resCount;
-		WebcfgInfo("val_size : %d\n",val_size);
-		if(val_size > 0)
-		{
-			if(paramCount == val_size)// && (parameterNamesLocal[0][strlen(parameterNamesLocal[0])-1] != '.'))
-			{
-				for (i = 0; i < resCount; i++)
-				{
-					WebcfgInfo("Response Param is %s\n", rbusProperty_GetName(next));
-					paramValue_t = rbusProperty_GetValue(next);
-
-					if(paramValue_t)
-					{
-						type_t = rbusValue_GetType(paramValue_t);
-						paramValue = rbusValue_ToString(paramValue_t, NULL, 0);
-						WebcfgInfo("Response paramValue is %s\n", paramValue);
-						pName = strdup(rbusProperty_GetName(next));
-						(*paramArr)[i] = (param_t *) malloc(sizeof(param_t));
-
-						IndexMpa_CPEtoWEBPA(&pName);
-						IndexMpa_CPEtoWEBPA(&paramValue);
-
-						WebcfgInfo("Framing paramArr\n");
-						(*paramArr)[i][0].name = strdup(pName);
-						(*paramArr)[i][0].value = strdup(paramValue);
-						(*paramArr)[i][0].type = mapRbusToWdmpDataType(type_t);
-						WebcfgInfo("success: %s %s %d \n",(*paramArr)[i][0].name,(*paramArr)[i][0].value, (*paramArr)[i][0].type);
-						*retValCount = resCount;
-						*retStatus = mapRbusStatus(rc);
-						if(paramValue !=NULL)
-						{
-							WEBCFG_FREE(paramValue);
-						}
-						if(pName !=NULL)
-						{
-							WEBCFG_FREE(pName);
-						}
-					}
-					else
-					{
-						WebcfgError("Parameter value from rbus_getExt is empty\n");
-					}
-					next = rbusProperty_GetNext(next);
-				}
-			}
-			else
-			{
-				WebcfgInfo("Wildcard response\n");
-
-				if(startIndex == 0)
-				{
-					WebcfgInfo("Single dest component wildcard\n");
-					(*paramArr)[i] = (param_t *) malloc(sizeof(param_t)*val_size);
-				}
-				else
-				{
-					WebcfgInfo("Multi dest components wild card\n");
-					(*paramArr)[i] = (param_t *) realloc((*paramArr)[i], sizeof(param_t)*(startIndex + val_size));
-				}
-
-				for (cnt = 0; cnt < val_size; cnt++)
-				{
-					//WebcfgInfo("Stack:> success: %s %s %d \n",parameterval[cnt][0].parameterName,parameterval[cnt][0].parameterValue, parameterval[cnt][0].type);
-					//IndexMpa_CPEtoWEBPA(&parameterval[cnt][0].parameterName);
-					//IndexMpa_CPEtoWEBPA(&parameterval[cnt][0].parameterValue);
-
-					WebcfgInfo("Response Param is %s\n", rbusProperty_GetName(next));
-					paramValue_t = rbusProperty_GetValue(next);
-
-					if(paramValue_t)
-					{
-						type_t = rbusValue_GetType(paramValue_t);
-						paramValue = rbusValue_ToString(paramValue_t, NULL, 0);
-						WebcfgInfo("Response paramValue is %s\n", paramValue);
-						pName = strdup(rbusProperty_GetName(next));
-
-						IndexMpa_CPEtoWEBPA(&pName);
-						IndexMpa_CPEtoWEBPA(&paramValue);
-
-						WebcfgInfo("Framing paramArr\n");
-						(*paramArr)[i][cnt+startIndex].name = strdup(pName);
-						(*paramArr)[i][cnt+startIndex].value = strdup(paramValue);
-						(*paramArr)[i][cnt+startIndex].type = mapRbusToWdmpDataType(type_t);
-						WebcfgInfo("success: %s %s %d \n",(*paramArr)[i][cnt+startIndex].name,(*paramArr)[i][cnt+startIndex].value, (*paramArr)[i][cnt+startIndex].type);
-						*retValCount = resCount;
-						*retStatus = mapRbusStatus(rc);
-						if(paramValue !=NULL)
-						{
-							WEBCFG_FREE(paramValue);
-						}
-						if(pName !=NULL)
-						{
-							WEBCFG_FREE(pName);
-						}
-					}
-					next = rbusProperty_GetNext(next);
-					//
-					//WebcfgInfo("B4 assignment\n");
-					//(*paramArr)[paramIndex][cnt+startIndex].name = parameterval[cnt][0].parameterName;
-					//(*paramArr)[paramIndex][cnt+startIndex].value = parameterval[cnt][0].parameterValue;
-					//(*paramArr)[paramIndex][cnt+startIndex].type = parameterval[cnt][0].type;
-					//WebcfgInfo("success: %s %s %d \n",(*paramArr)[paramIndex][cnt+startIndex].name,(*paramArr)[paramIndex][cnt+startIndex].value, (*paramArr)[paramIndex][cnt+startIndex].type);
-				}
-			}
-		}
-		else if(val_size == 0 && rc == RBUS_ERROR_SUCCESS)
-		{
-			WebcfgInfo("No child elements found\n");
-		}
-		WebcfgInfo("rbusProperty_Release\n");
-		rbusProperty_Release(props);
-	}
-	WebcfgInfo("getValues_rbus End\n");
-}
-
-//To map Rbus error code to Ccsp error codes.
-int mapRbusStatus(int Rbus_error_code)
-{
-    int CCSP_error_code = CCSP_Msg_Bus_ERROR;
-    switch (Rbus_error_code)
-    {
-        case  0  : CCSP_error_code = CCSP_Msg_Bus_OK; break;
-        case  1  : CCSP_error_code = CCSP_Msg_Bus_ERROR; break;
-        case  2  : CCSP_error_code = 9007; break;// CCSP_ERR_INVALID_PARAMETER_VALUE
-        case  3  : CCSP_error_code = CCSP_Msg_Bus_OOM; break;
-        case  4  : CCSP_error_code = CCSP_Msg_Bus_ERROR; break;
-        case  5  : CCSP_error_code = CCSP_Msg_Bus_ERROR; break;
-        case  6  : CCSP_error_code = CCSP_Msg_BUS_TIMEOUT; break;
-        case  7  : CCSP_error_code = CCSP_Msg_BUS_TIMEOUT; break;
-        case  8  : CCSP_error_code = CCSP_ERR_UNSUPPORTED_PROTOCOL; break;
-        case  9  : CCSP_error_code = CCSP_Msg_BUS_NOT_SUPPORT; break;
-        case  10 : CCSP_error_code = CCSP_Msg_BUS_NOT_SUPPORT; break;
-        case  11 : CCSP_error_code = CCSP_Msg_Bus_OOM; break;
-        case  12 : CCSP_error_code = CCSP_Msg_BUS_CANNOT_CONNECT; break;
-    }
-    return CCSP_error_code;
-}
 
 //maps rbus rbusValueType_t to WDMP datatype
 DATA_TYPE mapRbusToWdmpDataType(rbusValueType_t rbusType)

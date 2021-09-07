@@ -21,7 +21,7 @@
 #define _WEBCFG_RBUS_H_
 
 #include <stdio.h>
-#include <rbus/rbus.h>
+#include <rbus.h>
 #include <rbus/rbus_object.h>
 #include <rbus/rbus_property.h>
 #include <rbus/rbus_value.h>
@@ -30,13 +30,15 @@
 
 #include <wdmp-c.h>
 #include <cimplog.h>
-#include <rbus/rbus.h>
+#include "webcfg.h"
+#include "webcfg_log.h"
 
 #define buffLen 1024
 #define maxParamLen 128
 
 #define NUM_WEBCFG_ELEMENTS 3
 
+#define WEBCFG_COMPONENT_NAME "webconfig"
 #define DEST_COMP_ID_PSM   "com.cisco.spvtg.ccsp.psm"
 
 // Data elements provided by webconfig
@@ -56,7 +58,8 @@
 
 bool isRbusEnabled();
 
-WDMP_STATUS webpaRbusInit(const char *pComponentName);
+WEBCFG_STATUS webconfigRbusInit(const char *pComponentName);
+WEBCFG_STATUS regWebConfigDataModel();
 
 rbusHandle_t get_global_rbus_handle(void);
 

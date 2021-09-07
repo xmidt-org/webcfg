@@ -19,6 +19,9 @@
 #include <unistd.h>
 #include <wdmp-c.h>
 #include "webcfg_generic.h"
+#include "webcfg_log.h"
+#include "webcfg_rbus.h"
+#include <rbus.h>
 /*----------------------------------------------------------------------------*/
 /*                                   Macros                                   */
 /*----------------------------------------------------------------------------*/
@@ -190,7 +193,8 @@ int registerWebcfgEvent(WebConfigEventCallback webcfgEventCB)
 		char user_data[64] = {0};
 		strncpy(user_data,WEBCFG_EVENT_NAME,sizeof(user_data)-1);
 
-		ret = rbusEvent_Subscribe(rbus_handle, WEBCFG_EVENT_NAME, webcfgEventCB, user_data);
+		rbusHandle_t rbus_handle = get_global_rbus_handle();
+		ret = rbusEvent_Subscribe(rbus_handle, WEBCFG_EVENT_NAME,(rbusEventHandler_t) webcfgEventCB, user_data, 0);
 		if(ret != RBUS_ERROR_SUCCESS)
 		{
 			WebcfgError("Unable to subscribe to event %s with rbus error code : %d\n", WEBCFG_EVENT_NAME, ret);
@@ -209,11 +213,11 @@ int unregisterWebcfgEvent()
 	int ret = 0 ;
 	if(isRbusEnabled())
 	{
+		rbusHandle_t rbus_handle = get_global_rbus_handle();
 		ret = rbusEvent_Unsubscribe(rbus_handle, WEBCFG_EVENT_NAME);
 		if ( ret != RBUS_ERROR_SUCCESS )
 		{
 			WebcfgError("%s Unsubscribe failed\n",WEBCFG_EVENT_NAME);
-			return ;
 		}
 		else
 		{

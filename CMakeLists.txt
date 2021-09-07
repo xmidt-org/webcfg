@@ -46,6 +46,9 @@ include_directories(${INCLUDE_DIR}
 			${INCLUDE_DIR}/wrp-c
 			${INCLUDE_DIR}/nanomsg
 			${INCLUDE_DIR}/libparodus
+			${INCLUDE_DIR}/rbus
+			${INCLUDE_DIR}/rbuscore
+			${INCLUDE_DIR}/rtmessage
 #                    ${INCLUDE_DIR}/curl
                     )
 
@@ -178,7 +181,7 @@ add_dependencies(liblibparodus libparodus)
 #-------------------------------------------------------------------------------
 ExternalProject_Add(rtMessage
      PREFIX ${CMAKE_CURRENT_BINARY_DIR}/_prefix/rtMessage
-     GIT_REPOSITORY git://code.rdkcentral.com/r/rdk/components/opensource/rtmessage
+     GIT_REPOSITORY https://github.com/rdkcmf/rdk-rtmessage.git
      GIT_TAG rdk-next
      CMAKE_ARGS += -DBUILD_RTMESSAGE_LIB=ON
                    -DBUILD_RTMESSAGE_SAMPLE_APP=ON
@@ -194,7 +197,7 @@ add_dependencies(librtMessage rtMessage)
 ExternalProject_Add(rbus-core
      DEPENDS rtMessage
      PREFIX ${CMAKE_CURRENT_BINARY_DIR}/_prefix/rbus-core
-     GIT_REPOSITORY git://code.rdkcentral.com/r/components/opensource/rbuscore
+     GIT_REPOSITORY https://github.com/rdkcmf/rbuscore.git
      GIT_TAG rdk-next
      CMAKE_ARGS += DBUILD_FOR_DESKTOP=ON -DCMAKE_INSTALL_PREFIX=${INSTALL_DIR}
                    -DBUILD_TESTING=OFF
@@ -207,7 +210,7 @@ add_dependencies(librbus-core rbus-core)
 ExternalProject_Add(rbus
      DEPENDS rtMessage rbus-core
      PREFIX ${CMAKE_CURRENT_BINARY_DIR}/_prefix/rbus
-     GIT_REPOSITORY git://code.rdkcentral.com/r/components/opensource/rbus
+     GIT_REPOSITORY https://github.com/rdkcmf/rbus.git
      GIT_TAG rdk-next
      CMAKE_ARGS += -DBUILD_FOR_DESKTOP=ON -DCMAKE_INSTALL_PREFIX=${INSTALL_DIR} -DBUILD_TESTING=OFF
 )

@@ -14,7 +14,7 @@
 #include "webcfg.h"
 #include "webcfg_log.h"
 #include "webcfg_rbus.h"
-#define WEBCFG_COMPONENT_NAME "webconfig"
+
 /*----------------------------------------------------------------------------*/
 /*                             Function Prototypes                            */
 /*----------------------------------------------------------------------------*/
@@ -51,7 +51,7 @@ int main()
 
 	if(isRbusEnabled())
 	{
-		WalInfo("webconfigRbusInit\n");
+		WebcfgInfo("webconfigRbusInit\n");
 		webconfigRbusInit(pComponentName);
 		regWebConfigDataModel();
 	}
