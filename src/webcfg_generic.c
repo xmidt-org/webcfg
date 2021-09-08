@@ -55,7 +55,8 @@ int __attribute__((weak)) registerWebcfgEvent(WebConfigEventCallback webcfgEvent
 int __attribute__((weak)) unregisterWebcfgEvent();
 WDMP_STATUS __attribute__((weak)) mapStatus(int ret);
 void __attribute__((weak)) setAttributes(param_t *attArr, const unsigned int paramCount, money_trace_spans *timeSpan, WDMP_STATUS *retStatus);
-
+int __attribute__((weak)) rbus_GetValueFromDB( char* paramName, char** paramValue);
+int __attribute__((weak)) rbus_StoreValueIntoDB(char *paramName, char *value);
 /*----------------------------------------------------------------------------*/
 /*                             External Functions                             */
 /*----------------------------------------------------------------------------*/
@@ -271,5 +272,19 @@ void setAttributes(param_t *attArr, const unsigned int paramCount, money_trace_s
 	UNUSED(paramCount);
 	UNUSED(timeSpan);
 	UNUSED(retStatus);
+	return;
+}
+
+int rbus_GetValueFromDB( char* paramName, char** paramValue)
+{
+	UNUSED(paramName);
+	UNUSED(paramValue);
+	return;
+}
+
+int rbus_StoreValueIntoDB(char *paramName, char *value)
+{
+	UNUSED(paramName);
+	UNUSED(value);
 	return;
 }

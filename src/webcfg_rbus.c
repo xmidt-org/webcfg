@@ -40,8 +40,6 @@ typedef struct
     rbusValueType_t type;
 } rbusParamVal_t;
 
-static char *PSMPrefix  = "eRT.com.cisco.spvtg.ccsp.webpa.";
-
 bool get_global_isRbus(void)
 {
     return isRbus;
@@ -317,154 +315,6 @@ rbusError_t webcfgDataGetHandler(rbusHandle_t handle, rbusProperty_t property, r
 }
 
 /**
- * To persist TR181 parameter values in PSM DB.
- */
-rbusError_t rbus_StoreValueIntoDB(char *paramName, char *value)
-{
-	char recordName[ 256] = {'\0'};
-	char psmName[256] = {'\0'};
-	rbusParamVal_t val[1];
-	bool commit = 1;
-	rbusError_t errorcode = RBUS_ERROR_INVALID_INPUT;
-	rbus_error_t err = RTMESSAGE_BUS_SUCCESS;
-
-	sprintf(recordName, "%s%s",PSMPrefix, paramName);
-	WebcfgInfo("rbus_StoreValueIntoDB recordName is %s\n", recordName);
-
-	val[0].paramName  = recordName;
-	val[0].paramValue = value;
-	val[0].type = 0;
-
-	sprintf(psmName, "%s%s", "eRT.", DEST_COMP_ID_PSM);
-	WebcfgInfo("rbus_StoreValueIntoDB psmName is %s\n", psmName);
-
-	rbusMessage request, response;
-
-	rbusMessage_Init(&request);
-	rbusMessage_SetInt32(request, 0); //sessionId
-	rbusMessage_SetString(request, WEBCFG_COMPONENT_NAME); //component name that invokes the set
-	rbusMessage_SetInt32(request, (int32_t)1); //size of params
-
-	rbusMessage_SetString(request, val[0].paramName); //param details
-	rbusMessage_SetInt32(request, val[0].type);
-	rbusMessage_SetString(request, val[0].paramValue);
-	rbusMessage_SetString(request, commit ? "1" : "0");
-
-
-	if((err = rbus_invokeRemoteMethod(psmName, METHOD_SETPARAMETERVALUES, request, 6000, &response)) != RTMESSAGE_BUS_SUCCESS)
-        {
-            WebcfgError("rbus_invokeRemoteMethod failed with err %d", err);
-            errorcode = RBUS_ERROR_BUS_ERROR;
-        }
-        else
-        {
-            int ret = -1;
-            char const* pErrorReason = NULL;
-            rbusMessage_GetInt32(response, &ret);
-
-            WebcfgInfo("Response from the remote method is [%d]!", ret);
-            errorcode = (rbusError_t) ret;
-
-            if((errorcode == RBUS_ERROR_SUCCESS) || (errorcode == 100)) //legacy error codes returned from component PSM.
-            {
-                errorcode = RBUS_ERROR_SUCCESS;
-                WebcfgInfo("Successfully Set the Value");
-            }
-            else
-            {
-                rbusMessage_GetString(response, &pErrorReason);
-                WebcfgError("Failed to Set the Value for %s", pErrorReason);
-            }
-
-            rbusMessage_Release(response);
-        }
-
-	return errorcode;
-}
-
-/**
- * To fetch TR181 parameter values from PSM DB.
- */
-rbusError_t rbus_GetValueFromDB( char* paramName, char** paramValue)
-{
-	char recordName[ 256] = {'\0'};
-	char psmName[256] = {'\0'};
-	char * parameterNames[1] = {NULL};
-	int32_t type = 0;
-	rbusError_t errorcode = RBUS_ERROR_INVALID_INPUT;
-	rbus_error_t err = RTMESSAGE_BUS_SUCCESS;
-	*paramValue = NULL;
-
-	sprintf(recordName, "%s%s",PSMPrefix, paramName);
-	WebcfgInfo("rbus_GetValueFromDB recordName is %s\n", recordName);
-
-	parameterNames[0] = (char*)recordName;
-
-	sprintf(psmName, "%s%s", "eRT.", DEST_COMP_ID_PSM);
-	WebcfgInfo("rbus_GetValueFromDB psmName is %s\n", psmName);
-
-	rbusMessage request, response;
-
-	rbusMessage_Init(&request);
-	rbusMessage_SetString(request, psmName); //component name that invokes the get
-	rbusMessage_SetInt32(request, (int32_t)1); //size of params
-
-	rbusMessage_SetString(request, parameterNames[0]); //param details
-
-	if((err = rbus_invokeRemoteMethod(psmName, METHOD_GETPARAMETERVALUES, request, 6000, &response)) != RTMESSAGE_BUS_SUCCESS)
-        {
-            WebcfgError("rbus_invokeRemoteMethod GET failed with err %d\n", err);
-            errorcode = RBUS_ERROR_BUS_ERROR;
-        }
-        else
-        {
-            int valSize=0;
-	    int ret = -1;
-	    rbusMessage_GetInt32(response, &ret);
-	    WebcfgInfo("Response from the remote method is [%d]!\n",ret);
-            errorcode = (rbusError_t) ret;
-
-	    if((errorcode == RBUS_ERROR_SUCCESS) || (errorcode == 100)) //legacy error code from component.
-            {
-                WebcfgInfo("Successfully Get the Value\n");
-		errorcode = RBUS_ERROR_SUCCESS;
-		rbusMessage_GetInt32(response, &valSize);
-		if(1/*valSize*/)
-		{
-			char const *buff = NULL;
-
-			//Param Name
-			rbusMessage_GetString(response, &buff);
-			WebcfgInfo("Requested param buff [%s]\n", buff);
-			if(buff && (strcmp(recordName, buff) == 0))
-			{
-				rbusMessage_GetInt32(response, &type);
-				WebcfgInfo("Requested param type [%d]\n", type);
-				buff = NULL;
-				rbusMessage_GetString(response, &buff);
-				*paramValue = strdup(buff); //free buff
-				WebcfgInfo("Requested param DB value [%s]\n", *paramValue);
-			}
-			else
-			{
-			    WebcfgError("Requested param: [%s], Received Param: [%s]\n", recordName, buff);
-			    errorcode = RBUS_ERROR_BUS_ERROR;
-			}
-		}
-            }
-            else
-            {
-		WebcfgError("Response from remote Get method failed!!\n");
-		errorcode = RBUS_ERROR_BUS_ERROR;
-            }
-
-            rbusMessage_Release(response);
-        }
-	WebcfgInfo("rbus_GetValueFromDB End\n");
-	return errorcode;
-}
-
-/**
  * Register data elements for dataModel implementation using rbus.
  * Data element over bus will be Device.X_RDK_WebConfig.RfcEnable, Device.X_RDK_WebConfig.ForceSync,
  * Device.X_RDK_WebConfig.URL
@@ -737,5 +587,108 @@ void setValues_rbus(const param_t paramVal[], const unsigned int paramCount, con
 	WebcfgInfo("After Value free\n");
         rbusProperty_Release(properties);
 	WebcfgInfo("After properties free\n");
+}
+
+void getValues_rbus(const char *paramName[], const unsigned int paramCount, int index, money_trace_spans *timeSpan, param_t ***paramArr, int *retValCount, int *retStatus)
+{
+	int cnt1=0;
+	int resCount = 0;
+	rbusError_t rc;
+	rbusProperty_t props = NULL;
+	char* paramValue = NULL;
+	char *pName = NULL;
+	int i =0;
+	int val_size = 0;
+	int startIndex = 0;
+	rbusValue_t paramValue_t = NULL;
+	rbusValueType_t type_t;
+	int cnt=0;
+	int retIndex=0;
+	int error = 0;
+	int ret = 0;
+	int numComponents = 0;
+	char **componentName = NULL;
+	int compRet = 0;
+	*retStatus = WDMP_FAILURE;
+
+	char parameterName[MAX_PARAMETERNAME_LEN] = {'\0'};
+
+	for(cnt1 = 0; cnt1 < paramCount; cnt1++)
+	{
+		WebcfgInfo("rbus_getExt paramName[%d] : %s paramCount %d\n",cnt1,paramName[cnt1], paramCount);
+	}
+
+	if(!rbus_handle)
+	{
+		WebcfgError("getValues_rbus Failed as rbus_handle is not initialized\n");
+		return;
+	}
+	rc = rbus_getExt(rbus_handle, paramCount, paramName, &resCount, &props);
+	WebcfgInfo("After rbus_getExt\n");
+
+	WebcfgInfo("rbus_getExt rc=%d resCount=%d\n", rc, resCount);
+
+	if(RBUS_ERROR_SUCCESS != rc)
+	{
+		WebcfgError("Failed to get value\n");
+		rbusProperty_Release(props);
+		WebcfgError("getValues_rbus failed\n");
+		return;
+	}
+	if(props)
+	{
+		rbusProperty_t next = props;
+		val_size = resCount;
+		WebcfgInfo("val_size : %d\n",val_size);
+		if(val_size > 0)
+		{
+			if(paramCount == val_size)
+			{
+				for (i = 0; i < resCount; i++)
+				{
+					WebcfgInfo("Response Param is %s\n", rbusProperty_GetName(next));
+					paramValue_t = rbusProperty_GetValue(next);
+
+					if(paramValue_t)
+					{
+						type_t = rbusValue_GetType(paramValue_t);
+						paramValue = rbusValue_ToString(paramValue_t, NULL, 0);
+						WebcfgInfo("Response paramValue is %s\n", paramValue);
+						pName = strdup(rbusProperty_GetName(next));
+						(*paramArr)[i] = (param_t *) malloc(sizeof(param_t));
+
+						WebcfgInfo("Framing paramArr\n");
+						(*paramArr)[i][0].name = strdup(pName);
+						(*paramArr)[i][0].value = strdup(paramValue);
+						(*paramArr)[i][0].type = mapRbusToWdmpDataType(type_t);
+						WebcfgInfo("success: %s %s %d \n",(*paramArr)[i][0].name,(*paramArr)[i][0].value, (*paramArr)[i][0].type);
+						*retValCount = resCount;
+						//*retStatus = mapRbusStatus(rc);
+						*retStatus = WDMP_SUCCESS;
+						if(paramValue !=NULL)
+						{
+							WEBCFG_FREE(paramValue);
+						}
+						if(pName !=NULL)
+						{
+							WEBCFG_FREE(pName);
+						}
+					}
+					else
+					{
+						WebcfgError("Parameter value from rbus_getExt is empty\n");
+					}
+					next = rbusProperty_GetNext(next);
+				}
+			}
+		}
+		else if(val_size == 0 && rc == RBUS_ERROR_SUCCESS)
+		{
+			WebcfgInfo("No child elements found\n");
+		}
+		WebcfgInfo("rbusProperty_Release\n");
+		rbusProperty_Release(props);
+	}
+	WebcfgInfo("getValues_rbus End\n");
 }
 
