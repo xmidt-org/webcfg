@@ -21,7 +21,7 @@
 #define _WEBCFG_RBUS_H_
 
 #include <stdio.h>
-#include <rbus.h>
+#include <rbus/rbus.h>
 #include <rbus/rbus_object.h>
 #include <rbus/rbus_property.h>
 #include <rbus/rbus_value.h>
@@ -40,7 +40,7 @@
 #define NUM_WEBCFG_ELEMENTS 3
 
 #define WEBCFG_COMPONENT_NAME "webconfig"
-
+#define MAX_PARAMETERNAME_LEN			4096
 // Data elements provided by webconfig
 
 #define WEBCFG_RFC_PARAM "Device.X_RDK_WebConfig.RfcEnable"

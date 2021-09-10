@@ -591,7 +591,6 @@ void setValues_rbus(const param_t paramVal[], const unsigned int paramCount, con
 
 void getValues_rbus(const char *paramName[], const unsigned int paramCount, int index, money_trace_spans *timeSpan, param_t ***paramArr, int *retValCount, int *retStatus)
 {
-	int cnt1=0;
 	int resCount = 0;
 	rbusError_t rc;
 	rbusProperty_t props = NULL;
@@ -599,23 +598,14 @@ void getValues_rbus(const char *paramName[], const unsigned int paramCount, int 
 	char *pName = NULL;
 	int i =0;
 	int val_size = 0;
-	int startIndex = 0;
 	rbusValue_t paramValue_t = NULL;
 	rbusValueType_t type_t;
 	int cnt=0;
-	int retIndex=0;
-	int error = 0;
-	int ret = 0;
-	int numComponents = 0;
-	char **componentName = NULL;
-	int compRet = 0;
 	*retStatus = WDMP_FAILURE;
 
-	char parameterName[MAX_PARAMETERNAME_LEN] = {'\0'};
-
-	for(cnt1 = 0; cnt1 < paramCount; cnt1++)
+	for(cnt = 0; cnt < paramCount; cnt++)
 	{
-		WebcfgInfo("rbus_getExt paramName[%d] : %s paramCount %d\n",cnt1,paramName[cnt1], paramCount);
+		WebcfgInfo("rbus_getExt paramName[%d] : %s paramCount %d\n",cnt,paramName[cnt], paramCount);
 	}
 
 	if(!rbus_handle)

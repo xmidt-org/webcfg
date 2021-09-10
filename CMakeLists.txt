@@ -47,7 +47,7 @@ include_directories(${INCLUDE_DIR}
 			${INCLUDE_DIR}/nanomsg
 			${INCLUDE_DIR}/libparodus
 			${INCLUDE_DIR}/rbus
-			${INCLUDE_DIR}/rbuscore
+			${INCLUDE_DIR}/rbus-core
 			${INCLUDE_DIR}/rtmessage
 #                    ${INCLUDE_DIR}/curl
                     )

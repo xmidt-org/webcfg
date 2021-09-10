@@ -279,12 +279,12 @@ int rbus_GetValueFromDB( char* paramName, char** paramValue)
 {
 	UNUSED(paramName);
 	UNUSED(paramValue);
-	return;
+	return 0;
 }
 
 int rbus_StoreValueIntoDB(char *paramName, char *value)
 {
 	UNUSED(paramName);
 	UNUSED(value);
-	return;
+	return 0;
 }
