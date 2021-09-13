@@ -32,6 +32,7 @@ static char* URLVal = NULL ;
 static char* forceSyncVal = NULL ;
 
 static bool isRbus = false ;
+static char *PSMPrefix  = "eRT.com.cisco.spvtg.ccsp.webpa.";
 
 typedef struct
 {
@@ -121,7 +122,7 @@ rbusError_t webcfgDataSetHandler(rbusHandle_t handle, rbusProperty_t prop, rbusS
         WebcfgInfo("Inside RFC datamodel handler \n");
         if(type_t == RBUS_BOOLEAN) {
 	    char tmpchar[8] = {'\0'};
-
+	    char recordName[ 256] = {'\0'};
 	    bool paramval = rbusValue_GetBoolean(paramValue_t);
 	    WebcfgInfo("paramval is %d\n", paramval);
 	    if(paramval == true || paramval == false)
@@ -135,7 +136,8 @@ rbusError_t webcfgDataSetHandler(rbusHandle_t handle, rbusProperty_t prop, rbusS
 			strcpy(tmpchar, "false");
                     }
 		    WebcfgInfo("tmpchar is %s\n", tmpchar);
-		    retPsmSet = rbus_StoreValueIntoDB( WEBCFG_RFC_PARAM, tmpchar );
+		    sprintf(recordName, "%s%s",PSMPrefix, WEBCFG_RFC_PARAM);
+		    retPsmSet = rbus_StoreValueIntoDB( recordName, tmpchar );
 		    if (retPsmSet != RBUS_ERROR_SUCCESS)
 		    {
 			WebcfgError("psm_set failed ret %d for parameter %s and value %s\n", retPsmSet, paramName, tmpchar);
@@ -204,7 +206,7 @@ rbusError_t webcfgDataSetHandler(rbusHandle_t handle, rbusProperty_t prop, rbusS
                 free(data);
 		WebcfgInfo("forceSyncVal after processing %s\n", forceSyncVal);
 		WebcfgInfo("forceSyncVal bus_StoreValueIntoDB\n");
-		retPsmSet = rbus_StoreValueIntoDB( WEBCFG_FORCESYNC_PARAM, forceSyncVal );
+		/*retPsmSet = rbus_StoreValueIntoDB( WEBCFG_FORCESYNC_PARAM, forceSyncVal );
 		if (retPsmSet != RBUS_ERROR_SUCCESS)
 		{
 			WebcfgError("psm_set failed ret %d for parameter %s and value %s\n", retPsmSet, paramName, forceSyncVal);
@@ -213,7 +215,7 @@ rbusError_t webcfgDataSetHandler(rbusHandle_t handle, rbusProperty_t prop, rbusS
 		else
 		{
 			WebcfgInfo("psm_set success ret %d for parameter %s and value %s\n", retPsmSet, paramName, forceSyncVal);
-		}
+		}*/
             }
         } else {
             WebcfgError("Unexpected value type for property %s \n", paramName);
@@ -248,7 +250,9 @@ rbusError_t webcfgDataGetHandler(rbusHandle_t handle, rbusProperty_t property, r
         rbusValue_t value;
         rbusValue_Init(&value);
 	char *tmpchar = NULL;
-	retPsmGet = rbus_GetValueFromDB( WEBCFG_RFC_PARAM, &tmpchar );
+	char recordName[ 256] = {'\0'};
+	sprintf(recordName, "%s%s",PSMPrefix, WEBCFG_RFC_PARAM);
+	retPsmGet = rbus_GetValueFromDB( recordName, &tmpchar );
 	if (retPsmGet != RBUS_ERROR_SUCCESS){
 		WebcfgError("psm_get failed ret %d for parameter %s and value %s\n", retPsmGet, propertyName, tmpchar);
 		return retPsmGet;
@@ -288,7 +292,15 @@ rbusError_t webcfgDataGetHandler(rbusHandle_t handle, rbusProperty_t property, r
 		}
 		else{
 			WebcfgInfo("psm_get success ret %d for parameter %s and value %s\n", retPsmGet, propertyName, URLVal);
-			rbusValue_SetString(value, URLVal);
+			if(URLVal)
+			{
+				rbusValue_SetString(value, URLVal);
+			}
+			else
+			{
+				WebcfgError("URL is empty\n");
+				rbusValue_SetString(value, "");
+			}
 			WebcfgInfo("After URLVal set to value\n");
 		}
 	}
@@ -407,7 +419,7 @@ DATA_TYPE mapRbusToWdmpDataType(rbusValueType_t rbusType)
 			wdmp_type = WDMP_NONE;
 			break;
 	}
-	WebcfgInfo("mapRbusToWdmpDataType : wdmp_type is %d\n", wdmp_type);
+	WebcfgDebug("mapRbusToWdmpDataType : wdmp_type is %d\n", wdmp_type);
 	return wdmp_type;
 }
 
@@ -605,7 +617,7 @@ void getValues_rbus(const char *paramName[], const unsigned int paramCount, int 
 
 	for(cnt = 0; cnt < paramCount; cnt++)
 	{
-		WebcfgInfo("rbus_getExt paramName[%d] : %s paramCount %d\n",cnt,paramName[cnt], paramCount);
+		WebcfgDebug("rbus_getExt paramName[%d] : %s paramCount %d\n",cnt,paramName[cnt], paramCount);
 	}
 
 	if(!rbus_handle)
@@ -614,7 +626,6 @@ void getValues_rbus(const char *paramName[], const unsigned int paramCount, int 
 		return;
 	}
 	rc = rbus_getExt(rbus_handle, paramCount, paramName, &resCount, &props);
-	WebcfgInfo("After rbus_getExt\n");
 
 	WebcfgInfo("rbus_getExt rc=%d resCount=%d\n", rc, resCount);
 
@@ -622,32 +633,31 @@ void getValues_rbus(const char *paramName[], const unsigned int paramCount, int 
 	{
 		WebcfgError("Failed to get value\n");
 		rbusProperty_Release(props);
-		WebcfgError("getValues_rbus failed\n");
 		return;
 	}
 	if(props)
 	{
 		rbusProperty_t next = props;
 		val_size = resCount;
-		WebcfgInfo("val_size : %d\n",val_size);
+		WebcfgDebug("val_size : %d\n",val_size);
 		if(val_size > 0)
 		{
 			if(paramCount == val_size)
 			{
 				for (i = 0; i < resCount; i++)
 				{
-					WebcfgInfo("Response Param is %s\n", rbusProperty_GetName(next));
+					WebcfgDebug("Response Param is %s\n", rbusProperty_GetName(next));
 					paramValue_t = rbusProperty_GetValue(next);
 
 					if(paramValue_t)
 					{
 						type_t = rbusValue_GetType(paramValue_t);
 						paramValue = rbusValue_ToString(paramValue_t, NULL, 0);
-						WebcfgInfo("Response paramValue is %s\n", paramValue);
+						WebcfgDebug("Response paramValue is %s\n", paramValue);
 						pName = strdup(rbusProperty_GetName(next));
 						(*paramArr)[i] = (param_t *) malloc(sizeof(param_t));
 
-						WebcfgInfo("Framing paramArr\n");
+						WebcfgDebug("Framing paramArr\n");
 						(*paramArr)[i][0].name = strdup(pName);
 						(*paramArr)[i][0].value = strdup(paramValue);
 						(*paramArr)[i][0].type = mapRbusToWdmpDataType(type_t);
@@ -676,9 +686,8 @@ void getValues_rbus(const char *paramName[], const unsigned int paramCount, int 
 		{
 			WebcfgInfo("No child elements found\n");
 		}
-		WebcfgInfo("rbusProperty_Release\n");
 		rbusProperty_Release(props);
 	}
-	WebcfgInfo("getValues_rbus End\n");
+	WebcfgDebug("getValues_rbus End\n");
 }
 

@@ -164,7 +164,7 @@ void *WebConfigMultipartTask(void *status)
 		{
 			if(maintenance_doc_sync == 1 && checkMaintenanceTimer() == 1 )
 			{
-				WebcfgDebug("Triggered Supplementary doc boot sync\n");
+				WebcfgInfo("Triggered Supplementary doc boot sync\n");
 				SupplementaryDocs_t *sp = NULL;
 				sp = get_global_spInfoHead();
 
@@ -196,7 +196,7 @@ void *WebConfigMultipartTask(void *status)
 		clock_gettime(CLOCK_REALTIME, &ts);
 
 		retry_flag = get_doc_fail();
-		WebcfgDebug("The retry flag value is %d\n", retry_flag);
+		WebcfgInfo("The retry flag value is %d\n", retry_flag);
 
 		if ( retry_flag == 0)
 		{
@@ -223,16 +223,17 @@ void *WebConfigMultipartTask(void *status)
 
 		if(retry_flag == 1 || maintenance_doc_sync == 1)
 		{
-			WebcfgDebug("B4 sync_condition pthread_cond_timedwait\n");
+			WebcfgInfo("B4 sync_condition pthread_cond_timedwait\n");
 			rv = pthread_cond_timedwait(&sync_condition, &sync_mutex, &ts);
-			WebcfgDebug("The retry flag value is %d\n", get_doc_fail());
+			WebcfgInfo("After pthread cond timedwait\n");
+			WebcfgInfo("The retry flag value is %d\n", get_doc_fail());
 			WebcfgDebug("The value of rv %d\n", rv);
 		}
 		else 
 		{
 			rv = pthread_cond_wait(&sync_condition, &sync_mutex);
 		}
-
+		WebcfgInfo("The value of rv %d\n", rv);
 		if(rv == ETIMEDOUT && !g_shutdown)
 		{
 			if(get_doc_fail() == 1)
@@ -256,9 +257,10 @@ void *WebConfigMultipartTask(void *status)
 			char *ForceSyncDoc = NULL;
 			char* ForceSyncTransID = NULL;
 
+			WebcfgInfo("B4 getForceSync\n");
 			// Identify ForceSync based on docname
 			getForceSync(&ForceSyncDoc, &ForceSyncTransID);
-			WebcfgDebug("ForceSyncDoc %s ForceSyncTransID. %s\n", ForceSyncDoc, ForceSyncTransID);
+			WebcfgInfo("ForceSyncDoc %s ForceSyncTransID. %s\n", ForceSyncDoc, ForceSyncTransID);
 			if(ForceSyncTransID !=NULL)
 			{
 				if((ForceSyncDoc != NULL) && strlen(ForceSyncDoc)>0)
@@ -285,7 +287,7 @@ void *WebConfigMultipartTask(void *status)
 				}
 			}
 
-			WebcfgDebug("forced_sync is %d\n", forced_sync);
+			WebcfgInfo("forced_sync is %d\n", forced_sync);
 		}
 		else if(g_shutdown)
 		{
@@ -297,7 +299,7 @@ void *WebConfigMultipartTask(void *status)
 		pthread_mutex_unlock(&sync_mutex);
 
 	}
-
+	WebcfgInfo("After main while loop\n");
 	/* release all active threads before shutdown */
 	pthread_mutex_lock (get_global_client_mut());
 	pthread_cond_signal (get_global_client_con());

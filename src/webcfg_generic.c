@@ -30,7 +30,7 @@
 /*----------------------------------------------------------------------------*/
 /*                             Function Prototypes                            */
 /*----------------------------------------------------------------------------*/
-char *__attribute__((weak)) getDeviceBootTime(void);
+/*char *__attribute__((weak)) getDeviceBootTime(void);
 char *__attribute__((weak)) getSerialNumber(void);
 char *__attribute__((weak)) getProductClass(void);
 char *__attribute__((weak)) getModelName(void);
@@ -39,14 +39,14 @@ char *__attribute__((weak)) getAccountID(void);
 char *__attribute__((weak)) getRebootReason(void);
 char *__attribute__((weak)) getConnClientParamName(void);
 char *__attribute__((weak)) getFirmwareVersion(void);
-char *__attribute__((weak)) get_deviceMAC(void);
+//char *__attribute__((weak)) get_deviceMAC(void);
 char *__attribute__((weak)) getFirmwareUpgradeStartTime(void);
-char *__attribute__((weak)) getFirmwareUpgradeEndTime(void);
+char *__attribute__((weak)) getFirmwareUpgradeEndTime(void);*/
 char *__attribute__((weak)) get_global_systemReadyTime(void);
 int __attribute__((weak)) setForceSync(char* pString, char *transactionId,int *session_status);
 int __attribute__((weak)) getForceSync(char** pString, char **transactionId);
-int __attribute__((weak)) Get_Webconfig_URL( char *pString);
-int __attribute__((weak)) Set_Webconfig_URL( char *pString);
+//int __attribute__((weak)) Get_Webconfig_URL( char *pString);
+//int __attribute__((weak)) Set_Webconfig_URL( char *pString);
 int __attribute__((weak)) Get_Supplementary_URL( char *name, char *pString);
 int __attribute__((weak)) Set_Supplementary_URL( char *name, char *pString);
 void __attribute__((weak)) setValues(const param_t paramVal[], const unsigned int paramCount, const int setType, char *transactionId, money_trace_spans *timeSpan, WDMP_STATUS *retStatus, int *ccspStatus);
@@ -55,13 +55,13 @@ int __attribute__((weak)) registerWebcfgEvent(WebConfigEventCallback webcfgEvent
 int __attribute__((weak)) unregisterWebcfgEvent();
 WDMP_STATUS __attribute__((weak)) mapStatus(int ret);
 void __attribute__((weak)) setAttributes(param_t *attArr, const unsigned int paramCount, money_trace_spans *timeSpan, WDMP_STATUS *retStatus);
-int __attribute__((weak)) rbus_GetValueFromDB( char* paramName, char** paramValue);
-int __attribute__((weak)) rbus_StoreValueIntoDB(char *paramName, char *value);
+//int __attribute__((weak)) rbus_GetValueFromDB( char* paramName, char** paramValue);
+//int __attribute__((weak)) rbus_StoreValueIntoDB(char *paramName, char *value);
 /*----------------------------------------------------------------------------*/
 /*                             External Functions                             */
 /*----------------------------------------------------------------------------*/
 
-char *getDeviceBootTime(void)
+/*char *getDeviceBootTime(void)
 {
     WebcfgInfo("Inside getDeviceBootTime weak function.\n");
     return NULL;
@@ -111,15 +111,15 @@ char *getFirmwareVersion(void)
 {
     WebcfgInfo("Inside getFirmwareVersion weak function.\n");
     return NULL;
-}
+}*/
 
-char* get_deviceMAC(void)
+/*char* get_deviceMAC(void)
 {
 	WebcfgInfo("Inside get_deviceMAC weak function.\n");
 	return NULL;
-}
+}*/
 
-char *getFirmwareUpgradeStartTime(void)
+/*char *getFirmwareUpgradeStartTime(void)
 {
     WebcfgInfo("Inside getFirmwareUpgradeStartTime weak function.\n");
     return NULL;
@@ -129,7 +129,7 @@ char *getFirmwareUpgradeEndTime(void)
 {
     WebcfgInfo("Inside getFirmwareUpgradeEndTime weak function.\n");
     return NULL;
-}
+}*/
 
 char *get_global_systemReadyTime(void)
 {
@@ -152,7 +152,7 @@ int getForceSync(char** pString, char **transactionId)
     return 0;
 }
 
-int Get_Webconfig_URL( char *pString)
+/*int Get_Webconfig_URL( char *pString)
 {
     WebcfgInfo("Inside Get_Webconfig_URL weak function.\n");
     UNUSED(pString);
@@ -164,7 +164,7 @@ int Set_Webconfig_URL( char *pString)
     WebcfgInfo("Inside Get_Webconfig_URL weak function.\n");
     UNUSED(pString);
     return 0;
-}
+}*/
 
 int Get_Supplementary_URL( char *name, char *pString)
 {
@@ -294,8 +294,9 @@ void setAttributes(param_t *attArr, const unsigned int paramCount, money_trace_s
 	return;
 }
 
-int rbus_GetValueFromDB( char* paramName, char** paramValue)
+/*int rbus_GetValueFromDB( char* paramName, char** paramValue)
 {
+	WebcfgInfo("Inside rbus_GetValueFromDB weak fn\n");
 	UNUSED(paramName);
 	UNUSED(paramValue);
 	return 0;
@@ -303,7 +304,8 @@ int rbus_GetValueFromDB( char* paramName, char** paramValue)
 
 int rbus_StoreValueIntoDB(char *paramName, char *value)
 {
+	WebcfgInfo("Inside rbus_StoreValueIntoDB weak fn\n");
 	UNUSED(paramName);
 	UNUSED(value);
 	return 0;
-}
+}*/
