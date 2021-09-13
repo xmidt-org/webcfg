@@ -1267,6 +1267,7 @@ void derive_root_doc_version_string(char **rootVersion, uint32_t *root_ver, int 
 	uint32_t db_root_version = 0;
 	char *db_root_string = NULL;
 	int subdocList = 0;
+	static int reset_once = 0;
 
 	if(strlen(g_RebootReason) == 0)
 	{
@@ -1294,7 +1295,7 @@ void derive_root_doc_version_string(char **rootVersion, uint32_t *root_ver, int 
 			{
 				*rootVersion = strdup("NONE");
 			}
-			else if(strncmp(g_RebootReason,"Software_upgrade",strlen("Software_upgrade"))==0)
+			else if((strncmp(g_RebootReason,"Software_upgrade",strlen("Software_upgrade"))==0) || (strncmp(g_RebootReason,"Forced_Software_upgrade",strlen("Forced_Software_upgrade"))==0))
 			{
 				*rootVersion = strdup("NONE-MIGRATION");
 			}
@@ -1312,7 +1313,7 @@ void derive_root_doc_version_string(char **rootVersion, uint32_t *root_ver, int 
 
 			if(db_root_string !=NULL)
 			{
-				if((strcmp(db_root_string,"POST-NONE")==0) && ((strcmp(g_RebootReason,"Software_upgrade")!=0) && (strcmp(g_RebootReason,"factory-reset")!=0)))
+				if((strcmp(db_root_string,"POST-NONE")==0) && (strcmp(g_RebootReason,"Software_upgrade")!=0) && (strcmp(g_RebootReason,"Forced_Software_upgrade")!=0) && (strcmp(g_RebootReason,"factory-reset")!=0))
 				{
 					*rootVersion = strdup("NONE-REBOOT");
 					WEBCFG_FREE(db_root_string);
@@ -1338,10 +1339,11 @@ void derive_root_doc_version_string(char **rootVersion, uint32_t *root_ver, int 
 			if(db_root_version)
 			{
 			//when subdocs are applied and reboot due to software migration/rollback, root reset to 0.
-				if(subdocList > 1 && strcmp(g_RebootReason,"Software_upgrade")==0)
+				if( (reset_once == 0) && (subdocList > 1) && ( (strcmp(g_RebootReason,"Software_upgrade")==0) || (strcmp(g_RebootReason,"Forced_Software_upgrade")==0) ) )
 				{
 					WebcfgInfo("reboot due to software migration/rollback, root reset to 0\n");
 					*root_ver = 0;
+					reset_once = 1;
 					return;
 				}
 				WebcfgDebug("Update rootVersion with db_root_version %lu\n", (long)db_root_version);
