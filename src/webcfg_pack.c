@@ -92,7 +92,7 @@ ssize_t webcfgdb_blob_pack(webconfig_db_data_t *webcfgdb, webconfig_tmp_data_t *
 
     while(db_data != NULL)
     {
-        //WebcfgDebug("The db name is %s\n",db_data->name);
+        WebcfgDebug("The db name is %s\n",db_data->name);
         db_data = db_data->next;
         //WebcfgDebug("The pack count of DB_count calc is %d\n",db_count );
         db_count++;
@@ -100,6 +100,7 @@ ssize_t webcfgdb_blob_pack(webconfig_db_data_t *webcfgdb, webconfig_tmp_data_t *
 
     while(temp_data != NULL)
     {
+	WebcfgDebug("The temp name is %s\n",temp_data->name);
 	if(strcmp("success", temp_data->status) != 0)
 	{
         	tmp_count++;

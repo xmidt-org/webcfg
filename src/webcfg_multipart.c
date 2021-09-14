@@ -2179,7 +2179,7 @@ WEBCFG_STATUS checkRootDelete()
 	int docSuccess =0;
 	while (NULL != temp)
 	{
-		WebcfgDebug("Root check ====> temp->name %s\n", temp->name);
+		WebcfgDebug("Root check delete ====> temp->name %s temp->status %s\n", temp->name, temp->status);
 		if( strcmp("root", temp->name) != 0)
 		{
 			if(strcmp("success", temp->status) == 0)
@@ -2214,7 +2214,7 @@ WEBCFG_STATUS checkRootUpdate()
 	int docSuccess =0;
 	while (NULL != temp)
 	{
-		WebcfgDebug("Root check ====> temp->name %s\n", temp->name);
+		WebcfgDebug("Root check update ====> temp->name %s temp->status %s\n", temp->name, temp->status);
 		if((temp->error_code == 204 && (temp->error_details != NULL && strstr(temp->error_details, "doc_unsupported") != NULL)) || (temp->isSupplementarySync == 1)) //skip supplementary docs
 		{
 			if(temp->isSupplementarySync)

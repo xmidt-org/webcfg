@@ -746,7 +746,6 @@ void delete_tmp_docs_list()
     WebcfgDebug("Inside delete_tmp_docs_list()\n");
     while(temp != NULL)
     {
-	WebcfgInfo("temp->name %s\n", temp->name);
 	//skip root delete
 	if((strcmp(temp->name, "root") !=0) && (temp->isSupplementarySync == get_global_supplementarySync()))
 	{
