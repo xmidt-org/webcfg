@@ -221,6 +221,7 @@ void *WebConfigMultipartTask(void *status)
 			WebcfgDebug("The retry triggers at %s\n", printTime((long long)ts.tv_sec));
 		}
 
+		maintenance_doc_sync = 0; //test purpose.
 		if(retry_flag == 1 || maintenance_doc_sync == 1)
 		{
 			WebcfgInfo("B4 sync_condition pthread_cond_timedwait\n");
@@ -231,6 +232,7 @@ void *WebConfigMultipartTask(void *status)
 		}
 		else 
 		{
+			WebcfgInfo("B4 pthread_cond_wait\n");
 			rv = pthread_cond_wait(&sync_condition, &sync_mutex);
 		}
 		WebcfgInfo("The value of rv %d\n", rv);
@@ -242,14 +244,14 @@ void *WebConfigMultipartTask(void *status)
 				set_retry_timer(900);
 				set_global_retry_timestamp(0);
 				failedDocsRetry();
-				WebcfgDebug("After the failedDocsRetry\n");
+				WebcfgInfo("After the failedDocsRetry\n");
 			}
 			else
 			{
 				time(&t);
 				wait_flag = 0;
 				maintenance_count = 0;
-				WebcfgDebug("Supplementary Sync Interval %d sec and syncing at %s\n",value,ctime(&t));
+				WebcfgInfo("Supplementary Sync Interval %d sec and syncing at %s\n",value,ctime(&t));
 			}
 		}
 		else if(!rv && !g_shutdown)

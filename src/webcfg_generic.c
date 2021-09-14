@@ -233,7 +233,10 @@ int registerWebcfgEvent(WebConfigEventCallback webcfgEventCB)
 		{
 			WebcfgError("Unable to subscribe to event %s with rbus error code : %d\n", WEBCFG_EVENT_NAME, ret);
 		}
-		WebcfgInfo("registerWebcfgEvent : subscribe to %s ret value is %d\n",WEBCFG_EVENT_NAME,ret);
+		else
+		{
+			WebcfgInfo("registerWebcfgEvent : subscribe to %s ret value is %d\n",WEBCFG_EVENT_NAME,ret);
+		}
 	}
 	else
 	{
