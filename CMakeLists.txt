@@ -46,11 +46,14 @@ include_directories(${INCLUDE_DIR}
 			${INCLUDE_DIR}/wrp-c
 			${INCLUDE_DIR}/nanomsg
 			${INCLUDE_DIR}/libparodus
-			${INCLUDE_DIR}/rbus
-			${INCLUDE_DIR}/rbus-core
-			${INCLUDE_DIR}/rtmessage
 #                    ${INCLUDE_DIR}/curl
                     )
+if (WEBCONFIG_BIN_SUPPORT)
+include_directories(${INCLUDE_DIR}/rbus
+		    ${INCLUDE_DIR}/rbus-core
+		    ${INCLUDE_DIR}/rtmessage
+)
+endif (WEBCONFIG_BIN_SUPPORT)
 
 if (NOT BUILD_YOCTO)
 
@@ -176,7 +179,7 @@ ExternalProject_Add(libparodus
 )
 add_library(liblibparodus STATIC SHARED IMPORTED)
 add_dependencies(liblibparodus libparodus)
-
+if (WEBCONFIG_BIN_SUPPORT)
 # rtMessage external dependency
 #-------------------------------------------------------------------------------
 ExternalProject_Add(rtMessage
@@ -217,6 +220,7 @@ ExternalProject_Add(rbus
 
 add_library(librbus STATIC SHARED IMPORTED)
 add_dependencies(librbus rbus)
+endif (WEBCONFIG_BIN_SUPPORT)
 
 endif ()
 link_directories ( ${LIBRARY_DIR} ${COMMON_LIBRARY_DIR} ${LIBRARY_DIR64} )
