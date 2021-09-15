@@ -165,7 +165,7 @@ int Set_Webconfig_URL( char *pString)
     return 0;
 }*/
 
-int Get_Supplementary_URL( char *name, char *pString)
+/*int Get_Supplementary_URL( char *name, char *pString)
 {
     WebcfgInfo("Inside Get_Supplementary_URL weak function.\n");
     UNUSED(name);
@@ -179,7 +179,7 @@ int Set_Supplementary_URL( char *name, char *pString)
     UNUSED(name);
     UNUSED(pString);
     return 0;
-}
+}*/
 
 void setValues(const param_t paramVal[], const unsigned int paramCount, const int setType, char *transactionId, money_trace_spans *timeSpan, WDMP_STATUS *retStatus, int *ccspStatus)
 {

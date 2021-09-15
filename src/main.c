@@ -57,8 +57,8 @@ int main()
 	}
 
 	WebcfgInfo("WebConfig Rfc is enabled, starting WebConfigMultipartTask\n");
-	initWebConfigMultipartTask(0);
-	WebcfgInfo("B4 WebConfigMultipartTask\n");
+	//initWebConfigMultipartTask(0);
+	//WebcfgInfo("B4 WebConfigMultipartTask\n");
 	WebConfigMultipartTask(0);
 
 	curl_global_cleanup();

@@ -212,7 +212,7 @@ WEBCFG_STATUS webcfg_http_request(char **configData, int r_count, int status, lo
 				docname_upper[0] = toupper(docname_upper[0]);
 				WebcfgDebug("docname is %s and in uppercase is %s\n", docname, docname_upper);
 				Get_Supplementary_URL(docname_upper, configURL);
-				WebcfgDebug("Supplementary sync url fetched is %s\n", configURL);
+				WebcfgInfo("Supplementary sync url fetched is %s\n", configURL);
 				if( strcmp(configURL, "NULL") == 0)
 				{
 					WebcfgInfo("Supplementary sync with cloud is disabled as configURL is NULL\n");
