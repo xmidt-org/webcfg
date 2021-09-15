@@ -684,3 +684,36 @@ void getValues_rbus(const char *paramName[], const unsigned int paramCount, int 
 	WebcfgDebug("getValues_rbus End\n");
 }
 
+void webcfgEventRbusHandler(rbusHandle_t handle, rbusEvent_t const* event, rbusEventSubscription_t* subscription)
+{
+	WebcfgInfo("Entering webcfgEventRbusHandler\n");
+
+	(void)(handle);
+	(void)(subscription);
+
+	const char* eventName = event->name;
+
+	rbusValue_t valBuf;
+	valBuf = rbusObject_GetValue(event->data, NULL );
+	if(!valBuf)
+	{
+		WebcfgInfo("webcfgEventRbusHandler: value is NULL\n");
+	}
+	else
+	{
+		const char* eventData = rbusValue_GetString(valBuf, NULL);
+		WebcfgInfo("rbus event callback Event is %s , eventData is %s\n",eventName,eventData);
+
+		if ( strncmp(eventName,WEBCFG_EVENT_NAME,strlen(WEBCFG_EVENT_NAME)) == 0 )
+		{
+			WebcfgInfo("B4 webcfgCallback from rbus\n");
+			webcfgCallback(eventData, NULL);
+		}
+		else
+		{
+			WebcfgError("Received invalid event %s\n", eventName);
+		}
+	}
+	WebcfgInfo("Exiting webcfgEventRbusHandler\n");
+}
+

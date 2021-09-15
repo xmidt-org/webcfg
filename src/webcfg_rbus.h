@@ -33,6 +33,7 @@
 #include "webcfg.h"
 #include "webcfg_log.h"
 #include "webcfg_generic.h"
+#include "webcfg_event.h"
 
 #define buffLen 1024
 #define maxParamLen 128
@@ -41,8 +42,9 @@
 
 #define WEBCFG_COMPONENT_NAME "webconfig"
 #define MAX_PARAMETERNAME_LEN			4096
-// Data elements provided by webconfig
+#define WEBCFG_EVENT_NAME "webconfigSignal"
 
+// Data elements provided by webconfig
 #define WEBCFG_RFC_PARAM "Device.X_RDK_WebConfig.RfcEnable"
 #define WEBCFG_URL_PARAM "Device.X_RDK_WebConfig.URL"
 #define WEBCFG_FORCESYNC_PARAM "Device.X_RDK_WebConfig.ForceSync"
@@ -70,4 +72,5 @@ void setValues_rbus(const param_t paramVal[], const unsigned int paramCount, con
 
 DATA_TYPE mapRbusToWdmpDataType(rbusValueType_t rbusType);
 int mapRbusStatus(int Rbus_error_code);
+void webcfgEventRbusHandler(rbusHandle_t handle, rbusEvent_t const* event, rbusEventSubscription_t* subscription) ;
 #endif
