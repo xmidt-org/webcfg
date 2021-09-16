@@ -92,7 +92,8 @@ void initWebConfigMultipartTask(unsigned long status)
 
 void *WebConfigMultipartTask(void *status)
 {
-	pthread_detach(pthread_self());
+	//pthread_detach(pthread_self());
+	WebcfgInfo("No pthread detach from WebConfigMultipartTask.\n");
 	int rv=0;
 	int forced_sync=0;
         int Status = 0;

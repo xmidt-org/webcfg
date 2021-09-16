@@ -57,11 +57,12 @@ int main()
 	}
 
 	WebcfgInfo("WebConfig Rfc is enabled, starting WebConfigMultipartTask\n");
-	//initWebConfigMultipartTask(0);
+	initWebConfigMultipartTask(0);
 	//WebcfgInfo("B4 WebConfigMultipartTask\n");
-	WebConfigMultipartTask(0);
+	//WebConfigMultipartTask(0);
 
 	curl_global_cleanup();
+	while(1);
 	WebcfgInfo("Exiting webconfig main thread!!\n");
 	return 1;
 }
