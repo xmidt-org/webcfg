@@ -74,4 +74,6 @@ void setValues_rbus(const param_t paramVal[], const unsigned int paramCount, con
 DATA_TYPE mapRbusToWdmpDataType(rbusValueType_t rbusType);
 int mapRbusStatus(int Rbus_error_code);
 void webcfgEventRbusHandler(rbusHandle_t handle, rbusEvent_t const* event, rbusEventSubscription_t* subscription);
+void registerRBUSlistener();
+void rbusWebcfgEventHandler(rbusHandle_t handle, rbusMessage_t* msg, void * userData);
 #endif

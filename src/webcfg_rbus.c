@@ -723,36 +723,45 @@ void getValues_rbus(const char *paramName[], const unsigned int paramCount, int 
 	WebcfgDebug("getValues_rbus End\n");
 }
 
-void webcfgEventRbusHandler(rbusHandle_t handle, rbusEvent_t const* event, rbusEventSubscription_t* subscription)
+void rbusWebcfgEventHandler(rbusHandle_t handle, rbusMessage_t* msg, void * userData)
 {
-	WebcfgInfo("Entering webcfgEventRbusHandler\n");
-
-	(void)(handle);
-	(void)(subscription);
-
-	const char* eventName = event->name;
-
-	rbusValue_t valBuf;
-	valBuf = rbusObject_GetValue(event->data, NULL );
-	if(!valBuf)
+	(void)handle;
+	(void)userData;
+	if(msg)
 	{
-		WebcfgInfo("webcfgEventRbusHandler: value is NULL\n");
+		WebcfgError("rbusWebcfgEventHandler msg empty\n");
+		return;
 	}
-	else
-	{
-		char* eventData = (char*)rbusValue_GetString(valBuf, NULL);
-		WebcfgInfo("rbus event callback Event is %s , eventData is %s\n",eventName,eventData);
+	WebcfgInfo("rbusWebcfgEventHandler topic=%s length=%d\n", msg->topic, msg->length);
 
-		if ( strncmp(eventName,WEBCFG_EVENT_NAME,strlen(WEBCFG_EVENT_NAME)) == 0 )
-		{
-			WebcfgInfo("B4 webcfgCallback from rbus\n");
-			webcfgCallback(eventData, NULL);
-		}
-		else
-		{
-			WebcfgError("Received invalid event %s\n", eventName);
-		}
+	if((msg->topic !=NULL) && (strcmp(msg->topic, "webconfigSignal") == 0))
+	{
+		char * eventMsg =NULL;
+		int size =0;
+
+		WebcfgInfo("Received blob from topic webconfigSignal\n");
+		WebcfgInfo("msg data %s\n", (char const *)msg->data);
+
+		eventMsg = (char *)msg->data;
+		size = msg->length;
+
+		WebcfgInfo("webcfgCallback with eventMsg %s size %d \n", eventMsg, size );
+		webcfgCallback(eventMsg, NULL);
 	}
-	WebcfgInfo("Exiting webcfgEventRbusHandler\n");
+	WebcfgInfo("rbusWebcfgEventHandler End\n");
+}
+
+/* API to register RBUS listener to receive messages from components */
+void registerRBUSlistener()
+{
+	if(!rbus_handle)
+	{
+		WebcfgError("registerRBUSlistener failed as rbus_handle is not initialized\n");
+		return;
+	}
+
+	WebcfgInfo("B4 rbusMessage_AddListener\n");
+	rbusMessage_AddListener(rbus_handle, "webconfigSignal", &rbusWebcfgEventHandler, NULL);
+	WebcfgInfo("After rbusMessage_AddListener\n");
 }
 

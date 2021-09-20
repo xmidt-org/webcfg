@@ -222,23 +222,9 @@ int registerWebcfgEvent(WebConfigEventCallback webcfgEventCB)
 	int ret = 0;
 	if(isRbusEnabled())
 	{
-		WebcfgInfo("In registerWebcfgEvent rbus\n");
-		char user_data[64] = {0};
-		//strncpy(user_data,WEBCFG_EVENT_NAME,sizeof(user_data)-1);
-
-		rbusHandle_t rbus_handle = get_global_rbus_handle();
-		//ret = rbusEvent_Subscribe(rbus_handle, WEBCFG_EVENT_NAME,(rbusEventHandler_t) webcfgEventCB, user_data, 0);
-		ret = rbusEvent_Subscribe(rbus_handle, WEBCFG_EVENT_NAME, webcfgEventRbusHandler, user_data, 0);
-		if(ret != RBUS_ERROR_SUCCESS)
-		{
-			WebcfgError("Unable to subscribe to event %s with rbus error code : %d\n", WEBCFG_EVENT_NAME, ret);
-			ret = 0;
-		}
-		else
-		{
-			WebcfgInfo("registerWebcfgEvent : subscribe to %s ret value is %d\n",WEBCFG_EVENT_NAME,ret);
-			ret = 1;
-		}
+		WebcfgInfo("Registering RBUS event listener!\n");
+		registerRBUSlistener();
+		WebcfgInfo("Register RBUS event listener done!\n");
 	}
 	else
 	{
