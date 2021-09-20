@@ -55,8 +55,8 @@
 /*----------------------------------------------------------------------------*/
 /*                            File Scoped Variables                           */
 /*----------------------------------------------------------------------------*/
-pthread_mutex_t sync_mutex=PTHREAD_MUTEX_INITIALIZER;
-pthread_cond_t sync_condition=PTHREAD_COND_INITIALIZER;
+static pthread_mutex_t sync_mutex=PTHREAD_MUTEX_INITIALIZER;
+static pthread_cond_t sync_condition=PTHREAD_COND_INITIALIZER;
 bool g_shutdown  = false;
 bool bootSyncInProgress = false;
 pthread_t* g_mpthreadId;
@@ -67,33 +67,33 @@ static int g_supplementarySync = 0;
 /*----------------------------------------------------------------------------*/
 /*                             Function Prototypes                            */
 /*----------------------------------------------------------------------------*/
-//void *WebConfigMultipartTask(void *status);
+static void *WebConfigTask(void *status);
 int handlehttpResponse(long response_code, char *webConfigData, int retry_count, char* transaction_uuid, char* ct, size_t dataSize);
 /*----------------------------------------------------------------------------*/
 /*                             External Functions                             */
 /*----------------------------------------------------------------------------*/
 
-void initWebConfigMultipartTask(unsigned long status)
+void initWebConfigTask(unsigned long status)
 {
 	int err = 0;
 	pthread_t threadId;
 
-	err = pthread_create(&threadId, NULL, WebConfigMultipartTask, (void *) status);
+	err = pthread_create(&threadId, NULL, WebConfigTask, (void *) status);
 	g_mpthreadId = &threadId; 
 	if (err != 0) 
 	{
-		WebcfgError("Error creating WebConfigMultipartTask thread :[%s]\n", strerror(err));
+		WebcfgError("Error creating WebConfigTask thread :[%s]\n", strerror(err));
 	}
 	else
 	{
-		WebcfgInfo("WebConfigMultipartTask Thread created Successfully.\n");
+		WebcfgInfo("WebConfigTask Thread created Successfully.\n");
 	}
 }
 
-void *WebConfigMultipartTask(void *status)
+static void *WebConfigTask(void *status)
 {
 	//pthread_detach(pthread_self());
-	WebcfgInfo("No pthread detach from WebConfigMultipartTask.\n");
+	WebcfgInfo("No pthread detach from WebConfigTask.\n");
 	int rv=0;
 	int forced_sync=0;
         int Status = 0;
@@ -365,16 +365,19 @@ void *WebConfigMultipartTask(void *status)
 
 pthread_cond_t *get_global_sync_condition(void)
 {
+    WebcfgInfo("In get_global_sync_condition\n");
     return &sync_condition;
 }
 
 pthread_mutex_t *get_global_sync_mutex(void)
 {
+    WebcfgInfo("In get_global_sync_mutex\n");
     return &sync_mutex;
 }
 
 pthread_t *get_global_mpThreadId(void)
 {
+    WebcfgInfo("In get_global_mpThreadId\n");
     return g_mpthreadId;
 }
 

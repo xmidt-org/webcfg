@@ -56,8 +56,9 @@ int main()
 		regWebConfigDataModel();
 	}
 
-	WebcfgInfo("WebConfig Rfc is enabled, starting WebConfigMultipartTask\n");
-	initWebConfigMultipartTask(0);
+	WebcfgInfo("WebConfig Rfc is enabled, starting initWebConfigTask\n");
+	initWebConfigTask(0);
+	WebcfgInfo("After initWebConfigTask\n");
 	//WebcfgInfo("B4 WebConfigMultipartTask\n");
 	//WebConfigMultipartTask(0);
 

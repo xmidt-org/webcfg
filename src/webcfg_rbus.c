@@ -102,6 +102,7 @@ rbusError_t webcfgDataSetHandler(rbusHandle_t handle, rbusProperty_t prop, rbusS
     char const* paramName = rbusProperty_GetName(prop);
     if((strncmp(paramName,  WEBCFG_RFC_PARAM, maxParamLen) != 0) &&
 	(strncmp(paramName, WEBCFG_URL_PARAM, maxParamLen) != 0) &&
+	(strncmp(paramName, WEBCFG_SUPPLEMENTARY_TELEMETRY_PARAM, maxParamLen) != 0) &&
 	(strncmp(paramName, WEBCFG_FORCESYNC_PARAM, maxParamLen) != 0)
 	) {
         WebcfgError("Unexpected parameter = %s\n", paramName); //free paramName req.?
@@ -727,7 +728,7 @@ void rbusWebcfgEventHandler(rbusHandle_t handle, rbusMessage_t* msg, void * user
 {
 	(void)handle;
 	(void)userData;
-	if(msg)
+	if(msg == NULL)
 	{
 		WebcfgError("rbusWebcfgEventHandler msg empty\n");
 		return;
@@ -739,8 +740,7 @@ void rbusWebcfgEventHandler(rbusHandle_t handle, rbusMessage_t* msg, void * user
 		char * eventMsg =NULL;
 		int size =0;
 
-		WebcfgInfo("Received blob from topic webconfigSignal\n");
-		WebcfgInfo("msg data %s\n", (char const *)msg->data);
+		WebcfgInfo("Received msg %s from topic webconfigSignal\n", (char const *)msg->data);
 
 		eventMsg = (char *)msg->data;
 		size = msg->length;
@@ -762,6 +762,5 @@ void registerRBUSlistener()
 
 	WebcfgInfo("B4 rbusMessage_AddListener\n");
 	rbusMessage_AddListener(rbus_handle, "webconfigSignal", &rbusWebcfgEventHandler, NULL);
-	WebcfgInfo("After rbusMessage_AddListener\n");
 }
 

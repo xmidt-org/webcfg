@@ -224,7 +224,7 @@ int registerWebcfgEvent(WebConfigEventCallback webcfgEventCB)
 	{
 		WebcfgInfo("Registering RBUS event listener!\n");
 		registerRBUSlistener();
-		WebcfgInfo("Register RBUS event listener done!\n");
+		ret = 1;
 	}
 	else
 	{
