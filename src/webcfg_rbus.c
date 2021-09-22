@@ -120,7 +120,7 @@ rbusError_t webcfgDataSetHandler(rbusHandle_t handle, rbusProperty_t prop, rbusS
     }
 
     RFC_ENABLE = get_rbus_RfcEnable();
-    if(strncmp(paramName, WEBCFG_RFC_PARAM, maxParamLen) == 0 && RFC_ENABLE == true) {
+    if(strncmp(paramName, WEBCFG_RFC_PARAM, maxParamLen) == 0) {
         WebcfgDebug("Inside RFC datamodel handler \n");
         if(type_t == RBUS_BOOLEAN) {
 	    bool paramval = rbusValue_GetBoolean(paramValue_t);
@@ -150,9 +150,14 @@ rbusError_t webcfgDataSetHandler(rbusHandle_t handle, rbusProperty_t prop, rbusS
 	    return RBUS_ERROR_INVALID_INPUT;
         }
 
-    }else if(strncmp(paramName, WEBCFG_URL_PARAM, maxParamLen) == 0 && RFC_ENABLE == true) {
+    }else if(strncmp(paramName, WEBCFG_URL_PARAM, maxParamLen) == 0) {
         WebcfgDebug("Inside datamodel handler for URL\n");
 
+	if (!RFC_ENABLE)
+	{
+		WebcfgError("RfcEnable is disabled so, %s SET failed\n",paramName);
+		return RBUS_ERROR_ACCESS_NOT_ALLOWED;
+	}
         if(type_t == RBUS_STRING) {
             char* data = rbusValue_ToString(paramValue_t, NULL, 0);
             if(data) {
@@ -181,9 +186,14 @@ rbusError_t webcfgDataSetHandler(rbusHandle_t handle, rbusProperty_t prop, rbusS
             WebcfgError("Unexpected value type for property %s\n", paramName);
 	    return RBUS_ERROR_INVALID_INPUT;
         }
-    }else if(strncmp(paramName, WEBCFG_SUPPLEMENTARY_TELEMETRY_PARAM, maxParamLen) == 0 && RFC_ENABLE ==true){
-        WebcfgInfo("Inside datamodel handler for SupplementaryURL\n");
+    }else if(strncmp(paramName, WEBCFG_SUPPLEMENTARY_TELEMETRY_PARAM, maxParamLen) == 0){
+        WebcfgDebug("Inside datamodel handler for SupplementaryURL\n");
 
+	if (!RFC_ENABLE)
+	{
+		WebcfgError("RfcEnable is disabled so, %s SET failed\n",paramName);
+		return RBUS_ERROR_ACCESS_NOT_ALLOWED;
+	}
         if(type_t == RBUS_STRING) {
             char* data = rbusValue_ToString(paramValue_t, NULL, 0);
             if(data) {
@@ -212,7 +222,12 @@ rbusError_t webcfgDataSetHandler(rbusHandle_t handle, rbusProperty_t prop, rbusS
             WebcfgError("Unexpected value type for property %s\n", paramName);
 	    return RBUS_ERROR_INVALID_INPUT;
         }
-    }else if(strncmp(paramName, WEBCFG_FORCESYNC_PARAM, maxParamLen) == 0 && RFC_ENABLE == true) {
+    }else if(strncmp(paramName, WEBCFG_FORCESYNC_PARAM, maxParamLen) == 0) {
+	if (!RFC_ENABLE)
+	{
+		WebcfgError("RfcEnable is disabled so, %s SET failed\n",paramName);
+		return RBUS_ERROR_ACCESS_NOT_ALLOWED;
+	}
         if(type_t == RBUS_STRING) {
             char* data = rbusValue_ToString(paramValue_t, NULL, 0);
             if(data) {
@@ -250,11 +265,6 @@ rbusError_t webcfgDataSetHandler(rbusHandle_t handle, rbusProperty_t prop, rbusS
             return RBUS_ERROR_INVALID_INPUT;
         }
 
-    }
-    else if(!RFC_ENABLE)
-    {
-        WebcfgError("RFC disabled. Hence not proceeding with SET\n");
-        return RBUS_ERROR_ACCESS_NOT_ALLOWED;
     }
     WebcfgDebug("webcfgDataSetHandler End\n");
     return RBUS_ERROR_SUCCESS;
@@ -310,7 +320,13 @@ rbusError_t webcfgDataGetHandler(rbusHandle_t handle, rbusProperty_t property, r
 	WebcfgInfo("Rfc value fetched is %s\n", (rbusValue_GetBoolean(value)==true)?"true":"false");
         rbusValue_Release(value);
 
-    }else if(strncmp(propertyName, WEBCFG_URL_PARAM, maxParamLen) == 0 && RFC_ENABLE == true) {
+    }else if(strncmp(propertyName, WEBCFG_URL_PARAM, maxParamLen) == 0) {
+
+	if(!RFC_ENABLE)
+	{
+		WebcfgError("RfcEnable is disabled so, %s Get from DB failed\n",propertyName);
+		return 0;
+	}
         rbusValue_t value;
         rbusValue_Init(&value);
 
@@ -341,7 +357,12 @@ rbusError_t webcfgDataGetHandler(rbusHandle_t handle, rbusProperty_t property, r
 	//WebcfgInfo("URL value fetched is %s\n", value);
         rbusValue_Release(value);
 
-    }else if(strncmp(propertyName, WEBCFG_SUPPLEMENTARY_TELEMETRY_PARAM, maxParamLen)==0 && RFC_ENABLE==true){
+    }else if(strncmp(propertyName, WEBCFG_SUPPLEMENTARY_TELEMETRY_PARAM, maxParamLen)==0){
+	if(!RFC_ENABLE)
+	{
+		WebcfgError("RfcEnable is disabled so, %s Get from DB failed\n",propertyName);
+		return 0;
+	}
         rbusValue_t value;
         rbusValue_Init(&value);
 
@@ -372,18 +393,18 @@ rbusError_t webcfgDataGetHandler(rbusHandle_t handle, rbusProperty_t property, r
 	//WebcfgInfo("URL value fetched is %s\n", value);
         rbusValue_Release(value);
 
-    }else if(strncmp(propertyName, WEBCFG_FORCESYNC_PARAM, maxParamLen) == 0 && RFC_ENABLE == true) {
+    }else if(strncmp(propertyName, WEBCFG_FORCESYNC_PARAM, maxParamLen) == 0) {
+	if(!RFC_ENABLE)
+	{
+		WebcfgError("RfcEnable is disabled so, %s Get from DB failed\n",propertyName);
+		return 0;
+	}
         rbusValue_t value;
         rbusValue_Init(&value);
         rbusValue_SetString(value, "");
         rbusProperty_SetValue(property, value);
 	//WebcfgInfo("forceSyncVal value fetched is %s\n", value);
         rbusValue_Release(value);
-    }
-    else if(!RFC_ENABLE)
-    {
-        WebcfgError("RFC disabled. Hence not proceeding with GET\n");
-        return RBUS_ERROR_ACCESS_NOT_ALLOWED;
     }
 
     if(propertyName) {
@@ -749,7 +770,7 @@ void rbusWebcfgEventHandler(rbusHandle_t handle, rbusMessage_t* msg, void * user
 		WebcfgError("rbusWebcfgEventHandler msg empty\n");
 		return;
 	}
-	WebcfgInfo("rbusWebcfgEventHandler topic=%s length=%d\n", msg->topic, msg->length);
+	WebcfgDebug("rbusWebcfgEventHandler topic=%s length=%d\n", msg->topic, msg->length);
 
 	if((msg->topic !=NULL) && (strcmp(msg->topic, "webconfigSignal") == 0))
 	{
@@ -761,10 +782,10 @@ void rbusWebcfgEventHandler(rbusHandle_t handle, rbusMessage_t* msg, void * user
 		eventMsg = (char *)msg->data;
 		size = msg->length;
 
-		WebcfgInfo("webcfgCallback with eventMsg %s size %d \n", eventMsg, size );
+		WebcfgDebug("webcfgCallback with eventMsg %s size %d \n", eventMsg, size );
 		webcfgCallback(eventMsg, NULL);
 	}
-	WebcfgInfo("rbusWebcfgEventHandler End\n");
+	WebcfgDebug("rbusWebcfgEventHandler End\n");
 }
 
 /* API to register RBUS listener to receive messages from components */
@@ -925,15 +946,15 @@ void sendNotification_rbus(char *payload, char *source, char *destination)
 		{
 			memset(notif_wrp_msg, 0, sizeof(wrp_msg_t));
 			notif_wrp_msg->msg_type = WRP_MSG_TYPE__EVENT;
-			WebcfgInfo("source: %s\n",source);
+			WebcfgDebug("source: %s\n",source);
 			notif_wrp_msg->u.event.source = strdup(source);
-			WebcfgInfo("destination: %s\n", destination);
+			WebcfgDebug("destination: %s\n", destination);
 			notif_wrp_msg->u.event.dest = strdup(destination);
 			contentType = strdup("application/json");
 			if(contentType != NULL)
 			{
 				notif_wrp_msg->u.event.content_type = contentType;
-				WebcfgInfo("content_type is %s\n",notif_wrp_msg->u.event.content_type);
+				WebcfgDebug("content_type is %s\n",notif_wrp_msg->u.event.content_type);
 			}
 			if(payload != NULL)
 			{
