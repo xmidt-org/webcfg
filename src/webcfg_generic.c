@@ -138,17 +138,38 @@ char *get_global_systemReadyTime(void)
 
 int setForceSync(char* pString, char *transactionId,int *session_status)
 {
-    UNUSED(pString);
-    UNUSED(transactionId);
-    UNUSED(session_status);
-    return 0;
+	if(isRbusEnabled())
+	{
+		WebcfgInfo("B4 set_rbus_ForceSync\n");
+		set_rbus_ForceSync(pString, transactionId, session_status);
+	}
+	else
+	{
+		UNUSED(pString);
+		UNUSED(transactionId);
+		UNUSED(session_status);
+	}
+	return 0;
 }
 
 int getForceSync(char** pString, char **transactionId)
 {
-    UNUSED(pString);
-    UNUSED(transactionId);
-    return 0;
+	if(isRbusEnabled())
+	{
+		char *str = NULL;
+		char* transID = NULL;
+		WebcfgInfo("B4 get_rbus_ForceSync\n");
+		get_rbus_ForceSync(&str, &transID);
+		*pString = str;
+		*transactionId = transID;
+		WebcfgInfo("get_rbus_ForceSync. *pString %s *transactionId %s\n", *pString, *transactionId);
+	}
+	else
+	{
+		UNUSED(pString);
+		UNUSED(transactionId);
+	}
+	return 0;
 }
 
 /*int Get_Webconfig_URL( char *pString)

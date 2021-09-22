@@ -17,9 +17,7 @@
  * limitations under the License.
  */
 
-#include <stdbool.h>
 #include <string.h>
-
 #include <stdlib.h>
 #include <wdmp-c.h>
 #include <cimplog.h>
@@ -31,9 +29,9 @@ static bool  RfcVal = false ;
 static char* URLVal = NULL ;
 static char* forceSyncVal = NULL ;
 static char* SupplementaryURLVal = NULL ;
-
+static char * ForceSyncTransID = NULL;
 static bool isRbus = false ;
-static char *PSMPrefix  = "eRT.com.cisco.spvtg.ccsp.webpa.";
+static char *paramRFCEnable = "eRT.com.cisco.spvtg.ccsp.webpa.WebConfigRfcEnable";
 
 typedef struct
 {
@@ -99,6 +97,7 @@ rbusError_t webcfgDataSetHandler(rbusHandle_t handle, rbusProperty_t prop, rbusS
     WebcfgDebug("Inside webcfgDataSetHandler\n");
     (void) handle;
     (void) opts;
+    bool RFC_ENABLE;
     char const* paramName = rbusProperty_GetName(prop);
     if((strncmp(paramName,  WEBCFG_RFC_PARAM, maxParamLen) != 0) &&
 	(strncmp(paramName, WEBCFG_URL_PARAM, maxParamLen) != 0) &&
@@ -120,37 +119,26 @@ rbusError_t webcfgDataSetHandler(rbusHandle_t handle, rbusProperty_t prop, rbusS
         return RBUS_ERROR_INVALID_INPUT;
     }
 
-    if(strncmp(paramName, WEBCFG_RFC_PARAM, maxParamLen) == 0) {
+    RFC_ENABLE = get_rbus_RfcEnable();
+    if(strncmp(paramName, WEBCFG_RFC_PARAM, maxParamLen) == 0 && RFC_ENABLE == true) {
         WebcfgDebug("Inside RFC datamodel handler \n");
         if(type_t == RBUS_BOOLEAN) {
-	    char tmpchar[8] = {'\0'};
-	    char recordName[ 256] = {'\0'};
 	    bool paramval = rbusValue_GetBoolean(paramValue_t);
 	    WebcfgDebug("paramval is %d\n", paramval);
 	    if(paramval == true || paramval == false)
             {
-		    if(paramval == true)
-		    {
-			strcpy(tmpchar, "true");
-		    }
-		    else
-		    {
-			strcpy(tmpchar, "false");
+                    retPsmSet = set_rbus_RfcEnable(paramval);
+
+                    if (retPsmSet != RBUS_ERROR_SUCCESS)
+                    {
+                      WebcfgError("RFC set failed\n");
+                      return retPsmSet;
                     }
-		    WebcfgDebug("tmpchar is %s\n", tmpchar);
-		    sprintf(recordName, "%s%s",PSMPrefix, WEBCFG_RFC_PARAM);
-		    retPsmSet = rbus_StoreValueIntoDB( recordName, tmpchar );
-		    if (retPsmSet != RBUS_ERROR_SUCCESS)
-		    {
-			WebcfgError("psm_set failed ret %d for parameter %s and value %s\n", retPsmSet, paramName, tmpchar);
-			return retPsmSet;
-		    }
-		    else
-		    {
-			WebcfgInfo("psm_set success ret %d for parameter %s and value %s\n", retPsmSet, paramName, tmpchar);
-			RfcVal = paramval;
-		    }
-		    WebcfgInfo("RfcVal after processing %s\n", (1==RfcVal)?"true":"false");
+                    else
+                    {
+                      RfcVal = paramval;
+                      WebcfgInfo("RfcVal after processing %s\n", (1==RfcVal)?"true":"false");
+                    }
 	    }
 	    else
 	    {
@@ -162,7 +150,7 @@ rbusError_t webcfgDataSetHandler(rbusHandle_t handle, rbusProperty_t prop, rbusS
 	    return RBUS_ERROR_INVALID_INPUT;
         }
 
-    }else if(strncmp(paramName, WEBCFG_URL_PARAM, maxParamLen) == 0) {
+    }else if(strncmp(paramName, WEBCFG_URL_PARAM, maxParamLen) == 0 && RFC_ENABLE == true) {
         WebcfgDebug("Inside datamodel handler for URL\n");
 
         if(type_t == RBUS_STRING) {
@@ -193,7 +181,7 @@ rbusError_t webcfgDataSetHandler(rbusHandle_t handle, rbusProperty_t prop, rbusS
             WebcfgError("Unexpected value type for property %s\n", paramName);
 	    return RBUS_ERROR_INVALID_INPUT;
         }
-    }else if(strncmp(paramName, WEBCFG_SUPPLEMENTARY_TELEMETRY_PARAM, maxParamLen) == 0) {
+    }else if(strncmp(paramName, WEBCFG_SUPPLEMENTARY_TELEMETRY_PARAM, maxParamLen) == 0 && RFC_ENABLE ==true){
         WebcfgInfo("Inside datamodel handler for SupplementaryURL\n");
 
         if(type_t == RBUS_STRING) {
@@ -224,26 +212,49 @@ rbusError_t webcfgDataSetHandler(rbusHandle_t handle, rbusProperty_t prop, rbusS
             WebcfgError("Unexpected value type for property %s\n", paramName);
 	    return RBUS_ERROR_INVALID_INPUT;
         }
-    }else if(strncmp(paramName, WEBCFG_FORCESYNC_PARAM, maxParamLen) == 0) {
-        WebcfgDebug("Inside Force Sync datamodel handler \n");
+    }else if(strncmp(paramName, WEBCFG_FORCESYNC_PARAM, maxParamLen) == 0 && RFC_ENABLE == true) {
         if(type_t == RBUS_STRING) {
             char* data = rbusValue_ToString(paramValue_t, NULL, 0);
             if(data) {
                 WebcfgDebug("Call datamodel function  with data %s \n", data);
 
+		if(0 == strncmp(data,"telemetry",strlen("telemetry")))
+		{
+			char telemetryUrl[256] = {0};
+			Get_Supplementary_URL("Telemetry", telemetryUrl);
+			if(strncmp(telemetryUrl,"NULL",strlen("NULL")) == 0)
+			{
+				WebcfgError("Telemetry url is null so, force sync SET failed\n");
+				return RBUS_ERROR_BUS_ERROR;
+			}
+		}
+
                 if (forceSyncVal){
                     free(forceSyncVal);
                     forceSyncVal = NULL;
                 }
-                forceSyncVal = strdup(data);
-                free(data);
-		WebcfgDebug("forceSyncVal after processing %s\n", forceSyncVal);
+                //forceSyncVal = strdup(data);
+		if(set_rbus_ForceSync(data, "", 0) == 1)
+		{
+			WebcfgInfo("set_rbus_ForceSync success\n");
+		}
+		else
+		{
+			WebcfgError("set_rbus_ForceSync failed\n");
+		}
+                WEBCFG_FREE(data);
+		WebcfgInfo("forceSyncVal after processing %s\n", forceSyncVal);
             }
         } else {
             WebcfgError("Unexpected value type for property %s \n", paramName);
             return RBUS_ERROR_INVALID_INPUT;
         }
 
+    }
+    else if(!RFC_ENABLE)
+    {
+        WebcfgError("RFC disabled. Hence not proceeding with SET\n");
+        return RBUS_ERROR_ACCESS_NOT_ALLOWED;
     }
     WebcfgDebug("webcfgDataSetHandler End\n");
     return RBUS_ERROR_SUCCESS;
@@ -258,6 +269,7 @@ rbusError_t webcfgDataGetHandler(rbusHandle_t handle, rbusProperty_t property, r
     (void) handle;
     (void) opts;
     char const* propertyName;
+    bool RFC_ENABLE;
     rbusError_t retPsmGet = RBUS_ERROR_BUS_ERROR;
 
     propertyName = strdup(rbusProperty_GetName(property));
@@ -268,13 +280,12 @@ rbusError_t webcfgDataGetHandler(rbusHandle_t handle, rbusProperty_t property, r
         return RBUS_ERROR_INVALID_INPUT;
     }
 
+    RFC_ENABLE = get_rbus_RfcEnable();
     if(strncmp(propertyName, WEBCFG_RFC_PARAM, maxParamLen) == 0) {
         rbusValue_t value;
         rbusValue_Init(&value);
 	char *tmpchar = NULL;
-	char recordName[ 256] = {'\0'};
-	sprintf(recordName, "%s%s",PSMPrefix, WEBCFG_RFC_PARAM);
-	retPsmGet = rbus_GetValueFromDB( recordName, &tmpchar );
+	retPsmGet = rbus_GetValueFromDB( paramRFCEnable, &tmpchar );
 	if (retPsmGet != RBUS_ERROR_SUCCESS){
 		WebcfgError("psm_get failed ret %d for parameter %s and value %s\n", retPsmGet, propertyName, tmpchar);
 		return retPsmGet;
@@ -299,7 +310,7 @@ rbusError_t webcfgDataGetHandler(rbusHandle_t handle, rbusProperty_t property, r
 	WebcfgInfo("Rfc value fetched is %s\n", (rbusValue_GetBoolean(value)==true)?"true":"false");
         rbusValue_Release(value);
 
-    }else if(strncmp(propertyName, WEBCFG_URL_PARAM, maxParamLen) == 0) {
+    }else if(strncmp(propertyName, WEBCFG_URL_PARAM, maxParamLen) == 0 && RFC_ENABLE == true) {
         rbusValue_t value;
         rbusValue_Init(&value);
 
@@ -330,7 +341,7 @@ rbusError_t webcfgDataGetHandler(rbusHandle_t handle, rbusProperty_t property, r
 	//WebcfgInfo("URL value fetched is %s\n", value);
         rbusValue_Release(value);
 
-    }else if(strncmp(propertyName, WEBCFG_SUPPLEMENTARY_TELEMETRY_PARAM, maxParamLen) == 0) {
+    }else if(strncmp(propertyName, WEBCFG_SUPPLEMENTARY_TELEMETRY_PARAM, maxParamLen)==0 && RFC_ENABLE==true){
         rbusValue_t value;
         rbusValue_Init(&value);
 
@@ -361,13 +372,18 @@ rbusError_t webcfgDataGetHandler(rbusHandle_t handle, rbusProperty_t property, r
 	//WebcfgInfo("URL value fetched is %s\n", value);
         rbusValue_Release(value);
 
-    }else if(strncmp(propertyName, WEBCFG_FORCESYNC_PARAM, maxParamLen) == 0) {
+    }else if(strncmp(propertyName, WEBCFG_FORCESYNC_PARAM, maxParamLen) == 0 && RFC_ENABLE == true) {
         rbusValue_t value;
         rbusValue_Init(&value);
         rbusValue_SetString(value, "");
         rbusProperty_SetValue(property, value);
 	//WebcfgInfo("forceSyncVal value fetched is %s\n", value);
         rbusValue_Release(value);
+    }
+    else if(!RFC_ENABLE)
+    {
+        WebcfgError("RFC disabled. Hence not proceeding with GET\n");
+        return RBUS_ERROR_ACCESS_NOT_ALLOWED;
     }
 
     if(propertyName) {
@@ -764,3 +780,130 @@ void registerRBUSlistener()
 	rbusMessage_AddListener(rbus_handle, "webconfigSignal", &rbusWebcfgEventHandler, NULL);
 }
 
+bool get_rbus_RfcEnable()
+{
+    return RfcVal;
+}
+
+int set_rbus_RfcEnable(bool bValue)
+{
+	char* buf = NULL;
+	int retPsmSet = RBUS_ERROR_SUCCESS;
+
+	if(bValue == true)
+	{
+		buf = strdup("true");
+		WebcfgInfo("Received RFC enable. updating g_shutdown\n");
+		if(RfcVal == false)
+		{
+			pthread_mutex_lock (get_global_sync_mutex());
+			set_global_shutdown(false);
+			pthread_mutex_unlock(get_global_sync_mutex());
+			WebcfgInfo("RfcEnable dynamic change from false to true. start initWebConfigTask.\n");
+			if(get_global_mpThreadId() == NULL)
+			{
+				initWebConfigTask(0);
+			}
+			else
+			{
+				WebcfgInfo("Webconfig is already started, so not starting again for dynamic RFC change.\n");
+			}
+		}
+	}
+	else
+	{
+		buf = strdup("false");
+		WebcfgInfo("Received RFC disable. updating g_shutdown\n");
+		if(RfcVal == true)
+		{
+			/* sending signal to kill initWebConfigTask thread*/
+			pthread_mutex_lock (get_global_sync_mutex());
+			set_global_shutdown(true);
+			pthread_cond_signal(get_global_sync_condition());
+			pthread_mutex_unlock(get_global_sync_mutex());
+		}
+	}
+	retPsmSet = rbus_StoreValueIntoDB( paramRFCEnable, buf );
+	if (retPsmSet != RBUS_ERROR_SUCCESS)
+	{
+		WebcfgError("psm_set failed ret %d for parameter %s and value %s\n", retPsmSet, paramRFCEnable, buf);
+		return 1;
+	}
+	else
+	{
+		WebcfgInfo("psm_set success ret %d for parameter %s and value %s\n", retPsmSet, paramRFCEnable, buf);
+		RfcVal = bValue;
+	}
+	return 0;
+}
+
+int set_rbus_ForceSync(char* pString, char *transactionId,int *pStatus)
+{
+    WebcfgInfo("set_rbus_ForceSync\n");
+    forceSyncVal = strdup(pString);
+
+    WebcfgInfo("set_rbus_ForceSync . forceSyncVal is %s\n", forceSyncVal);
+
+    if((forceSyncVal[0] !='\0') && (strlen(forceSyncVal)>0))
+    {
+        if(get_bootSync())
+        {
+            WebcfgInfo("Bootup sync is already in progress, Ignoring this request.\n");
+            *pStatus = 1;
+            return 0;
+        }
+        else if(ForceSyncTransID != NULL)
+        {
+            WebcfgInfo("Force sync is already in progress, Ignoring this request.\n");
+            *pStatus = 1;
+            return 0;
+        }
+        else
+        {
+            /* sending signal to initWebConfigTask to trigger sync */
+            pthread_mutex_lock (get_global_sync_mutex());
+
+            //Update ForceSyncTransID to access webpa transactionId in webConfig sync.
+            if(transactionId !=NULL && (strlen(transactionId)>0))
+            {
+                ForceSyncTransID = strdup(transactionId);
+                WebcfgInfo("ForceSyncTransID is %s\n", ForceSyncTransID);
+            }
+            WebcfgInfo("Trigger force sync\n");
+            pthread_cond_signal(get_global_sync_condition());
+            pthread_mutex_unlock(get_global_sync_mutex());
+        }
+    }
+    else
+    {
+        WebcfgInfo("Force sync param set with empty value\n");
+	if (ForceSyncTransID)
+	{
+	    WEBCFG_FREE(ForceSyncTransID);
+	}
+        ForceSyncTransID = NULL;
+    }
+    WebcfgInfo("setForceSync returns success 1\n");
+    return 1;
+}
+
+int get_rbus_ForceSync(char** pString, char **transactionId )
+{
+	WebcfgInfo("get_rbus_ForceSync\n");
+
+	if((forceSyncVal != NULL && strlen(forceSyncVal)>0) && ForceSyncTransID != NULL)
+	{
+		WebcfgInfo("----- updating pString ------\n");
+		*pString = strdup(forceSyncVal);
+		WebcfgInfo("----- updating transactionId ------\n");
+		*transactionId = strdup(ForceSyncTransID);
+	}
+	else
+	{
+		*pString = NULL;
+		*transactionId = NULL;
+		return 0;
+	}
+	WebcfgInfo("*transactionId is %s\n",*transactionId);
+	return 1;
+}

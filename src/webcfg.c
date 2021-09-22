@@ -245,7 +245,7 @@ static void *WebConfigTask(void *status)
 				set_retry_timer(900);
 				set_global_retry_timestamp(0);
 				failedDocsRetry();
-				WebcfgInfo("After the failedDocsRetry\n");
+				WebcfgDebug("After the failedDocsRetry\n");
 			}
 			else
 			{
@@ -302,7 +302,6 @@ static void *WebConfigTask(void *status)
 		pthread_mutex_unlock(&sync_mutex);
 
 	}
-	WebcfgInfo("After main while loop\n");
 	/* release all active threads before shutdown */
 	pthread_mutex_lock (get_global_client_mut());
 	pthread_cond_signal (get_global_client_con());
@@ -365,19 +364,16 @@ static void *WebConfigTask(void *status)
 
 pthread_cond_t *get_global_sync_condition(void)
 {
-    WebcfgInfo("In get_global_sync_condition\n");
     return &sync_condition;
 }
 
 pthread_mutex_t *get_global_sync_mutex(void)
 {
-    WebcfgInfo("In get_global_sync_mutex\n");
     return &sync_mutex;
 }
 
 pthread_t *get_global_mpThreadId(void)
 {
-    WebcfgInfo("In get_global_mpThreadId\n");
     return g_mpthreadId;
 }
 

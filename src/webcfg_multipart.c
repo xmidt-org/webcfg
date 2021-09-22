@@ -1674,7 +1674,7 @@ void createCurlHeader( struct curl_slist *list, struct curl_slist **header_list,
         }
         else
         {
-                WebcfgError("Failed to get systemReadyTime\n");
+                WebcfgDebug("Failed to get systemReadyTime\n");
         }
 
 	getForceSync(&ForceSyncDoc, &syncTransID);

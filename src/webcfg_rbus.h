@@ -21,6 +21,7 @@
 #define _WEBCFG_RBUS_H_
 
 #include <stdio.h>
+#include <stdbool.h>
 #include <rbus/rbus.h>
 #include <rbus/rbus_object.h>
 #include <rbus/rbus_property.h>
@@ -76,4 +77,8 @@ int mapRbusStatus(int Rbus_error_code);
 void webcfgEventRbusHandler(rbusHandle_t handle, rbusEvent_t const* event, rbusEventSubscription_t* subscription);
 void registerRBUSlistener();
 void rbusWebcfgEventHandler(rbusHandle_t handle, rbusMessage_t* msg, void * userData);
+int set_rbus_RfcEnable(bool bValue);
+int set_rbus_ForceSync(char* pString, char *transactionId,int *pStatus);
+int get_rbus_ForceSync(char** pString, char **transactionId );
+bool get_rbus_RfcEnable();
 #endif
