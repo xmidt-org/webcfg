@@ -31,6 +31,7 @@
 
 #include <wdmp-c.h>
 #include <cimplog.h>
+#include <wrp-c.h>
 #include "webcfg.h"
 #include "webcfg_log.h"
 #include "webcfg_generic.h"
@@ -75,10 +76,11 @@ void setValues_rbus(const param_t paramVal[], const unsigned int paramCount, con
 DATA_TYPE mapRbusToWdmpDataType(rbusValueType_t rbusType);
 int mapRbusStatus(int Rbus_error_code);
 void webcfgEventRbusHandler(rbusHandle_t handle, rbusEvent_t const* event, rbusEventSubscription_t* subscription);
-void registerRBUSlistener();
+void registerRBUSEventlistener();
 void rbusWebcfgEventHandler(rbusHandle_t handle, rbusMessage_t* msg, void * userData);
 int set_rbus_RfcEnable(bool bValue);
 int set_rbus_ForceSync(char* pString, char *transactionId,int *pStatus);
 int get_rbus_ForceSync(char** pString, char **transactionId );
 bool get_rbus_RfcEnable();
+void sendNotification_rbus(char *payload, char *source, char *destination);
 #endif

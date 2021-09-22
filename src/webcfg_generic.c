@@ -232,9 +232,18 @@ void setValues(const param_t paramVal[], const unsigned int paramCount, const in
 
 void sendNotification(char *payload, char *source, char *destination)
 {
-	UNUSED(payload);
-	UNUSED(source);
-	UNUSED(destination);
+	WebcfgInfo("Inside sendNotification weak impl\n");
+	if(isRbusEnabled())
+	{
+		WebcfgInfo("B4 sendNotification_rbus\n");
+		sendNotification_rbus(payload, source, destination);
+	}
+	else
+	{
+		UNUSED(payload);
+		UNUSED(source);
+		UNUSED(destination);
+	}
 	return;
 }
 
@@ -244,7 +253,7 @@ int registerWebcfgEvent(WebConfigEventCallback webcfgEventCB)
 	if(isRbusEnabled())
 	{
 		WebcfgInfo("Registering RBUS event listener!\n");
-		registerRBUSlistener();
+		registerRBUSEventlistener();
 		ret = 1;
 	}
 	else

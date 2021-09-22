@@ -768,11 +768,11 @@ void rbusWebcfgEventHandler(rbusHandle_t handle, rbusMessage_t* msg, void * user
 }
 
 /* API to register RBUS listener to receive messages from components */
-void registerRBUSlistener()
+void registerRBUSEventlistener()
 {
 	if(!rbus_handle)
 	{
-		WebcfgError("registerRBUSlistener failed as rbus_handle is not initialized\n");
+		WebcfgError("registerRBUSEventlistener failed as rbus_handle is not initialized\n");
 		return;
 	}
 
@@ -906,4 +906,58 @@ int get_rbus_ForceSync(char** pString, char **transactionId )
 	}
 	WebcfgInfo("*transactionId is %s\n",*transactionId);
 	return 1;
+}
+
+void sendNotification_rbus(char *payload, char *source, char *destination)
+{
+	wrp_msg_t *notif_wrp_msg = NULL;
+	char *contentType = NULL;
+	rbusError_t err;
+	char topic[64] = "webconfig.upstream";
+	rbusMessage_t msg;
+	ssize_t msg_len;
+	void *msg_bytes;
+
+	if(source != NULL && destination != NULL)
+	{
+		notif_wrp_msg = (wrp_msg_t *)malloc(sizeof(wrp_msg_t));
+		if(notif_wrp_msg != NULL)
+		{
+			memset(notif_wrp_msg, 0, sizeof(wrp_msg_t));
+			notif_wrp_msg->msg_type = WRP_MSG_TYPE__EVENT;
+			WebcfgInfo("source: %s\n",source);
+			notif_wrp_msg->u.event.source = strdup(source);
+			WebcfgInfo("destination: %s\n", destination);
+			notif_wrp_msg->u.event.dest = strdup(destination);
+			contentType = strdup("application/json");
+			if(contentType != NULL)
+			{
+				notif_wrp_msg->u.event.content_type = contentType;
+				WebcfgInfo("content_type is %s\n",notif_wrp_msg->u.event.content_type);
+			}
+			if(payload != NULL)
+			{
+				WebcfgInfo("Notification payload: %s\n",payload);
+				notif_wrp_msg->u.event.payload = (void *)payload;
+				notif_wrp_msg->u.event.payload_size = strlen(notif_wrp_msg ->u.event.payload);
+			}
+
+			msg_len = wrp_struct_to (notif_wrp_msg, WRP_BYTES, &msg_bytes);
+			msg.topic = (char const*)topic;
+			msg.data = (uint8_t*)msg_bytes;
+			msg.length = msg_len;
+			WebcfgInfo("msg.topic %s, msg.length %d\n", msg.topic, msg.length );
+			WebcfgInfo("msg.data is %s\n", (char*)msg.data);
+			err = rbusMessage_Send(rbus_handle, &msg, RBUS_MESSAGE_CONFIRM_RECEIPT);
+			if (err)
+			{
+				WebcfgError("Failed to send Notification:%s\n", rbusError_ToString(err));
+			}
+			else
+			{
+				WebcfgInfo("Notification successfully sent to webconfig.upstream \n");
+			}
+			wrp_free_struct (notif_wrp_msg );
+		}
+	}
 }
