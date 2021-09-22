@@ -29,7 +29,7 @@
 /*----------------------------------------------------------------------------*/
 /*                             Function Prototypes                            */
 /*----------------------------------------------------------------------------*/
-char *__attribute__((weak)) getDeviceBootTime(void);
+/*char *__attribute__((weak)) getDeviceBootTime(void);
 char *__attribute__((weak)) getSerialNumber(void);
 char *__attribute__((weak)) getProductClass(void);
 char *__attribute__((weak)) getModelName(void);
@@ -38,14 +38,14 @@ char *__attribute__((weak)) getAccountID(void);
 char *__attribute__((weak)) getRebootReason(void);
 char *__attribute__((weak)) getConnClientParamName(void);
 char *__attribute__((weak)) getFirmwareVersion(void);
-char *__attribute__((weak)) get_deviceMAC(void);
+//char *__attribute__((weak)) get_deviceMAC(void);
 char *__attribute__((weak)) getFirmwareUpgradeStartTime(void);
-char *__attribute__((weak)) getFirmwareUpgradeEndTime(void);
+char *__attribute__((weak)) getFirmwareUpgradeEndTime(void);*/
 char *__attribute__((weak)) get_global_systemReadyTime(void);
 int __attribute__((weak)) setForceSync(char* pString, char *transactionId,int *session_status);
 int __attribute__((weak)) getForceSync(char** pString, char **transactionId);
-int __attribute__((weak)) Get_Webconfig_URL( char *pString);
-int __attribute__((weak)) Set_Webconfig_URL( char *pString);
+//int __attribute__((weak)) Get_Webconfig_URL( char *pString);
+//int __attribute__((weak)) Set_Webconfig_URL( char *pString);
 int __attribute__((weak)) Get_Supplementary_URL( char *name, char *pString);
 int __attribute__((weak)) Set_Supplementary_URL( char *name, char *pString);
 void __attribute__((weak)) setValues(const param_t paramVal[], const unsigned int paramCount, const int setType, char *transactionId, money_trace_spans *timeSpan, WDMP_STATUS *retStatus, int *ccspStatus);
@@ -54,83 +54,83 @@ int __attribute__((weak)) registerWebcfgEvent(WebConfigEventCallback webcfgEvent
 int __attribute__((weak)) unregisterWebcfgEvent();
 WDMP_STATUS __attribute__((weak)) mapStatus(int ret);
 void __attribute__((weak)) setAttributes(param_t *attArr, const unsigned int paramCount, money_trace_spans *timeSpan, WDMP_STATUS *retStatus);
-int __attribute__((weak)) rbus_GetValueFromDB( char* paramName, char** paramValue);
-int __attribute__((weak)) rbus_StoreValueIntoDB(char *paramName, char *value);
+//int __attribute__((weak)) rbus_GetValueFromDB( char* paramName, char** paramValue);
+//int __attribute__((weak)) rbus_StoreValueIntoDB(char *paramName, char *value);
 /*----------------------------------------------------------------------------*/
 /*                             External Functions                             */
 /*----------------------------------------------------------------------------*/
 
-char *__attribute__((weak)) getDeviceBootTime(void)
+/*char *getDeviceBootTime(void)
 {
     WebcfgInfo("Inside getDeviceBootTime weak function.\n");
     return NULL;
 }
 
-char *__attribute__((weak))getSerialNumber(void)
+char *getSerialNumber(void)
 {
     WebcfgInfo("Inside getSerialNumber weak function.\n");
     return NULL;
 }
 
-char *__attribute__((weak))getProductClass(void)
+char *getProductClass(void)
 {
     WebcfgInfo("Inside getProductClass weak function.\n");
     return NULL;
 }
 
-char *__attribute__((weak))getModelName(void)
+char *getModelName(void)
 {
     WebcfgInfo("Inside getModelName weak function.\n");
     return NULL;
 }
 
-char *__attribute__((weak))getPartnerID(void)
+char *getPartnerID(void)
 {
     WebcfgInfo("Inside getPartnerID weak function.\n");
     return NULL;
 }
 
-char *__attribute__((weak))getAccountID(void)
+char *getAccountID(void)
 {
     WebcfgInfo("Inside getAccountID weak function.\n");
     return NULL;
 }
 
-char *__attribute__((weak)) getRebootReason(void)
+char *getRebootReason(void)
 {
     WebcfgInfo("Inside getRebootReason weak function.\n");
     return NULL;
 }
 
-char *__attribute__((weak)) getConnClientParamName(void)
+char *getConnClientParamName(void)
 {
     return NULL;
 }
-char *__attribute__((weak)) getFirmwareVersion(void)
+char *getFirmwareVersion(void)
 {
     WebcfgInfo("Inside getFirmwareVersion weak function.\n");
     return NULL;
-}
+}*/
 
-char* __attribute__((weak)) get_deviceMAC(void)
+/*char* get_deviceMAC(void)
 {
 	WebcfgInfo("Inside get_deviceMAC weak function.\n");
 	return NULL;
-}
+}*/
 
-char *__attribute__((weak)) getFirmwareUpgradeStartTime(void)
+/*char *getFirmwareUpgradeStartTime(void)
 {
     WebcfgInfo("Inside getFirmwareUpgradeStartTime weak function.\n");
     return NULL;
 }
 
-char *__attribute__((weak)) getFirmwareUpgradeEndTime(void)
+char *getFirmwareUpgradeEndTime(void)
 {
     WebcfgInfo("Inside getFirmwareUpgradeEndTime weak function.\n");
     return NULL;
-}
+}*/
 
-char *__attribute__((weak)) get_global_systemReadyTime(void)
+char *get_global_systemReadyTime(void)
 {
     WebcfgInfo("Inside get_global_systemReadyTime weak function.\n");
     return NULL;
@@ -172,21 +172,21 @@ int getForceSync(char** pString, char **transactionId)
 	return 0;
 }
 
-int __attribute__((weak)) Get_Webconfig_URL( char *pString)
+/*int Get_Webconfig_URL( char *pString)
 {
     WebcfgInfo("Inside Get_Webconfig_URL weak function.\n");
     UNUSED(pString);
     return 0;
 }
 
-int __attribute__((weak)) Set_Webconfig_URL( char *pString)
+int Set_Webconfig_URL( char *pString)
 {
     WebcfgInfo("Inside Get_Webconfig_URL weak function.\n");
     UNUSED(pString);
     return 0;
-}
+}*/
 
-int __attribute__((weak)) Get_Supplementary_URL( char *name, char *pString)
+/*int Get_Supplementary_URL( char *name, char *pString)
 {
     WebcfgInfo("Inside Get_Supplementary_URL weak function.\n");
     UNUSED(name);
@@ -194,13 +194,13 @@ int __attribute__((weak)) Get_Supplementary_URL( char *name, char *pString)
     return 0;
 }
 
-int __attribute__((weak)) Set_Supplementary_URL( char *name, char *pString)
+int Set_Supplementary_URL( char *name, char *pString)
 {
     WebcfgInfo("Inside Set_Supplementary_URL weak function.\n");
     UNUSED(name);
     UNUSED(pString);
     return 0;
-}
+}*/
 
 void setValues(const param_t paramVal[], const unsigned int paramCount, const int setType, char *transactionId, money_trace_spans *timeSpan, WDMP_STATUS *retStatus, int *ccspStatus)
 {
@@ -317,7 +317,7 @@ void setAttributes(param_t *attArr, const unsigned int paramCount, money_trace_s
 	return;
 }
 
-int __attribute__((weak)) rbus_GetValueFromDB( char* paramName, char** paramValue)
+/*int rbus_GetValueFromDB( char* paramName, char** paramValue)
 {
 	WebcfgInfo("Inside rbus_GetValueFromDB weak fn\n");
 	UNUSED(paramName);
@@ -325,10 +325,10 @@ int __attribute__((weak)) rbus_GetValueFromDB( char* paramName, char** paramValu
 	return 0;
 }
 
-int __attribute__((weak)) rbus_StoreValueIntoDB(char *paramName, char *value)
+int rbus_StoreValueIntoDB(char *paramName, char *value)
 {
 	WebcfgInfo("Inside rbus_StoreValueIntoDB weak fn\n");
 	UNUSED(paramName);
 	UNUSED(value);
 	return 0;
-}
+}*/
