@@ -252,9 +252,14 @@ int registerWebcfgEvent(WebConfigEventCallback webcfgEventCB)
 	int ret = 0;
 	if(isRbusEnabled())
 	{
+		int rc = 0;
 		WebcfgInfo("Registering RBUS event listener!\n");
-		registerRBUSEventlistener();
-		ret = 1;
+		rc = registerRBUSEventlistener();
+		WebcfgInfo("RBUSEventlistener rc %d\n", rc);
+		if(rc == RBUS_ERROR_SUCCESS)
+		{
+			ret = 1;
+		}
 	}
 	else
 	{
@@ -269,16 +274,16 @@ int unregisterWebcfgEvent()
 	int ret = 0 ;
 	if(isRbusEnabled())
 	{
-		rbusHandle_t rbus_handle = get_global_rbus_handle();
-		ret = rbusEvent_Unsubscribe(rbus_handle, WEBCFG_EVENT_NAME);
-		if ( ret != RBUS_ERROR_SUCCESS )
+		int rc = 0;
+		rc = removeRBUSEventlistener();
+		WebcfgInfo("removeRBUSEventlistener returns rc %d\n", rc);
+		if ( rc != RBUS_ERROR_SUCCESS )
 		{
-			WebcfgError("%s Unsubscribe failed\n",WEBCFG_EVENT_NAME);
-			ret = 0;
+			WebcfgError("Rbus UnRegistration with %s failed\n", WEBCFG_EVENT_NAME);
 		}
 		else
 		{
-			WebcfgInfo("%s Unsubscribe with rbus successful\n",WEBCFG_EVENT_NAME);
+			WebcfgInfo("Rbus UnRegistration with %s is success\n", WEBCFG_EVENT_NAME);
 			ret = 1;
 		}
 	}

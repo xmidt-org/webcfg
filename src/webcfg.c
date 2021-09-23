@@ -92,8 +92,8 @@ void initWebConfigTask(unsigned long status)
 
 static void *WebConfigTask(void *status)
 {
-	//pthread_detach(pthread_self());
-	WebcfgInfo("No pthread detach from WebConfigTask.\n");
+	pthread_detach(pthread_self());
+	WebcfgInfo("pthread detach from WebConfigTask.\n");
 	int rv=0;
 	int forced_sync=0;
         int Status = 0;
@@ -222,7 +222,6 @@ static void *WebConfigTask(void *status)
 			WebcfgDebug("The retry triggers at %s\n", printTime((long long)ts.tv_sec));
 		}
 
-		maintenance_doc_sync = 0; //test purpose.
 		if(retry_flag == 1 || maintenance_doc_sync == 1)
 		{
 			WebcfgInfo("B4 sync_condition pthread_cond_timedwait\n");
@@ -264,13 +263,13 @@ static void *WebConfigTask(void *status)
 			// Identify ForceSync based on docname
 			getForceSync(&ForceSyncDoc, &ForceSyncTransID);
 			WebcfgInfo("ForceSyncDoc %s ForceSyncTransID. %s\n", ForceSyncDoc, ForceSyncTransID);
-			if(ForceSyncTransID !=NULL)
-			{
+			//if(ForceSyncTransID !=NULL)
+			//{
 				if((ForceSyncDoc != NULL) && strlen(ForceSyncDoc)>0)
 				{
 					forced_sync = 1;
 					wait_flag = 1;
-					WebcfgDebug("Received signal interrupt to Force Sync\n");
+					WebcfgInfo("Received signal interrupt to Force Sync\n");
 
 					//To check poke string received is supplementary doc or not.
 					if(isSupplementaryDoc(ForceSyncDoc) == WEBCFG_SUCCESS)
@@ -278,17 +277,17 @@ static void *WebConfigTask(void *status)
 						WebcfgInfo("Received supplementary poke request for %s\n", ForceSyncDoc);
 						set_global_supplementarySync(1);
 						syncDoc = strdup(ForceSyncDoc);
-						WebcfgDebug("syncDoc is %s\n", syncDoc);
+						WebcfgInfo("syncDoc is %s\n", syncDoc);
 					}
 					WEBCFG_FREE(ForceSyncDoc);
-					WEBCFG_FREE(ForceSyncTransID);
+					//WEBCFG_FREE(ForceSyncTransID);
 				}
 				else
 				{
 					WebcfgError("ForceSyncDoc is NULL\n");
-					WEBCFG_FREE(ForceSyncTransID);
+					//WEBCFG_FREE(ForceSyncTransID);
 				}
-			}
+			//}
 
 			WebcfgInfo("forced_sync is %d\n", forced_sync);
 		}
@@ -315,10 +314,11 @@ static void *WebConfigTask(void *status)
 	if(get_global_eventFlag())
 	{
 		pthread_mutex_lock (get_global_event_mut());
+		WebcfgInfo("B4 event cond signal\n");
 		pthread_cond_signal (get_global_event_con());
 		pthread_mutex_unlock (get_global_event_mut());
 
-		WebcfgDebug("event process thread: pthread_join\n");
+		WebcfgInfo("event process thread: pthread_join\n");
 		JoinThread (get_global_process_threadid());
 
 		WebcfgDebug("event thread: pthread_join\n");

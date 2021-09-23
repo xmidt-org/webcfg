@@ -407,12 +407,12 @@ rbusError_t webcfgDataGetHandler(rbusHandle_t handle, rbusProperty_t property, r
         rbusValue_Release(value);
     }
 
-    if(propertyName) {
+    /*if(propertyName) {
         free((char*)propertyName);
         propertyName = NULL;
-    }
+    }*/
 
-    WebcfgDebug("webcfgDataGetHandler End\n");
+    WebcfgInfo("webcfgDataGetHandler End\n");
     return RBUS_ERROR_SUCCESS;
 }
 
@@ -789,16 +789,49 @@ void rbusWebcfgEventHandler(rbusHandle_t handle, rbusMessage_t* msg, void * user
 }
 
 /* API to register RBUS listener to receive messages from components */
-void registerRBUSEventlistener()
+rbusError_t registerRBUSEventlistener()
 {
+	rbusError_t rc = RBUS_ERROR_BUS_ERROR;
 	if(!rbus_handle)
 	{
 		WebcfgError("registerRBUSEventlistener failed as rbus_handle is not initialized\n");
-		return;
+		return rc;
 	}
 
 	WebcfgInfo("B4 rbusMessage_AddListener\n");
-	rbusMessage_AddListener(rbus_handle, "webconfigSignal", &rbusWebcfgEventHandler, NULL);
+	rc = rbusMessage_AddListener(rbus_handle, "webconfigSignal", &rbusWebcfgEventHandler, NULL);
+	if(rc != RBUS_ERROR_SUCCESS)
+	{
+		WebcfgError("registerRBUSEventlistener failed err: %d\n", rc);
+	}
+	else
+	{
+		WebcfgInfo("registerRBUSEventlistener success\n");
+	}
+	return rc;
+}
+
+/* API to un register RBUS listener events */
+rbusError_t removeRBUSEventlistener()
+{
+	rbusError_t rc = RBUS_ERROR_BUS_ERROR;
+	if(!rbus_handle)
+	{
+		WebcfgError("removeRBUSEventlistener failed as rbus_handle is not initialized\n");
+		return rc;
+	}
+
+	WebcfgInfo("B4 rbusMessage_RemoveListener\n");
+	rc = rbusMessage_RemoveListener(rbus_handle, "webconfigSignal");
+	if(rc != RBUS_ERROR_SUCCESS)
+	{
+		WebcfgError("removeRBUSEventlistener failed err: %d\n", rc);
+	}
+	else
+	{
+		WebcfgInfo("removeRBUSEventlistener success\n");
+	}
+	return rc;
 }
 
 bool get_rbus_RfcEnable()
@@ -912,15 +945,18 @@ int get_rbus_ForceSync(char** pString, char **transactionId )
 {
 	WebcfgInfo("get_rbus_ForceSync\n");
 
-	if((forceSyncVal != NULL && strlen(forceSyncVal)>0) && ForceSyncTransID != NULL)
+	WebcfgInfo("forceSyncVal is %s ForceSyncTransID %s\n", forceSyncVal, ForceSyncTransID);
+	//if((forceSyncVal != NULL && strlen(forceSyncVal)>0) && ForceSyncTransID != NULL)
+	if(forceSyncVal != NULL && strlen(forceSyncVal)>0)
 	{
 		WebcfgInfo("----- updating pString ------\n");
 		*pString = strdup(forceSyncVal);
 		WebcfgInfo("----- updating transactionId ------\n");
-		*transactionId = strdup(ForceSyncTransID);
+		//*transactionId = strdup(ForceSyncTransID);
 	}
 	else
 	{
+		WebcfgInfo("setting NULL to pString and transactionId\n");
 		*pString = NULL;
 		*transactionId = NULL;
 		return 0;

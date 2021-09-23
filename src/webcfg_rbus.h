@@ -76,7 +76,8 @@ void setValues_rbus(const param_t paramVal[], const unsigned int paramCount, con
 DATA_TYPE mapRbusToWdmpDataType(rbusValueType_t rbusType);
 int mapRbusStatus(int Rbus_error_code);
 void webcfgEventRbusHandler(rbusHandle_t handle, rbusEvent_t const* event, rbusEventSubscription_t* subscription);
-void registerRBUSEventlistener();
+rbusError_t registerRBUSEventlistener();
+rbusError_t removeRBUSEventlistener();
 void rbusWebcfgEventHandler(rbusHandle_t handle, rbusMessage_t* msg, void * userData);
 int set_rbus_RfcEnable(bool bValue);
 int set_rbus_ForceSync(char* pString, char *transactionId,int *pStatus);
