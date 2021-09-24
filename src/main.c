@@ -28,7 +28,10 @@ static void sig_handler(int sig);
 
 int main()
 {
-	//int status = 0;
+	char RfcEnable[64];
+	memset(RfcEnable, 0, sizeof(RfcEnable));
+	char* strValue = NULL;
+	int ret = 0;
 #ifdef INCLUDE_BREAKPAD
     breakpad_ExceptionHandler();
 #else
@@ -45,23 +48,42 @@ int main()
 	signal(SIGHUP, sig_handler);
 	signal(SIGALRM, sig_handler);
 #endif
-	const char *pComponentName = WEBCFG_COMPONENT_NAME;
-	WebcfgInfo("********** Starting component: %s **********\n ", pComponentName); 
+	WebcfgInfo("********** Starting component: %s **********\n ", WEBCFG_COMPONENT_NAME);
 	curl_global_init(CURL_GLOBAL_DEFAULT);
 
 	if(isRbusEnabled())
 	{
 		WebcfgInfo("webconfigRbusInit\n");
-		webconfigRbusInit(pComponentName);
+		webconfigRbusInit(WEBCFG_COMPONENT_NAME);
 		regWebConfigDataModel();
+		ret = rbus_GetValueFromDB( PARAM_RFC_ENABLE, &strValue );
+		if (ret == 0)
+		{
+			WebcfgInfo("RFC strValue %s\n", strValue);
+			if(strValue != NULL)
+			{
+				webcfgStrncpy(RfcEnable, strValue, sizeof(RfcEnable));
+			}
+		}
+		if(RfcEnable[0] != '\0' && strncmp(RfcEnable, "true", strlen("true")) == 0)
+		{
+			if(get_global_mpThreadId() == NULL)
+			{
+				WebcfgInfo("WebConfig Rfc is enabled, starting initWebConfigTask\n");
+				initWebConfigTask(0);
+			}
+			else
+			{
+				WebcfgInfo("Webconfig is already started, so not starting again.\n");
+			}
+		}
+		else
+		{
+			WebcfgInfo("WebConfig Rfc Flag is not enabled\n");
+		}
 	}
 
-	WebcfgInfo("WebConfig Rfc is enabled, starting initWebConfigTask\n");
-	initWebConfigTask(0);
-	WebcfgInfo("After initWebConfigTask\n");
-	//WebcfgInfo("B4 WebConfigMultipartTask\n");
-	//WebConfigMultipartTask(0);
-
+	WebcfgInfo("curl_global_cleanup\n");
 	curl_global_cleanup();
 	while(1);
 	WebcfgInfo("Exiting webconfig main thread!!\n");
