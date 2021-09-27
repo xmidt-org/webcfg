@@ -95,4 +95,6 @@ WDMP_STATUS mapStatus(int ret);
  * @param[out] retStatus Returns status
  */
 void setAttributes(param_t *attArr, const unsigned int paramCount, money_trace_spans *timeSpan, WDMP_STATUS *retStatus);
+int rbus_GetValueFromDB( char* paramName, char** paramValue);
+int rbus_StoreValueIntoDB(char *paramName, char *value);
 #endif

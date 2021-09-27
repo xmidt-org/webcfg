@@ -46,6 +46,9 @@ include_directories(${INCLUDE_DIR}
 			${INCLUDE_DIR}/wrp-c
 			${INCLUDE_DIR}/nanomsg
 			${INCLUDE_DIR}/libparodus
+			${INCLUDE_DIR}/rbus
+			${INCLUDE_DIR}/rbus-core
+			${INCLUDE_DIR}/rtmessage
 #                    ${INCLUDE_DIR}/curl
                     )
 
@@ -173,6 +176,48 @@ ExternalProject_Add(libparodus
 )
 add_library(liblibparodus STATIC SHARED IMPORTED)
 add_dependencies(liblibparodus libparodus)
+
+# rtMessage external dependency
+#-------------------------------------------------------------------------------
+ExternalProject_Add(rtMessage
+     PREFIX ${CMAKE_CURRENT_BINARY_DIR}/_prefix/rtMessage
+     GIT_REPOSITORY https://github.com/rdkcmf/rdk-rtmessage.git
+     GIT_TAG rdk-next
+     CMAKE_ARGS += -DBUILD_RTMESSAGE_LIB=ON
+                   -DBUILD_RTMESSAGE_SAMPLE_APP=ON
+                   -DBUILD_FOR_DESKTOP=ON
+                   -DBUILD_DATAPROVIDER_LIB=ON
+                   -DCMAKE_INSTALL_PREFIX=${INSTALL_DIR} -DBUILD_TESTING=OFF
+)
+add_library(librtMessage STATIC SHARED IMPORTED)
+add_dependencies(librtMessage rtMessage)
+
+# rbus-core external dependency
+#-------------------------------------------------------------------------------
+ExternalProject_Add(rbus-core
+     DEPENDS rtMessage
+     PREFIX ${CMAKE_CURRENT_BINARY_DIR}/_prefix/rbus-core
+     GIT_REPOSITORY https://github.com/rdkcmf/rbuscore.git
+     GIT_TAG rdk-next
+     CMAKE_ARGS += DBUILD_FOR_DESKTOP=ON -DCMAKE_INSTALL_PREFIX=${INSTALL_DIR}
+                   -DBUILD_TESTING=OFF
+)
+add_library(librbus-core STATIC SHARED IMPORTED)
+add_dependencies(librbus-core rbus-core)
+
+# rbus external dependency
+#-------------------------------------------------------------------------------
+ExternalProject_Add(rbus
+     DEPENDS rtMessage rbus-core
+     PREFIX ${CMAKE_CURRENT_BINARY_DIR}/_prefix/rbus
+     GIT_REPOSITORY https://github.com/rdkcmf/rbus.git
+     GIT_TAG rdk-next
+     CMAKE_ARGS += -DBUILD_FOR_DESKTOP=ON -DCMAKE_INSTALL_PREFIX=${INSTALL_DIR} -DBUILD_TESTING=OFF
+)
+
+add_library(librbus STATIC SHARED IMPORTED)
+add_dependencies(librbus rbus)
+
 endif ()
 link_directories ( ${LIBRARY_DIR} ${COMMON_LIBRARY_DIR} ${LIBRARY_DIR64} )
 
