@@ -20,8 +20,10 @@
 #include <wdmp-c.h>
 #include "webcfg_generic.h"
 #include "webcfg_log.h"
+#if defined(WEBCONFIG_BIN_SUPPORT)
 #include "webcfg_rbus.h"
 #include <rbus.h>
+#endif
 /*----------------------------------------------------------------------------*/
 /*                                   Macros                                   */
 /*----------------------------------------------------------------------------*/
@@ -29,6 +31,7 @@
 /*----------------------------------------------------------------------------*/
 /*                             Function Prototypes                            */
 /*----------------------------------------------------------------------------*/
+#ifndef WEBCONFIG_BIN_SUPPORT
 char *__attribute__((weak)) getDeviceBootTime(void);
 char *__attribute__((weak)) getSerialNumber(void);
 char *__attribute__((weak)) getProductClass(void);
@@ -41,25 +44,31 @@ char *__attribute__((weak)) getFirmwareVersion(void);
 char *__attribute__((weak)) get_deviceMAC(void);
 char *__attribute__((weak)) getFirmwareUpgradeStartTime(void);
 char *__attribute__((weak)) getFirmwareUpgradeEndTime(void);
+#endif
 char *__attribute__((weak)) get_global_systemReadyTime(void);
 int __attribute__((weak)) setForceSync(char* pString, char *transactionId,int *session_status);
 int __attribute__((weak)) getForceSync(char** pString, char **transactionId);
+#ifndef WEBCONFIG_BIN_SUPPORT
 int __attribute__((weak)) Get_Webconfig_URL( char *pString);
 int __attribute__((weak)) Set_Webconfig_URL( char *pString);
 int __attribute__((weak)) Get_Supplementary_URL( char *name, char *pString);
 int __attribute__((weak)) Set_Supplementary_URL( char *name, char *pString);
+#endif
 void __attribute__((weak)) setValues(const param_t paramVal[], const unsigned int paramCount, const int setType, char *transactionId, money_trace_spans *timeSpan, WDMP_STATUS *retStatus, int *ccspStatus);
 void __attribute__((weak)) sendNotification(char *payload, char *source, char *destination);
 int __attribute__((weak)) registerWebcfgEvent(WebConfigEventCallback webcfgEventCB);
 int __attribute__((weak)) unregisterWebcfgEvent();
 WDMP_STATUS __attribute__((weak)) mapStatus(int ret);
 void __attribute__((weak)) setAttributes(param_t *attArr, const unsigned int paramCount, money_trace_spans *timeSpan, WDMP_STATUS *retStatus);
+#ifndef WEBCONFIG_BIN_SUPPORT
 int __attribute__((weak)) rbus_GetValueFromDB( char* paramName, char** paramValue);
 int __attribute__((weak)) rbus_StoreValueIntoDB(char *paramName, char *value);
+#endif
 /*----------------------------------------------------------------------------*/
 /*                             External Functions                             */
 /*----------------------------------------------------------------------------*/
 
+#ifndef WEBCONFIG_BIN_SUPPORT
 char *getDeviceBootTime(void)
 {
     WebcfgInfo("Inside getDeviceBootTime weak function.\n");
@@ -129,6 +138,7 @@ char *getFirmwareUpgradeEndTime(void)
     WebcfgInfo("Inside getFirmwareUpgradeEndTime weak function.\n");
     return NULL;
 }
+#endif
 
 char *get_global_systemReadyTime(void)
 {
@@ -138,22 +148,23 @@ char *get_global_systemReadyTime(void)
 
 int setForceSync(char* pString, char *transactionId,int *session_status)
 {
+#ifdef WEBCONFIG_BIN_SUPPORT
 	if(isRbusEnabled())
 	{
 		WebcfgInfo("B4 set_rbus_ForceSync\n");
 		set_rbus_ForceSync(pString, transactionId, session_status);
 	}
-	else
-	{
-		UNUSED(pString);
-		UNUSED(transactionId);
-		UNUSED(session_status);
-	}
+#else
+	UNUSED(pString);
+	UNUSED(transactionId);
+	UNUSED(session_status);
+#endif
 	return 0;
 }
 
 int getForceSync(char** pString, char **transactionId)
 {
+#ifdef WEBCONFIG_BIN_SUPPORT
 	if(isRbusEnabled())
 	{
 		char *str = NULL;
@@ -164,14 +175,14 @@ int getForceSync(char** pString, char **transactionId)
 		*transactionId = transID;
 		WebcfgInfo("get_rbus_ForceSync. *pString %s *transactionId %s\n", *pString, *transactionId);
 	}
-	else
-	{
-		UNUSED(pString);
-		UNUSED(transactionId);
-	}
+#else
+	UNUSED(pString);
+	UNUSED(transactionId);
+#endif
 	return 0;
 }
 
+#ifndef WEBCONFIG_BIN_SUPPORT
 int Get_Webconfig_URL( char *pString)
 {
     WebcfgInfo("Inside Get_Webconfig_URL weak function.\n");
@@ -201,9 +212,11 @@ int Set_Supplementary_URL( char *name, char *pString)
     UNUSED(pString);
     return 0;
 }
+#endif
 
 void setValues(const param_t paramVal[], const unsigned int paramCount, const int setType, char *transactionId, money_trace_spans *timeSpan, WDMP_STATUS *retStatus, int *ccspStatus)
 {
+#ifdef WEBCONFIG_BIN_SUPPORT
 	if(isRbusEnabled())
 	{
 		int ccspRetStatus = 0;
@@ -216,40 +229,40 @@ void setValues(const param_t paramVal[], const unsigned int paramCount, const in
 		*ccspStatus = ccspRetStatus;
 		WebcfgInfo("ccspStatus %d retStatus is %d\n", *ccspStatus, (int)*retStatus);
 	}
-	else
-	{
-                WebcfgInfo("B4 setValues weak fn.\n");
-		UNUSED(paramVal);
-		UNUSED(paramCount);
-		UNUSED(setType);
-		UNUSED(transactionId);
-		UNUSED(timeSpan);
-		UNUSED(retStatus);
-		UNUSED(ccspStatus);
-	}
-	return;
+#else
+        WebcfgInfo("B4 setValues weak fn.\n");
+  	UNUSED(paramVal);
+	UNUSED(paramCount);
+	UNUSED(setType);
+	UNUSED(transactionId);
+	UNUSED(timeSpan);
+	UNUSED(retStatus);
+	UNUSED(ccspStatus);
+#endif
+return;
 }
 
 void sendNotification(char *payload, char *source, char *destination)
 {
+#ifdef WEBCONFIG_BIN_SUPPORT
 	WebcfgInfo("Inside sendNotification weak impl\n");
 	if(isRbusEnabled())
 	{
 		WebcfgInfo("B4 sendNotification_rbus\n");
 		sendNotification_rbus(payload, source, destination);
 	}
-	else
-	{
-		UNUSED(payload);
-		UNUSED(source);
-		UNUSED(destination);
-	}
+#else
+	UNUSED(payload);
+	UNUSED(source);
+	UNUSED(destination);
+#endif
 	return;
 }
 
 int registerWebcfgEvent(WebConfigEventCallback webcfgEventCB)
 {
 	int ret = 0;
+#ifdef WEBCONFIG_BIN_SUPPORT
 	if(isRbusEnabled())
 	{
 		int rc = 0;
@@ -261,17 +274,17 @@ int registerWebcfgEvent(WebConfigEventCallback webcfgEventCB)
 			ret = 1;
 		}
 	}
-	else
-	{
-		WebcfgInfo("in registerWebcfgEvent else\n");
-		UNUSED(webcfgEventCB);
-	}
+#else
+        WebcfgInfo("in registerWebcfgEvent else\n");
+	UNUSED(webcfgEventCB);
+#endif
 	return ret;
 }
 
 int unregisterWebcfgEvent()
 {
 	int ret = 0 ;
+#ifdef WEBCONFIG_BIN_SUPPORT
 	if(isRbusEnabled())
 	{
 		int rc = 0;
@@ -287,11 +300,13 @@ int unregisterWebcfgEvent()
 			ret = 1;
 		}
 	}
+#endif
 	return ret;
 }
 
 WDMP_STATUS mapStatus(int ret)
 {
+#ifdef WEBCONFIG_BIN_SUPPORT
 	if(isRbusEnabled())
 	{
 		switch (ret)
@@ -306,11 +321,10 @@ WDMP_STATUS mapStatus(int ret)
 			return WDMP_FAILURE;
 		}
 	}
-	else
-	{
-		UNUSED(ret);
-	}
-	return ret;
+#else
+	UNUSED(ret);
+#endif
+return ret;
 }
 
 void setAttributes(param_t *attArr, const unsigned int paramCount, money_trace_spans *timeSpan, WDMP_STATUS *retStatus)
@@ -321,7 +335,7 @@ void setAttributes(param_t *attArr, const unsigned int paramCount, money_trace_s
 	UNUSED(retStatus);
 	return;
 }
-
+#ifndef WEBCONFIG_BIN_SUPPORT
 int rbus_GetValueFromDB( char* paramName, char** paramValue)
 {
 	WebcfgInfo("Inside rbus_GetValueFromDB weak fn\n");
@@ -337,3 +351,4 @@ int rbus_StoreValueIntoDB(char *paramName, char *value)
 	UNUSED(value);
 	return 0;
 }
+#endif
