@@ -322,13 +322,17 @@ rbusError_t webcfgDataGetHandler(rbusHandle_t handle, rbusProperty_t property, r
 
     }else if(strncmp(propertyName, WEBCFG_URL_PARAM, maxParamLen) == 0) {
 
+	rbusValue_t value;
+        rbusValue_Init(&value);
+
 	if(!RFC_ENABLE)
 	{
 		WebcfgError("RfcEnable is disabled so, %s Get from DB failed\n",propertyName);
+		rbusValue_SetString(value, "");
+		rbusProperty_SetValue(property, value);
+		rbusValue_Release(value);
 		return 0;
 	}
-        rbusValue_t value;
-        rbusValue_Init(&value);
 
         if(URLVal){
             rbusValue_SetString(value, URLVal);
@@ -358,13 +362,18 @@ rbusError_t webcfgDataGetHandler(rbusHandle_t handle, rbusProperty_t property, r
         rbusValue_Release(value);
 
     }else if(strncmp(propertyName, WEBCFG_SUPPLEMENTARY_TELEMETRY_PARAM, maxParamLen)==0){
+
+	rbusValue_t value;
+        rbusValue_Init(&value);
+
 	if(!RFC_ENABLE)
 	{
 		WebcfgError("RfcEnable is disabled so, %s Get from DB failed\n",propertyName);
+		rbusValue_SetString(value, "");
+		rbusProperty_SetValue(property, value);
+		rbusValue_Release(value);
 		return 0;
 	}
-        rbusValue_t value;
-        rbusValue_Init(&value);
 
         if(SupplementaryURLVal){
             rbusValue_SetString(value, SupplementaryURLVal);
@@ -394,17 +403,19 @@ rbusError_t webcfgDataGetHandler(rbusHandle_t handle, rbusProperty_t property, r
         rbusValue_Release(value);
 
     }else if(strncmp(propertyName, WEBCFG_FORCESYNC_PARAM, maxParamLen) == 0) {
-	if(!RFC_ENABLE)
-	{
-		WebcfgError("RfcEnable is disabled so, %s Get from DB failed\n",propertyName);
-		return 0;
-	}
-        rbusValue_t value;
+
+	rbusValue_t value;
         rbusValue_Init(&value);
         rbusValue_SetString(value, "");
         rbusProperty_SetValue(property, value);
 	//WebcfgInfo("forceSyncVal value fetched is %s\n", value);
         rbusValue_Release(value);
+
+	if(!RFC_ENABLE)
+	{
+		WebcfgError("RfcEnable is disabled so, %s Get from DB failed\n",propertyName);
+		return 0;
+	}
     }
 
     /*if(propertyName) {
