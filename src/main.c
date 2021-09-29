@@ -14,7 +14,8 @@
 #include "webcfg.h"
 #include "webcfg_log.h"
 #include "webcfg_rbus.h"
-
+#include <unistd.h>
+#include <pthread.h>
 /*----------------------------------------------------------------------------*/
 /*                             Function Prototypes                            */
 /*----------------------------------------------------------------------------*/
@@ -22,6 +23,8 @@
 static void sig_handler(int sig);
 #endif
 
+pthread_mutex_t webcfg_mut= PTHREAD_MUTEX_INITIALIZER;
+pthread_cond_t  webcfg_con= PTHREAD_COND_INITIALIZER;
 /*----------------------------------------------------------------------------*/
 /*                             External Functions                             */
 /*----------------------------------------------------------------------------*/
@@ -53,7 +56,7 @@ int main()
 
 	if(isRbusEnabled())
 	{
-		WebcfgInfo("webconfigRbusInit\n");
+		WebcfgInfo("RBUS mode. webconfigRbusInit\n");
 		webconfigRbusInit(WEBCFG_COMPONENT_NAME);
 		regWebConfigDataModel();
 		ret = rbus_GetValueFromDB( PARAM_RFC_ENABLE, &strValue );
@@ -82,8 +85,19 @@ int main()
 			WebcfgInfo("WebConfig Rfc Flag is not enabled\n");
 		}
 	}
+	else
+	{
+		WebcfgInfo("DBUS mode. Webconfig bin is not yet supported in Dbus\n");
+	}
 
-	while(1);
+	//sleep(5);
+	//while(1);
+	WebcfgInfo("B4 pthread_mutex_lock webcfg_mut and wait.\n");
+	pthread_mutex_lock(&webcfg_mut);
+	pthread_cond_wait(&webcfg_con, &webcfg_mut);
+	WebcfgInfo("After webcfg_mut pthread_cond_wait. pthread_mutex_unlock\n");
+	pthread_mutex_unlock (&webcfg_mut);
+
 	WebcfgInfo("curl_global_cleanup\n");
 	curl_global_cleanup();
 	WebcfgInfo("Exiting webconfig main thread!!\n");

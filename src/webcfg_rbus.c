@@ -803,7 +803,7 @@ rbusError_t registerRBUSEventlistener()
 	rc = rbusMessage_AddListener(rbus_handle, "webconfigSignal", &rbusWebcfgEventHandler, NULL);
 	if(rc != RBUS_ERROR_SUCCESS)
 	{
-		WebcfgError("registerRBUSEventlistener failed err: %d\n", rc);
+		WebcfgError("registerRBUSEventlistener failed err: %s\n", rbusError_ToString(rc));
 	}
 	else
 	{
@@ -826,7 +826,7 @@ rbusError_t removeRBUSEventlistener()
 	rc = rbusMessage_RemoveListener(rbus_handle, "webconfigSignal");
 	if(rc != RBUS_ERROR_SUCCESS)
 	{
-		WebcfgError("removeRBUSEventlistener failed err: %d\n", rc);
+		WebcfgError("removeRBUSEventlistener failed err: %s\n", rbusError_ToString(rc));
 	}
 	else
 	{
@@ -894,10 +894,9 @@ int set_rbus_RfcEnable(bool bValue)
 
 int set_rbus_ForceSync(char* pString, char *transactionId,int *pStatus)
 {
-    WebcfgInfo("set_rbus_ForceSync\n");
     forceSyncVal = strdup(pString);
 
-    WebcfgInfo("set_rbus_ForceSync . forceSyncVal is %s\n", forceSyncVal);
+    WebcfgDebug("set_rbus_ForceSync . forceSyncVal is %s\n", forceSyncVal);
 
     if((forceSyncVal[0] !='\0') && (strlen(forceSyncVal)>0))
     {
@@ -944,25 +943,25 @@ int set_rbus_ForceSync(char* pString, char *transactionId,int *pStatus)
 
 int get_rbus_ForceSync(char** pString, char **transactionId )
 {
-	WebcfgInfo("get_rbus_ForceSync\n");
+	WebcfgDebug("get_rbus_ForceSync\n");
 
-	WebcfgInfo("forceSyncVal is %s ForceSyncTransID %s\n", forceSyncVal, ForceSyncTransID);
+	WebcfgDebug("forceSyncVal is %s ForceSyncTransID %s\n", forceSyncVal, ForceSyncTransID);
 	//if((forceSyncVal != NULL && strlen(forceSyncVal)>0) && ForceSyncTransID != NULL)
 	if(forceSyncVal != NULL && strlen(forceSyncVal)>0)
 	{
-		WebcfgInfo("----- updating pString ------\n");
+		WebcfgDebug("----- updating pString ------\n");
 		*pString = strdup(forceSyncVal);
-		WebcfgInfo("----- updating transactionId ------\n");
+		WebcfgDebug("----- updating transactionId ------\n");
 		//*transactionId = strdup(ForceSyncTransID);
 	}
 	else
 	{
-		WebcfgInfo("setting NULL to pString and transactionId\n");
+		WebcfgDebug("setting NULL to pString and transactionId\n");
 		*pString = NULL;
 		*transactionId = NULL;
 		return 0;
 	}
-	WebcfgInfo("*transactionId is %s\n",*transactionId);
+	WebcfgDebug("*transactionId is %s\n",*transactionId);
 	return 1;
 }
 
@@ -1005,7 +1004,7 @@ void sendNotification_rbus(char *payload, char *source, char *destination)
 			msg.data = (uint8_t*)msg_bytes;
 			msg.length = msg_len;
 			WebcfgInfo("msg.topic %s, msg.length %d\n", msg.topic, msg.length );
-			WebcfgInfo("msg.data is %s\n", (char*)msg.data);
+			WebcfgDebug("msg.data is %s\n", (char*)msg.data);
 			err = rbusMessage_Send(rbus_handle, &msg, RBUS_MESSAGE_CONFIRM_RECEIPT);
 			if (err)
 			{
