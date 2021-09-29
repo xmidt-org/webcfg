@@ -111,7 +111,11 @@ void *WebConfigMultipartTask(void *status)
 
 	//start webconfig notification thread.
 	initWebConfigNotifyTask();
+
+#ifdef FEATURE_SUPPORT_AKER
+	WebcfgInfo("FEATURE_SUPPORT_AKER initWebConfigClient\n");
 	initWebConfigClient();
+#endif
 	WebcfgInfo("initDB %s\n", WEBCFG_DB_FILE);
 
 	initDB(WEBCFG_DB_FILE);
@@ -302,9 +306,11 @@ void *WebConfigMultipartTask(void *status)
 
 	}
 	/* release all active threads before shutdown */
+#ifdef FEATURE_SUPPORT_AKER
 	pthread_mutex_lock (get_global_client_mut());
 	pthread_cond_signal (get_global_client_con());
 	pthread_mutex_unlock (get_global_client_mut());
+#endif
 
 	pthread_mutex_lock (get_global_notify_mut());
 	pthread_cond_signal (get_global_notify_con());
@@ -328,9 +334,12 @@ void *WebConfigMultipartTask(void *status)
 	WebcfgDebug("notify thread: pthread_join\n");
 	JoinThread (get_global_notify_threadid());
 
-	WebcfgDebug("client thread: pthread_join\n");
+#ifdef FEATURE_SUPPORT_AKER
+	WebcfgInfo("client thread: pthread_join\n");
 	JoinThread (get_global_client_threadid());
-
+	WebcfgInfo("client thread: pthread_join\n");
+#endif
+	WebcfgInfo("reset_global_eventFlag\n");
 	reset_global_eventFlag();
 	set_doc_fail(0);
 	reset_numOfMpDocs();
