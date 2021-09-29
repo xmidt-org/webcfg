@@ -69,8 +69,8 @@ int main()
 		{
 			if(get_global_mpThreadId() == NULL)
 			{
-				WebcfgInfo("WebConfig Rfc is enabled, starting initWebConfigTask\n");
-				initWebConfigTask(0);
+				WebcfgInfo("WebConfig Rfc is enabled, starting initWebConfigMultipartTask.\n");
+				initWebConfigMultipartTask(0);
 			}
 			else
 			{
@@ -83,9 +83,9 @@ int main()
 		}
 	}
 
+	while(1);
 	WebcfgInfo("curl_global_cleanup\n");
 	curl_global_cleanup();
-	while(1);
 	WebcfgInfo("Exiting webconfig main thread!!\n");
 	return 1;
 }

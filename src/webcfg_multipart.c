@@ -201,7 +201,7 @@ WEBCFG_STATUS webcfg_http_request(char **configData, int r_count, int status, lo
 		{
 			//loadInitURLFromFile(&webConfigURL);
 			Get_Webconfig_URL(configURL);
-			WebcfgInfo("primary sync url fetched is %s\n", configURL);
+			WebcfgDebug("primary sync url fetched is %s\n", configURL);
 		}
 		else
 		{
@@ -212,7 +212,7 @@ WEBCFG_STATUS webcfg_http_request(char **configData, int r_count, int status, lo
 				docname_upper[0] = toupper(docname_upper[0]);
 				WebcfgDebug("docname is %s and in uppercase is %s\n", docname, docname_upper);
 				Get_Supplementary_URL(docname_upper, configURL);
-				WebcfgInfo("Supplementary sync url fetched is %s\n", configURL);
+				WebcfgDebug("Supplementary sync url fetched is %s\n", configURL);
 				if( strcmp(configURL, "NULL") == 0)
 				{
 					WebcfgInfo("Supplementary sync with cloud is disabled as configURL is NULL\n");
@@ -226,7 +226,7 @@ WEBCFG_STATUS webcfg_http_request(char **configData, int r_count, int status, lo
 		if(strlen(configURL)>0)
 		{
 			//Replace {mac} string from default init url with actual deviceMAC
-			WebcfgInfo("replaceMacWord to actual device mac\n");
+			WebcfgDebug("replaceMacWord to actual device mac\n");
 			webConfigURL = replaceMacWord(configURL, c, get_deviceMAC());
 			if(get_global_supplementarySync() == 0)
 			{

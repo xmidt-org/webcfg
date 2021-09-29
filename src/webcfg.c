@@ -55,8 +55,8 @@
 /*----------------------------------------------------------------------------*/
 /*                            File Scoped Variables                           */
 /*----------------------------------------------------------------------------*/
-static pthread_mutex_t sync_mutex=PTHREAD_MUTEX_INITIALIZER;
-static pthread_cond_t sync_condition=PTHREAD_COND_INITIALIZER;
+pthread_mutex_t sync_mutex=PTHREAD_MUTEX_INITIALIZER;
+pthread_cond_t sync_condition=PTHREAD_COND_INITIALIZER;
 bool g_shutdown  = false;
 bool bootSyncInProgress = false;
 pthread_t* g_mpthreadId;
@@ -67,30 +67,30 @@ static int g_supplementarySync = 0;
 /*----------------------------------------------------------------------------*/
 /*                             Function Prototypes                            */
 /*----------------------------------------------------------------------------*/
-static void *WebConfigTask(void *status);
+void *WebConfigMultipartTask(void *status);
 int handlehttpResponse(long response_code, char *webConfigData, int retry_count, char* transaction_uuid, char* ct, size_t dataSize);
 /*----------------------------------------------------------------------------*/
 /*                             External Functions                             */
 /*----------------------------------------------------------------------------*/
 
-void initWebConfigTask(unsigned long status)
+void initWebConfigMultipartTask(unsigned long status)
 {
 	int err = 0;
 	pthread_t threadId;
 
-	err = pthread_create(&threadId, NULL, WebConfigTask, (void *) status);
+	err = pthread_create(&threadId, NULL, WebConfigMultipartTask, (void *) status);
 	g_mpthreadId = &threadId; 
 	if (err != 0) 
 	{
-		WebcfgError("Error creating WebConfigTask thread :[%s]\n", strerror(err));
+		WebcfgError("Error creating WebConfigMultipartTask thread :[%s]\n", strerror(err));
 	}
 	else
 	{
-		WebcfgInfo("WebConfigTask Thread created Successfully.\n");
+		WebcfgInfo("WebConfigMultipartTask Thread created Successfully.\n");
 	}
 }
 
-static void *WebConfigTask(void *status)
+void *WebConfigMultipartTask(void *status)
 {
 	pthread_detach(pthread_self());
 	WebcfgInfo("pthread detach from WebConfigTask.\n");
@@ -224,10 +224,10 @@ static void *WebConfigTask(void *status)
 
 		if(retry_flag == 1 || maintenance_doc_sync == 1)
 		{
-			WebcfgInfo("B4 sync_condition pthread_cond_timedwait\n");
+			WebcfgDebug("B4 sync_condition pthread_cond_timedwait\n");
 			rv = pthread_cond_timedwait(&sync_condition, &sync_mutex, &ts);
 			WebcfgInfo("After pthread cond timedwait\n");
-			WebcfgInfo("The retry flag value is %d\n", get_doc_fail());
+			WebcfgDebug("The retry flag value is %d\n", get_doc_fail());
 			WebcfgDebug("The value of rv %d\n", rv);
 		}
 		else 

@@ -854,10 +854,10 @@ int set_rbus_RfcEnable(bool bValue)
 			pthread_mutex_lock (get_global_sync_mutex());
 			set_global_shutdown(false);
 			pthread_mutex_unlock(get_global_sync_mutex());
-			WebcfgInfo("RfcEnable dynamic change from false to true. start initWebConfigTask.\n");
+			WebcfgInfo("RfcEnable dynamic change from false to true. start initWebConfigMultipartTask.\n");
 			if(get_global_mpThreadId() == NULL)
 			{
-				initWebConfigTask(0);
+				initWebConfigMultipartTask(0);
 			}
 			else
 			{
@@ -871,7 +871,7 @@ int set_rbus_RfcEnable(bool bValue)
 		WebcfgInfo("Received RFC disable. updating g_shutdown\n");
 		if(RfcVal == true)
 		{
-			/* sending signal to kill initWebConfigTask thread*/
+			/* sending signal to kill initWebConfigMultipartTask thread*/
 			pthread_mutex_lock (get_global_sync_mutex());
 			set_global_shutdown(true);
 			pthread_cond_signal(get_global_sync_condition());
@@ -915,7 +915,7 @@ int set_rbus_ForceSync(char* pString, char *transactionId,int *pStatus)
         }
         else
         {
-            /* sending signal to initWebConfigTask to trigger sync */
+            /* sending signal to initWebConfigMultipartTask to trigger sync */
             pthread_mutex_lock (get_global_sync_mutex());
 
             //Update ForceSyncTransID to access webpa transactionId in webConfig sync.
