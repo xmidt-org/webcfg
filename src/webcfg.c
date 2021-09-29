@@ -111,7 +111,10 @@ void *WebConfigMultipartTask(void *status)
 
 	//start webconfig notification thread.
 	initWebConfigNotifyTask();
+#ifdef FEATURE_SUPPORT_AKER
+	WebcfgInfo("FEATURE_SUPPORT_AKER true. initWebConfigClient\n");
 	initWebConfigClient();
+#endif
 	WebcfgInfo("initDB %s\n", WEBCFG_DB_FILE);
 
 	initDB(WEBCFG_DB_FILE);
