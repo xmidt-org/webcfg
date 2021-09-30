@@ -56,13 +56,13 @@ int main()
 
 	if(isRbusEnabled())
 	{
-		WebcfgInfo("RBUS mode. webconfigRbusInit\n");
+		WebcfgDebug("RBUS mode. webconfigRbusInit\n");
 		webconfigRbusInit(WEBCFG_COMPONENT_NAME);
 		regWebConfigDataModel();
 		ret = rbus_GetValueFromDB( PARAM_RFC_ENABLE, &strValue );
 		if (ret == 0)
 		{
-			WebcfgInfo("RFC strValue %s\n", strValue);
+			WebcfgDebug("RFC strValue %s\n", strValue);
 			if(strValue != NULL)
 			{
 				webcfgStrncpy(RfcEnable, strValue, sizeof(RfcEnable));
@@ -87,18 +87,15 @@ int main()
 	}
 	else
 	{
-		WebcfgInfo("DBUS mode. Webconfig bin is not yet supported in Dbus\n");
+		WebcfgInfo("DBUS mode. Webconfig bin is not supported in Dbus\n");
 	}
 
-	//sleep(5);
-	//while(1);
-	WebcfgInfo("B4 pthread_mutex_lock webcfg_mut and wait.\n");
+	WebcfgDebug("pthread_mutex_lock webcfg_mut and wait.\n");
 	pthread_mutex_lock(&webcfg_mut);
 	pthread_cond_wait(&webcfg_con, &webcfg_mut);
-	WebcfgInfo("After webcfg_mut pthread_cond_wait. pthread_mutex_unlock\n");
+	WebcfgDebug("pthread_mutex_unlock webcfg_mut\n");
 	pthread_mutex_unlock (&webcfg_mut);
 
-	WebcfgInfo("curl_global_cleanup\n");
 	curl_global_cleanup();
 	WebcfgInfo("Exiting webconfig main thread!!\n");
 	return 1;
@@ -114,36 +111,36 @@ static void sig_handler(int sig)
 	if ( sig == SIGINT ) 
 	{
 		signal(SIGINT, sig_handler); /* reset it to this function */
-		WebcfgInfo("SIGINT received!\n");
+		WebcfgError("SIGINT received!\n");
 		exit(0);
 	}
 	else if ( sig == SIGUSR1 ) 
 	{
 		signal(SIGUSR1, sig_handler); /* reset it to this function */
-		WebcfgInfo("SIGUSR1 received!\n");
+		WebcfgError("SIGUSR1 received!\n");
 	}
 	else if ( sig == SIGUSR2 ) 
 	{
-		WebcfgInfo("SIGUSR2 received!\n");
+		WebcfgError("SIGUSR2 received!\n");
 	}
 	else if ( sig == SIGCHLD ) 
 	{
 		signal(SIGCHLD, sig_handler); /* reset it to this function */
-		WebcfgInfo("SIGHLD received!\n");
+		WebcfgError("SIGHLD received!\n");
 	}
 	else if ( sig == SIGPIPE ) 
 	{
 		signal(SIGPIPE, sig_handler); /* reset it to this function */
-		WebcfgInfo("SIGPIPE received!\n");
+		WebcfgError("SIGPIPE received!\n");
 	}
 	else if ( sig == SIGALRM ) 
 	{
 		signal(SIGALRM, sig_handler); /* reset it to this function */
-		WebcfgInfo("SIGALRM received!\n");
+		WebcfgError("SIGALRM received!\n");
 	}
 	else 
 	{
-		WebcfgInfo("Signal %d received!\n", sig);
+		WebcfgError("Signal %d received!\n", sig);
 		exit(0);
 	}
 	

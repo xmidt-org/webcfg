@@ -71,43 +71,36 @@ int __attribute__((weak)) rbus_StoreValueIntoDB(char *paramName, char *value);
 #ifndef WEBCONFIG_BIN_SUPPORT
 char *getDeviceBootTime(void)
 {
-    WebcfgInfo("Inside getDeviceBootTime weak function.\n");
     return NULL;
 }
 
 char *getSerialNumber(void)
 {
-    WebcfgInfo("Inside getSerialNumber weak function.\n");
     return NULL;
 }
 
 char *getProductClass(void)
 {
-    WebcfgInfo("Inside getProductClass weak function.\n");
     return NULL;
 }
 
 char *getModelName(void)
 {
-    WebcfgInfo("Inside getModelName weak function.\n");
     return NULL;
 }
 
 char *getPartnerID(void)
 {
-    WebcfgInfo("Inside getPartnerID weak function.\n");
     return NULL;
 }
 
 char *getAccountID(void)
 {
-    WebcfgInfo("Inside getAccountID weak function.\n");
     return NULL;
 }
 
 char *getRebootReason(void)
 {
-    WebcfgInfo("Inside getRebootReason weak function.\n");
     return NULL;
 }
 
@@ -117,32 +110,27 @@ char *getConnClientParamName(void)
 }
 char *getFirmwareVersion(void)
 {
-    WebcfgInfo("Inside getFirmwareVersion weak function.\n");
     return NULL;
 }
 
 char* get_deviceMAC(void)
 {
-	WebcfgInfo("Inside get_deviceMAC weak function.\n");
 	return NULL;
 }
 
 char *getFirmwareUpgradeStartTime(void)
 {
-    WebcfgInfo("Inside getFirmwareUpgradeStartTime weak function.\n");
     return NULL;
 }
 
 char *getFirmwareUpgradeEndTime(void)
 {
-    WebcfgInfo("Inside getFirmwareUpgradeEndTime weak function.\n");
     return NULL;
 }
 #endif
 
 char *get_global_systemReadyTime(void)
 {
-    WebcfgInfo("Inside get_global_systemReadyTime weak function.\n");
     return NULL;
 }
 
@@ -151,7 +139,7 @@ int setForceSync(char* pString, char *transactionId,int *session_status)
 #ifdef WEBCONFIG_BIN_SUPPORT
 	if(isRbusEnabled())
 	{
-		WebcfgInfo("B4 set_rbus_ForceSync\n");
+		WebcfgDebug("B4 set_rbus_ForceSync\n");
 		set_rbus_ForceSync(pString, transactionId, session_status);
 	}
 #else
@@ -169,11 +157,11 @@ int getForceSync(char** pString, char **transactionId)
 	{
 		char *str = NULL;
 		char* transID = NULL;
-		WebcfgInfo("B4 get_rbus_ForceSync\n");
+		WebcfgDebug("B4 get_rbus_ForceSync\n");
 		get_rbus_ForceSync(&str, &transID);
 		*pString = str;
 		*transactionId = transID;
-		WebcfgInfo("get_rbus_ForceSync. *pString %s *transactionId %s\n", *pString, *transactionId);
+		WebcfgDebug("get_rbus_ForceSync. *pString %s *transactionId %s\n", *pString, *transactionId);
 	}
 #else
 	UNUSED(pString);
@@ -185,21 +173,21 @@ int getForceSync(char** pString, char **transactionId)
 #ifndef WEBCONFIG_BIN_SUPPORT
 int Get_Webconfig_URL( char *pString)
 {
-    WebcfgInfo("Inside Get_Webconfig_URL weak function.\n");
+    WebcfgDebug("Inside Get_Webconfig_URL weak function.\n");
     UNUSED(pString);
     return 0;
 }
 
 int Set_Webconfig_URL( char *pString)
 {
-    WebcfgInfo("Inside Get_Webconfig_URL weak function.\n");
+    WebcfgDebug("Inside Get_Webconfig_URL weak function.\n");
     UNUSED(pString);
     return 0;
 }
 
 int Get_Supplementary_URL( char *name, char *pString)
 {
-    WebcfgInfo("Inside Get_Supplementary_URL weak function.\n");
+    WebcfgDebug("Inside Get_Supplementary_URL weak function.\n");
     UNUSED(name);
     UNUSED(pString);
     return 0;
@@ -207,7 +195,7 @@ int Get_Supplementary_URL( char *name, char *pString)
 
 int Set_Supplementary_URL( char *name, char *pString)
 {
-    WebcfgInfo("Inside Set_Supplementary_URL weak function.\n");
+    WebcfgDebug("Inside Set_Supplementary_URL weak function.\n");
     UNUSED(name);
     UNUSED(pString);
     return 0;
@@ -221,16 +209,14 @@ void setValues(const param_t paramVal[], const unsigned int paramCount, const in
 	{
 		int ccspRetStatus = 0;
 		WDMP_STATUS ret = 0;
-		WebcfgInfo("B4 setValues_rbus\n");
+		WebcfgDebug("B4 setValues_rbus\n");
 		setValues_rbus(paramVal, paramCount, setType, transactionId, timeSpan, &ret, &ccspRetStatus);
-		WebcfgInfo("After setValues_rbus\n");
-		WebcfgInfo("ret is %d\n", (int)ret);
+		WebcfgDebug("ret is %d\n", (int)ret);
 		*retStatus = ret;
 		*ccspStatus = ccspRetStatus;
-		WebcfgInfo("ccspStatus %d retStatus is %d\n", *ccspStatus, (int)*retStatus);
+		WebcfgDebug("ccspStatus %d retStatus is %d\n", *ccspStatus, (int)*retStatus);
 	}
 #else
-        WebcfgInfo("B4 setValues weak fn.\n");
   	UNUSED(paramVal);
 	UNUSED(paramCount);
 	UNUSED(setType);
@@ -245,10 +231,10 @@ return;
 void sendNotification(char *payload, char *source, char *destination)
 {
 #ifdef WEBCONFIG_BIN_SUPPORT
-	WebcfgInfo("Inside sendNotification weak impl\n");
+	WebcfgDebug("Inside sendNotification weak impl\n");
 	if(isRbusEnabled())
 	{
-		WebcfgInfo("B4 sendNotification_rbus\n");
+		WebcfgDebug("B4 sendNotification_rbus\n");
 		sendNotification_rbus(payload, source, destination);
 	}
 #else
@@ -268,14 +254,13 @@ int registerWebcfgEvent(WebConfigEventCallback webcfgEventCB)
 		int rc = 0;
 		WebcfgInfo("Registering RBUS event listener!\n");
 		rc = registerRBUSEventlistener();
-		WebcfgInfo("RBUSEventlistener rc %d\n", rc);
+		WebcfgDebug("RBUSEventlistener rc %d\n", rc);
 		if(rc == RBUS_ERROR_SUCCESS)
 		{
 			ret = 1;
 		}
 	}
 #else
-        WebcfgInfo("in registerWebcfgEvent else\n");
 	UNUSED(webcfgEventCB);
 #endif
 	return ret;
@@ -289,14 +274,14 @@ int unregisterWebcfgEvent()
 	{
 		int rc = 0;
 		rc = removeRBUSEventlistener();
-		WebcfgInfo("removeRBUSEventlistener returns rc %d\n", rc);
+		WebcfgDebug("removeRBUSEventlistener returns rc %d\n", rc);
 		if ( rc != RBUS_ERROR_SUCCESS )
 		{
 			WebcfgError("Rbus UnRegistration with %s failed\n", WEBCFG_EVENT_NAME);
 		}
 		else
 		{
-			WebcfgInfo("Rbus UnRegistration with %s is success\n", WEBCFG_EVENT_NAME);
+			WebcfgDebug("Rbus UnRegistration with %s is success\n", WEBCFG_EVENT_NAME);
 			ret = 1;
 		}
 	}
@@ -340,7 +325,7 @@ void setAttributes(param_t *attArr, const unsigned int paramCount, money_trace_s
 #ifndef WEBCONFIG_BIN_SUPPORT
 int rbus_GetValueFromDB( char* paramName, char** paramValue)
 {
-	WebcfgInfo("Inside rbus_GetValueFromDB weak fn\n");
+	WebcfgDebug("Inside rbus_GetValueFromDB weak fn\n");
 	UNUSED(paramName);
 	UNUSED(paramValue);
 	return 0;
@@ -348,7 +333,7 @@ int rbus_GetValueFromDB( char* paramName, char** paramValue)
 
 int rbus_StoreValueIntoDB(char *paramName, char *value)
 {
-	WebcfgInfo("Inside rbus_StoreValueIntoDB weak fn\n");
+	WebcfgDebug("Inside rbus_StoreValueIntoDB weak fn\n");
 	UNUSED(paramName);
 	UNUSED(value);
 	return 0;

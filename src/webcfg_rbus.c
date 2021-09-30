@@ -73,7 +73,7 @@ WEBCFG_STATUS webconfigRbusInit(const char *pComponentName)
 {
 	int ret = RBUS_ERROR_SUCCESS;   
 
-	WebcfgInfo("rbus_open for component %s\n", pComponentName);
+	WebcfgDebug("rbus_open for component %s\n", pComponentName);
 	ret = rbus_open(&rbus_handle, pComponentName);
 	if(ret != RBUS_ERROR_SUCCESS)
 	{
@@ -109,7 +109,7 @@ rbusError_t webcfgDataSetHandler(rbusHandle_t handle, rbusProperty_t prop, rbusS
     }
 
     rbusError_t retPsmSet = RBUS_ERROR_BUS_ERROR;
-    WebcfgInfo("Parameter name is %s \n", paramName);
+    WebcfgDebug("Parameter name is %s \n", paramName);
     rbusValueType_t type_t;
     rbusValue_t paramValue_t = rbusProperty_GetValue(prop);
     if(paramValue_t) {
@@ -137,7 +137,7 @@ rbusError_t webcfgDataSetHandler(rbusHandle_t handle, rbusProperty_t prop, rbusS
                     else
                     {
                       RfcVal = paramval;
-                      WebcfgInfo("RfcVal after processing %s\n", (1==RfcVal)?"true":"false");
+                      WebcfgDebug("RfcVal after processing %s\n", (1==RfcVal)?"true":"false");
                     }
 	    }
 	    else
@@ -205,8 +205,8 @@ rbusError_t webcfgDataSetHandler(rbusHandle_t handle, rbusProperty_t prop, rbusS
                 }
                 SupplementaryURLVal = strdup(data);
                 free(data);
-		WebcfgInfo("SupplementaryURLVal after processing %s\n", SupplementaryURLVal);
-		WebcfgInfo("SupplementaryURLVal bus_StoreValueIntoDB\n");
+		WebcfgDebug("SupplementaryURLVal after processing %s\n", SupplementaryURLVal);
+		WebcfgDebug("SupplementaryURLVal bus_StoreValueIntoDB\n");
 		retPsmSet = rbus_StoreValueIntoDB( WEBCFG_SUPPLEMENTARY_TELEMETRY_PARAM, SupplementaryURLVal );
 		if (retPsmSet != RBUS_ERROR_SUCCESS)
 		{
@@ -248,17 +248,16 @@ rbusError_t webcfgDataSetHandler(rbusHandle_t handle, rbusProperty_t prop, rbusS
                     free(forceSyncVal);
                     forceSyncVal = NULL;
                 }
-                //forceSyncVal = strdup(data);
 		if(set_rbus_ForceSync(data, "", 0) == 1)
 		{
-			WebcfgInfo("set_rbus_ForceSync success\n");
+			WebcfgDebug("set_rbus_ForceSync success\n");
 		}
 		else
 		{
 			WebcfgError("set_rbus_ForceSync failed\n");
 		}
                 WEBCFG_FREE(data);
-		WebcfgInfo("forceSyncVal after processing %s\n", forceSyncVal);
+		WebcfgDebug("forceSyncVal after processing %s\n", forceSyncVal);
             }
         } else {
             WebcfgError("Unexpected value type for property %s \n", paramName);
@@ -284,7 +283,7 @@ rbusError_t webcfgDataGetHandler(rbusHandle_t handle, rbusProperty_t property, r
 
     propertyName = strdup(rbusProperty_GetName(property));
     if(propertyName) {
-        WebcfgInfo("Property Name is %s \n", propertyName);
+        WebcfgDebug("Property Name is %s \n", propertyName);
     } else {
         WebcfgError("Unable to handle get request for property \n");
         return RBUS_ERROR_INVALID_INPUT;
@@ -317,7 +316,7 @@ rbusError_t webcfgDataGetHandler(rbusHandle_t handle, rbusProperty_t property, r
 	rbusValue_SetBoolean(value, RfcVal); 
 	WebcfgDebug("After RfcVal set to value\n");
         rbusProperty_SetValue(property, value);
-	WebcfgInfo("Rfc value fetched is %s\n", (rbusValue_GetBoolean(value)==true)?"true":"false");
+	WebcfgDebug("Rfc value fetched is %s\n", (rbusValue_GetBoolean(value)==true)?"true":"false");
         rbusValue_Release(value);
 
     }else if(strncmp(propertyName, WEBCFG_URL_PARAM, maxParamLen) == 0) {
@@ -358,7 +357,7 @@ rbusError_t webcfgDataGetHandler(rbusHandle_t handle, rbusProperty_t property, r
 		}
 	}
         rbusProperty_SetValue(property, value);
-	//WebcfgInfo("URL value fetched is %s\n", value);
+	WebcfgDebug("URL value fetched is %s\n", value);
         rbusValue_Release(value);
 
     }else if(strncmp(propertyName, WEBCFG_SUPPLEMENTARY_TELEMETRY_PARAM, maxParamLen)==0){
@@ -399,7 +398,7 @@ rbusError_t webcfgDataGetHandler(rbusHandle_t handle, rbusProperty_t property, r
 		}
 	}
         rbusProperty_SetValue(property, value);
-	//WebcfgInfo("URL value fetched is %s\n", value);
+	WebcfgDebug("URL value fetched is %s\n", value);
         rbusValue_Release(value);
 
     }else if(strncmp(propertyName, WEBCFG_FORCESYNC_PARAM, maxParamLen) == 0) {
@@ -408,7 +407,7 @@ rbusError_t webcfgDataGetHandler(rbusHandle_t handle, rbusProperty_t property, r
         rbusValue_Init(&value);
         rbusValue_SetString(value, "");
         rbusProperty_SetValue(property, value);
-	//WebcfgInfo("forceSyncVal value fetched is %s\n", value);
+	WebcfgDebug("forceSyncVal value fetched is %s\n", value);
         rbusValue_Release(value);
 
 	if(!RFC_ENABLE)
@@ -423,7 +422,7 @@ rbusError_t webcfgDataGetHandler(rbusHandle_t handle, rbusProperty_t property, r
         propertyName = NULL;
     }*/
 
-    WebcfgInfo("webcfgDataGetHandler End\n");
+    WebcfgDebug("webcfgDataGetHandler End\n");
     return RBUS_ERROR_SUCCESS;
 }
 
@@ -437,7 +436,7 @@ WEBCFG_STATUS regWebConfigDataModel()
 	rbusError_t ret = RBUS_ERROR_SUCCESS;
 	WEBCFG_STATUS status = WEBCFG_SUCCESS;
 
-	WebcfgInfo("Registering parameters deRfc %s, deForceSync %s, deURL %s deSuppSync %s\n", WEBCFG_RFC_PARAM, WEBCFG_FORCESYNC_PARAM, WEBCFG_URL_PARAM, WEBCFG_SUPPLEMENTARY_TELEMETRY_PARAM);
+	WebcfgInfo("Registering parameters %s, %s, %s %s\n", WEBCFG_RFC_PARAM, WEBCFG_FORCESYNC_PARAM, WEBCFG_URL_PARAM, WEBCFG_SUPPLEMENTARY_TELEMETRY_PARAM);
 	if(!rbus_handle)
 	{
 		WebcfgError("regWebConfigDataModel Failed in getting bus handles\n");
@@ -454,7 +453,7 @@ WEBCFG_STATUS regWebConfigDataModel()
 	ret = rbus_regDataElements(rbus_handle, NUM_WEBCFG_ELEMENTS, dataElements);
 	if(ret == RBUS_ERROR_SUCCESS)
 	{
-		WebcfgInfo("Registered data element %s with rbus \n ", WEBCFG_RFC_PARAM);
+		WebcfgDebug("Registered data element %s with rbus \n ", WEBCFG_RFC_PARAM);
 	}
 	else
 	{
@@ -569,7 +568,7 @@ static rbusValueType_t mapWdmpToRbusDataType(DATA_TYPE wdmpType)
 			break;
 	}
 
-	WebcfgInfo("mapWdmpToRbusDataType : rbusType is %d\n", rbusType);
+	WebcfgDebug("mapWdmpToRbusDataType : rbusType is %d\n", rbusType);
 	return rbusType;
 }
 
@@ -593,7 +592,7 @@ int mapRbusToCcspStatus(int Rbus_error_code)
         case  RBUS_ERROR_INVALID_HANDLE : CCSP_error_code = CCSP_Msg_BUS_NOT_SUPPORT; break;
         case  RBUS_ERROR_SESSION_ALREADY_EXIST : CCSP_error_code = CCSP_Msg_BUS_NOT_SUPPORT; break;
     }
-    WebcfgInfo("mapRbusToCcspStatus. CCSP_error_code is %d\n", CCSP_error_code);
+    WebcfgDebug("mapRbusToCcspStatus. CCSP_error_code is %d\n", CCSP_error_code);
     return CCSP_error_code;
 }
 
@@ -620,8 +619,8 @@ void setValues_rbus(const param_t paramVal[], const unsigned int paramCount, con
 		rbusValue_Init(&setVal[cnt]);
 
 		setNames[cnt] = paramVal[cnt].name;
-		WebcfgInfo("paramName to be set is %s paramCount %d\n", paramVal[cnt].name, paramCount);
-		WebcfgInfo("paramVal is %s\n", paramVal[cnt].value);
+		WebcfgDebug("paramName to be set is %s paramCount %d\n", paramVal[cnt].name, paramCount);
+		WebcfgDebug("paramVal is %s\n", paramVal[cnt].value);
 
 		rbusValueType_t type = mapWdmpToRbusDataType(paramVal[cnt].type);
 
@@ -637,8 +636,8 @@ void setValues_rbus(const param_t paramVal[], const unsigned int paramCount, con
 		rbusProperty_t next;
 		rbusProperty_Init(&next, setNames[cnt], setVal[cnt]);
 
-		WebcfgInfo("Property Name[%d] is %s\n", cnt, rbusProperty_GetName(next));
-		WebcfgInfo("Value type[%d] is %d\n", cnt, rbusValue_GetType(setVal[cnt]));
+		WebcfgDebug("Property Name[%d] is %s\n", cnt, rbusProperty_GetName(next));
+		WebcfgDebug("Value type[%d] is %d\n", cnt, rbusValue_GetType(setVal[cnt]));
 
 		if(properties == NULL)
 		{
@@ -672,14 +671,12 @@ void setValues_rbus(const param_t paramVal[], const unsigned int paramCount, con
 
         *retStatus = mapStatus(*ccspRetStatus);
 
-	WebcfgInfo("paramCount is %d\n", paramCount);
+	WebcfgDebug("paramCount is %d\n", paramCount);
         for (cnt = 0; cnt < paramCount; cnt++)
         {
             rbusValue_Release(setVal[cnt]);
         }
-	WebcfgInfo("After Value free\n");
         rbusProperty_Release(properties);
-	WebcfgInfo("After properties free\n");
 }
 
 void getValues_rbus(const char *paramName[], const unsigned int paramCount, int index, money_trace_spans *timeSpan, param_t ***paramArr, int *retValCount, int *retStatus)
@@ -712,8 +709,7 @@ void getValues_rbus(const char *paramName[], const unsigned int paramCount, int 
 
 	if(RBUS_ERROR_SUCCESS != rc)
 	{
-		WebcfgError("Failed to get value\n");
-		WebcfgError("rbus_getExt rc=%d resCount=%d\n", rc, resCount);
+		WebcfgError("Failed to get value rbus_getExt rc=%d resCount=%d\n", rc, resCount);
 		rbusProperty_Release(props);
 		return;
 	}
@@ -743,9 +739,8 @@ void getValues_rbus(const char *paramName[], const unsigned int paramCount, int 
 						(*paramArr)[i][0].name = strdup(pName);
 						(*paramArr)[i][0].value = strdup(paramValue);
 						(*paramArr)[i][0].type = mapRbusToWdmpDataType(type_t);
-						WebcfgInfo("success: %s %s %d \n",(*paramArr)[i][0].name,(*paramArr)[i][0].value, (*paramArr)[i][0].type);
+						WebcfgDebug("success: %s %s %d \n",(*paramArr)[i][0].name,(*paramArr)[i][0].value, (*paramArr)[i][0].type);
 						*retValCount = resCount;
-						//*retStatus = mapRbusStatus(rc);
 						*retStatus = WDMP_SUCCESS;
 						if(paramValue !=NULL)
 						{
@@ -770,7 +765,6 @@ void getValues_rbus(const char *paramName[], const unsigned int paramCount, int 
 		}
 		rbusProperty_Release(props);
 	}
-	WebcfgDebug("getValues_rbus End\n");
 }
 
 void rbusWebcfgEventHandler(rbusHandle_t handle, rbusMessage_t* msg, void * userData)
@@ -810,7 +804,7 @@ rbusError_t registerRBUSEventlistener()
 		return rc;
 	}
 
-	WebcfgInfo("B4 rbusMessage_AddListener\n");
+	WebcfgDebug("B4 rbusMessage_AddListener\n");
 	rc = rbusMessage_AddListener(rbus_handle, "webconfigSignal", &rbusWebcfgEventHandler, NULL);
 	if(rc != RBUS_ERROR_SUCCESS)
 	{
@@ -818,7 +812,7 @@ rbusError_t registerRBUSEventlistener()
 	}
 	else
 	{
-		WebcfgInfo("registerRBUSEventlistener success\n");
+		WebcfgDebug("registerRBUSEventlistener success\n");
 	}
 	return rc;
 }
@@ -833,7 +827,7 @@ rbusError_t removeRBUSEventlistener()
 		return rc;
 	}
 
-	WebcfgInfo("B4 rbusMessage_RemoveListener\n");
+	WebcfgDebug("B4 rbusMessage_RemoveListener\n");
 	rc = rbusMessage_RemoveListener(rbus_handle, "webconfigSignal");
 	if(rc != RBUS_ERROR_SUCCESS)
 	{
@@ -841,7 +835,7 @@ rbusError_t removeRBUSEventlistener()
 	}
 	else
 	{
-		WebcfgInfo("removeRBUSEventlistener success\n");
+		WebcfgDebug("removeRBUSEventlistener success\n");
 	}
 	return rc;
 }
@@ -859,7 +853,7 @@ int set_rbus_RfcEnable(bool bValue)
 	if(bValue == true)
 	{
 		buf = strdup("true");
-		WebcfgInfo("Received RFC enable. updating g_shutdown\n");
+		WebcfgDebug("Received RFC enable. updating g_shutdown\n");
 		if(RfcVal == false)
 		{
 			pthread_mutex_lock (get_global_sync_mutex());
@@ -879,7 +873,7 @@ int set_rbus_RfcEnable(bool bValue)
 	else
 	{
 		buf = strdup("false");
-		WebcfgInfo("Received RFC disable. updating g_shutdown\n");
+		WebcfgDebug("Received RFC disable. updating g_shutdown\n");
 		if(RfcVal == true)
 		{
 			/* sending signal to kill initWebConfigMultipartTask thread*/
@@ -897,7 +891,7 @@ int set_rbus_RfcEnable(bool bValue)
 	}
 	else
 	{
-		WebcfgInfo("psm_set success ret %d for parameter %s and value %s\n", retPsmSet, paramRFCEnable, buf);
+		WebcfgDebug("psm_set success ret %d for parameter %s and value %s\n", retPsmSet, paramRFCEnable, buf);
 		RfcVal = bValue;
 	}
 	return 0;
@@ -941,14 +935,14 @@ int set_rbus_ForceSync(char* pString, char *transactionId,int *pStatus)
     }
     else
     {
-        WebcfgInfo("Force sync param set with empty value\n");
+        WebcfgDebug("Force sync param set with empty value\n");
 	if (ForceSyncTransID)
 	{
 	    WEBCFG_FREE(ForceSyncTransID);
 	}
         ForceSyncTransID = NULL;
     }
-    WebcfgInfo("setForceSync returns success 1\n");
+    WebcfgDebug("setForceSync returns success 1\n");
     return 1;
 }
 
@@ -1005,7 +999,7 @@ void sendNotification_rbus(char *payload, char *source, char *destination)
 			}
 			if(payload != NULL)
 			{
-				WebcfgInfo("Notification payload: %s\n",payload);
+				WebcfgDebug("Notification payload: %s\n",payload);
 				notif_wrp_msg->u.event.payload = (void *)payload;
 				notif_wrp_msg->u.event.payload_size = strlen(notif_wrp_msg ->u.event.payload);
 			}
@@ -1014,7 +1008,7 @@ void sendNotification_rbus(char *payload, char *source, char *destination)
 			msg.topic = (char const*)topic;
 			msg.data = (uint8_t*)msg_bytes;
 			msg.length = msg_len;
-			WebcfgInfo("msg.topic %s, msg.length %d\n", msg.topic, msg.length );
+			WebcfgDebug("msg.topic %s, msg.length %d\n", msg.topic, msg.length );
 			WebcfgDebug("msg.data is %s\n", (char*)msg.data);
 			err = rbusMessage_Send(rbus_handle, &msg, RBUS_MESSAGE_CONFIRM_RECEIPT);
 			if (err)
