@@ -32,6 +32,7 @@
 #include <wdmp-c.h>
 #include <cimplog.h>
 #include <wrp-c.h>
+#include <cJSON.h>
 #include "webcfg.h"
 #include "webcfg_log.h"
 #include "webcfg_generic.h"
@@ -82,7 +83,8 @@ rbusError_t registerRBUSEventlistener();
 rbusError_t removeRBUSEventlistener();
 void rbusWebcfgEventHandler(rbusHandle_t handle, rbusMessage_t* msg, void * userData);
 int set_rbus_RfcEnable(bool bValue);
-int set_rbus_ForceSync(char* pString, char *transactionId,int *pStatus);
+int set_rbus_ForceSync(char* pString, int *pStatus);
+int parseForceSyncJson(char *jsonpayload, char **forceSyncVal, char **forceSynctransID);
 int get_rbus_ForceSync(char** pString, char **transactionId );
 bool get_rbus_RfcEnable();
 void sendNotification_rbus(char *payload, char *source, char *destination);

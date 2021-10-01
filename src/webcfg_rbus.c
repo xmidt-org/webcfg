@@ -29,9 +29,11 @@ static bool  RfcVal = false ;
 static char* URLVal = NULL ;
 static char* forceSyncVal = NULL ;
 static char* SupplementaryURLVal = NULL ;
-static char * ForceSyncTransID = NULL;
 static bool isRbus = false ;
 static char *paramRFCEnable = "eRT.com.cisco.spvtg.ccsp.webpa.WebConfigRfcEnable";
+
+static char ForceSync[256]={'\0'};
+static char ForceSyncTransID[256]={'\0'};
 
 typedef struct
 {
@@ -248,13 +250,20 @@ rbusError_t webcfgDataSetHandler(rbusHandle_t handle, rbusProperty_t prop, rbusS
                     free(forceSyncVal);
                     forceSyncVal = NULL;
                 }
-		if(set_rbus_ForceSync(data, "", 0) == 1)
+		int session_status = 0;
+		int ret = set_rbus_ForceSync(data, &session_status);
+		WebcfgDebug("set_rbus_ForceSync ret %d\n", ret);
+		if(session_status)
 		{
-			WebcfgDebug("set_rbus_ForceSync success\n");
+			WebcfgInfo("session_status is 1\n");
+			WEBCFG_FREE(data);
+			return RBUS_ERROR_SESSION_ALREADY_EXIST;
 		}
-		else
+		if(!ret)
 		{
-			WebcfgError("set_rbus_ForceSync failed\n");
+			WebcfgError("setForceSync failed\n");
+			WEBCFG_FREE(data);
+			return RBUS_ERROR_BUS_ERROR;
 		}
                 WEBCFG_FREE(data);
 		WebcfgDebug("forceSyncVal after processing %s\n", forceSyncVal);
@@ -454,6 +463,11 @@ WEBCFG_STATUS regWebConfigDataModel()
 	if(ret == RBUS_ERROR_SUCCESS)
 	{
 		WebcfgDebug("Registered data element %s with rbus \n ", WEBCFG_RFC_PARAM);
+		memset(ForceSync, 0, 256);
+		strcpy( ForceSync, "" );
+
+		memset(ForceSyncTransID, 0, 256);
+		strcpy( ForceSyncTransID, "" );
 	}
 	else
 	{
@@ -897,13 +911,77 @@ int set_rbus_RfcEnable(bool bValue)
 	return 0;
 }
 
-int set_rbus_ForceSync(char* pString, char *transactionId,int *pStatus)
+int parseForceSyncJson(char *jsonpayload, char **forceSyncVal, char **forceSynctransID)
 {
-    forceSyncVal = strdup(pString);
+	cJSON *json = NULL;
+	cJSON *forceSyncValObj = NULL;
+	char *force_sync_str = NULL;
+	char *force_sync_transid = NULL;
 
-    WebcfgDebug("set_rbus_ForceSync . forceSyncVal is %s\n", forceSyncVal);
+	json = cJSON_Parse( jsonpayload );
+	if( !json )
+	{
+		WebcfgInfo( "Force sync json parsed: [%s]\n", cJSON_GetErrorPtr() );
+	}
+	else
+	{
+		forceSyncValObj = cJSON_GetObjectItem( json, "value" );
+		if( forceSyncValObj != NULL)
+		{
+			force_sync_str = cJSON_GetObjectItem( json, "value" )->valuestring;
+			force_sync_transid = cJSON_GetObjectItem( json, "transaction_id" )->valuestring;
+			if ((force_sync_str != NULL) && strlen(force_sync_str) > 0)
+			{
+				*forceSyncVal = strdup(force_sync_str);
+				WebcfgDebug("*forceSyncVal value parsed from payload is %s\n", *forceSyncVal);
+			}
+			else
+			{
+				WebcfgError("*forceSyncVal string is empty\n");
+			}
+			if ((force_sync_transid != NULL) && strlen(force_sync_transid) > 0)
+			{
+				*forceSynctransID = strdup(force_sync_transid);
+				WebcfgDebug("*forceSynctransID value parsed from json is %s\n", *forceSynctransID);
+			}
+			else
+			{
+				WebcfgError("*forceSynctransID is empty\n");
+			}
+		}
+		else
+		{
+			WebcfgError("forceSyncValObj is NULL\n");
+		}
+		cJSON_Delete(json);
+	}
+	return 0;
+}
 
-    if((forceSyncVal[0] !='\0') && (strlen(forceSyncVal)>0))
+int set_rbus_ForceSync(char* pString, int *pStatus)
+{
+    char *transactionId = NULL;
+    char *value = NULL;
+
+    memset( ForceSync, 0, sizeof( ForceSync ));
+
+    if(pString !=NULL)
+    {
+	strncpy(ForceSync, pString,  sizeof(ForceSync)-1 );
+	if(strlen(pString)>0)
+	{
+		WebcfgInfo("Received poke request, proceed to parseForceSyncJson\n");
+		parseForceSyncJson(pString, &value, &transactionId);
+		if(value !=NULL)
+		{
+			WebcfgDebug("After parseForceSyncJson. value %s transactionId %s\n", value, transactionId);
+			strncpy(ForceSync, value, sizeof(ForceSync)-1);
+		}
+	}
+	WebcfgDebug("set_rbus_ForceSync . ForceSync string is %s\n", ForceSync);
+    }
+
+    if((ForceSync[0] !='\0') && (strlen(ForceSync)>0))
     {
         if(get_bootSync())
         {
@@ -911,7 +989,7 @@ int set_rbus_ForceSync(char* pString, char *transactionId,int *pStatus)
             *pStatus = 1;
             return 0;
         }
-        else if(ForceSyncTransID != NULL)
+	else if(strlen(ForceSyncTransID)>0)
         {
             WebcfgInfo("Force sync is already in progress, Ignoring this request.\n");
             *pStatus = 1;
@@ -922,10 +1000,10 @@ int set_rbus_ForceSync(char* pString, char *transactionId,int *pStatus)
             /* sending signal to initWebConfigMultipartTask to trigger sync */
             pthread_mutex_lock (get_global_sync_mutex());
 
-            //Update ForceSyncTransID to access webpa transactionId in webConfig sync.
+            //Update ForceSyncTransID to access poke transactionId in webConfig sync.
             if(transactionId !=NULL && (strlen(transactionId)>0))
             {
-                ForceSyncTransID = strdup(transactionId);
+                strncpy(ForceSyncTransID , transactionId, sizeof(ForceSyncTransID)-1);
                 WebcfgInfo("ForceSyncTransID is %s\n", ForceSyncTransID);
             }
             WebcfgInfo("Trigger force sync\n");
@@ -936,28 +1014,18 @@ int set_rbus_ForceSync(char* pString, char *transactionId,int *pStatus)
     else
     {
         WebcfgDebug("Force sync param set with empty value\n");
-	if (ForceSyncTransID)
-	{
-	    WEBCFG_FREE(ForceSyncTransID);
-	}
-        ForceSyncTransID = NULL;
+	memset(ForceSyncTransID,0,sizeof(ForceSyncTransID));
     }
-    WebcfgDebug("setForceSync returns success 1\n");
     return 1;
 }
 
 int get_rbus_ForceSync(char** pString, char **transactionId )
 {
-	WebcfgDebug("get_rbus_ForceSync\n");
 
-	WebcfgDebug("forceSyncVal is %s ForceSyncTransID %s\n", forceSyncVal, ForceSyncTransID);
-	//if((forceSyncVal != NULL && strlen(forceSyncVal)>0) && ForceSyncTransID != NULL)
-	if(forceSyncVal != NULL && strlen(forceSyncVal)>0)
+	if(((ForceSync)[0] != '\0') && strlen(ForceSync)>0)
 	{
-		WebcfgDebug("----- updating pString ------\n");
-		*pString = strdup(forceSyncVal);
-		WebcfgDebug("----- updating transactionId ------\n");
-		//*transactionId = strdup(ForceSyncTransID);
+		*pString = strdup(ForceSync);
+		*transactionId = strdup(ForceSyncTransID);
 	}
 	else
 	{
