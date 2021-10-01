@@ -263,8 +263,8 @@ void *WebConfigMultipartTask(void *status)
 			// Identify ForceSync based on docname
 			getForceSync(&ForceSyncDoc, &ForceSyncTransID);
 			WebcfgInfo("ForceSyncDoc %s ForceSyncTransID. %s\n", ForceSyncDoc, ForceSyncTransID);
-			//if(ForceSyncTransID !=NULL)
-			//{
+			if(ForceSyncTransID !=NULL)
+			{
 				if((ForceSyncDoc != NULL) && strlen(ForceSyncDoc)>0)
 				{
 					forced_sync = 1;
@@ -280,14 +280,14 @@ void *WebConfigMultipartTask(void *status)
 						WebcfgDebug("syncDoc is %s\n", syncDoc);
 					}
 					WEBCFG_FREE(ForceSyncDoc);
-					//WEBCFG_FREE(ForceSyncTransID);
+					WEBCFG_FREE(ForceSyncTransID);
 				}
 				else
 				{
 					WebcfgError("ForceSyncDoc is NULL\n");
-					//WEBCFG_FREE(ForceSyncTransID);
+					WEBCFG_FREE(ForceSyncTransID);
 				}
-			//}
+			}
 
 			WebcfgInfo("forced_sync is %d\n", forced_sync);
 		}

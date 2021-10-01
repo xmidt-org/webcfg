@@ -139,8 +139,9 @@ int setForceSync(char* pString, char *transactionId,int *session_status)
 #ifdef WEBCONFIG_BIN_SUPPORT
 	if(isRbusEnabled())
 	{
-		WebcfgDebug("B4 set_rbus_ForceSync\n");
-		set_rbus_ForceSync(pString, transactionId, session_status);
+		//Set UNUSED as transaction id is fetched from force sync json schema on rbus mode.
+		UNUSED(transactionId);
+		set_rbus_ForceSync(pString, session_status);
 	}
 #else
 	UNUSED(pString);
