@@ -1932,6 +1932,11 @@ void subdoc_parser(char *ptr, int no_of_bytes)
 			WEBCFG_FREE(result);
 		}
 	}
+	
+	if(str_body != NULL)
+	{
+		WEBCFG_FREE(str_body);
+	}
 
 	if(name_space != NULL)
 	{
