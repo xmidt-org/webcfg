@@ -30,11 +30,14 @@
 #include <wdmp-c.h>
 #include <base64.h>
 #include "webcfg_db.h"
-#include "webcfg_aker.h"
 #include "webcfg_metadata.h"
 #include "webcfg_event.h"
 #include "webcfg_blob.h"
 #include "webcfg_timer.h"
+
+#ifdef FEATURE_SUPPORT_AKER
+#include "webcfg_aker.h"
+#endif
 /*----------------------------------------------------------------------------*/
 /*                                   Macros                                   */
 /*----------------------------------------------------------------------------*/
@@ -342,8 +345,9 @@ void *WebConfigMultipartTask(void *status)
 	set_global_retry_timestamp(0);
 	set_retry_timer(0);
 	set_global_supplementarySync(0);
+#ifdef FEATURE_SUPPORT_AKER
 	set_send_aker_flag(false);
-
+#endif
 	//delete tmp, db, and mp cache lists.
 	delete_tmp_list();
 

@@ -16,6 +16,10 @@ if (WEBCONFIG_BIN_SUPPORT)
 add_definitions(-DWEBCONFIG_BIN_SUPPORT)
 endif (WEBCONFIG_BIN_SUPPORT)
 
+if (FEATURE_SUPPORT_AKER)
+add_definitions(-DFEATURE_SUPPORT_AKER)
+endif (FEATURE_SUPPORT_AKER)
+
 if (WEBCONFIG_BIN_SUPPORT)
 message(STATUS "WEBCONFIG_BIN_SUPPORT is supported")
 else()
@@ -23,8 +27,13 @@ message(STATUS "WEBCONFIG_BIN_SUPPORT is not supported")
 endif (WEBCONFIG_BIN_SUPPORT)
 
 set(PROJ_WEBCFG webcfg)
-set(HEADERS webcfg.h webcfg_param.h webcfg_pack.h webcfg_multipart.h webcfg_auth.h webcfg_notify.h webcfg_generic.h webcfg_db.h webcfg_log.h webcfg_blob.h webcfg_event.h webcfg_aker.h webcfg_metadata.h webcfg_timer.h)
-set(SOURCES webcfg_helpers.c webcfg.c webcfg_param.c webcfg_pack.c webcfg_multipart.c webcfg_auth.c webcfg_notify.c webcfg_db.c webcfg_generic.c webcfg_blob.c webcfg_event.c webcfg_client.c webcfg_aker.c webcfg_metadata.c webcfg_timer.c)
+set(HEADERS webcfg.h webcfg_param.h webcfg_pack.h webcfg_multipart.h webcfg_auth.h webcfg_notify.h webcfg_generic.h webcfg_db.h webcfg_log.h webcfg_blob.h webcfg_event.h webcfg_metadata.h webcfg_timer.h)
+set(SOURCES webcfg_helpers.c webcfg.c webcfg_param.c webcfg_pack.c webcfg_multipart.c webcfg_auth.c webcfg_notify.c webcfg_db.c webcfg_generic.c webcfg_blob.c webcfg_event.c webcfg_metadata.c webcfg_timer.c)
+
+if (FEATURE_SUPPORT_AKER)
+set(HEADERS ${SOURCES} webcfg_aker.h)
+set(SOURCES ${HEADERS} webcfg_aker.c webcfg_client.c)
+endif (FEATURE_SUPPORT_AKER)
 
 #Support webcfg lib for backward compatibility
 if (NOT WEBCONFIG_BIN_SUPPORT)
@@ -45,7 +54,12 @@ set(HEADERS ${HEADERS} webcfg_rbus.h)
 set(SOURCES ${SOURCES} main.c webcfg_rbus.c)
 add_executable(webconfig ${SOURCES} ${HEADERS})
 set_property(TARGET webconfig PROPERTY C_STANDARD 99)
-set(COMMON_LIBS -lwrp-c -lpthread -lwdmp-c -lmsgpackc -ltrower-base64 -lm -lcjson -lrt -luuid -llibparodus -lnanomsg -lcimplog -lcurl -lrbus -lrbus-core)
+set(COMMON_LIBS -lwrp-c -lpthread -lwdmp-c -lmsgpackc -ltrower-base64 -lm -lcjson -lrt -luuid -lcimplog -lcurl -lrbus -lrbus-core)
+
+if (FEATURE_SUPPORT_AKER)
+set(COMMON_LIBS ${COMMON_LIBS} -llibparodus)
+endif(FEATURE_SUPPORT_AKER)
+
 target_link_libraries (webconfig ${CMAKE_THREAD_LIBS_INIT} ${COMMON_LIBS})
 install (TARGETS webconfig DESTINATION bin)
 endif()
