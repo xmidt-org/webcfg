@@ -42,7 +42,10 @@
 #include "../src/webcfg_event.h"
 #include "../src/webcfg_auth.h"
 #include "../src/webcfg_blob.h"
-#include "../src/webcfg_aker.h"
+
+#ifdef FEATURE_SUPPORT_AKER
+#include "webcfg_aker.h"
+#endif
 
 
 #define MAX_HEADER_LEN	4096
@@ -283,6 +286,7 @@ void test_appendedDoc(){
         
 }
 
+#ifdef FEATURE_SUPPORT_AKER
 
 void test_UpdateErrorsendAkerblob(){
 	WDMP_STATUS ret = WDMP_FAILURE;
@@ -314,7 +318,7 @@ void test_akerWait(){
 	int wait=akerwait__ (backoffRetryTime);
 	CU_ASSERT_EQUAL(0,wait);
 }
-
+#endif
 void add_suites( CU_pSuite *suite )
 {
     *suite = CU_add_suite( "tests", NULL, NULL );
@@ -326,9 +330,11 @@ void add_suites( CU_pSuite *suite )
       CU_add_test( *suite, "test  checkDBList", test_checkDBList);
       CU_add_test( *suite, "test  updateDBlist", test_updateDBlist);
       CU_add_test( *suite, "test  pack append doc", test_appendedDoc);
+#ifdef FEATURE_SUPPORT_AKER
       CU_add_test( *suite, "test  Aker update blob send", test_UpdateErrorsendAkerblob);
       CU_add_test( *suite, "test  Aker delete blob send", test_DeleteErrorsendAkerblob);
       CU_add_test( *suite, "test  Aker wait", test_akerWait);
+#endif
       
      
 }

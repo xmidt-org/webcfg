@@ -18,7 +18,11 @@
 #include <errno.h>
 #include <stdio.h>
 #include "../src/webcfg_log.h"
+
+#ifdef FEATURE_SUPPORT_AKER
 #include "../src/webcfg_aker.h"
+#endif
+
 #include "../src/webcfg.h"
 #include "../src/webcfg_param.h"
 #include "../src/webcfg_multipart.h"

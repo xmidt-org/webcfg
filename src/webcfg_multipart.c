@@ -26,9 +26,13 @@
 #include "webcfg_notify.h"
 #include "webcfg_blob.h"
 #include "webcfg_event.h"
-#include "webcfg_aker.h"
 #include "webcfg_metadata.h"
 #include "webcfg_timer.h"
+
+#ifdef FEATURE_SUPPORT_AKER
+#include "webcfg_aker.h"
+#endif
+
 #include <pthread.h>
 #include <uuid/uuid.h>
 #include <math.h>
@@ -139,7 +143,11 @@ char* generate_trans_uuid();
 WEBCFG_STATUS processMsgpackSubdoc(char *transaction_id);
 void loadInitURLFromFile(char **url);
 static void get_webCfg_interface(char **interface);
+
+#ifdef FEATURE_SUPPORT_AKER
 WEBCFG_STATUS checkAkerDoc();
+#endif
+
 /*----------------------------------------------------------------------------*/
 /*                             External Functions                             */
 /*----------------------------------------------------------------------------*/
@@ -542,12 +550,15 @@ WEBCFG_STATUS processMsgpackSubdoc(char *transaction_id)
 	WEBCFG_STATUS addStatus =0;
 	WEBCFG_STATUS subdocStatus = 0;
 	uint16_t doc_transId = 0;
+
+#ifdef FEATURE_SUPPORT_AKER
 	int backoffRetryTime = 0;
 	int max_retry_sleep = 0;
 	int backoff_max_time = 6;
 	int c=4;
 	multipartdocs_t *akerIndex = NULL;
 	int akerSet = 0;
+#endif
 	int mp_count = 0;
 	int current_doc_count = 0;
 	int err = 0;
@@ -623,7 +634,7 @@ WEBCFG_STATUS processMsgpackSubdoc(char *transaction_id)
 		WebcfgDebug("mp->data %s\n" , mp->data);
 
 		WebcfgDebug("mp->data_size is %zu\n", mp->data_size);
-
+#ifdef FEATURE_SUPPORT_AKER
 		if(strcmp(mp->name_space, "aker") == 0)
 		{
 			akerIndex = mp;
@@ -632,7 +643,7 @@ WEBCFG_STATUS processMsgpackSubdoc(char *transaction_id)
 			mp = mp->next;
 			continue;
 		}
-
+#endif
 		WebcfgDebug("--------------decode root doc-------------\n");
 		pm = webcfgparam_convert( mp->data, mp->data_size+1 );
 		err = errno;
@@ -886,6 +897,7 @@ WEBCFG_STATUS processMsgpackSubdoc(char *transaction_id)
 	}
 	WebcfgDebug("The current_doc_count is %d\n",current_doc_count);
 
+#ifdef FEATURE_SUPPORT_AKER
 	//Apply aker doc at the end when all other docs are processed.
 	if(akerSet)
 	{
@@ -932,6 +944,7 @@ WEBCFG_STATUS processMsgpackSubdoc(char *transaction_id)
 		}
 		akerSet= 0;
 	}
+#endif
 
 	if(success_count) //No DB update when all docs failed.
 	{
