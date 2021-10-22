@@ -35,6 +35,8 @@ static char *paramRFCEnable = "eRT.com.cisco.spvtg.ccsp.webpa.WebConfigRfcEnable
 static char ForceSync[256]={'\0'};
 static char ForceSyncTransID[256]={'\0'};
 
+static int subscribed = 0;
+
 typedef struct
 {
     char *paramName;
@@ -436,6 +438,27 @@ rbusError_t webcfgDataGetHandler(rbusHandle_t handle, rbusProperty_t property, r
 }
 
 /**
+ *Event subscription handler to track the subscribers for the event
+ */
+rbusError_t eventSubHandler(rbusHandle_t handle, rbusEventSubAction_t action, const char* eventName, rbusFilter_t filter, int32_t interval, bool* autoPublish)
+{
+    (void)handle;
+    (void)filter;
+    (void)autoPublish;
+    (void)interval;
+    WebcfgInfo("eventSubHandler: action=%s eventName=%s\n", action == RBUS_EVENT_ACTION_SUBSCRIBE ? "subscribe" : "unsubscribe", eventName);
+    if(!strcmp(WEBCFG_UPSTREAM_EVENT, eventName))
+    {
+        subscribed = action == RBUS_EVENT_ACTION_SUBSCRIBE ? 1 : 0;
+    }
+    else
+    {
+        WebcfgError("provider: eventSubHandler unexpected eventName %s\n", eventName);
+    }
+    return RBUS_ERROR_SUCCESS;
+}
+
+/**
  * Register data elements for dataModel implementation using rbus.
  * Data element over bus will be Device.X_RDK_WebConfig.RfcEnable, Device.X_RDK_WebConfig.ForceSync,
  * Device.X_RDK_WebConfig.URL
@@ -457,7 +480,8 @@ WEBCFG_STATUS regWebConfigDataModel()
 		{WEBCFG_RFC_PARAM, RBUS_ELEMENT_TYPE_PROPERTY, {webcfgDataGetHandler, webcfgDataSetHandler, NULL, NULL, NULL, NULL}},
 		{WEBCFG_URL_PARAM, RBUS_ELEMENT_TYPE_PROPERTY, {webcfgDataGetHandler, webcfgDataSetHandler, NULL, NULL, NULL, NULL}},
 		{WEBCFG_FORCESYNC_PARAM, RBUS_ELEMENT_TYPE_PROPERTY, {webcfgDataGetHandler, webcfgDataSetHandler, NULL, NULL, NULL, NULL}},
-		{WEBCFG_SUPPLEMENTARY_TELEMETRY_PARAM, RBUS_ELEMENT_TYPE_PROPERTY, {webcfgDataGetHandler, webcfgDataSetHandler, NULL, NULL, NULL, NULL}}
+		{WEBCFG_SUPPLEMENTARY_TELEMETRY_PARAM, RBUS_ELEMENT_TYPE_PROPERTY, {webcfgDataGetHandler, webcfgDataSetHandler, NULL, NULL, NULL, NULL}},
+        {WEBCFG_UPSTREAM_EVENT, RBUS_ELEMENT_TYPE_EVENT, {NULL, NULL, NULL, NULL, eventSubHandler, NULL}}
 	};
 	ret = rbus_regDataElements(rbus_handle, NUM_WEBCFG_ELEMENTS, dataElements);
 	if(ret == RBUS_ERROR_SUCCESS)
@@ -1042,9 +1066,7 @@ void sendNotification_rbus(char *payload, char *source, char *destination)
 {
 	wrp_msg_t *notif_wrp_msg = NULL;
 	char *contentType = NULL;
-	rbusError_t err;
-	char topic[64] = "webconfig.upstream";
-	rbusMessage_t msg;
+    int rc = RBUS_ERROR_SUCCESS;
 	ssize_t msg_len;
 	void *msg_bytes;
 
@@ -1073,20 +1095,27 @@ void sendNotification_rbus(char *payload, char *source, char *destination)
 			}
 
 			msg_len = wrp_struct_to (notif_wrp_msg, WRP_BYTES, &msg_bytes);
-			msg.topic = (char const*)topic;
-			msg.data = (uint8_t*)msg_bytes;
-			msg.length = msg_len;
-			WebcfgDebug("msg.topic %s, msg.length %d\n", msg.topic, msg.length );
-			WebcfgDebug("msg.data is %s\n", (char*)msg.data);
-			err = rbusMessage_Send(rbus_handle, &msg, RBUS_MESSAGE_CONFIRM_RECEIPT);
-			if (err)
-			{
-				WebcfgError("Failed to send Notification:%s\n", rbusError_ToString(err));
-			}
-			else
-			{
-				WebcfgInfo("Notification successfully sent to webconfig.upstream \n");
-			}
+			
+            if(subscribed)
+            {
+                rbusValue_t value;
+                rbusObject_t data;
+                rbusValue_Init(&value);
+                rbusValue_SetBytes(value, msg_bytes, msg_len);
+                rbusObject_Init(&data, NULL);
+                rbusObject_SetValue(data, "value", value);
+                rbusEvent_t event;
+                event.name = WEBCFG_UPSTREAM_EVENT;
+                event.data = data;
+                event.type = RBUS_EVENT_GENERAL;
+                rc = rbusEvent_Publish(rbus_handle, &event);
+                rbusValue_Release(value);
+                rbusObject_Release(data);
+                if(rc != RBUS_ERROR_SUCCESS)
+                    WebcfgError("Failed to send Notification : %d, %s\n", rc, rbusError_ToString(rc));
+                else
+                    WebcfgInfo("Notification successfully sent to webconfig.upstream \n");
+            }
 			wrp_free_struct (notif_wrp_msg );
 		}
 	}
