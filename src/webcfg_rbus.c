@@ -20,7 +20,6 @@
 #include <string.h>
 #include <stdlib.h>
 #include <wdmp-c.h>
-#include <cimplog.h>
 #include "webcfg_rbus.h"
 
 static rbusHandle_t rbus_handle;

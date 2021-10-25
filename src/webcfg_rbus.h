@@ -30,7 +30,6 @@
 #include <rbus-core/rbus_session_mgr.h>
 
 #include <wdmp-c.h>
-#include <cimplog.h>
 #include <wrp-c.h>
 #include <cJSON.h>
 #include "webcfg.h"
