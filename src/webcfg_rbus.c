@@ -610,6 +610,37 @@ int mapRbusToCcspStatus(int Rbus_error_code)
     return CCSP_error_code;
 }
 
+void blobSet_rbus(char *name, void *bufVal, int len, WDMP_STATUS *retStatus, int *ccspRetStatus)
+{
+	rbusError_t ret = RBUS_ERROR_BUS_ERROR;
+	*retStatus = WDMP_FAILURE;
+	rbusValue_t value;
+        rbusSetOptions_t opts;
+        opts.commit = true;
+	
+	rbusValue_Init(&value);
+	rbusValue_SetBytes(value, (uint8_t*)bufVal, len);
+	
+	if(!rbus_handle)
+	{
+		WebcfgError("blobSet_rbus Failed as rbus_handle is not initialized\n");
+		return;
+	}
+	ret = rbus_set(rbus_handle, name, value, &opts);
+	if (ret)
+	{
+		WebcfgError("rbus_set failed:%s\n", rbusError_ToString(ret));
+	}
+	else
+	{
+		WebcfgDebug("rbus_set success\n");
+	}
+	rbusValue_Release(value);
+	*ccspRetStatus = mapRbusToCcspStatus((int)ret);
+	WebcfgInfo("ccspRetStatus is %d\n", *ccspRetStatus);
+       *retStatus = mapStatus(*ccspRetStatus);
+}
+
 void setValues_rbus(const param_t paramVal[], const unsigned int paramCount, const int setType,char *transactionId, money_trace_spans *timeSpan, WDMP_STATUS *retStatus, int *ccspRetStatus)
 {
 	int cnt = 0;
