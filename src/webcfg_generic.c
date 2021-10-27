@@ -253,9 +253,9 @@ int registerWebcfgEvent(WebConfigEventCallback webcfgEventCB)
 	if(isRbusEnabled())
 	{
 		int rc = 0;
-		WebcfgInfo("Registering RBUS event listener!\n");
-		rc = registerRBUSEventlistener();
-		WebcfgDebug("RBUSEventlistener rc %d\n", rc);
+		WebcfgInfo("Registering RBUS event Element\n");
+		rc = registerRBUSEventElement();
+		WebcfgDebug("RBUSEventElement rc %d\n", rc);
 		if(rc == RBUS_ERROR_SUCCESS)
 		{
 			ret = 1;
@@ -274,8 +274,8 @@ int unregisterWebcfgEvent()
 	if(isRbusEnabled())
 	{
 		int rc = 0;
-		rc = removeRBUSEventlistener();
-		WebcfgDebug("removeRBUSEventlistener returns rc %d\n", rc);
+		rc = removeRBUSEventElement();
+		WebcfgDebug("removeRBUSEventElement returns rc %d\n", rc);
 		if ( rc != RBUS_ERROR_SUCCESS )
 		{
 			WebcfgError("Rbus UnRegistration with %s failed\n", WEBCFG_EVENT_NAME);

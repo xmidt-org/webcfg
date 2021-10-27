@@ -78,10 +78,9 @@ void setValues_rbus(const param_t paramVal[], const unsigned int paramCount, con
 
 DATA_TYPE mapRbusToWdmpDataType(rbusValueType_t rbusType);
 int mapRbusStatus(int Rbus_error_code);
-void webcfgEventRbusHandler(rbusHandle_t handle, rbusEvent_t const* event, rbusEventSubscription_t* subscription);
-rbusError_t registerRBUSEventlistener();
-rbusError_t removeRBUSEventlistener();
-void rbusWebcfgEventHandler(rbusHandle_t handle, rbusMessage_t* msg, void * userData);
+rbusError_t registerRBUSEventElement();
+rbusError_t removeRBUSEventElement();
+rbusError_t rbusWebcfgEventHandler(rbusHandle_t handle, rbusProperty_t prop, rbusSetHandlerOptions_t* opts);
 int set_rbus_RfcEnable(bool bValue);
 int set_rbus_ForceSync(char* pString, int *pStatus);
 int parseForceSyncJson(char *jsonpayload, char **forceSyncVal, char **forceSynctransID);
