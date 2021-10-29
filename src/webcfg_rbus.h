@@ -30,7 +30,6 @@
 #include <rbus-core/rbus_session_mgr.h>
 
 #include <wdmp-c.h>
-#include <cimplog.h>
 #include <wrp-c.h>
 #include <cJSON.h>
 #include "webcfg.h"
@@ -41,7 +40,7 @@
 #define buffLen 1024
 #define maxParamLen 128
 
-#define NUM_WEBCFG_ELEMENTS 5
+#define NUM_WEBCFG_ELEMENTS 8
 
 #define WEBCFG_COMPONENT_NAME "webconfig"
 #define MAX_PARAMETERNAME_LEN			4096
@@ -51,6 +50,9 @@
 #define WEBCFG_RFC_PARAM "Device.X_RDK_WebConfig.RfcEnable"
 #define WEBCFG_URL_PARAM "Device.X_RDK_WebConfig.URL"
 #define WEBCFG_FORCESYNC_PARAM "Device.X_RDK_WebConfig.ForceSync"
+#define WEBCFG_DATA_PARAM		"Device.X_RDK_WebConfig.Data"
+#define WEBCFG_SUPPORTED_DOCS_PARAM	"Device.X_RDK_WebConfig.SupportedDocs"
+#define WEBCFG_SUPPORTED_VERSION_PARAM	"Device.X_RDK_WebConfig.SupportedSchemaVersion"
 #define WEBCFG_SUPPLEMENTARY_TELEMETRY_PARAM  "Device.X_RDK_WebConfig.SupplementaryServiceUrls.Telemetry"
 #define WEBCFG_UPSTREAM_EVENT  "webconfig.upstream"
 #define PARAM_RFC_ENABLE "eRT.com.cisco.spvtg.ccsp.webpa.WebConfigRfcEnable"
@@ -79,10 +81,9 @@ void setValues_rbus(const param_t paramVal[], const unsigned int paramCount, con
 
 DATA_TYPE mapRbusToWdmpDataType(rbusValueType_t rbusType);
 int mapRbusStatus(int Rbus_error_code);
-void webcfgEventRbusHandler(rbusHandle_t handle, rbusEvent_t const* event, rbusEventSubscription_t* subscription);
-rbusError_t registerRBUSEventlistener();
-rbusError_t removeRBUSEventlistener();
-void rbusWebcfgEventHandler(rbusHandle_t handle, rbusMessage_t* msg, void * userData);
+rbusError_t registerRBUSEventElement();
+rbusError_t removeRBUSEventElement();
+rbusError_t rbusWebcfgEventHandler(rbusHandle_t handle, rbusProperty_t prop, rbusSetHandlerOptions_t* opts);
 int set_rbus_RfcEnable(bool bValue);
 int set_rbus_ForceSync(char* pString, int *pStatus);
 int parseForceSyncJson(char *jsonpayload, char **forceSyncVal, char **forceSynctransID);
