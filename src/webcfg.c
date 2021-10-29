@@ -30,11 +30,14 @@
 #include <wdmp-c.h>
 #include <base64.h>
 #include "webcfg_db.h"
-#include "webcfg_aker.h"
 #include "webcfg_metadata.h"
 #include "webcfg_event.h"
 #include "webcfg_blob.h"
 #include "webcfg_timer.h"
+
+#ifdef FEATURE_SUPPORT_AKER
+#include "webcfg_aker.h"
+#endif
 /*----------------------------------------------------------------------------*/
 /*                                   Macros                                   */
 /*----------------------------------------------------------------------------*/
@@ -110,11 +113,14 @@ void *WebConfigMultipartTask(void *status)
 
 	//start webconfig notification thread.
 	initWebConfigNotifyTask();
+
+#ifdef FEATURE_SUPPORT_AKER
+	WebcfgInfo("FEATURE_SUPPORT_AKER initWebConfigClient\n");
 	initWebConfigClient();
+#endif
 	WebcfgDebug("initDB %s\n", WEBCFG_DB_FILE);
 
 	initDB(WEBCFG_DB_FILE);
-
 	//To disable supplementary sync for RDKV platforms
 #if !defined(RDK_PERSISTENT_PATH_VIDEO)
 	initMaintenanceTimer();
@@ -258,7 +264,7 @@ void *WebConfigMultipartTask(void *status)
 
 			// Identify ForceSync based on docname
 			getForceSync(&ForceSyncDoc, &ForceSyncTransID);
-			WebcfgDebug("ForceSyncDoc %s ForceSyncTransID. %s\n", ForceSyncDoc, ForceSyncTransID);
+			WebcfgInfo("ForceSyncDoc %s ForceSyncTransID. %s\n", ForceSyncDoc, ForceSyncTransID);
 			if(ForceSyncTransID !=NULL)
 			{
 				if((ForceSyncDoc != NULL) && strlen(ForceSyncDoc)>0)
@@ -285,7 +291,7 @@ void *WebConfigMultipartTask(void *status)
 				}
 			}
 
-			WebcfgDebug("forced_sync is %d\n", forced_sync);
+			WebcfgInfo("forced_sync is %d\n", forced_sync);
 		}
 		else if(g_shutdown)
 		{
@@ -299,9 +305,11 @@ void *WebConfigMultipartTask(void *status)
 	}
 
 	/* release all active threads before shutdown */
+#ifdef FEATURE_SUPPORT_AKER
 	pthread_mutex_lock (get_global_client_mut());
 	pthread_cond_signal (get_global_client_con());
 	pthread_mutex_unlock (get_global_client_mut());
+#endif
 
 	pthread_mutex_lock (get_global_notify_mut());
 	pthread_cond_signal (get_global_notify_con());
@@ -325,8 +333,9 @@ void *WebConfigMultipartTask(void *status)
 	JoinThread (get_global_notify_threadid());
 
 	WebcfgDebug("client thread: pthread_join\n");
+#ifdef FEATURE_SUPPORT_AKER
 	JoinThread (get_global_client_threadid());
-
+#endif
 	reset_global_eventFlag();
 	set_doc_fail(0);
 	reset_numOfMpDocs();
@@ -335,13 +344,16 @@ void *WebConfigMultipartTask(void *status)
 	set_global_retry_timestamp(0);
 	set_retry_timer(0);
 	set_global_supplementarySync(0);
+#ifdef FEATURE_SUPPORT_AKER
 	set_send_aker_flag(false);
-
+#endif
 	//delete tmp, db, and mp cache lists.
 	delete_tmp_list();
 
 	WebcfgDebug("webcfgdb_destroy\n");
 	webcfgdb_destroy (get_global_db_node() );
+	reset_db_node();
+	
 
 	WebcfgDebug("multipart_destroy\n");
 	delete_multipart();
