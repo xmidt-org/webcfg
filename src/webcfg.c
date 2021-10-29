@@ -118,7 +118,7 @@ void *WebConfigMultipartTask(void *status)
 	WebcfgInfo("FEATURE_SUPPORT_AKER initWebConfigClient\n");
 	initWebConfigClient();
 #endif
-	WebcfgInfo("initDB %s\n", WEBCFG_DB_FILE);
+	WebcfgDebug("initDB %s\n", WEBCFG_DB_FILE);
 
 	initDB(WEBCFG_DB_FILE);
 
@@ -292,7 +292,7 @@ void *WebConfigMultipartTask(void *status)
 				}
 			}
 
-			WebcfgInfo("forced_sync is %d\n", forced_sync);
+			WebcfgDebug("forced_sync is %d\n", forced_sync);
 		}
 		else if(g_shutdown)
 		{
@@ -362,7 +362,7 @@ void *WebConfigMultipartTask(void *status)
 	WebcfgDebug("supplementary_destroy\n");
 	delete_supplementary_list();
 
-	WebcfgInfo("B4 pthread_exit\n");
+	WebcfgDebug("B4 pthread_exit\n");
 	g_mpthreadId = NULL;
 	pthread_exit(0);
 	WebcfgDebug("After pthread_exit\n");
@@ -512,7 +512,7 @@ int handlehttpResponse(long response_code, char *webConfigData, int retry_count,
 	}
 	else if(response_code == 200)
 	{
-		WebcfgInfo("webConfig is not in sync with cloud. response_code:%ld\n", response_code);
+		WebcfgDebug("webConfig is not in sync with cloud. response_code:%ld\n", response_code);
 
 		if(webConfigData !=NULL && (strlen(webConfigData)>0))
 		{
@@ -533,7 +533,7 @@ int handlehttpResponse(long response_code, char *webConfigData, int retry_count,
 		}
 		else
 		{
-			WebcfgInfo("webConfigData is empty\n");
+			WebcfgDebug("webConfigData is empty\n");
 			//After factory reset when server sends 200 with empty config, set POST-NONE root version
 			contentLength = get_global_contentLen();
 			if((contentLength !=NULL) && (strcmp(contentLength, "0") == 0))
@@ -691,7 +691,7 @@ int testUtility()
 		if(data !=NULL)
 		{
 			WebcfgInfo("webConfigData fetched successfully\n");
-			WebcfgInfo("parseMultipartDocument\n");
+			WebcfgDebug("parseMultipartDocument\n");
 			test_file_status = parseMultipartDocument(data, ct, (size_t)test_dataSize, transaction_uuid);
 
 			if(test_file_status == WEBCFG_SUCCESS)

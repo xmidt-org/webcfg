@@ -378,7 +378,7 @@ WEBCFG_STATUS webcfg_http_request(char **configData, int r_count, int status, lo
 					}
 					else
 					{
-						WebcfgInfo("Content-Type is multipart/mixed. Valid\n");
+						WebcfgDebug("Content-Type is multipart/mixed. Valid\n");
 						strcpy(contentType, ct);
 
 						*configData=data.data;
@@ -416,7 +416,7 @@ WEBCFG_STATUS parseMultipartDocument(void *config_data, char *ct , size_t data_s
 	uint16_t err = 0;
 	char* result = NULL;
 	
-	WebcfgInfo("ct is %s\n", ct );
+	WebcfgDebug("ct is %s\n", ct );
 	// fetch boundary
 	str = strtok(ct,";");
 	str = strtok(NULL, ";");
@@ -629,8 +629,8 @@ WEBCFG_STATUS processMsgpackSubdoc(char *transaction_id)
 				WebcfgDebug("current_doc_count incremented to %d\n", current_doc_count);
 			}
 		}
-		WebcfgInfo("mp->name_space %s\n", mp->name_space);
-		WebcfgInfo("mp->etag %lu\n" , (long)mp->etag);
+		WebcfgDebug("mp->name_space %s\n", mp->name_space);
+		WebcfgDebug("mp->etag %lu\n" , (long)mp->etag);
 		WebcfgDebug("mp->data %s\n" , mp->data);
 
 		WebcfgDebug("mp->data_size is %zu\n", mp->data_size);
@@ -711,7 +711,7 @@ WEBCFG_STATUS processMsgpackSubdoc(char *transaction_id)
 				WebcfgDebug("Proceed to setValues..\n");
 				if((checkAndUpdateTmpRetryCount(subdoc_node, mp->name_space))== WEBCFG_SUCCESS)
 				{
-					WebcfgInfo("WebConfig SET Request\n");
+					WebcfgDebug("WebConfig SET Request\n");
 					setValues(reqParam, paramCount, ATOMIC_SET_WEBCONFIG, NULL, NULL, &ret, &ccspStatus);
 					if(ret == WDMP_SUCCESS)
 					{
@@ -790,7 +790,7 @@ WEBCFG_STATUS processMsgpackSubdoc(char *transaction_id)
 						WebcfgDebug("The errDetails value is %s\n",errDetails);
 
 						WebcfgInfo("subdoc_name and err_code : %s %d\n",mp->name_space,ccspStatus);
-						WebcfgInfo("failure_reason %s\n",errDetails);
+						WebcfgDebug("failure_reason %s\n",errDetails);
 						//Update error_details to tmp list and send failure notification to cloud.
 						if((ccspStatus == CCSP_CRASH_STATUS_CODE) || (ccspStatus == 204) || (ccspStatus == 191) || (ccspStatus == 193) || (ccspStatus == 190))
 						{
@@ -936,7 +936,7 @@ WEBCFG_STATUS processMsgpackSubdoc(char *transaction_id)
 			}
 			else
 			{
-				WebcfgInfo("process aker sub doc\n");
+				WebcfgDebug("process aker sub doc\n");
 				akerStatus = processAkerSubdoc(subdoc_node, akerIndex);
 				WebcfgInfo("Aker doc processed. akerStatus %d\n", akerStatus);
 				break;
@@ -1348,7 +1348,7 @@ void derive_root_doc_version_string(char **rootVersion, uint32_t *root_ver, int 
 			}
 
 			//check existing root version
-			WebcfgInfo("check existing root version\n");
+			WebcfgDebug("check existing root version\n");
 			if(db_root_version)
 			{
 			//when subdocs are applied and reboot due to software migration/rollback, root reset to 0.
@@ -2217,7 +2217,7 @@ WEBCFG_STATUS checkRootDelete()
 	}
 	else
 	{
-		WebcfgInfo("Tmp list root doc delete is not required\n");
+		WebcfgDebug("Tmp list root doc delete is not required\n");
 	}
 	return WEBCFG_FAILURE;
 }
@@ -2263,7 +2263,7 @@ WEBCFG_STATUS checkRootUpdate()
 
 	if(count == 1)
 	{
-		WebcfgInfo("root DB update is required\n");
+		WebcfgDebug("root DB update is required\n");
 		return WEBCFG_SUCCESS;
 	}
 	else
