@@ -316,7 +316,7 @@ int checkRetryTimer( long long timestamp)
 
 	if(cur_time >= timestamp)
 	{
-		WebcfgInfo("Retry timestamp is equal to current time\n");
+		WebcfgDebug("Retry timestamp is equal to current time\n");
 		return 1;
 	}
 	return 0;

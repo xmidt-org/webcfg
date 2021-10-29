@@ -243,7 +243,7 @@ void* processWebConfgNotification()
 				{
 					snprintf(dest,sizeof(dest),"event:rootdoc-report/%s/%s",device_id,msg->type);
 				}
-				WebcfgInfo("dest is %s\n", dest);
+				WebcfgDebug("dest is %s\n", dest);
 
 				if (stringifiedNotifyPayload != NULL && strlen(device_id) != 0)
 				{

@@ -64,7 +64,7 @@ void getAuthToken()
 	if( strlen(WEBPA_READ_HEADER) !=0 && strlen(WEBPA_CREATE_HEADER) !=0)
 	{
                 get_deviceMAC();
-                WebcfgInfo("deviceMAC: %s\n",get_deviceMAC());
+                WebcfgDebug("deviceMAC: %s\n",get_deviceMAC());
 
 		if( get_deviceMAC() != NULL && strlen(get_deviceMAC()) !=0 )
 		{
@@ -75,7 +75,7 @@ void getAuthToken()
 		                if(serial_number !=NULL)
 		                {
 					strncpy(serialNum ,serial_number, sizeof(serialNum)-1);
-					WebcfgInfo("serialNum: %s\n", serialNum);
+					WebcfgDebug("serialNum: %s\n", serialNum);
 					WEBCFG_FREE(serial_number);
 					flag_unk = 0;
 		                }

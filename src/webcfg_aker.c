@@ -175,7 +175,7 @@ int send_aker_blob(char *paramName, char *blob, uint32_t blobSize, uint16_t docT
 				WebcfgInfo("send_aker_blob backoffRetryTime %d seconds\n", backoffRetryTime);
 				if (akerwait__ (backoffRetryTime))
 				{
-					WebcfgInfo("g_shutdown true, break send_aker_blob failure\n");
+					WebcfgDebug("g_shutdown true, break send_aker_blob failure\n");
 					break;
 				}
 				c++;
