@@ -21,14 +21,18 @@
 #include <stdlib.h>
 #include <wdmp-c.h>
 #include "webcfg_rbus.h"
+#include "webcfg_metadata.h"
 
 static rbusHandle_t rbus_handle;
 
 static bool  RfcVal = false ;
 static char* URLVal = NULL ;
 static char* forceSyncVal = NULL ;
+static char* SupportedDocsVal = NULL ;
+static char* SupportedVersionVal = NULL ;
 static char* SupplementaryURLVal = NULL ;
 static bool isRbus = false ;
+static char* BinDataVal = NULL ;
 static char *paramRFCEnable = "eRT.com.cisco.spvtg.ccsp.webpa.WebConfigRfcEnable";
 
 static char ForceSync[256]={'\0'};
@@ -191,7 +195,23 @@ rbusError_t webcfgDataSetHandler(rbusHandle_t handle, rbusProperty_t prop, rbusS
             WebcfgError("Unexpected value type for property %s\n", paramName);
 	    return RBUS_ERROR_INVALID_INPUT;
         }
-    }else if(strncmp(paramName, WEBCFG_SUPPLEMENTARY_TELEMETRY_PARAM, maxParamLen) == 0){
+    }
+	else if(strncmp(paramName, WEBCFG_DATA_PARAM, maxParamLen) == 0)
+    {
+        WebcfgError("Data Set is not allowed\n");
+        retPsmSet = RBUS_ERROR_ACCESS_NOT_ALLOWED;
+    }
+    	else if(strncmp(paramName, WEBCFG_SUPPORTED_DOCS_PARAM, maxParamLen) == 0)
+    {
+        WebcfgError("SupportedDocs Set is not allowed\n");
+        retPsmSet = RBUS_ERROR_ACCESS_NOT_ALLOWED;
+    }
+    	else if(strncmp(paramName, WEBCFG_SUPPORTED_VERSION_PARAM, maxParamLen) == 0)
+    {
+        WebcfgError("SupportedSchemaVersion Set is not allowed\n");
+        retPsmSet = RBUS_ERROR_ACCESS_NOT_ALLOWED;
+    }
+	else if(strncmp(paramName, WEBCFG_SUPPLEMENTARY_TELEMETRY_PARAM, maxParamLen) == 0){
         WebcfgDebug("Inside datamodel handler for SupplementaryURL\n");
 
 	if (!RFC_ENABLE)
@@ -285,7 +305,7 @@ rbusError_t webcfgDataSetHandler(rbusHandle_t handle, rbusProperty_t prop, rbusS
  * Common data get handler for all parameters owned by Webconfig
  */
 rbusError_t webcfgDataGetHandler(rbusHandle_t handle, rbusProperty_t property, rbusGetHandlerOptions_t* opts) {
-
+    
     WebcfgDebug("In webcfgDataGetHandler\n");
     (void) handle;
     (void) opts;
@@ -372,7 +392,95 @@ rbusError_t webcfgDataGetHandler(rbusHandle_t handle, rbusProperty_t property, r
 	WebcfgDebug("URL value fetched is %s\n", value);
         rbusValue_Release(value);
 
-    }else if(strncmp(propertyName, WEBCFG_SUPPLEMENTARY_TELEMETRY_PARAM, maxParamLen)==0){
+    }
+
+	 else if(strncmp(propertyName, WEBCFG_DATA_PARAM , maxParamLen) == 0)
+    {
+        rbusValue_t value;
+        rbusValue_Init(&value);
+
+	if(!RFC_ENABLE)
+	{
+		WebcfgError("RfcEnable is disabled so, %s Get from DB failed\n",propertyName);
+		rbusValue_SetString(value, "");
+		rbusProperty_SetValue(property, value);
+		rbusValue_Release(value);
+		return 0;
+	}
+
+        BinDataVal = get_DB_BLOB_base64();
+
+        if(BinDataVal)
+        {
+            rbusValue_SetString(value, BinDataVal);
+        }
+        else
+        {
+            rbusValue_SetString(value, "");
+        }
+        rbusProperty_SetValue(property, value);
+        WebcfgDebug("BinData value fetched is %s\n", value);
+        rbusValue_Release(value);
+    }
+    	else if(strncmp(propertyName, WEBCFG_SUPPORTED_DOCS_PARAM, maxParamLen) == 0)
+    {
+        rbusValue_t value;
+        rbusValue_Init(&value);
+
+	if(!RFC_ENABLE)
+	{
+		WebcfgError("RfcEnable is disabled so, %s Get from DB failed\n",propertyName);
+		rbusValue_SetString(value, "");
+		rbusProperty_SetValue(property, value);
+		rbusValue_Release(value);
+		return 0;
+	}
+
+        SupportedDocsVal = getsupportedDocs();
+
+        if(SupportedDocsVal)
+        {
+            rbusValue_SetString(value, SupportedDocsVal);
+        }
+        else
+        {
+            rbusValue_SetString(value, "");
+        }
+        rbusProperty_SetValue(property, value);
+        WebcfgDebug("SupportedDocs value fetched is %s\n", rbusValue_GetString(value, NULL));
+        rbusValue_Release(value);
+
+    }
+   	else if(strncmp(propertyName, WEBCFG_SUPPORTED_VERSION_PARAM, maxParamLen) == 0)
+    {
+        rbusValue_t value;
+        rbusValue_Init(&value);
+
+	if(!RFC_ENABLE)
+	{
+		WebcfgError("RfcEnable is disabled so, %s Get from DB failed\n",propertyName);
+		rbusValue_SetString(value, "");
+		rbusProperty_SetValue(property, value);
+		rbusValue_Release(value);
+		return 0;
+	}
+
+        SupportedVersionVal = getsupportedVersion();
+
+        if(SupportedVersionVal)
+        {
+            rbusValue_SetString(value, SupportedVersionVal);
+        }
+        else
+        {
+            rbusValue_SetString(value, "");
+        }
+        rbusProperty_SetValue(property, value);
+        WebcfgDebug("SupportedVersion value fetched is %s\n", rbusValue_GetString(value, NULL));
+        rbusValue_Release(value);
+
+    }	
+	else if(strncmp(propertyName, WEBCFG_SUPPLEMENTARY_TELEMETRY_PARAM, maxParamLen)==0){
 
 	rbusValue_t value;
         rbusValue_Init(&value);
@@ -460,7 +568,10 @@ WEBCFG_STATUS regWebConfigDataModel()
 		{WEBCFG_RFC_PARAM, RBUS_ELEMENT_TYPE_PROPERTY, {webcfgDataGetHandler, webcfgDataSetHandler, NULL, NULL, NULL, NULL}},
 		{WEBCFG_URL_PARAM, RBUS_ELEMENT_TYPE_PROPERTY, {webcfgDataGetHandler, webcfgDataSetHandler, NULL, NULL, NULL, NULL}},
 		{WEBCFG_FORCESYNC_PARAM, RBUS_ELEMENT_TYPE_PROPERTY, {webcfgDataGetHandler, webcfgDataSetHandler, NULL, NULL, NULL, NULL}},
-		{WEBCFG_SUPPLEMENTARY_TELEMETRY_PARAM, RBUS_ELEMENT_TYPE_PROPERTY, {webcfgDataGetHandler, webcfgDataSetHandler, NULL, NULL, NULL, NULL}}
+		{WEBCFG_SUPPLEMENTARY_TELEMETRY_PARAM, RBUS_ELEMENT_TYPE_PROPERTY, {webcfgDataGetHandler, webcfgDataSetHandler, NULL, NULL, NULL, NULL}},
+		{WEBCFG_DATA_PARAM, RBUS_ELEMENT_TYPE_PROPERTY, {webcfgDataGetHandler, webcfgDataSetHandler, NULL, NULL, NULL, NULL}},
+		{WEBCFG_SUPPORTED_DOCS_PARAM, RBUS_ELEMENT_TYPE_PROPERTY, {webcfgDataGetHandler, webcfgDataSetHandler, NULL, NULL, NULL, NULL}},
+		{WEBCFG_SUPPORTED_VERSION_PARAM, RBUS_ELEMENT_TYPE_PROPERTY, {webcfgDataGetHandler, webcfgDataSetHandler, NULL, NULL, NULL, NULL}}
 	};
 	ret = rbus_regDataElements(rbus_handle, NUM_WEBCFG_ELEMENTS, dataElements);
 	if(ret == RBUS_ERROR_SUCCESS)
