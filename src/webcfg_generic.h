@@ -98,5 +98,6 @@ void setAttributes(param_t *attArr, const unsigned int paramCount, money_trace_s
 #ifdef WEBCONFIG_BIN_SUPPORT
 int rbus_GetValueFromDB( char* paramName, char** paramValue);
 int rbus_StoreValueIntoDB(char *paramName, char *value);
+int rbus_waitUntilSystemReady();
 #endif
 #endif
