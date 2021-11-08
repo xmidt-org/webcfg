@@ -26,6 +26,10 @@
 #define ATOMIC_SET_WEBCONFIG	    3
 #define MAX_VALUE_LEN		128
 
+#define FACTORY_RESET_REBOOT_REASON      "factory-reset"
+#define FW_UPGRADE_REBOOT_REASON         "Software_upgrade"
+#define FORCED_FW_UPGRADE_REBOOT_REASON  "Forced_Software_upgrade"
+
 typedef struct multipartdocs
 {
     uint32_t  etag;
