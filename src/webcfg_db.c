@@ -166,9 +166,9 @@ WEBCFG_STATUS addNewDocEntry(size_t count)
      size_t webcfgdbPackSize = -1;
      void* data = NULL;
  
-     WebcfgDebug("DB docs count %ld\n", (size_t)count);
+     WebcfgDebug("DB docs count %d\n", (size_t)count);
      webcfgdbPackSize = webcfgdb_pack(webcfgdb_data, &data, count);
-     WebcfgDebug("size of webcfgdbPackSize %ld\n", webcfgdbPackSize);
+     WebcfgDebug("size of webcfgdbPackSize %d\n", webcfgdbPackSize);
      WebcfgDebug("writeToDBFile %s\n", WEBCFG_DB_FILE);
      writeToDBFile(WEBCFG_DB_FILE,(char *)data,webcfgdbPackSize);
      if(data)
@@ -203,7 +203,7 @@ WEBCFG_STATUS generateBlob()
             webcfgdb_blob->data = (char *)data;
             webcfgdb_blob->len  = webcfgdbBlobPackSize;
 
-            WebcfgDebug("The webcfgdbBlobPackSize is : %ld\n",webcfgdb_blob->len);
+            WebcfgDebug("The webcfgdbBlobPackSize is : %d\n",webcfgdb_blob->len);
             return WEBCFG_SUCCESS;
         }
         else
@@ -950,7 +950,7 @@ char * get_DB_BLOB_base64()
 	    //Start of b64 decoding for debug purpose
 	    WebcfgDebug("----Start of b64 decoding----\n");
 	    decodeMsgSize = b64_get_decoded_buffer_size(strlen(b64buffer));
-	    WebcfgDebug("expected b64 decoded msg size : %ld bytes\n",decodeMsgSize);
+	    WebcfgDebug("expected b64 decoded msg size : %d bytes\n",decodeMsgSize);
 
 	    decodeMsg = (char *) malloc(sizeof(char) * decodeMsgSize);
 	    if(decodeMsg)
@@ -962,7 +962,7 @@ char * get_DB_BLOB_base64()
 
 		blob_struct_t *bd = NULL;
 		bd = decodeBlobData((void *)decodeMsg, size);
-		WebcfgDebug("Size of webcfgdbblob %ld\n", (size_t)bd);
+		WebcfgDebug("Size of webcfgdbblob %d\n", (size_t)bd);
 		if(bd != NULL)
 		{
 			for(k = 0;k< bd->entries_count ; k++)

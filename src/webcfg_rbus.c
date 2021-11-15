@@ -389,7 +389,7 @@ rbusError_t webcfgDataGetHandler(rbusHandle_t handle, rbusProperty_t property, r
 		}
 	}
         rbusProperty_SetValue(property, value);
-	WebcfgDebug("URL value fetched is %s\n", value);
+	WebcfgDebug("URL value fetched is %s\n", rbusValue_GetString(value, NULL));
         rbusValue_Release(value);
 
     }
@@ -419,7 +419,7 @@ rbusError_t webcfgDataGetHandler(rbusHandle_t handle, rbusProperty_t property, r
             rbusValue_SetString(value, "");
         }
         rbusProperty_SetValue(property, value);
-        WebcfgDebug("BinData value fetched is %s\n", value);
+        WebcfgDebug("BinData value fetched is %s\n", rbusValue_GetString(value, NULL));
         rbusValue_Release(value);
     }
     	else if(strncmp(propertyName, WEBCFG_SUPPORTED_DOCS_PARAM, maxParamLen) == 0)
@@ -518,7 +518,7 @@ rbusError_t webcfgDataGetHandler(rbusHandle_t handle, rbusProperty_t property, r
 		}
 	}
         rbusProperty_SetValue(property, value);
-	WebcfgDebug("URL value fetched is %s\n", value);
+	WebcfgDebug("URL value fetched is %s\n", rbusValue_GetString(value, NULL));
         rbusValue_Release(value);
 
     }else if(strncmp(propertyName, WEBCFG_FORCESYNC_PARAM, maxParamLen) == 0) {
@@ -527,7 +527,7 @@ rbusError_t webcfgDataGetHandler(rbusHandle_t handle, rbusProperty_t property, r
         rbusValue_Init(&value);
         rbusValue_SetString(value, "");
         rbusProperty_SetValue(property, value);
-	WebcfgDebug("forceSyncVal value fetched is %s\n", value);
+	WebcfgDebug("forceSyncVal value fetched is %s\n", rbusValue_GetString(value, NULL));
         rbusValue_Release(value);
 
 	if(!RFC_ENABLE)

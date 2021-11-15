@@ -236,7 +236,7 @@ ssize_t webcfgdb_blob_pack(webconfig_db_data_t *webcfgdb, webconfig_tmp_data_t *
 
         if( NULL != *data ) {
             memcpy( *data, sbuf.data, sbuf.size );
-	    WebcfgDebug("sbuf.data is %s sbuf.size %ld\n", sbuf.data, sbuf.size);
+	    WebcfgDebug("sbuf.data is %s sbuf.size %d\n", sbuf.data, sbuf.size);
             rv = sbuf.size;
         }
     }

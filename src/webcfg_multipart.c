@@ -1247,7 +1247,7 @@ void getConfigDocList(char *docList)
 			}
 			temp= temp->next;
 		}
-		WebcfgDebug("Final docList is %s len %lu\n", docList, strlen(docList));
+		WebcfgDebug("Final docList is %s len %d\n", docList, strlen(docList));
 	}
 }
 
@@ -1425,7 +1425,7 @@ void refreshConfigVersionList(char *versionsList, int http_status)
 			}
 			temp= temp->next;
 		}
-		WebcfgDebug("Final versionsList is %s len %lu\n", versionsList, strlen(versionsList));
+		WebcfgDebug("Final versionsList is %s len %d\n", versionsList, strlen(versionsList));
 	}
 }
 

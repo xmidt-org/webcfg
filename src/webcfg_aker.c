@@ -128,7 +128,7 @@ int send_aker_blob(char *paramName, char *blob, uint32_t blobSize, uint16_t docT
 	if(msg != NULL)
 	{
 		memset(msg, 0, sizeof(wrp_msg_t));
-		WebcfgDebug("Aker paramName is %s size %ld\n", paramName, sizeof(AKER_UPDATE_PARAM));
+		WebcfgDebug("Aker paramName is %s size %d\n", paramName, sizeof(AKER_UPDATE_PARAM));
 		if((strncmp(paramName, AKER_UPDATE_PARAM, sizeof(AKER_UPDATE_PARAM)) ==0) && (blobSize > 0))
 		{
 			msg->msg_type = WRP_MSG_TYPE__UPDATE;
