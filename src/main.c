@@ -59,6 +59,9 @@ int main()
 		WebcfgDebug("RBUS mode. webconfigRbusInit\n");
 		webconfigRbusInit(WEBCFG_COMPONENT_NAME);
 		regWebConfigDataModel();
+		// wait for upstream subscriber
+        	waitForUpstreamEventSubscribe(300);
+
 		ret = rbus_GetValueFromDB( PARAM_RFC_ENABLE, &strValue );
 		if (ret == 0)
 		{

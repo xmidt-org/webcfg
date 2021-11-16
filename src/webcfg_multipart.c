@@ -45,8 +45,6 @@
 #define CONTENT_LENGTH_HEADER 	       "Content-Length:"
 #define CURL_TIMEOUT_SEC	   25L
 #define CA_CERT_PATH 		   "/etc/ssl/certs/ca-certificates.crt"
-#define WEBPA_READ_HEADER          "/etc/parodus/parodus_read_file.sh"
-#define WEBPA_CREATE_HEADER        "/etc/parodus/parodus_create_file.sh"
 #define CCSP_CRASH_STATUS_CODE      192
 #define MAX_PARAMETERNAME_LEN		4096
 #define SUBDOC_TAG_COUNT            4
@@ -1247,7 +1245,7 @@ void getConfigDocList(char *docList)
 			}
 			temp= temp->next;
 		}
-		WebcfgDebug("Final docList is %s len %lu\n", docList, strlen(docList));
+		WebcfgDebug("Final docList is %s len %zu\n", docList, strlen(docList));
 	}
 }
 
@@ -1304,11 +1302,11 @@ void derive_root_doc_version_string(char **rootVersion, uint32_t *root_ver, int 
 		fp = fopen(WEBCFG_DB_FILE,"rb");
 		if (fp == NULL)
 		{
-			if(strncmp(g_RebootReason,"factory-reset",strlen("factory-reset"))==0)
+			if(strncmp(g_RebootReason,FACTORY_RESET_REBOOT_REASON,strlen(FACTORY_RESET_REBOOT_REASON))==0)
 			{
 				*rootVersion = strdup("NONE");
 			}
-			else if((strncmp(g_RebootReason,"Software_upgrade",strlen("Software_upgrade"))==0) || (strncmp(g_RebootReason,"Forced_Software_upgrade",strlen("Forced_Software_upgrade"))==0))
+			else if((strncmp(g_RebootReason,FW_UPGRADE_REBOOT_REASON,strlen(FW_UPGRADE_REBOOT_REASON))==0) || (strncmp(g_RebootReason,FORCED_FW_UPGRADE_REBOOT_REASON,strlen(FORCED_FW_UPGRADE_REBOOT_REASON))==0))
 			{
 				*rootVersion = strdup("NONE-MIGRATION");
 			}
@@ -1326,7 +1324,7 @@ void derive_root_doc_version_string(char **rootVersion, uint32_t *root_ver, int 
 
 			if(db_root_string !=NULL)
 			{
-				if((strcmp(db_root_string,"POST-NONE")==0) && (strcmp(g_RebootReason,"Software_upgrade")!=0) && (strcmp(g_RebootReason,"Forced_Software_upgrade")!=0) && (strcmp(g_RebootReason,"factory-reset")!=0))
+				if((strcmp(db_root_string,"POST-NONE")==0) && (strcmp(g_RebootReason,FW_UPGRADE_REBOOT_REASON)!=0) && (strcmp(g_RebootReason,FORCED_FW_UPGRADE_REBOOT_REASON)!=0) && (strcmp(g_RebootReason,FACTORY_RESET_REBOOT_REASON)!=0))
 				{
 					*rootVersion = strdup("NONE-REBOOT");
 					WEBCFG_FREE(db_root_string);
@@ -1352,7 +1350,7 @@ void derive_root_doc_version_string(char **rootVersion, uint32_t *root_ver, int 
 			if(db_root_version)
 			{
 			//when subdocs are applied and reboot due to software migration/rollback, root reset to 0.
-				if( (reset_once == 0) && (subdocList > 1) && ( (strcmp(g_RebootReason,"Software_upgrade")==0) || (strcmp(g_RebootReason,"Forced_Software_upgrade")==0) ) )
+				if( (reset_once == 0) && (subdocList > 1) && ( (strcmp(g_RebootReason,FW_UPGRADE_REBOOT_REASON)==0) || (strcmp(g_RebootReason,FORCED_FW_UPGRADE_REBOOT_REASON)==0) ) )
 				{
 					WebcfgInfo("reboot due to software migration/rollback, root reset to 0\n");
 					*root_ver = 0;
@@ -1425,7 +1423,7 @@ void refreshConfigVersionList(char *versionsList, int http_status)
 			}
 			temp= temp->next;
 		}
-		WebcfgDebug("Final versionsList is %s len %lu\n", versionsList, strlen(versionsList));
+		WebcfgDebug("Final versionsList is %s len %zu\n", versionsList, strlen(versionsList));
 	}
 }
 
