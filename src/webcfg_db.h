@@ -25,7 +25,7 @@
 /*----------------------------------------------------------------------------*/
 /*                                   Macros                                   */
 /*----------------------------------------------------------------------------*/
-#ifdef BUILD_YOCTO && ! defined(DEVICE_EXTENDER)
+#if defined(BUILD_YOCTO) && ! defined(DEVICE_EXTENDER)
 #if defined(RDK_PERSISTENT_PATH_VIDEO)
 #define WEBCFG_DB_FILE 	    "/opt/webconfig_db.bin"
 #else
