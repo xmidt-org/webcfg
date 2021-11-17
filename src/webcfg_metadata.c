@@ -32,6 +32,10 @@ typedef struct SubDocSupportMap
 {
     char name[256];//portforwarding or wlan
     char support[8];//true or false;
+    #ifdef WEBCONFIG_BIN_SUPPORT
+    char rbus_listener[8];//true or false
+    char dest[64]; //comp destination eg. webconfig.pam.portforwarding
+    #endif
     struct SubDocSupportMap *next;
 }SubDocSupportMap_t;
 
@@ -131,9 +135,27 @@ void initWebcfgProperties(char * filename)
 				}
 				
 				strncpy(sdInfo->name,subtoken,(sizeof(sdInfo->name)-1));
-				subtoken = strtok(NULL,":");//skip 1st value
-				subtoken = strtok(NULL,":");//true or false				
-				strncpy(sdInfo->support,subtoken,(sizeof(sdInfo->support)-1));
+				subtoken = strtok(NULL,":");//skip bitposition
+				subtoken = strtok(NULL,":");//skip support
+				webcfgStrncpy(sdInfo->support, subtoken, sizeof(sdInfo->support));
+
+				#ifdef WEBCONFIG_BIN_SUPPORT				
+				subtoken = strtok(NULL,":");//skip rbus_listner
+				if(subtoken != NULL)
+				{
+					webcfgStrncpy(sdInfo->rbus_listener, subtoken, sizeof(sdInfo->rbus_listener));
+				}
+				
+				if(sdInfo->rbus_listener != NULL)
+				{
+					if(strncmp(sdInfo->rbus_listener, "true", strlen("true")) == 0)
+					{
+						subtoken = strtok(NULL,":");//skip destination
+						webcfgStrncpy(sdInfo->dest, subtoken,  sizeof(sdInfo->dest));
+					}
+				}
+				#endif
+			
 				token =strtok_r(p,",",&p);
 				sdInfo->next = NULL;
 
@@ -256,6 +278,59 @@ WEBCFG_STATUS isSubDocSupported(char *subDoc)
 	WebcfgError("Supported doc bit not found for %s\n",subDoc);
 	return WEBCFG_FAILURE;
 }
+#ifdef WEBCONFIG_BIN_SUPPORT
+//To find the given subdoc is rbus_listener supported or not
+bool isRbusListener(char *subDoc)
+{
+
+	SubDocSupportMap_t *sd = NULL;
+
+	sd = get_global_sdInfoHead();
+
+	while(sd != NULL)
+	{
+		if(strncmp(sd->name, subDoc, strlen(subDoc)) == 0)
+		{
+			WebcfgDebug("The subdoc %s is present\n",sd->name);
+			if(strncmp(sd->rbus_listener, "true", strlen("true")) == 0)
+			{
+				WebcfgDebug("%s is rbus_listener supported\n",subDoc);
+				return true;
+
+			}
+			else
+			{
+				WebcfgDebug("%s is not rbus_listener supported\n",subDoc);
+				return false;
+			}
+		}
+		sd = sd->next;
+
+	}
+	return false;
+}
+
+//To get dest field from SubDocSupportMap struct 
+WEBCFG_STATUS get_destination(char* subDoc, char* destination)
+{
+	SubDocSupportMap_t *sd = NULL;
+	sd = get_global_sdInfoHead();
+
+	while(sd != NULL)
+	{
+		if(strncmp(sd->name, subDoc, strlen(subDoc)) == 0)
+		{
+			if(strlen(sd->dest) > 0)
+			{
+				webcfgStrncpy(destination, sd->dest, strlen(sd->dest)+1);
+				return WEBCFG_SUCCESS;
+			}
+		}
+		sd = sd->next;	
+	}
+	return WEBCFG_FAILURE;	
+}
+#endif
 
 //To check if the doc received during poke is supplementary or not.
 WEBCFG_STATUS isSupplementaryDoc(char *subDoc)

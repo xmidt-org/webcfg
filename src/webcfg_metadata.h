@@ -40,6 +40,10 @@ typedef struct SupplementaryDocs
 /*                             External Functions                             */
 /*----------------------------------------------------------------------------*/
 WEBCFG_STATUS isSubDocSupported(char *subDoc);
+#ifdef WEBCONFIG_BIN_SUPPORT
+bool isRbusListener(char *subDoc);
+WEBCFG_STATUS get_destination(char *subDoc, char *topic);
+#endif
 void initWebcfgProperties(char * filename);
 void setsupportedDocs( char * value);
 void setsupportedVersion( char * value);
