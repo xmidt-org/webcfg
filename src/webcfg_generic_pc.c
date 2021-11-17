@@ -59,6 +59,7 @@ WDMP_STATUS __attribute__((weak)) mapStatus(int ret);
 void __attribute__((weak)) setAttributes(param_t *attArr, const unsigned int paramCount, money_trace_spans *timeSpan, WDMP_STATUS *retStatus);
 int __attribute__((weak)) rbus_GetValueFromDB( char* paramName, char** paramValue);
 int __attribute__((weak)) rbus_StoreValueIntoDB(char *paramName, char *value);
+int __attribute__((weak)) rbus_waitUntilSystemReady();
 /*----------------------------------------------------------------------------*/
 /*                             External Functions                             */
 /*----------------------------------------------------------------------------*/
@@ -339,5 +340,11 @@ int rbus_StoreValueIntoDB(char *paramName, char *value)
 	WebcfgDebug("Inside rbus_StoreValueIntoDB weak fn\n");
 	UNUSED(paramName);
 	UNUSED(value);
+	return 0;
+}
+
+int rbus_waitUntilSystemReady()
+{
+	WebcfgDebug("Inside rbus_waitUntilSystemReady weak fn\n");
 	return 0;
 }

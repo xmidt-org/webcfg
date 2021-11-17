@@ -35,6 +35,7 @@ int main()
 	memset(RfcEnable, 0, sizeof(RfcEnable));
 	char* strValue = NULL;
 	int ret = 0;
+	int systemStatus = -1;
 #ifdef INCLUDE_BREAKPAD
     breakpad_ExceptionHandler();
 #else
@@ -59,6 +60,8 @@ int main()
 		WebcfgDebug("RBUS mode. webconfigRbusInit\n");
 		webconfigRbusInit(WEBCFG_COMPONENT_NAME);
 		regWebConfigDataModel();
+		systemStatus = rbus_waitUntilSystemReady();
+		WebcfgDebug("rbus_waitUntilSystemReady systemStatus is %d\n", systemStatus);
 		ret = rbus_GetValueFromDB( PARAM_RFC_ENABLE, &strValue );
 		if (ret == 0)
 		{
@@ -73,7 +76,7 @@ int main()
 			if(get_global_mpThreadId() == NULL)
 			{
 				WebcfgInfo("WebConfig Rfc is enabled, starting initWebConfigMultipartTask.\n");
-				initWebConfigMultipartTask(0);
+				initWebConfigMultipartTask((unsigned long) systemStatus);
 			}
 			else
 			{

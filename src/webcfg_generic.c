@@ -63,6 +63,7 @@ void __attribute__((weak)) setAttributes(param_t *attArr, const unsigned int par
 #ifndef WEBCONFIG_BIN_SUPPORT
 int __attribute__((weak)) rbus_GetValueFromDB( char* paramName, char** paramValue);
 int __attribute__((weak)) rbus_StoreValueIntoDB(char *paramName, char *value);
+int __attribute__((weak)) rbus_waitUntilSystemReady();
 #endif
 /*----------------------------------------------------------------------------*/
 /*                             External Functions                             */
@@ -337,6 +338,12 @@ int rbus_StoreValueIntoDB(char *paramName, char *value)
 	WebcfgDebug("Inside rbus_StoreValueIntoDB weak fn\n");
 	UNUSED(paramName);
 	UNUSED(value);
+	return 0;
+}
+
+int rbus_waitUntilSystemReady()
+{
+	WebcfgDebug("Inside rbus_waitUntilSystemReady weak fn\n");
 	return 0;
 }
 #endif
