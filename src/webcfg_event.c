@@ -1302,12 +1302,19 @@ void handleConnectedClientNotify(char *status)
 				if(attArr !=NULL)
 				{
 					memset(attArr,0,sizeof(param_t));
-					attArr[0].value = (char *) malloc(sizeof(char) * 20);
-					strncpy(attArr[0].value, notif, 20);
 					attArr[0].name = paramName;
-					attArr[0].type = WDMP_INT;
-					WebcfgDebug("Notify paramName %s\n", paramName);
-					setAttributes(attArr, 1, NULL, &ret);
+					#ifdef WEBCONFIG_BIN_SUPPORT
+						attArr[0].value = strdup(apply_status);
+						attArr[0].type = WDMP_STRING;
+						int ccspStatus=0;
+						setValues_rbus(attArr, 1, ATOMIC_SET_WEBCONFIG, NULL, NULL, &ret, &ccspStatus);
+					#else
+						attArr[0].value = (char *) malloc(sizeof(char) * 20);
+						strncpy(attArr[0].value, notif, 20);
+						attArr[0].type = WDMP_INT;
+						WebcfgDebug("Notify paramName %s\n", paramName);
+						setAttributes(attArr, 1, NULL, &ret);
+					#endif
 					if (ret != WDMP_SUCCESS)
 					{
 						WebcfgError("setAttributes failed for parameter : %s notif:%s ret: %d\n", paramName, notif, ret);
@@ -1325,3 +1332,4 @@ void handleConnectedClientNotify(char *status)
 	}
 	return;
 }
+
