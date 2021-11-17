@@ -25,12 +25,14 @@
 /*----------------------------------------------------------------------------*/
 /*                                   Macros                                   */
 /*----------------------------------------------------------------------------*/
-#ifdef BUILD_YOCTO
+#ifdef BUILD_YOCTO && ! defined(DEVICE_EXTENDER)
 #if defined(RDK_PERSISTENT_PATH_VIDEO)
 #define WEBCFG_DB_FILE 	    "/opt/webconfig_db.bin"
 #else
 #define WEBCFG_DB_FILE 	    "/nvram/webconfig_db.bin"
 #endif
+#elif defined(DEVICE_EXTENDER)
+#define WEBCFG_DB_FILE      "/usr/opensync/data/webconfig_db.bin"
 #else
 #define WEBCFG_DB_FILE 	    "/tmp/webconfig_db.bin"
 #endif
