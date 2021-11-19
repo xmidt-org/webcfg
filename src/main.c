@@ -14,6 +14,7 @@
 #include "webcfg.h"
 #include "webcfg_log.h"
 #include "webcfg_rbus.h"
+#include "webcfg_privilege.h"
 #include <unistd.h>
 #include <pthread.h>
 /*----------------------------------------------------------------------------*/
@@ -53,6 +54,7 @@ int main()
 	signal(SIGALRM, sig_handler);
 #endif
 	WebcfgInfo("********** Starting component: %s **********\n ", WEBCFG_COMPONENT_NAME);
+	webcfg_drop_root_privilege();
 	curl_global_init(CURL_GLOBAL_DEFAULT);
 
 	if(isRbusEnabled())
