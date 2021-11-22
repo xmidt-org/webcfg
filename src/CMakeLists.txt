@@ -29,8 +29,8 @@ message(STATUS "WEBCONFIG_BIN_SUPPORT is not supported")
 endif (WEBCONFIG_BIN_SUPPORT)
 
 
-set(HEADERS webcfg.h webcfg_param.h webcfg_pack.h webcfg_multipart.h webcfg_auth.h webcfg_notify.h webcfg_generic.h webcfg_db.h webcfg_log.h webcfg_blob.h webcfg_event.h webcfg_metadata.h webcfg_timer.h)
-set(SOURCES webcfg_helpers.c webcfg.c webcfg_param.c webcfg_pack.c webcfg_multipart.c webcfg_auth.c webcfg_notify.c webcfg_db.c webcfg_blob.c webcfg_event.c webcfg_metadata.c webcfg_timer.c)
+set(HEADERS webcfg.h webcfg_param.h webcfg_pack.h webcfg_multipart.h webcfg_auth.h webcfg_notify.h webcfg_generic.h webcfg_db.h webcfg_log.h webcfg_blob.h webcfg_event.h webcfg_metadata.h webcfg_timer.h webcfg_privilege.h)
+set(SOURCES webcfg_helpers.c webcfg.c webcfg_param.c webcfg_pack.c webcfg_multipart.c webcfg_auth.c webcfg_notify.c webcfg_db.c webcfg_blob.c webcfg_event.c webcfg_metadata.c webcfg_timer.c webcfg_privilege.c)
 
 if (FEATURE_SUPPORT_AKER)
 set(HEADERS ${HEADERS} webcfg_aker.h)
