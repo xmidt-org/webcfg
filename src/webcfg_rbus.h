@@ -76,6 +76,8 @@ WEBCFG_STATUS regWebConfigDataModel();
 
 rbusHandle_t get_global_rbus_handle(void);
 
+void blobSet_rbus(char *name, void *bufVal, int len, WDMP_STATUS *retStatus, int *ccspRetStatus);
+
 void getValues_rbus(const char *paramName[], const unsigned int paramCount, int index, money_trace_spans *timeSpan, param_t ***paramArr, int *retValCount, int *retStatus);
 void setValues_rbus(const param_t paramVal[], const unsigned int paramCount, const int setType,char *transactionId, money_trace_spans *timeSpan, WDMP_STATUS *retStatus, int *ccspRetStatus);
 

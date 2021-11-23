@@ -24,6 +24,11 @@
 #include "webcfg_helpers.h"
 #include "webcfg_blob.h"
 #include "webcfg_db.h"
+#include "webcfg_metadata.h"
+#include "webcfg_multipart.h"
+#if defined(WEBCONFIG_BIN_SUPPORT)
+#include "webcfg_rbus.h"
+#endif
 
 /*----------------------------------------------------------------------------*/
 /*                                   Macros                                   */
@@ -209,7 +214,7 @@ size_t appendWebcfgEncodedData( void **appendData, void *encodedBuffer, size_t e
     return -1;
 }
 
-char * webcfg_appendeddoc(char * subdoc_name, uint32_t version, char * blob_data, size_t blob_size, uint16_t *trans_id)
+char * webcfg_appendeddoc(char * subdoc_name, uint32_t version, char * blob_data, size_t blob_size, uint16_t *trans_id, int *embPackSize)
 {
     appenddoc_t *appenddata = NULL;
     size_t appenddocPackSize = -1;
@@ -217,6 +222,7 @@ char * webcfg_appendeddoc(char * subdoc_name, uint32_t version, char * blob_data
     void *appenddocdata = NULL;
     void *embeddeddocdata = NULL;
     char * finaldocdata = NULL;
+    int rbusList_supported = 0;
 
     appenddata = (appenddoc_t *) malloc(sizeof(appenddoc_t ));
     if(appenddata != NULL)
@@ -238,11 +244,23 @@ char * webcfg_appendeddoc(char * subdoc_name, uint32_t version, char * blob_data
 
     	embeddeddocPackSize = appendWebcfgEncodedData(&embeddeddocdata, (void *)blob_data, blob_size, appenddocdata, appenddocPackSize);
     	WebcfgInfo("appenddocPackSize: %zu, blobSize: %zu, embeddeddocPackSize: %zu\n", appenddocPackSize, blob_size, embeddeddocPackSize);
+	*embPackSize = (int)embeddeddocPackSize;
     	WebcfgDebug("The embedded doc data is %s\n",(char*)embeddeddocdata);
 	WEBCFG_FREE(appenddocdata);
-   	finaldocdata = base64blobencoder((char *)embeddeddocdata, embeddeddocPackSize);
-    	WebcfgDebug("The encoded append doc is %s\n",finaldocdata);
-	WEBCFG_FREE(embeddeddocdata);
+	#ifdef WEBCONFIG_BIN_SUPPORT
+   		if(isRbusEnabled() && isRbusListener(subdoc_name))
+		{
+			WebcfgDebug("Skipping base64 encode for rbus_set blob send\n");
+			finaldocdata = (char*) embeddeddocdata;
+			rbusList_supported = 1;
+		}
+	#endif
+	if(rbusList_supported == 0)
+	{
+		finaldocdata = base64blobencoder((char *)embeddeddocdata, embeddeddocPackSize);
+		WebcfgDebug("The encoded append doc is %s\n",finaldocdata);
+		WEBCFG_FREE(embeddeddocdata);
+	}
     }
     
     return finaldocdata;

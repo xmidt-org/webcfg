@@ -37,6 +37,11 @@
 #include <uuid/uuid.h>
 #include <math.h>
 #include <unistd.h>
+
+#if defined(WEBCONFIG_BIN_SUPPORT)
+#include "webcfg_rbus.h"
+#endif
+
 /*----------------------------------------------------------------------------*/
 /*                                   Macros                                   */
 /*----------------------------------------------------------------------------*/
@@ -561,7 +566,11 @@ WEBCFG_STATUS processMsgpackSubdoc(char *transaction_id)
 	int current_doc_count = 0;
 	int err = 0;
 	char * errmsg = NULL;
-	
+
+	int sendMsgSize = 0;
+#ifdef WEBCONFIG_BIN_SUPPORT
+	void *buff = NULL;
+#endif
 
 	mp_count = get_multipartdoc_count();
 	if(transaction_id !=NULL)
@@ -660,8 +669,8 @@ WEBCFG_STATUS processMsgpackSubdoc(char *transaction_id)
                                 {
 					if(pm->entries[i].type == WDMP_BLOB)
 					{
-						char *appended_doc = NULL;
-						appended_doc = webcfg_appendeddoc( mp->name_space, mp->etag, pm->entries[i].value, pm->entries[i].value_size, &doc_transId);
+						char *appended_doc = NULL;	
+						appended_doc = webcfg_appendeddoc( mp->name_space, mp->etag, pm->entries[i].value, pm->entries[i].value_size, &doc_transId, &sendMsgSize);
 						if(appended_doc != NULL)
 						{
 							WebcfgDebug("webcfg_appendeddoc doc_transId : %hu\n", doc_transId);
@@ -669,10 +678,23 @@ WEBCFG_STATUS processMsgpackSubdoc(char *transaction_id)
 							{
 								reqParam[i].name = strdup(pm->entries[i].name);
 							}
-							WebcfgDebug("appended_doc length: %zu\n", strlen(appended_doc));
-							reqParam[i].value = strdup(appended_doc);
-							reqParam[i].type = WDMP_BASE64;
-							WEBCFG_FREE(appended_doc);
+							#ifdef WEBCONFIG_BIN_SUPPORT
+								if(isRbusEnabled() && isRbusListener(mp->name_space))
+								{
+								        //disable string operation as it is binary data.
+									buff = appended_doc;
+								}
+								else
+								{
+									reqParam[i].value = strdup(appended_doc);
+									reqParam[i].type = WDMP_BASE64;
+									WEBCFG_FREE(appended_doc);
+								}
+							#else
+								reqParam[i].value = strdup(appended_doc);
+								reqParam[i].type = WDMP_BASE64;
+								WEBCFG_FREE(appended_doc);
+							#endif
 						}
 						//Update doc trans_id to validate events.
 						WebcfgDebug("Update doc trans_id to validate events.\n");
@@ -710,7 +732,26 @@ WEBCFG_STATUS processMsgpackSubdoc(char *transaction_id)
 				if((checkAndUpdateTmpRetryCount(subdoc_node, mp->name_space))== WEBCFG_SUCCESS)
 				{
 					WebcfgInfo("WebConfig SET Request\n");
-					setValues(reqParam, paramCount, ATOMIC_SET_WEBCONFIG, NULL, NULL, &ret, &ccspStatus);
+					#ifdef WEBCONFIG_BIN_SUPPORT
+						// rbus_enabled and rbus_listener_supported, rbus_set direct API used to send binary data to component.
+						if(isRbusEnabled() && isRbusListener(mp->name_space))
+						{
+							char topic[64] = {0};
+					        	get_destination(mp->name_space, topic);
+							blobSet_rbus(topic, buff, sendMsgSize, &ret, &ccspStatus);
+						}
+						//rbus_enabled and rbus_listener_not_supported, rbus_set api used to send b64 encoded data to component.
+						else 
+						{
+
+							setValues_rbus(reqParam, paramCount, ATOMIC_SET_WEBCONFIG, NULL, NULL, &ret, &ccspStatus);
+						}
+					#else
+					        //dbus_enabled, ccsp common library set api used to send data to component.
+						setValues(reqParam, paramCount, ATOMIC_SET_WEBCONFIG, NULL, NULL, &ret, &ccspStatus);
+					#endif
+					
+					
 					if(ret == WDMP_SUCCESS)
 					{
 						WebcfgInfo("setValues success. ccspStatus : %d\n", ccspStatus);

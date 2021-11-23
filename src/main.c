@@ -14,6 +14,7 @@
 #include "webcfg.h"
 #include "webcfg_log.h"
 #include "webcfg_rbus.h"
+#include "webcfg_privilege.h"
 #include <unistd.h>
 #include <pthread.h>
 /*----------------------------------------------------------------------------*/
@@ -35,6 +36,7 @@ int main()
 	memset(RfcEnable, 0, sizeof(RfcEnable));
 	char* strValue = NULL;
 	int ret = 0;
+	int systemStatus = -1;
 #ifdef INCLUDE_BREAKPAD
     breakpad_ExceptionHandler();
 #else
@@ -52,6 +54,7 @@ int main()
 	signal(SIGALRM, sig_handler);
 #endif
 	WebcfgInfo("********** Starting component: %s **********\n ", WEBCFG_COMPONENT_NAME);
+	webcfg_drop_root_privilege();
 	curl_global_init(CURL_GLOBAL_DEFAULT);
 
 	if(isRbusEnabled())
@@ -59,9 +62,10 @@ int main()
 		WebcfgDebug("RBUS mode. webconfigRbusInit\n");
 		webconfigRbusInit(WEBCFG_COMPONENT_NAME);
 		regWebConfigDataModel();
-		// wait for upstream subscriber
-        	waitForUpstreamEventSubscribe(300);
-
+		systemStatus = rbus_waitUntilSystemReady();
+		WebcfgDebug("rbus_waitUntilSystemReady systemStatus is %d\n", systemStatus);
+		// wait for upstream subscriber for 5mins
+                waitForUpstreamEventSubscribe(300);
 		ret = rbus_GetValueFromDB( PARAM_RFC_ENABLE, &strValue );
 		if (ret == 0)
 		{
@@ -76,7 +80,7 @@ int main()
 			if(get_global_mpThreadId() == NULL)
 			{
 				WebcfgInfo("WebConfig Rfc is enabled, starting initWebConfigMultipartTask.\n");
-				initWebConfigMultipartTask(0);
+				initWebConfigMultipartTask((unsigned long) systemStatus);
 			}
 			else
 			{
