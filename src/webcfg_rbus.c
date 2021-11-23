@@ -1212,7 +1212,7 @@ void sendNotification_rbus(char *payload, char *source, char *destination)
 {
 	wrp_msg_t *notif_wrp_msg = NULL;
 	char *contentType = NULL;
-    int rc = RBUS_ERROR_SUCCESS;
+	int rc = RBUS_ERROR_SUCCESS;
 	ssize_t msg_len;
 	void *msg_bytes;
 
@@ -1241,32 +1241,36 @@ void sendNotification_rbus(char *payload, char *source, char *destination)
 			}
 
 			msg_len = wrp_struct_to (notif_wrp_msg, WRP_BYTES, &msg_bytes);
-			
-            if(!subscribed)
-	    {
-		WebcfgError("Waiting to send Notification as no subscription for %s\n", WEBCFG_UPSTREAM_EVENT);
-		waitForUpstreamEventSubscribe(30);
-	    }
-	    
-                rbusValue_t value;
-                rbusObject_t data;
-                rbusValue_Init(&value);
-                rbusValue_SetBytes(value, msg_bytes, msg_len);
-                rbusObject_Init(&data, NULL);
-                rbusObject_SetValue(data, "value", value);
-                rbusEvent_t event;
-                event.name = WEBCFG_UPSTREAM_EVENT;
-                event.data = data;
-                event.type = RBUS_EVENT_GENERAL;
-                rc = rbusEvent_Publish(rbus_handle, &event);
-                rbusValue_Release(value);
-                rbusObject_Release(data);
-                if(rc != RBUS_ERROR_SUCCESS)
-                    WebcfgError("Failed to send Notification : %d, %s\n", rc, rbusError_ToString(rc));
-                else
-                    WebcfgInfo("Notification successfully sent to %s\n", WEBCFG_UPSTREAM_EVENT);
-            
-		wrp_free_struct (notif_wrp_msg );
+
+			// 30s wait interval for subscription 	
+			if(!subscribed)
+			{
+				waitForUpstreamEventSubscribe(30);
+	    		}
+			if(subscribed)
+			{
+				rbusValue_t value;
+				rbusObject_t data;
+				rbusValue_Init(&value);
+				rbusValue_SetBytes(value, msg_bytes, msg_len);
+				rbusObject_Init(&data, NULL);
+				rbusObject_SetValue(data, "value", value);
+				rbusEvent_t event;
+				event.name = WEBCFG_UPSTREAM_EVENT;
+				event.data = data;
+				event.type = RBUS_EVENT_GENERAL;
+				rc = rbusEvent_Publish(rbus_handle, &event);
+				rbusValue_Release(value);
+				rbusObject_Release(data);
+				if(rc != RBUS_ERROR_SUCCESS)
+					WebcfgError("Failed to send Notification : %d, %s\n", rc, rbusError_ToString(rc));
+				else
+					WebcfgInfo("Notification successfully sent to %s\n", WEBCFG_UPSTREAM_EVENT);
+			}
+			else
+				WebcfgError("Failed to send Notification as no subscription\n");
+
+			wrp_free_struct (notif_wrp_msg );
 		}
 	}
 }
@@ -1275,13 +1279,15 @@ void sendNotification_rbus(char *payload, char *source, char *destination)
 void waitForUpstreamEventSubscribe(int wait_time)
 {
 	int count=0;
+	if(!subscribed)
+		WebcfgError("Waiting for %s event subscription for %ds\n", WEBCFG_UPSTREAM_EVENT, wait_time);
 	while(!subscribed)
 	{
 		sleep(5);
 		count++;
 		if(count >= wait_time/5)
 		{
-			WebcfgError("Waited for %s subscription for %ds, proceeding without upstream subscription\n", WEBCFG_UPSTREAM_EVENT, wait_time); // i.e. 300s/5=60
+			WebcfgError("Waited for %s event subscription for %ds, proceeding\n", WEBCFG_UPSTREAM_EVENT, wait_time);
 			break; 
 		}
 	}

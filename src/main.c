@@ -65,7 +65,7 @@ int main()
 		systemStatus = rbus_waitUntilSystemReady();
 		WebcfgDebug("rbus_waitUntilSystemReady systemStatus is %d\n", systemStatus);
 		// wait for upstream subscriber for 5mins
-                waitForUpstreamEventSubscribe(300);
+		waitForUpstreamEventSubscribe(300);
 		ret = rbus_GetValueFromDB( PARAM_RFC_ENABLE, &strValue );
 		if (ret == 0)
 		{
