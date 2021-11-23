@@ -1505,7 +1505,7 @@ void createCurlHeader( struct curl_slist *list, struct curl_slist **header_list,
 	size_t supported_version_size = 0;
 	size_t supplementary_docs_size = 0;
 
-	WebcfgInfo("Start of createCurlheader\n");
+	WebcfgDebug("Start of createCurlheader\n");
 	//Fetch auth JWT token from cloud.
 	getAuthToken();
 
