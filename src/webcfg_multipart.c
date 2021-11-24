@@ -683,8 +683,12 @@ WEBCFG_STATUS processMsgpackSubdoc(char *transaction_id)
 							#ifdef WEBCONFIG_BIN_SUPPORT
 								if(isRbusEnabled() && isRbusListener(mp->name_space))
 								{
-								        //disable string operation as it is binary data.
-									buff = appended_doc;
+									//Setting reqParam struct to avoid validate_request_param() failure
+									//disable string operation as it is binary data.
+									reqParam[i].value = appended_doc;
+									//setting reqParam type as base64 to indicate blob
+									reqParam[i].type = WDMP_BASE64;
+									buff = reqParam[i].value;
 								}
 								else
 								{
