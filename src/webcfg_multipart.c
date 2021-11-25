@@ -421,7 +421,7 @@ WEBCFG_STATUS parseMultipartDocument(void *config_data, char *ct , size_t data_s
 	uint16_t err = 0;
 	char* result = NULL;
 	
-	WebcfgInfo("ct is %s\n", ct );
+	WebcfgDebug("ct is %s\n", ct );
 	// fetch boundary
 	str = strtok(ct,";");
 	str = strtok(NULL, ";");
@@ -638,8 +638,8 @@ WEBCFG_STATUS processMsgpackSubdoc(char *transaction_id)
 				WebcfgDebug("current_doc_count incremented to %d\n", current_doc_count);
 			}
 		}
-		WebcfgInfo("mp->name_space %s\n", mp->name_space);
-		WebcfgInfo("mp->etag %lu\n" , (long)mp->etag);
+		WebcfgDebug("mp->name_space %s\n", mp->name_space);
+		WebcfgDebug("mp->etag %lu\n" , (long)mp->etag);
 		WebcfgDebug("mp->data %s\n" , mp->data);
 
 		WebcfgDebug("mp->data_size is %zu\n", mp->data_size);
@@ -737,7 +737,7 @@ WEBCFG_STATUS processMsgpackSubdoc(char *transaction_id)
 				WebcfgDebug("Proceed to setValues..\n");
 				if((checkAndUpdateTmpRetryCount(subdoc_node, mp->name_space))== WEBCFG_SUCCESS)
 				{
-					WebcfgInfo("WebConfig SET Request\n");
+					WebcfgDebug("WebConfig SET Request\n");
 					#ifdef WEBCONFIG_BIN_SUPPORT
 						// rbus_enabled and rbus_listener_supported, rbus_set direct API used to send binary data to component.
 						if(isRbusEnabled() && isRbusListener(mp->name_space))
@@ -981,7 +981,7 @@ WEBCFG_STATUS processMsgpackSubdoc(char *transaction_id)
 			}
 			else
 			{
-				WebcfgInfo("process aker sub doc\n");
+				WebcfgDebug("process aker sub doc\n");
 				akerStatus = processAkerSubdoc(subdoc_node, akerIndex);
 				WebcfgInfo("Aker doc processed. akerStatus %d\n", akerStatus);
 				break;
@@ -1393,7 +1393,7 @@ void derive_root_doc_version_string(char **rootVersion, uint32_t *root_ver, int 
 			}
 
 			//check existing root version
-			WebcfgInfo("check existing root version\n");
+			WebcfgDebug("check existing root version\n");
 			if(db_root_version)
 			{
 			//when subdocs are applied and reboot due to software migration/rollback, root reset to 0.
@@ -1509,7 +1509,7 @@ void createCurlHeader( struct curl_slist *list, struct curl_slist **header_list,
 	size_t supported_version_size = 0;
 	size_t supplementary_docs_size = 0;
 
-	WebcfgInfo("Start of createCurlheader\n");
+	WebcfgDebug("Start of createCurlheader\n");
 	//Fetch auth JWT token from cloud.
 	getAuthToken();
 
@@ -2262,7 +2262,7 @@ WEBCFG_STATUS checkRootDelete()
 	}
 	else
 	{
-		WebcfgInfo("Tmp list root doc delete is not required\n");
+		WebcfgDebug("Tmp list root doc delete is not required\n");
 	}
 	return WEBCFG_FAILURE;
 }
@@ -2308,7 +2308,7 @@ WEBCFG_STATUS checkRootUpdate()
 
 	if(count == 1)
 	{
-		WebcfgInfo("root DB update is required\n");
+		WebcfgDebug("root DB update is required\n");
 		return WEBCFG_SUCCESS;
 	}
 	else

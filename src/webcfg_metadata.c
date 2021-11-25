@@ -137,8 +137,10 @@ void initWebcfgProperties(char * filename)
 				strncpy(sdInfo->name,subtoken,(sizeof(sdInfo->name)-1));
 				subtoken = strtok(NULL,":");//skip bitposition
 				subtoken = strtok(NULL,":");//skip support
-				webcfgStrncpy(sdInfo->support, subtoken, sizeof(sdInfo->support));
-
+				if(subtoken != NULL)
+				{
+				webcfgStrncpy(sdInfo->support, subtoken, sizeof(sdInfo->support));//To handle subtoken null case
+				}
 				#ifdef WEBCONFIG_BIN_SUPPORT				
 				subtoken = strtok(NULL,":");//skip rbus_listner
 				if(subtoken != NULL)
@@ -155,7 +157,6 @@ void initWebcfgProperties(char * filename)
 					}
 				}
 				#endif
-			
 				token =strtok_r(p,",",&p);
 				sdInfo->next = NULL;
 
