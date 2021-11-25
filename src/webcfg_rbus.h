@@ -40,7 +40,7 @@
 #define buffLen 1024
 #define maxParamLen 128
 
-#define NUM_WEBCFG_ELEMENTS 7
+#define NUM_WEBCFG_ELEMENTS 8
 
 #define WEBCFG_COMPONENT_NAME "webconfig"
 #define MAX_PARAMETERNAME_LEN			4096
@@ -54,6 +54,7 @@
 #define WEBCFG_SUPPORTED_DOCS_PARAM	"Device.X_RDK_WebConfig.SupportedDocs"
 #define WEBCFG_SUPPORTED_VERSION_PARAM	"Device.X_RDK_WebConfig.SupportedSchemaVersion"
 #define WEBCFG_SUPPLEMENTARY_TELEMETRY_PARAM  "Device.X_RDK_WebConfig.SupplementaryServiceUrls.Telemetry"
+#define WEBCFG_UPSTREAM_EVENT  "Webconfig.Upstream"
 #define PARAM_RFC_ENABLE "eRT.com.cisco.spvtg.ccsp.webpa.WebConfigRfcEnable"
 
 #define CCSP_Msg_Bus_OK             100
@@ -91,4 +92,5 @@ int parseForceSyncJson(char *jsonpayload, char **forceSyncVal, char **forceSynct
 int get_rbus_ForceSync(char** pString, char **transactionId );
 bool get_rbus_RfcEnable();
 void sendNotification_rbus(char *payload, char *source, char *destination);
+void waitForUpstreamEventSubscribe(int wait_time);
 #endif

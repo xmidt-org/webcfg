@@ -50,8 +50,6 @@
 #define CONTENT_LENGTH_HEADER 	       "Content-Length:"
 #define CURL_TIMEOUT_SEC	   25L
 #define CA_CERT_PATH 		   "/etc/ssl/certs/ca-certificates.crt"
-#define WEBPA_READ_HEADER          "/etc/parodus/parodus_read_file.sh"
-#define WEBPA_CREATE_HEADER        "/etc/parodus/parodus_create_file.sh"
 #define CCSP_CRASH_STATUS_CODE      192
 #define MAX_PARAMETERNAME_LEN		4096
 #define SUBDOC_TAG_COUNT            4
