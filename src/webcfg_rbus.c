@@ -1234,7 +1234,7 @@ void sendNotification_rbus(char *payload, char *source, char *destination)
 			memset(notif_wrp_msg, 0, sizeof(wrp_msg_t));
 			notif_wrp_msg->msg_type = WRP_MSG_TYPE__EVENT;
 			WebcfgDebug("source: %s\n",source);
-			notif_wrp_msg->u.event.source = strdup(source);
+			notif_wrp_msg->u.event.source = source;
 			WebcfgDebug("destination: %s\n", destination);
 			notif_wrp_msg->u.event.dest = strdup(destination);
 			contentType = strdup("application/json");
