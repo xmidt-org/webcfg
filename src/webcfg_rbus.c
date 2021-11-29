@@ -1149,6 +1149,11 @@ int set_rbus_ForceSync(char* pString, int *pStatus)
 		}
 	}
 	WebcfgDebug("set_rbus_ForceSync . ForceSync string is %s\n", ForceSync);
+       
+        if(value !=NULL)
+	{
+		WEBCFG_FREE(value);
+	}
     }
 
     if((ForceSync[0] !='\0') && (strlen(ForceSync)>0))
@@ -1179,6 +1184,11 @@ int set_rbus_ForceSync(char* pString, int *pStatus)
             WebcfgInfo("Trigger force sync\n");
             pthread_cond_signal(get_global_sync_condition());
             pthread_mutex_unlock(get_global_sync_mutex());
+
+            if( transactionId != NULL)
+	    {
+		WEBCFG_FREE(transactionId);
+	    }
         }
     }
     else
@@ -1271,6 +1281,11 @@ void sendNotification_rbus(char *payload, char *source, char *destination)
 				WebcfgError("Failed to send Notification as no subscription\n");
 
 			wrp_free_struct (notif_wrp_msg );
+                        
+                        if(msg_bytes)
+			{
+				WEBCFG_FREE(msg_bytes);
+			}
 		}
 	}
 }
