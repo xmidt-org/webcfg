@@ -1312,7 +1312,7 @@ void handleConnectedClientNotify(char *status)
 						setValues_rbus(attArr, 1, ATOMIC_SET_WEBCONFIG, NULL, NULL, &ret, &ccspStatus);
 					#else
 						attArr[0].value = (char *) malloc(sizeof(char) * 20);
-						strncpy(attArr[0].value, notif, 20);
+						webcfgStrncpy(attArr[0].value, notif, 20);
 						attArr[0].type = WDMP_INT;
 						WebcfgDebug("Notify paramName %s\n", paramName);
 						setAttributes(attArr, 1, NULL, &ret);
