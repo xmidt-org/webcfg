@@ -25,12 +25,14 @@
 /*----------------------------------------------------------------------------*/
 /*                                   Macros                                   */
 /*----------------------------------------------------------------------------*/
-#ifdef BUILD_YOCTO
+#if defined(BUILD_YOCTO) && ! defined(DEVICE_EXTENDER)
 #if defined(RDK_PERSISTENT_PATH_VIDEO)
 #define WEBCFG_DB_FILE 	    "/opt/webconfig_db.bin"
 #else
 #define WEBCFG_DB_FILE 	    "/nvram/webconfig_db.bin"
 #endif
+#elif defined(DEVICE_EXTENDER)
+#define WEBCFG_DB_FILE      "/usr/opensync/data/webconfig_db.bin"
 #else
 #define WEBCFG_DB_FILE 	    "/tmp/webconfig_db.bin"
 #endif
@@ -125,13 +127,15 @@ void addToDBList(webconfig_db_data_t *webcfgdb);
 
 WEBCFG_STATUS updateTmpList(webconfig_tmp_data_t *temp, char *docname, uint32_t version, char *status, char *error_details, uint16_t error_code, uint16_t trans_id, int retry);
 
-WEBCFG_STATUS deleteFromTmpList(char* doc_name);
+WEBCFG_STATUS deleteFromTmpList(char* doc_name, webconfig_tmp_data_t **next_node);
 
 webconfig_tmp_data_t * getTmpNode(char *docname);
 
 void delete_tmp_list();
 
 void delete_tmp_docs_list();
+
+void release_success_docs_tmplist();
 
 int get_numOfMpDocs();
 

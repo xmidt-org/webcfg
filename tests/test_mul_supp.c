@@ -179,7 +179,9 @@ void test_multipart()
 	initWebConfigNotifyTask();
 	processWebcfgEvents();
 	initEventHandlingTask();
+#ifdef FEATURE_SUPPORT_AKER
 	initWebConfigClient();
+#endif
 	initMaintenanceTimer();
 	set_global_supplementarySync(1);
 	printTest();

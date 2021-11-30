@@ -128,7 +128,7 @@ int send_aker_blob(char *paramName, char *blob, uint32_t blobSize, uint16_t docT
 	if(msg != NULL)
 	{
 		memset(msg, 0, sizeof(wrp_msg_t));
-		WebcfgDebug("Aker paramName is %s size %ld\n", paramName, sizeof(AKER_UPDATE_PARAM));
+		WebcfgDebug("Aker paramName is %s size %zu\n", paramName, sizeof(AKER_UPDATE_PARAM));
 		if((strncmp(paramName, AKER_UPDATE_PARAM, sizeof(AKER_UPDATE_PARAM)) ==0) && (blobSize > 0))
 		{
 			msg->msg_type = WRP_MSG_TYPE__UPDATE;
@@ -175,7 +175,7 @@ int send_aker_blob(char *paramName, char *blob, uint32_t blobSize, uint16_t docT
 				WebcfgInfo("send_aker_blob backoffRetryTime %d seconds\n", backoffRetryTime);
 				if (akerwait__ (backoffRetryTime))
 				{
-					WebcfgInfo("g_shutdown true, break send_aker_blob failure\n");
+					WebcfgDebug("g_shutdown true, break send_aker_blob failure\n");
 					break;
 				}
 				c++;
@@ -282,6 +282,8 @@ AKER_STATUS processAkerSubdoc(webconfig_tmp_data_t *docNode, multipartdocs_t *ak
 	char* errMsg = NULL;
 	char value[MAX_VALUE_LEN]={0};
 
+	int sendmsgsize =0;
+
 	gmp = akerIndex;
 
 	if(gmp ==NULL)
@@ -327,7 +329,8 @@ AKER_STATUS processAkerSubdoc(webconfig_tmp_data_t *docNode, multipartdocs_t *ak
 					if(pm->entries[i].type == WDMP_BLOB)
 					{
 						char *appended_doc = NULL;
-						appended_doc = webcfg_appendeddoc( gmp->name_space, gmp->etag, pm->entries[i].value, pm->entries[i].value_size, &doc_transId);
+						appended_doc = webcfg_appendeddoc( gmp->name_space, gmp->etag, pm->entries[i].value, pm->entries[i].value_size, &doc_transId, &sendmsgsize);
+						
 						if(appended_doc != NULL)
 						{
 							WebcfgDebug("webcfg_appendeddoc doc_transId : %hu\n", doc_transId);
@@ -335,7 +338,6 @@ AKER_STATUS processAkerSubdoc(webconfig_tmp_data_t *docNode, multipartdocs_t *ak
 							{
 								reqParam[i].name = strdup(pm->entries[i].name);
 							}
-							WebcfgDebug("appended_doc length: %zu\n", strlen(appended_doc));
 							reqParam[i].value = strdup(appended_doc);
 							reqParam[i].type = WDMP_BASE64;
 							WEBCFG_FREE(appended_doc);

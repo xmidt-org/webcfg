@@ -27,6 +27,10 @@
 #include "webcfg_blob.h"
 #include "webcfg_timer.h"
 #include <errno.h>
+#include "webcfg_metadata.h"
+#if defined(WEBCONFIG_BIN_SUPPORT)
+#include "webcfg_rbus.h"
+#endif
 /*----------------------------------------------------------------------------*/
 /*                                   Macros                                   */
 /*----------------------------------------------------------------------------*/
@@ -214,7 +218,7 @@ int addToEventQueue(char *buf)
             {
                 eventDataQ = Data;
 
-                WebcfgInfo("Producer added Data\n");
+                WebcfgDebug("Producer added Data\n");
                 pthread_cond_signal(&event_con);
                 pthread_mutex_unlock (&event_mut);
                 WebcfgDebug("mutex unlock in producer event thread\n");
@@ -280,14 +284,14 @@ void* processSubdocEvents()
 			pthread_mutex_unlock (&event_mut);
 			WebcfgDebug("mutex unlock in event consumer thread\n");
 
-			WebcfgInfo("Data->data is %s\n", Data->data);
+			WebcfgDebug("Data->data is %s\n", Data->data);
 			rv = parseEventData(Data->data, &eventParam);
 			if(rv == WEBCFG_SUCCESS)
 			{
 				subdoc_node = getTmpNode(eventParam->subdoc_name);
 				doctimer_node = getTimerNode(eventParam->subdoc_name);
 
-				WebcfgInfo("Event detection\n");
+				WebcfgDebug("Event detection\n");
 				if (((eventParam->status !=NULL) && (strcmp(eventParam->status, "ACK")==0 || (strcmp(eventParam->status, "ACK;enabled")==0) || (strcmp(eventParam->status, "ACK;disabled")==0))) && (eventParam->timeout == 0))
 				{
 					//Based on ACK event if mesh/cujo is enabled then connected client notification need to be turned OFF
@@ -455,12 +459,12 @@ void* processSubdocEvents()
 					//If version in event and tmp are not matching, re-send blob to retry.
 					if(checkDBVersion(eventParam->subdoc_name, eventParam->version) !=WEBCFG_SUCCESS)
 					{
-						WebcfgInfo("DB and event version are not same, check tmp list\n");
+						WebcfgDebug("DB and event version are not same, check tmp list\n");
 						tmpVersion = getDocVersionFromTmpList(subdoc_node, eventParam->subdoc_name);
 						if (tmpVersion == 0)
 						{
 							//tmpVersion=0 indicate already doc is applied & doc is not available in tmp list
-							WebcfgInfo("tmpVersion is 0, DB already in latest version\n");
+							WebcfgDebug("tmpVersion is 0, DB already in latest version\n");
 						}
 						else if(tmpVersion != eventParam->version)
 						{
@@ -513,7 +517,7 @@ void* processSubdocEvents()
 					}
 					else
 					{
-						WebcfgInfo("DB and event version are same, check tmp list\n");
+						WebcfgDebug("DB and event version are same, check tmp list\n");
 						tmpVersion = getDocVersionFromTmpList(subdoc_node, eventParam->subdoc_name);
 						//tmpVersion=0 indicate already doc is applied & deleted frm tmp list
 						if((tmpVersion !=0) && (tmpVersion != eventParam->version))
@@ -655,7 +659,7 @@ int parseEventData(char* str, event_params_t **val)
 				WebcfgDebug("param->err_code %lu\n", (long)param->err_code);
 			}
 
-			WebcfgInfo("param->subdoc_name %s param->trans_id %lu param->version %lu param->status %s param->timeout %lu\n", param->subdoc_name, (long)param->trans_id, (long)param->version, param->status, (long)param->timeout);
+			WebcfgDebug("param->subdoc_name %s param->trans_id %lu param->version %lu param->status %s param->timeout %lu\n", param->subdoc_name, (long)param->trans_id, (long)param->version, param->status, (long)param->timeout);
 			*val = param;
 			WEBCFG_FREE(token);
 			return WEBCFG_SUCCESS;
@@ -702,7 +706,6 @@ void sendSuccessNotification(webconfig_tmp_data_t *subdoc_node, char *name, uint
 		cloud_trans_id = "unknown";
 	}
 	addWebConfgNotifyMsg(name, version, "success", "none", cloud_trans_id,0, "status",0, NULL, 200);
-	deleteFromTmpList(name);
 }
 
 //start internal timer for required doc when timeout value is received
@@ -796,7 +799,7 @@ WEBCFG_STATUS deleteFromTimerList(char* doc_name)
 		WebcfgError("Invalid value for timer doc\n");
 		return WEBCFG_FAILURE;
 	}
-	WebcfgInfo("timer doc to be deleted: %s\n", doc_name);
+	WebcfgDebug("timer doc to be deleted: %s\n", doc_name);
 
 	prev_node = NULL;
 	pthread_mutex_lock (&expire_timer_mut);
@@ -826,9 +829,9 @@ WEBCFG_STATUS deleteFromTimerList(char* doc_name)
 			WEBCFG_FREE( curr_node->subdoc_name );
 			WEBCFG_FREE( curr_node );
 			curr_node = NULL;
-			WebcfgInfo("Deleted timer successfully and returning..\n");
+			WebcfgDebug("Deleted timer successfully and returning..\n");
 			numOfEvents =numOfEvents - 1;
-			WebcfgInfo("numOfEvents after delete is %d\n", numOfEvents);
+			WebcfgDebug("numOfEvents after delete is %d\n", numOfEvents);
 			pthread_mutex_unlock (&expire_timer_mut);
 			return WEBCFG_SUCCESS;
 		}
@@ -857,7 +860,7 @@ WEBCFG_STATUS stopWebcfgTimer(expire_timer_t *temp, char *name, uint16_t trans_i
 					WebcfgDebug("delete timer for sub doc %s\n", name);
 					if(deleteFromTimerList(name) == WEBCFG_SUCCESS)
 					{
-						WebcfgInfo("stopped timer for doc %s\n", name);
+						WebcfgDebug("stopped timer for doc %s\n", name);
 						return WEBCFG_SUCCESS;
 					}
 					else
@@ -927,6 +930,11 @@ WEBCFG_STATUS retryMultipartSubdoc(webconfig_tmp_data_t *docNode, char *docName)
 	uint16_t err = 0;
 	char * errmsg = NULL;
 
+	int sendMsgsize = 0;
+#ifdef WEBCONFIG_BIN_SUPPORT
+	void *buff = NULL;
+#endif
+
 	gmp = get_global_mp();
 
 	if(gmp ==NULL)
@@ -969,13 +977,31 @@ WEBCFG_STATUS retryMultipartSubdoc(webconfig_tmp_data_t *docNode, char *docName)
 						{
 							char *appended_doc = NULL;
 							WebcfgDebug("B4 webcfg_appendeddoc\n");
-							appended_doc = webcfg_appendeddoc( gmp->name_space, gmp->etag, pm->entries[i].value, pm->entries[i].value_size, &doc_transId);
+							appended_doc = webcfg_appendeddoc( gmp->name_space, gmp->etag, pm->entries[i].value, pm->entries[i].value_size, &doc_transId, &sendMsgsize);
+							
 							WebcfgDebug("webcfg_appendeddoc doc_transId is %hu\n", doc_transId);
 							reqParam[i].name = strdup(pm->entries[i].name);
-							WebcfgDebug("appended_doc length: %zu\n", strlen(appended_doc));
-							reqParam[i].value = strdup(appended_doc);
-							reqParam[i].type = WDMP_BASE64;
-							WEBCFG_FREE(appended_doc);
+							#ifdef WEBCONFIG_BIN_SUPPORT
+								if(isRbusEnabled() && isRbusListener(gmp->name_space))
+								{
+								        //Setting reqParam struct to avoid validate_request_param() failure
+									//disable string operation as it is binary data.
+									reqParam[i].value = appended_doc;
+									//setting reqParam type as base64 to indicate blob
+									reqParam[i].type = WDMP_BASE64;
+									buff = reqParam[i].value;
+								}
+								else
+								{
+									reqParam[i].value = strdup(appended_doc);
+									reqParam[i].type = WDMP_BASE64;
+									WEBCFG_FREE(appended_doc);
+								}
+							#else
+								reqParam[i].value = strdup(appended_doc);
+								reqParam[i].type = WDMP_BASE64;
+								WEBCFG_FREE(appended_doc);
+							#endif
 							//update doc_transId only for blob docs, not for scalars.
 							updateTmpList(docNode, gmp->name_space, gmp->etag, "pending", "failed_retrying", ccspStatus, doc_transId, 1);
 						}
@@ -1000,7 +1026,24 @@ WEBCFG_STATUS retryMultipartSubdoc(webconfig_tmp_data_t *docNode, char *docName)
 				{
 					WebcfgDebug("Proceed to setValues..\n");
 					WebcfgDebug("retryMultipartSubdoc WebConfig SET Request\n");
-					setValues(reqParam, paramCount, ATOMIC_SET_WEBCONFIG, NULL, NULL, &ret, &ccspStatus);
+					#ifdef WEBCONFIG_BIN_SUPPORT
+						// rbus_enabled and rbus_listener_supported, rbus_set direct API used to send binary data to component.
+						if(isRbusEnabled() && isRbusListener(gmp->name_space))
+						{
+							char topic[64] = {0};
+					        	get_destination(gmp->name_space, topic);
+							blobSet_rbus(topic, buff, sendMsgsize, &ret, &ccspStatus);
+						}
+						//rbus_enabled and rbus_listener_not_supported, rbus_set api used to send b64 encoded data to component.
+						else 
+						{
+							setValues_rbus(reqParam, paramCount, ATOMIC_SET_WEBCONFIG, NULL, NULL, &ret, &ccspStatus);
+						}
+					#else
+					        //dbus_enabled, ccsp common library set api used to send data to component.
+						setValues(reqParam, paramCount, ATOMIC_SET_WEBCONFIG, NULL, NULL, &ret, &ccspStatus);
+					#endif
+					//setValues(reqParam, paramCount, ATOMIC_SET_WEBCONFIG, NULL, NULL, &ret, &ccspStatus);
 					if(ret == WDMP_SUCCESS)
 					{
 						WebcfgInfo("retryMultipartSubdoc setValues success. ccspStatus : %d\n", ccspStatus);
@@ -1014,7 +1057,6 @@ WEBCFG_STATUS retryMultipartSubdoc(webconfig_tmp_data_t *docNode, char *docName)
 								addWebConfgNotifyMsg(gmp->name_space, gmp->etag, "success", "none", docNode->cloud_trans_id, 0, "status", 0, NULL, 200);
 							}
 							WebcfgDebug("deleteFromTmpList as scalar doc is applied\n");
-							deleteFromTmpList(gmp->name_space);
 							WebcfgDebug("docNode->isSupplementarySync is %d\n", docNode->isSupplementarySync);
 							if(docNode->isSupplementarySync == 0)
 							{
@@ -1182,7 +1224,7 @@ WEBCFG_STATUS validateEvent(webconfig_tmp_data_t *temp, char *docname, uint16_t 
 		{
 			if(txid == temp->trans_id)
 			{
-				WebcfgInfo("Valid event. Event txid %hu matches with temp trans_id %hu doc %s\n", txid, temp->trans_id, temp->name);
+				WebcfgDebug("Valid event. Event txid %hu matches with temp trans_id %hu doc %s\n", txid, temp->trans_id, temp->name);
 				return WEBCFG_SUCCESS;
 			}
 			else
@@ -1262,12 +1304,19 @@ void handleConnectedClientNotify(char *status)
 				if(attArr !=NULL)
 				{
 					memset(attArr,0,sizeof(param_t));
-					attArr[0].value = (char *) malloc(sizeof(char) * 20);
-					strncpy(attArr[0].value, notif, 20);
 					attArr[0].name = paramName;
-					attArr[0].type = WDMP_INT;
-					WebcfgDebug("Notify paramName %s\n", paramName);
-					setAttributes(attArr, 1, NULL, &ret);
+					#ifdef WEBCONFIG_BIN_SUPPORT
+						attArr[0].value = strdup(apply_status);
+						attArr[0].type = WDMP_STRING;
+						int ccspStatus=0;
+						setValues_rbus(attArr, 1, ATOMIC_SET_WEBCONFIG, NULL, NULL, &ret, &ccspStatus);
+					#else
+						attArr[0].value = (char *) malloc(sizeof(char) * 20);
+						webcfgStrncpy(attArr[0].value, notif, 20);
+						attArr[0].type = WDMP_INT;
+						WebcfgDebug("Notify paramName %s\n", paramName);
+						setAttributes(attArr, 1, NULL, &ret);
+					#endif
 					if (ret != WDMP_SUCCESS)
 					{
 						WebcfgError("setAttributes failed for parameter : %s notif:%s ret: %d\n", paramName, notif, ret);
@@ -1285,3 +1334,4 @@ void handleConnectedClientNotify(char *status)
 	}
 	return;
 }
+

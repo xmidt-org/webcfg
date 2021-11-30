@@ -30,11 +30,14 @@
 #include <wdmp-c.h>
 #include <base64.h>
 #include "webcfg_db.h"
-#include "webcfg_aker.h"
 #include "webcfg_metadata.h"
 #include "webcfg_event.h"
 #include "webcfg_blob.h"
 #include "webcfg_timer.h"
+
+#ifdef FEATURE_SUPPORT_AKER
+#include "webcfg_aker.h"
+#endif
 /*----------------------------------------------------------------------------*/
 /*                                   Macros                                   */
 /*----------------------------------------------------------------------------*/
@@ -110,8 +113,12 @@ void *WebConfigMultipartTask(void *status)
 
 	//start webconfig notification thread.
 	initWebConfigNotifyTask();
+
+#ifdef FEATURE_SUPPORT_AKER
+	WebcfgInfo("FEATURE_SUPPORT_AKER initWebConfigClient\n");
 	initWebConfigClient();
-	WebcfgInfo("initDB %s\n", WEBCFG_DB_FILE);
+#endif
+	WebcfgDebug("initDB %s\n", WEBCFG_DB_FILE);
 
 	initDB(WEBCFG_DB_FILE);
 
@@ -164,6 +171,22 @@ void *WebConfigMultipartTask(void *status)
 		{
 			if(maintenance_doc_sync == 1 && checkMaintenanceTimer() == 1 )
 			{
+				char *ForceSyncDoc = NULL;
+				char* ForceSyncTransID = NULL;
+				getForceSync(&ForceSyncDoc, &ForceSyncTransID);
+				if((ForceSyncDoc == NULL) && (ForceSyncTransID == NULL) && (!forced_sync) && (!get_bootSync()))
+				{
+					WebcfgInfo("release success docs at every maintenance window\n");	
+					release_success_docs_tmplist();
+				}
+				if(ForceSyncDoc != NULL)
+				{
+					WEBCFG_FREE(ForceSyncDoc);
+				}
+				if(ForceSyncTransID !=NULL)
+				{
+					WEBCFG_FREE(ForceSyncTransID);
+				}
 				WebcfgDebug("Triggered Supplementary doc boot sync\n");
 				SupplementaryDocs_t *sp = NULL;
 				sp = get_global_spInfoHead();
@@ -258,7 +281,7 @@ void *WebConfigMultipartTask(void *status)
 
 			// Identify ForceSync based on docname
 			getForceSync(&ForceSyncDoc, &ForceSyncTransID);
-			WebcfgDebug("ForceSyncDoc %s ForceSyncTransID. %s\n", ForceSyncDoc, ForceSyncTransID);
+			WebcfgInfo("ForceSyncDoc %s ForceSyncTransID. %s\n", ForceSyncDoc, ForceSyncTransID);
 			if(ForceSyncTransID !=NULL)
 			{
 				if((ForceSyncDoc != NULL) && strlen(ForceSyncDoc)>0)
@@ -299,9 +322,11 @@ void *WebConfigMultipartTask(void *status)
 	}
 
 	/* release all active threads before shutdown */
+#ifdef FEATURE_SUPPORT_AKER
 	pthread_mutex_lock (get_global_client_mut());
 	pthread_cond_signal (get_global_client_con());
 	pthread_mutex_unlock (get_global_client_mut());
+#endif
 
 	pthread_mutex_lock (get_global_notify_mut());
 	pthread_cond_signal (get_global_notify_con());
@@ -325,8 +350,9 @@ void *WebConfigMultipartTask(void *status)
 	JoinThread (get_global_notify_threadid());
 
 	WebcfgDebug("client thread: pthread_join\n");
+#ifdef FEATURE_SUPPORT_AKER
 	JoinThread (get_global_client_threadid());
-
+#endif
 	reset_global_eventFlag();
 	set_doc_fail(0);
 	reset_numOfMpDocs();
@@ -335,8 +361,9 @@ void *WebConfigMultipartTask(void *status)
 	set_global_retry_timestamp(0);
 	set_retry_timer(0);
 	set_global_supplementarySync(0);
+#ifdef FEATURE_SUPPORT_AKER
 	set_send_aker_flag(false);
-
+#endif
 	//delete tmp, db, and mp cache lists.
 	delete_tmp_list();
 
@@ -501,7 +528,7 @@ int handlehttpResponse(long response_code, char *webConfigData, int retry_count,
 	}
 	else if(response_code == 200)
 	{
-		WebcfgInfo("webConfig is not in sync with cloud. response_code:%ld\n", response_code);
+		WebcfgDebug("webConfig is not in sync with cloud. response_code:%ld\n", response_code);
 
 		if(webConfigData !=NULL && (strlen(webConfigData)>0))
 		{
@@ -522,7 +549,7 @@ int handlehttpResponse(long response_code, char *webConfigData, int retry_count,
 		}
 		else
 		{
-			WebcfgInfo("webConfigData is empty\n");
+			WebcfgDebug("webConfigData is empty\n");
 			//After factory reset when server sends 200 with empty config, set POST-NONE root version
 			contentLength = get_global_contentLen();
 			if((contentLength !=NULL) && (strcmp(contentLength, "0") == 0))
@@ -680,7 +707,7 @@ int testUtility()
 		if(data !=NULL)
 		{
 			WebcfgInfo("webConfigData fetched successfully\n");
-			WebcfgInfo("parseMultipartDocument\n");
+			WebcfgDebug("parseMultipartDocument\n");
 			test_file_status = parseMultipartDocument(data, ct, (size_t)test_dataSize, transaction_uuid);
 
 			if(test_file_status == WEBCFG_SUCCESS)

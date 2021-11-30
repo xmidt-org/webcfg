@@ -166,9 +166,9 @@ WEBCFG_STATUS addNewDocEntry(size_t count)
      size_t webcfgdbPackSize = -1;
      void* data = NULL;
  
-     WebcfgDebug("DB docs count %ld\n", (size_t)count);
+     WebcfgDebug("DB docs count %zu\n", (size_t)count);
      webcfgdbPackSize = webcfgdb_pack(webcfgdb_data, &data, count);
-     WebcfgDebug("size of webcfgdbPackSize %ld\n", webcfgdbPackSize);
+     WebcfgDebug("size of webcfgdbPackSize %zu\n", webcfgdbPackSize);
      WebcfgDebug("writeToDBFile %s\n", WEBCFG_DB_FILE);
      writeToDBFile(WEBCFG_DB_FILE,(char *)data,webcfgdbPackSize);
      if(data)
@@ -203,7 +203,7 @@ WEBCFG_STATUS generateBlob()
             webcfgdb_blob->data = (char *)data;
             webcfgdb_blob->len  = webcfgdbBlobPackSize;
 
-            WebcfgDebug("The webcfgdbBlobPackSize is : %ld\n",webcfgdb_blob->len);
+            WebcfgDebug("The webcfgdbBlobPackSize is : %zu\n",webcfgdb_blob->len);
             return WEBCFG_SUCCESS;
         }
         else
@@ -662,7 +662,7 @@ WEBCFG_STATUS updateTmpList(webconfig_tmp_data_t *temp, char *docname, uint32_t 
 
 
 //delete doc from webcfg Tmp list
-WEBCFG_STATUS deleteFromTmpList(char* doc_name)
+WEBCFG_STATUS deleteFromTmpList(char* doc_name, webconfig_tmp_data_t **next_node)
 {
 	webconfig_tmp_data_t *prev_node = NULL, *curr_node = NULL;
 
@@ -690,7 +690,9 @@ WEBCFG_STATUS deleteFromTmpList(char* doc_name)
 			else
 			{
 				WebcfgDebug("Traversing to find node\n");
-				prev_node->next = curr_node->next;
+				prev_node->next = curr_node->next; 
+				*next_node = curr_node->next;
+
 			}
 
 			WebcfgDebug("Deleting the node entries\n");
@@ -738,7 +740,7 @@ void delete_tmp_list()
 //Delete all docs other than root from tmp list based on sync type primary/secondary
 void delete_tmp_docs_list()
 {
-   webconfig_tmp_data_t *temp = NULL;
+   webconfig_tmp_data_t *temp = NULL, *next_node = NULL;
    temp = get_global_tmp_node();
 
     WebcfgDebug("Inside delete_tmp_docs_list()\n");
@@ -748,7 +750,29 @@ void delete_tmp_docs_list()
 	if((strcmp(temp->name, "root") !=0) && (temp->isSupplementarySync == get_global_supplementarySync()))
 	{
 		WebcfgDebug("Delete node--> temp->name %s temp->version %lu temp->status %s temp->isSupplementarySync %d temp->error_details %s temp->error_code %lu temp->trans_id %lu temp->retry_count %d temp->cloud_trans_id %s\n",temp->name, (long)temp->version, temp->status, temp->isSupplementarySync, temp->error_details, (long)temp->error_code, (long)temp->trans_id, temp->retry_count, temp->cloud_trans_id);
-		deleteFromTmpList(temp->name);
+		deleteFromTmpList(temp->name, &next_node); 
+		temp = next_node;
+		continue;
+	}
+	temp = temp->next;
+    }
+}
+
+// To release success tmp docs during every maintenance window when few docs are failed in list .
+void release_success_docs_tmplist()
+{
+   webconfig_tmp_data_t *temp = NULL, *next_node;
+   temp = get_global_tmp_node();
+
+    WebcfgDebug("Inside release_success_docs_list()\n");
+    while(temp != NULL)
+    {
+	if((temp->status != NULL) && (strcmp(temp->status, "success") ==0))
+	{
+		WebcfgDebug("Delete node--> temp->name %s temp->version %lu temp->status %s temp->isSupplementarySync %d temp->error_details %s temp->error_code %lu temp->trans_id %lu temp->retry_count %d temp->cloud_trans_id %s\n",temp->name, (long)temp->version, temp->status, temp->isSupplementarySync, temp->error_details, (long)temp->error_code, (long)temp->trans_id, temp->retry_count, temp->cloud_trans_id);
+		deleteFromTmpList(temp->name,&next_node);
+		temp = next_node;
+		continue;	
 	}
 	temp = temp->next;
     }
@@ -950,7 +974,7 @@ char * get_DB_BLOB_base64()
 	    //Start of b64 decoding for debug purpose
 	    WebcfgDebug("----Start of b64 decoding----\n");
 	    decodeMsgSize = b64_get_decoded_buffer_size(strlen(b64buffer));
-	    WebcfgDebug("expected b64 decoded msg size : %ld bytes\n",decodeMsgSize);
+	    WebcfgDebug("expected b64 decoded msg size : %zu bytes\n",decodeMsgSize);
 
 	    decodeMsg = (char *) malloc(sizeof(char) * decodeMsgSize);
 	    if(decodeMsg)
@@ -962,7 +986,7 @@ char * get_DB_BLOB_base64()
 
 		blob_struct_t *bd = NULL;
 		bd = decodeBlobData((void *)decodeMsg, size);
-		WebcfgDebug("Size of webcfgdbblob %ld\n", (size_t)bd);
+		WebcfgDebug("Size of webcfgdbblob %zu\n", (size_t)bd);
 		if(bd != NULL)
 		{
 			for(k = 0;k< bd->entries_count ; k++)

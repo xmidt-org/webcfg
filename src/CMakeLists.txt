@@ -13,9 +13,38 @@
 #   limitations under the License.
 
 set(PROJ_WEBCFG webcfg)
-set(HEADERS webcfg.h webcfg_param.h webcfg_pack.h webcfg_multipart.h webcfg_auth.h webcfg_notify.h webcfg_generic.h webcfg_db.h webcfg_log.h webcfg_blob.h webcfg_event.h webcfg_aker.h webcfg_metadata.h webcfg_timer.h)
-set(SOURCES webcfg_helpers.c webcfg.c webcfg_param.c webcfg_pack.c webcfg_multipart.c webcfg_auth.c webcfg_notify.c webcfg_db.c webcfg_generic.c webcfg_blob.c webcfg_event.c webcfg_client.c webcfg_aker.c webcfg_metadata.c webcfg_timer.c)
 
+if (WEBCONFIG_BIN_SUPPORT)
+add_definitions(-DWEBCONFIG_BIN_SUPPORT)
+endif (WEBCONFIG_BIN_SUPPORT)
+
+if (FEATURE_SUPPORT_AKER)
+add_definitions(-DFEATURE_SUPPORT_AKER)
+endif (FEATURE_SUPPORT_AKER)
+
+if (WEBCONFIG_BIN_SUPPORT)
+message(STATUS "WEBCONFIG_BIN_SUPPORT is supported")
+else()
+message(STATUS "WEBCONFIG_BIN_SUPPORT is not supported")
+endif (WEBCONFIG_BIN_SUPPORT)
+
+
+set(HEADERS webcfg.h webcfg_param.h webcfg_pack.h webcfg_multipart.h webcfg_auth.h webcfg_notify.h webcfg_generic.h webcfg_db.h webcfg_log.h webcfg_blob.h webcfg_event.h webcfg_metadata.h webcfg_timer.h webcfg_privilege.h)
+set(SOURCES webcfg_helpers.c webcfg.c webcfg_param.c webcfg_pack.c webcfg_multipart.c webcfg_auth.c webcfg_notify.c webcfg_db.c webcfg_blob.c webcfg_event.c webcfg_metadata.c webcfg_timer.c webcfg_privilege.c)
+
+if (FEATURE_SUPPORT_AKER)
+set(HEADERS ${HEADERS} webcfg_aker.h)
+set(SOURCES ${SOURCES} webcfg_aker.c webcfg_client.c)
+endif (FEATURE_SUPPORT_AKER)
+
+if (NOT BUILD_YOCTO)
+set(SOURCES ${SOURCES} webcfg_generic_pc.c)
+else()
+set(SOURCES ${SOURCES} webcfg_generic.c)
+endif()
+
+#Support webcfg lib for backward compatibility
+if (NOT WEBCONFIG_BIN_SUPPORT)
 add_library(${PROJ_WEBCFG} STATIC ${HEADERS} ${SOURCES})
 add_library(${PROJ_WEBCFG}.shared SHARED ${HEADERS} ${SOURCES})
 set_target_properties(${PROJ_WEBCFG}.shared PROPERTIES OUTPUT_NAME ${PROJ_WEBCFG})
@@ -25,3 +54,26 @@ set_property(TARGET ${PROJ_WEBCFG}.shared PROPERTY C_STANDARD 99)
 install (TARGETS ${PROJ_WEBCFG} DESTINATION lib${LIB_SUFFIX})
 install (TARGETS ${PROJ_WEBCFG}.shared DESTINATION lib${LIB_SUFFIX})
 install (FILES ${HEADERS} DESTINATION include/${PROJ_WEBCFG})
+endif()
+
+#Support webconfig independent bin for new design
+if (WEBCONFIG_BIN_SUPPORT)
+set(HEADERS ${HEADERS} webcfg_rbus.h)
+set(SOURCES ${SOURCES} main.c webcfg_rbus.c)
+add_executable(webconfig ${SOURCES} ${HEADERS})
+set_property(TARGET webconfig PROPERTY C_STANDARD 99)
+set(COMMON_LIBS -lwrp-c -lpthread -lwdmp-c -lmsgpackc -ltrower-base64 -lm -lcjson -lrt -luuid -lcurl -lrbus -lrbus-core)
+
+if (NOT DEVICE_EXTENDER)
+set(COMMON_LIBS ${COMMON_LIBS} -lcimplog)
+else ()
+add_definitions(-DDEVICE_EXTENDER)
+endif()
+
+if (FEATURE_SUPPORT_AKER)
+set(COMMON_LIBS ${COMMON_LIBS} -llibparodus)
+endif(FEATURE_SUPPORT_AKER)
+
+target_link_libraries (webconfig ${CMAKE_THREAD_LIBS_INIT} ${COMMON_LIBS})
+install (TARGETS webconfig DESTINATION bin)
+endif()

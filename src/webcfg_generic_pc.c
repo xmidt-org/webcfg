@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Comcast Cable Communications Management, LLC
+ * Copyright 2021 Comcast Cable Communications Management, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,7 @@
  */
 
 #include <stdio.h>
+#include "stdlib.h"
 #include <string.h>
 #include <unistd.h>
 #include <wdmp-c.h>
@@ -31,7 +32,6 @@
 /*----------------------------------------------------------------------------*/
 /*                             Function Prototypes                            */
 /*----------------------------------------------------------------------------*/
-#ifndef WEBCONFIG_BIN_SUPPORT
 char *__attribute__((weak)) getDeviceBootTime(void);
 char *__attribute__((weak)) getSerialNumber(void);
 char *__attribute__((weak)) getProductClass(void);
@@ -44,65 +44,66 @@ char *__attribute__((weak)) getFirmwareVersion(void);
 char *__attribute__((weak)) get_deviceMAC(void);
 char *__attribute__((weak)) getFirmwareUpgradeStartTime(void);
 char *__attribute__((weak)) getFirmwareUpgradeEndTime(void);
-#endif
 char *__attribute__((weak)) get_global_systemReadyTime(void);
 int __attribute__((weak)) setForceSync(char* pString, char *transactionId,int *session_status);
 int __attribute__((weak)) getForceSync(char** pString, char **transactionId);
-#ifndef WEBCONFIG_BIN_SUPPORT
 int __attribute__((weak)) Get_Webconfig_URL( char *pString);
 int __attribute__((weak)) Set_Webconfig_URL( char *pString);
 int __attribute__((weak)) Get_Supplementary_URL( char *name, char *pString);
 int __attribute__((weak)) Set_Supplementary_URL( char *name, char *pString);
-#endif
 void __attribute__((weak)) setValues(const param_t paramVal[], const unsigned int paramCount, const int setType, char *transactionId, money_trace_spans *timeSpan, WDMP_STATUS *retStatus, int *ccspStatus);
 void __attribute__((weak)) sendNotification(char *payload, char *source, char *destination);
 int __attribute__((weak)) registerWebcfgEvent(WebConfigEventCallback webcfgEventCB);
 int __attribute__((weak)) unregisterWebcfgEvent();
 WDMP_STATUS __attribute__((weak)) mapStatus(int ret);
 void __attribute__((weak)) setAttributes(param_t *attArr, const unsigned int paramCount, money_trace_spans *timeSpan, WDMP_STATUS *retStatus);
-#ifndef WEBCONFIG_BIN_SUPPORT
 int __attribute__((weak)) rbus_GetValueFromDB( char* paramName, char** paramValue);
 int __attribute__((weak)) rbus_StoreValueIntoDB(char *paramName, char *value);
 int __attribute__((weak)) rbus_waitUntilSystemReady();
-#endif
 /*----------------------------------------------------------------------------*/
 /*                             External Functions                             */
 /*----------------------------------------------------------------------------*/
 
-#ifndef WEBCONFIG_BIN_SUPPORT
 char *getDeviceBootTime(void)
 {
-    return NULL;
+    char * BT= strdup("1634658266");
+    return BT;
 }
 
 char *getSerialNumber(void)
 {
-    return NULL;
+    char *sn = strdup("123456789123456789");
+    return sn;
 }
 
 char *getProductClass(void)
 {
-    return NULL;
+    char *PC= strdup("XB6");
+    return PC;
 }
 
 char *getModelName(void)
 {
-    return NULL;
+    char *MN=strdup("CGM4140COM");
+    return MN;
 }
 
 char *getPartnerID(void)
 {
-    return NULL;
+    char *PI=strdup("comcast");
+    return PI;
 }
 
 char *getAccountID(void)
 {
-    return NULL;
+    char *AI=strdup("unkown");
+    return AI;
 }
 
 char *getRebootReason(void)
 {
-    return NULL;
+    char *reboot=strdup("Forced_Software_upgrade");
+    return reboot;
 }
 
 char *getConnClientParamName(void)
@@ -111,12 +112,13 @@ char *getConnClientParamName(void)
 }
 char *getFirmwareVersion(void)
 {
-    return NULL;
+    char * FV= strdup("CGM4140COM_DEV_master_202100000000000sdy");
+    return FV;
 }
 
-char* get_deviceMAC(void)
+char *get_deviceMAC(void)
 {
-	return NULL;
+	return "123456789000";
 }
 
 char *getFirmwareUpgradeStartTime(void)
@@ -128,7 +130,6 @@ char *getFirmwareUpgradeEndTime(void)
 {
     return NULL;
 }
-#endif
 
 char *get_global_systemReadyTime(void)
 {
@@ -162,7 +163,9 @@ int getForceSync(char** pString, char **transactionId)
 		WebcfgDebug("B4 get_rbus_ForceSync\n");
 		get_rbus_ForceSync(&str, &transID);
 		*pString = str;
+		*pString = strdup("root");
 		*transactionId = transID;
+		*transactionId = strdup("12345678_12345678abcd_123abc");
 		WebcfgDebug("get_rbus_ForceSync. *pString %s *transactionId %s\n", *pString, *transactionId);
 	}
 #else
@@ -172,7 +175,6 @@ int getForceSync(char** pString, char **transactionId)
 	return 0;
 }
 
-#ifndef WEBCONFIG_BIN_SUPPORT
 int Get_Webconfig_URL( char *pString)
 {
     WebcfgDebug("Inside Get_Webconfig_URL weak function.\n");
@@ -182,7 +184,7 @@ int Get_Webconfig_URL( char *pString)
 
 int Set_Webconfig_URL( char *pString)
 {
-    WebcfgDebug("Inside Get_Webconfig_URL weak function.\n");
+    WebcfgDebug("Inside Set_Webconfig_URL weak function.\n");
     UNUSED(pString);
     return 0;
 }
@@ -202,7 +204,7 @@ int Set_Supplementary_URL( char *name, char *pString)
     UNUSED(pString);
     return 0;
 }
-#endif
+
 
 void setValues(const param_t paramVal[], const unsigned int paramCount, const int setType, char *transactionId, money_trace_spans *timeSpan, WDMP_STATUS *retStatus, int *ccspStatus)
 {
@@ -324,7 +326,7 @@ void setAttributes(param_t *attArr, const unsigned int paramCount, money_trace_s
 	UNUSED(retStatus);
 	return;
 }
-#ifndef WEBCONFIG_BIN_SUPPORT
+
 int rbus_GetValueFromDB( char* paramName, char** paramValue)
 {
 	WebcfgDebug("Inside rbus_GetValueFromDB weak fn\n");
@@ -346,4 +348,3 @@ int rbus_waitUntilSystemReady()
 	WebcfgDebug("Inside rbus_waitUntilSystemReady weak fn\n");
 	return 0;
 }
-#endif

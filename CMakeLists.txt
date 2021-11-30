@@ -44,10 +44,20 @@ include_directories(${INCLUDE_DIR}
 		    ${INCLUDE_DIR}/wdmp-c
 		    ${INCLUDE_DIR}/cimplog
 			${INCLUDE_DIR}/wrp-c
-			${INCLUDE_DIR}/nanomsg
-			${INCLUDE_DIR}/libparodus
 #                    ${INCLUDE_DIR}/curl
                     )
+if (FEATURE_SUPPORT_AKER)
+include_directories(${INCLUDE_DIR}/nanomsg
+		    ${INCLUDE_DIR}/libparodus
+)
+endif (FEATURE_SUPPORT_AKER)
+
+if (WEBCONFIG_BIN_SUPPORT)
+include_directories(${INCLUDE_DIR}/rbus
+		    ${INCLUDE_DIR}/rbus-core
+		    ${INCLUDE_DIR}/rtmessage
+)
+endif (WEBCONFIG_BIN_SUPPORT)
 
 if (NOT BUILD_YOCTO)
 
@@ -128,17 +138,6 @@ add_dependencies(libcurl curl)
 #              NAMES curl
 #              PATHS /usr/lib64 )
 
-# nanoMsg external dependency
-#-------------------------------------------------------------------------------
-ExternalProject_Add(nanomsg
-    PREFIX ${CMAKE_CURRENT_BINARY_DIR}/_prefix/nanomsg
-    GIT_REPOSITORY https://github.com/nanomsg/nanomsg.git
-    GIT_TAG "1.1.4"
-    CMAKE_ARGS += -DCMAKE_INSTALL_PREFIX=${INSTALL_DIR}
-)
-add_library(libnanomsg STATIC SHARED IMPORTED)
-add_dependencies(libnanomsg nanomsg)
-
 # wrp-c external dependency
 #-------------------------------------------------------------------------------
 ExternalProject_Add(wrp-c
@@ -157,6 +156,18 @@ ExternalProject_Add(wrp-c
 add_library(libwrp-c STATIC SHARED IMPORTED)
 add_dependencies(libwrp-c wrp-c)
 
+if (FEATURE_SUPPORT_AKER)
+# nanoMsg external dependency
+#-------------------------------------------------------------------------------
+ExternalProject_Add(nanomsg
+    PREFIX ${CMAKE_CURRENT_BINARY_DIR}/_prefix/nanomsg
+    GIT_REPOSITORY https://github.com/nanomsg/nanomsg.git
+    GIT_TAG "1.1.4"
+    CMAKE_ARGS += -DCMAKE_INSTALL_PREFIX=${INSTALL_DIR}
+)
+add_library(libnanomsg STATIC SHARED IMPORTED)
+add_dependencies(libnanomsg nanomsg)
+
 # libparodus external dependency
 #-------------------------------------------------------------------------------
 ExternalProject_Add(libparodus
@@ -173,6 +184,51 @@ ExternalProject_Add(libparodus
 )
 add_library(liblibparodus STATIC SHARED IMPORTED)
 add_dependencies(liblibparodus libparodus)
+endif (FEATURE_SUPPORT_AKER)
+
+if (WEBCONFIG_BIN_SUPPORT)
+# rtMessage external dependency
+#-------------------------------------------------------------------------------
+ExternalProject_Add(rtMessage
+     PREFIX ${CMAKE_CURRENT_BINARY_DIR}/_prefix/rtMessage
+     GIT_REPOSITORY https://github.com/rdkcmf/rdk-rtmessage.git
+     GIT_TAG rdk-next
+     CMAKE_ARGS += -DBUILD_RTMESSAGE_LIB=ON
+                   -DBUILD_RTMESSAGE_SAMPLE_APP=ON
+                   -DBUILD_FOR_DESKTOP=ON
+                   -DBUILD_DATAPROVIDER_LIB=ON
+                   -DCMAKE_INSTALL_PREFIX=${INSTALL_DIR} -DBUILD_TESTING=OFF
+)
+add_library(librtMessage STATIC SHARED IMPORTED)
+add_dependencies(librtMessage rtMessage)
+
+# rbus-core external dependency	
+#-------------------------------------------------------------------------------
+ExternalProject_Add(rbus-core
+     DEPENDS rtMessage
+     PREFIX ${CMAKE_CURRENT_BINARY_DIR}/_prefix/rbus-core
+     GIT_REPOSITORY https://github.com/rdkcmf/rbuscore.git
+     GIT_TAG rdk-next
+     CMAKE_ARGS += -DBUILD_FOR_DESKTOP=ON -DCMAKE_INSTALL_PREFIX=${INSTALL_DIR}
+                   -DBUILD_TESTING=OFF
+)
+add_library(librbus-core STATIC SHARED IMPORTED)
+add_dependencies(librbus-core rbus-core)
+
+# rbus external dependency
+#-------------------------------------------------------------------------------
+ExternalProject_Add(rbus
+     DEPENDS rtMessage rbus-core
+     PREFIX ${CMAKE_CURRENT_BINARY_DIR}/_prefix/rbus
+     GIT_REPOSITORY https://github.com/rdkcmf/rbus.git
+     GIT_TAG rdk-next
+     CMAKE_ARGS += -DBUILD_FOR_DESKTOP=ON -DCMAKE_INSTALL_PREFIX=${INSTALL_DIR} -DBUILD_TESTING=OFF
+)
+
+add_library(librbus STATIC SHARED IMPORTED)
+add_dependencies(librbus rbus)
+endif (WEBCONFIG_BIN_SUPPORT)
+
 endif ()
 link_directories ( ${LIBRARY_DIR} ${COMMON_LIBRARY_DIR} ${LIBRARY_DIR64} )
 

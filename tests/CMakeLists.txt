@@ -25,9 +25,27 @@ link_directories ( ${LIBRARY_DIR} )
 #-------------------------------------------------------------------------------
 #   webcfgCli
 #-------------------------------------------------------------------------------
-set(SOURCES webcfgCli.c ../src/webcfg_helpers.c ../src/webcfg.c ../src/webcfg_param.c ../src/webcfg_pack.c ../src/webcfg_multipart.c ../src/webcfg_auth.c ../src/webcfg_notify.c ../src/webcfg_db.c ../src/webcfg_generic.c ../src/webcfg_blob.c ../src/webcfg_event.c ../src/webcfg_client.c ../src/webcfg_aker.c ../src/webcfg_metadata.c ../src/webcfg_timer.c)
+set(SOURCES webcfgCli.c ../src/webcfg_helpers.c ../src/webcfg.c ../src/webcfg_param.c ../src/webcfg_pack.c ../src/webcfg_multipart.c ../src/webcfg_auth.c ../src/webcfg_notify.c ../src/webcfg_db.c ../src/webcfg_generic.c ../src/webcfg_blob.c ../src/webcfg_event.c ../src/webcfg_metadata.c ../src/webcfg_timer.c)
+
+if (WEBCONFIG_BIN_SUPPORT)
+set(SOURCES ${SOURCES} ../src/webcfg_rbus.c)
+endif (WEBCONFIG_BIN_SUPPORT)
+
+if (FEATURE_SUPPORT_AKER)
+set(SOURCES ${SOURCES} ../src/webcfg_client.c ../src/webcfg_aker.c)
+endif (FEATURE_SUPPORT_AKER)
+
 add_executable(webcfgCli ${SOURCES})
-target_link_libraries (webcfgCli -lmsgpackc -lcurl -lpthread  -lm -luuid -ltrower-base64 -lwdmp-c -lcimplog -lcjson -lwrp-c -llibparodus -lnanomsg)
+target_link_libraries (webcfgCli -lmsgpackc -lcurl -lpthread  -lm -luuid -ltrower-base64 -lwdmp-c -lcimplog -lcjson -lwrp-c)
+
+if (WEBCONFIG_BIN_SUPPORT)
+target_link_libraries (webcfgCli -lrbus -lrbus-core)
+endif (WEBCONFIG_BIN_SUPPORT)
+
+if (FEATURE_SUPPORT_AKER)
+target_link_libraries (webcfgCli -llibparodus -lnanomsg)
+endif (FEATURE_SUPPORT_AKER)
+
 #-------------------------------------------------------------------------------
 #   test_webcfgparam
 #-------------------------------------------------------------------------------
@@ -50,24 +68,80 @@ target_link_libraries (test_webcfgpack gcov -Wl,--no-as-needed )
 #   test_multipart
 #-------------------------------------------------------------------------------
 add_test(NAME test_multipart COMMAND ${MEMORY_CHECK} ./test_multipart)
-add_executable(test_multipart test_multipart.c ../src/webcfg_param.c ../src/webcfg_multipart.c ../src/webcfg_helpers.c ../src/webcfg.c ../src/webcfg_auth.c ../src/webcfg_notify.c ../src/webcfg_db.c ../src/webcfg_pack.c ../src/webcfg_blob.c ../src/webcfg_event.c ../src/webcfg_generic.c ../src/webcfg_client.c ../src/webcfg_aker.c ../src/webcfg_metadata.c ../src/webcfg_timer.c)
-target_link_libraries (test_multipart -lcunit -lmsgpackc -lcurl -lpthread  -lm -luuid -ltrower-base64 -lwdmp-c -lcimplog -lcjson -llibparodus -lnanomsg -lwrp-c)
+
+set(SOURCES test_multipart.c ../src/webcfg_param.c ../src/webcfg_multipart.c ../src/webcfg_helpers.c ../src/webcfg.c ../src/webcfg_auth.c ../src/webcfg_notify.c ../src/webcfg_db.c ../src/webcfg_pack.c ../src/webcfg_blob.c ../src/webcfg_event.c ../src/webcfg_generic.c ../src/webcfg_metadata.c ../src/webcfg_timer.c)
+
+if (WEBCONFIG_BIN_SUPPORT)
+set(SOURCES ${SOURCES} ../src/webcfg_rbus.c)
+endif (WEBCONFIG_BIN_SUPPORT)
+
+if (FEATURE_SUPPORT_AKER)
+set(SOURCES ${SOURCES} ../src/webcfg_client.c ../src/webcfg_aker.c)
+endif (FEATURE_SUPPORT_AKER)
+
+add_executable(test_multipart ${SOURCES})
+target_link_libraries (test_multipart -lcunit -lmsgpackc -lcurl -lpthread  -lm -luuid -ltrower-base64 -lwdmp-c -lcimplog -lcjson -lwrp-c)
+
+if (WEBCONFIG_BIN_SUPPORT)
+target_link_libraries (test_multipart -lrbus -lrbus-core)
+endif (WEBCONFIG_BIN_SUPPORT)
+
+if (FEATURE_SUPPORT_AKER)
+target_link_libraries (test_multipart -llibparodus -lnanomsg)
+endif (FEATURE_SUPPORT_AKER)
 
 target_link_libraries (test_multipart gcov -Wl,--no-as-needed )
 #-------------------------------------------------------------------------------
 #   test_multipart_supplementary
 #-------------------------------------------------------------------------------
 add_test(NAME test_mul_supp COMMAND ${MEMORY_CHECK} ./test_mul_supp)
-add_executable(test_mul_supp test_mul_supp.c ../src/webcfg_param.c ../src/webcfg_multipart.c ../src/webcfg_helpers.c ../src/webcfg.c ../src/webcfg_auth.c ../src/webcfg_notify.c ../src/webcfg_db.c ../src/webcfg_pack.c ../src/webcfg_blob.c ../src/webcfg_event.c ../src/webcfg_generic.c ../src/webcfg_client.c ../src/webcfg_aker.c ../src/webcfg_metadata.c ../src/webcfg_timer.c)
-target_link_libraries (test_mul_supp -lcunit -lmsgpackc -lcurl -lpthread  -lm -luuid -ltrower-base64 -lwdmp-c -lcimplog -lcjson -llibparodus -lnanomsg -lwrp-c)
+set(SOURCES test_mul_supp.c ../src/webcfg_param.c ../src/webcfg_multipart.c ../src/webcfg_helpers.c ../src/webcfg.c ../src/webcfg_auth.c ../src/webcfg_notify.c ../src/webcfg_db.c ../src/webcfg_pack.c ../src/webcfg_blob.c ../src/webcfg_event.c ../src/webcfg_generic.c ../src/webcfg_metadata.c ../src/webcfg_timer.c)
+
+if (WEBCONFIG_BIN_SUPPORT)
+set(SOURCES ${SOURCES} ../src/webcfg_rbus.c)
+endif (WEBCONFIG_BIN_SUPPORT)
+
+if (FEATURE_SUPPORT_AKER)
+set(SOURCES ${SOURCES} ../src/webcfg_client.c ../src/webcfg_aker.c)
+endif (FEATURE_SUPPORT_AKER)
+
+add_executable(test_mul_supp ${SOURCES})
+target_link_libraries (test_mul_supp -lcunit -lmsgpackc -lcurl -lpthread  -lm -luuid -ltrower-base64 -lwdmp-c -lcimplog -lcjson -lwrp-c)
+
+if (WEBCONFIG_BIN_SUPPORT)
+target_link_libraries (test_mul_supp -lrbus -lrbus-core)
+endif (WEBCONFIG_BIN_SUPPORT)
+
+if (FEATURE_SUPPORT_AKER)
+target_link_libraries (test_mul_supp -llibparodus -lnanomsg)
+endif (FEATURE_SUPPORT_AKER)
 
 target_link_libraries (test_mul_supp gcov -Wl,--no-as-needed )
 #-------------------------------------------------------------------------------
 #   test_events
 #-------------------------------------------------------------------------------
 add_test(NAME test_events COMMAND ${MEMORY_CHECK} ./test_events)
-add_executable(test_events test_events.c ../src/webcfg_param.c ../src/webcfg_multipart.c ../src/webcfg_helpers.c ../src/webcfg.c ../src/webcfg_auth.c ../src/webcfg_notify.c ../src/webcfg_db.c ../src/webcfg_pack.c ../src/webcfg_blob.c ../src/webcfg_event.c ../src/webcfg_generic.c ../src/webcfg_client.c ../src/webcfg_aker.c ../src/webcfg_metadata.c ../src/webcfg_timer.c)
-target_link_libraries (test_events -lcunit -lmsgpackc -lcurl -lpthread  -lm -luuid -ltrower-base64 -lwdmp-c -lcimplog -lcjson -lwrp-c -llibparodus -lnanomsg)
+set(SOURCES test_events.c ../src/webcfg_param.c ../src/webcfg_multipart.c ../src/webcfg_helpers.c ../src/webcfg.c ../src/webcfg_auth.c ../src/webcfg_notify.c ../src/webcfg_db.c ../src/webcfg_pack.c ../src/webcfg_blob.c ../src/webcfg_event.c ../src/webcfg_generic.c ../src/webcfg_metadata.c ../src/webcfg_timer.c )
+
+if (WEBCONFIG_BIN_SUPPORT)
+set(SOURCES ${SOURCES} ../src/webcfg_rbus.c)
+endif (WEBCONFIG_BIN_SUPPORT)
+
+if (FEATURE_SUPPORT_AKER)
+set(SOURCES ${SOURCES} ../src/webcfg_client.c ../src/webcfg_aker.c)
+endif (FEATURE_SUPPORT_AKER)
+
+add_executable(test_events ${SOURCES})
+
+target_link_libraries (test_events -lcunit -lmsgpackc -lcurl -lpthread  -lm -luuid -ltrower-base64 -lwdmp-c -lcimplog -lcjson -lwrp-c)
+
+if (WEBCONFIG_BIN_SUPPORT)
+target_link_libraries (test_events -lrbus -lrbus-core)
+endif (WEBCONFIG_BIN_SUPPORT)
+
+if (FEATURE_SUPPORT_AKER)
+target_link_libraries (test_events -llibparodus -lnanomsg)
+endif (FEATURE_SUPPORT_AKER)
 
 target_link_libraries (test_events gcov -Wl,--no-as-needed )
 
@@ -75,8 +149,27 @@ target_link_libraries (test_events gcov -Wl,--no-as-needed )
 #   test_events_supplematary
 #-------------------------------------------------------------------------------
 add_test(NAME test_events_supp COMMAND ${MEMORY_CHECK} ./test_events_supp)
-add_executable(test_events_supp test_events_supp.c ../src/webcfg_param.c ../src/webcfg_multipart.c ../src/webcfg_helpers.c ../src/webcfg.c ../src/webcfg_auth.c ../src/webcfg_notify.c ../src/webcfg_db.c ../src/webcfg_pack.c ../src/webcfg_blob.c ../src/webcfg_event.c ../src/webcfg_generic.c ../src/webcfg_client.c ../src/webcfg_aker.c ../src/webcfg_metadata.c ../src/webcfg_timer.c)
-target_link_libraries (test_events_supp -lcunit -lmsgpackc -lcurl -lpthread  -lm -luuid -ltrower-base64 -lwdmp-c -lcimplog -lcjson -lwrp-c -llibparodus -lnanomsg)
+
+set(SOURCES test_events_supp.c ../src/webcfg_param.c ../src/webcfg_multipart.c ../src/webcfg_helpers.c ../src/webcfg.c ../src/webcfg_auth.c ../src/webcfg_notify.c ../src/webcfg_db.c ../src/webcfg_pack.c ../src/webcfg_blob.c ../src/webcfg_event.c ../src/webcfg_generic.c ../src/webcfg_metadata.c ../src/webcfg_timer.c)
+
+if (WEBCONFIG_BIN_SUPPORT)
+set(SOURCES ${SOURCES} ../src/webcfg_rbus.c)
+endif (WEBCONFIG_BIN_SUPPORT)
+
+if (FEATURE_SUPPORT_AKER)
+set(SOURCES ${SOURCES} ../src/webcfg_client.c ../src/webcfg_aker.c)
+endif (FEATURE_SUPPORT_AKER)
+
+add_executable(test_events_supp  ${SOURCES})
+target_link_libraries (test_events_supp -lcunit -lmsgpackc -lcurl -lpthread  -lm -luuid -ltrower-base64 -lwdmp-c -lcimplog -lcjson -lwrp-c)
+
+if (WEBCONFIG_BIN_SUPPORT)
+target_link_libraries (test_events_supp -lrbus -lrbus-core)
+endif (WEBCONFIG_BIN_SUPPORT)
+
+if (FEATURE_SUPPORT_AKER)
+target_link_libraries (test_events_supp -llibparodus -lnanomsg)
+endif (FEATURE_SUPPORT_AKER)
 
 target_link_libraries (test_events_supp gcov -Wl,--no-as-needed )
 #-------------------------------------------------------------------------------
@@ -92,8 +185,28 @@ target_link_libraries (test_metadata gcov -Wl,--no-as-needed )
 #   test_root
 #-------------------------------------------------------------------------------
 add_test(NAME test_root COMMAND ${MEMORY_CHECK} ./test_root)
-add_executable(test_root test_root.c ../src/webcfg_param.c ../src/webcfg_multipart.c ../src/webcfg_helpers.c ../src/webcfg.c ../src/webcfg_auth.c ../src/webcfg_notify.c ../src/webcfg_db.c ../src/webcfg_pack.c ../src/webcfg_blob.c ../src/webcfg_event.c ../src/webcfg_generic.c ../src/webcfg_client.c ../src/webcfg_aker.c ../src/webcfg_metadata.c ../src/webcfg_timer.c)
-target_link_libraries (test_root -lcunit -lmsgpackc -lcurl -lpthread  -lm -luuid -ltrower-base64 -lwdmp-c -lcimplog -lcjson -lwrp-c -llibparodus -lnanomsg)
+
+set(SOURCES test_root.c ../src/webcfg_param.c ../src/webcfg_multipart.c ../src/webcfg_helpers.c ../src/webcfg.c ../src/webcfg_auth.c ../src/webcfg_notify.c ../src/webcfg_db.c ../src/webcfg_pack.c ../src/webcfg_blob.c ../src/webcfg_event.c ../src/webcfg_generic.c ../src/webcfg_metadata.c ../src/webcfg_timer.c)
+
+if (WEBCONFIG_BIN_SUPPORT)
+set(SOURCES ${SOURCES} ../src/webcfg_rbus.c)
+endif (WEBCONFIG_BIN_SUPPORT)
+
+if (FEATURE_SUPPORT_AKER)
+set(SOURCES ${SOURCES} ../src/webcfg_client.c ../src/webcfg_aker.c)
+endif (FEATURE_SUPPORT_AKER)
+
+add_executable(test_root ${SOURCES})
+
+target_link_libraries (test_root -lcunit -lmsgpackc -lcurl -lpthread  -lm -luuid -ltrower-base64 -lwdmp-c -lcimplog -lcjson -lwrp-c)
+
+if (WEBCONFIG_BIN_SUPPORT)
+target_link_libraries (test_root -lrbus -lrbus-core)
+endif (WEBCONFIG_BIN_SUPPORT)
+
+if (FEATURE_SUPPORT_AKER)
+target_link_libraries (test_root -llibparodus -lnanomsg)
+endif (FEATURE_SUPPORT_AKER)
 
 target_link_libraries (test_root gcov -Wl,--no-as-needed )
 
@@ -102,7 +215,7 @@ target_link_libraries (test_root gcov -Wl,--no-as-needed )
 #-------------------------------------------------------------------------------
 add_test(NAME test_db COMMAND ${MEMORY_CHECK} ./test_db)
 add_executable(test_db test_db.c ../src/webcfg_db.c ../src/webcfg_pack.c ../src/webcfg_helpers.c ../src/webcfg_param.c ../src/webcfg_multipart.c ../src/webcfg_timer.c ../src/webcfg_notify.c )
-target_link_libraries (test_db -lcunit -lmsgpackc -lcurl -lpthread  -lm -luuid -ltrower-base64 -lwdmp-c -lcimplog -lcjson -lwrp-c -llibparodus -lnanomsg)
+target_link_libraries (test_db -lcunit -lmsgpackc -lcurl -lpthread  -lm -luuid -ltrower-base64 -lwdmp-c -lcimplog -lcjson -lwrp-c)
 
 target_link_libraries (test_db gcov -Wl,--no-as-needed )
 
@@ -110,10 +223,41 @@ target_link_libraries (test_db gcov -Wl,--no-as-needed )
 #   test_multipart_unittest
 #-------------------------------------------------------------------------------
 add_test(NAME test_multipart_unittest COMMAND ${MEMORY_CHECK} ./test_multipart_unittest)
-add_executable(test_multipart_unittest test_multipart_unittest.c ../src/webcfg_param.c ../src/webcfg_multipart.c ../src/webcfg_helpers.c ../src/webcfg.c ../src/webcfg_auth.c ../src/webcfg_notify.c ../src/webcfg_db.c ../src/webcfg_pack.c ../src/webcfg_blob.c ../src/webcfg_event.c ../src/webcfg_generic.c ../src/webcfg_client.c ../src/webcfg_aker.c ../src/webcfg_metadata.c)
-target_link_libraries (test_multipart_unittest -lcunit -lmsgpackc -lcurl -lpthread  -lm -luuid -ltrower-base64 -lwdmp-c -lcimplog -lcjson -llibparodus -lnanomsg -lwrp-c)
+
+set(SOURCES test_multipart_unittest.c ../src/webcfg_param.c ../src/webcfg_multipart.c ../src/webcfg_helpers.c ../src/webcfg.c ../src/webcfg_auth.c ../src/webcfg_notify.c ../src/webcfg_db.c ../src/webcfg_pack.c ../src/webcfg_blob.c ../src/webcfg_event.c ../src/webcfg_generic.c ../src/webcfg_metadata.c)
+
+if (WEBCONFIG_BIN_SUPPORT)
+set(SOURCES ${SOURCES} ../src/webcfg_rbus.c)
+endif (WEBCONFIG_BIN_SUPPORT)
+
+if (FEATURE_SUPPORT_AKER)
+set(SOURCES ${SOURCES} ../src/webcfg_client.c ../src/webcfg_aker.c)
+endif (FEATURE_SUPPORT_AKER)
+
+add_executable(test_multipart_unittest ${SOURCES})
+
+target_link_libraries (test_multipart_unittest -lcunit -lmsgpackc -lcurl -lpthread  -lm -luuid -ltrower-base64 -lwdmp-c -lcimplog -lcjson -lwrp-c)
+
+if (WEBCONFIG_BIN_SUPPORT)
+target_link_libraries (test_multipart_unittest -lrbus -lrbus-core)
+endif (WEBCONFIG_BIN_SUPPORT)
+
+if (FEATURE_SUPPORT_AKER)
+target_link_libraries (test_multipart_unittest -llibparodus -lnanomsg)
+endif (FEATURE_SUPPORT_AKER)
 
 target_link_libraries (test_multipart_unittest gcov -Wl,--no-as-needed )
+
+#-------------------------------------------------------------------------------
+#   test_rbus_FR
+#-------------------------------------------------------------------------------
+if (WEBCONFIG_BIN_SUPPORT)
+add_test(NAME test_rbus_fr COMMAND ${MEMORY_CHECK} ./test_rbus_fr)
+add_executable(test_rbus_fr test_rbus_fr.c ../src/webcfg_rbus.c )
+target_link_libraries (test_rbus_fr -lcunit -lwrp-c -lcimplog -lmsgpackc -lcurl -lpthread  -lm -luuid -ltrower-base64 -lwdmp-c -lcjson  -lrbus -lrbus-core)
+
+target_link_libraries (test_rbus_fr gcov -Wl,--no-as-needed )
+endif (WEBCONFIG_BIN_SUPPORT)
 
 
 
