@@ -100,8 +100,12 @@ ssize_t webcfgdb_blob_pack(webconfig_db_data_t *webcfgdb, webconfig_tmp_data_t *
 
     while(temp_data != NULL)
     {
-        temp_data = temp_data->next;
-        tmp_count++;
+	WebcfgDebug("The temp name is %s\n",temp_data->name);
+	if((temp_data->status != NULL) && (strcmp("success", temp_data->status) != 0))
+	{
+        	tmp_count++;
+	}
+	temp_data = temp_data->next;
     }
 
     db_data = NULL;
@@ -181,51 +185,53 @@ ssize_t webcfgdb_blob_pack(webconfig_db_data_t *webcfgdb, webconfig_tmp_data_t *
        }
 
       if(temp_data != NULL)
-       {
+      {
 	    while(temp_data != NULL) //1 element
 	    {
-                msgpack_pack_map( &pk, 5); //name, version
+		   if((temp_data->status != NULL) && (strcmp("success", temp_data->status) != 0)) //to avoid duplicate entries 
+		   {
+                	msgpack_pack_map( &pk, 5); //name, version
 
-	        struct webcfg_token WEBCFG_MAP_TEMP_NAME;
+	        	struct webcfg_token WEBCFG_MAP_TEMP_NAME;
 
-                WEBCFG_MAP_TEMP_NAME.name = "name";
-                WEBCFG_MAP_TEMP_NAME.length = strlen( "name" );
-                WebcfgDebug("The tmp name is %s\n",temp_data->name);
-                __msgpack_pack_string_nvp( &pk, &WEBCFG_MAP_TEMP_NAME, temp_data->name );
+                	WEBCFG_MAP_TEMP_NAME.name = "name";
+                	WEBCFG_MAP_TEMP_NAME.length = strlen( "name" );
+                	WebcfgDebug("The tmp name is %s\n",temp_data->name);
+                	__msgpack_pack_string_nvp( &pk, &WEBCFG_MAP_TEMP_NAME, temp_data->name );
 
-	        struct webcfg_token WEBCFG_MAP_TEMP_VERSION;
+	        	struct webcfg_token WEBCFG_MAP_TEMP_VERSION;
 
-                WEBCFG_MAP_TEMP_VERSION.name = "version";
-                WEBCFG_MAP_TEMP_VERSION.length = strlen( "version" );
-	        __msgpack_pack_string( &pk, WEBCFG_MAP_TEMP_VERSION.name, WEBCFG_MAP_TEMP_VERSION.length);
-                //WebcfgDebug("The tmp version is %ld\n",(long)temp_data->version);
-		msgpack_pack_uint64(&pk,(uint32_t) temp_data->version);
+                	WEBCFG_MAP_TEMP_VERSION.name = "version";
+                	WEBCFG_MAP_TEMP_VERSION.length = strlen( "version" );
+	        	__msgpack_pack_string( &pk, WEBCFG_MAP_TEMP_VERSION.name, WEBCFG_MAP_TEMP_VERSION.length);
+                	//WebcfgDebug("The tmp version is %ld\n",(long)temp_data->version);
+			msgpack_pack_uint64(&pk,(uint32_t) temp_data->version);
 
-                struct webcfg_token WEBCFG_MAP_TEMP_STATUS;
+                	struct webcfg_token WEBCFG_MAP_TEMP_STATUS;
 
-                WEBCFG_MAP_TEMP_STATUS.name = "status";
-                WEBCFG_MAP_TEMP_STATUS.length = strlen( "status" );
-                WebcfgDebug("The tmp status is %s\n",temp_data->status);
-                __msgpack_pack_string_nvp( &pk, &WEBCFG_MAP_TEMP_STATUS, temp_data->status );
+                	WEBCFG_MAP_TEMP_STATUS.name = "status";
+                	WEBCFG_MAP_TEMP_STATUS.length = strlen( "status" );
+                	WebcfgDebug("The tmp status is %s\n",temp_data->status);
+                	__msgpack_pack_string_nvp( &pk, &WEBCFG_MAP_TEMP_STATUS, temp_data->status );
 
-		struct webcfg_token WEBCFG_MAP_TEMP_ERROR_DETAILS;
+			struct webcfg_token WEBCFG_MAP_TEMP_ERROR_DETAILS;
 
-                WEBCFG_MAP_TEMP_ERROR_DETAILS.name = "error_details";
-                WEBCFG_MAP_TEMP_ERROR_DETAILS.length = strlen( "error_details" );
-                WebcfgDebug("The tmp error_details is %s\n",temp_data->error_details);
-                __msgpack_pack_string_nvp( &pk, &WEBCFG_MAP_TEMP_ERROR_DETAILS, temp_data->error_details );
+                	WEBCFG_MAP_TEMP_ERROR_DETAILS.name = "error_details";
+                	WEBCFG_MAP_TEMP_ERROR_DETAILS.length = strlen( "error_details" );
+                	WebcfgDebug("The tmp error_details is %s\n",temp_data->error_details);
+                	__msgpack_pack_string_nvp( &pk, &WEBCFG_MAP_TEMP_ERROR_DETAILS, temp_data->error_details );
 
-	        struct webcfg_token WEBCFG_MAP_TEMP_ERROR_CODE;
+	        	struct webcfg_token WEBCFG_MAP_TEMP_ERROR_CODE;
 
-                WEBCFG_MAP_TEMP_ERROR_CODE.name = "error_code";
-                WEBCFG_MAP_TEMP_ERROR_CODE.length = strlen( "error_code" );
-	        __msgpack_pack_string( &pk, WEBCFG_MAP_TEMP_ERROR_CODE.name, WEBCFG_MAP_TEMP_ERROR_CODE.length);
-                msgpack_pack_uint64(&pk,(uint16_t)temp_data->error_code);
+                	WEBCFG_MAP_TEMP_ERROR_CODE.name = "error_code";
+                	WEBCFG_MAP_TEMP_ERROR_CODE.length = strlen( "error_code" );
+	        	__msgpack_pack_string( &pk, WEBCFG_MAP_TEMP_ERROR_CODE.name, WEBCFG_MAP_TEMP_ERROR_CODE.length);
+                	msgpack_pack_uint64(&pk,(uint16_t)temp_data->error_code);
 
-                temp_data = temp_data->next;
-
+		   }
+		   temp_data = temp_data->next;
 	    }
-       }
+      }
     } else {
         WebcfgError("parameters is NULL\n" );
         return rv;

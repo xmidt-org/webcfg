@@ -706,7 +706,6 @@ void sendSuccessNotification(webconfig_tmp_data_t *subdoc_node, char *name, uint
 		cloud_trans_id = "unknown";
 	}
 	addWebConfgNotifyMsg(name, version, "success", "none", cloud_trans_id,0, "status",0, NULL, 200);
-	deleteFromTmpList(name);
 }
 
 //start internal timer for required doc when timeout value is received
@@ -1058,7 +1057,6 @@ WEBCFG_STATUS retryMultipartSubdoc(webconfig_tmp_data_t *docNode, char *docName)
 								addWebConfgNotifyMsg(gmp->name_space, gmp->etag, "success", "none", docNode->cloud_trans_id, 0, "status", 0, NULL, 200);
 							}
 							WebcfgDebug("deleteFromTmpList as scalar doc is applied\n");
-							deleteFromTmpList(gmp->name_space);
 							WebcfgDebug("docNode->isSupplementarySync is %d\n", docNode->isSupplementarySync);
 							if(docNode->isSupplementarySync == 0)
 							{
