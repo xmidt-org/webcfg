@@ -1998,6 +1998,11 @@ void subdoc_parser(char *ptr, int no_of_bytes)
 	{
 		WEBCFG_FREE(data);
 	}
+
+        if(str_body != NULL)
+	{
+		WEBCFG_FREE(str_body);
+	}
 }
 
 void line_parser(char *ptr, int no_of_bytes, char **name_space, uint32_t *etag, char **data, size_t *data_size)

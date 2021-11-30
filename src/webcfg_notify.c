@@ -255,7 +255,7 @@ void* processWebConfgNotification()
 					sendNotification(stringifiedNotifyPayload, source, dest);
 				}
 					free_notify_params_struct(msg);
-					msg = NULL;				
+					msg = NULL;
 			}			
 		}
 		else
