@@ -71,6 +71,8 @@
 
 bool isRbusEnabled();
 
+bool isRfcEnabled();
+
 WEBCFG_STATUS webconfigRbusInit(const char *pComponentName);
 WEBCFG_STATUS regWebConfigDataModel();
 
