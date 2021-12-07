@@ -392,8 +392,8 @@ AKER_STATUS processAkerSubdoc(webconfig_tmp_data_t *docNode, multipartdocs_t *ak
 
 					if(docNode != NULL)
 					{
-						WebcfgInfo("subdoc_name and err_code : %s %lu\n",docNode->name, (long)docNode->error_code);
-						WebcfgInfo("failure_reason %s\n", docNode->error_details);
+						WebcfgInfo("subdoc_name and err_code : %s %d\n",docNode->name, err);
+						WebcfgInfo("failure_reason %s\n", result);
 
 						//Invalid aker request
 						updateTmpList(docNode, gmp->name_space, gmp->etag, "failed", "doc_rejected", err, 0, 0);
@@ -415,8 +415,8 @@ AKER_STATUS processAkerSubdoc(webconfig_tmp_data_t *docNode, multipartdocs_t *ak
 
 				if(docNode != NULL)
 				{
-					WebcfgInfo("subdoc_name and err_code : %s %lu\n",docNode->name, (long)docNode->error_code);
-					WebcfgInfo("failure_reason %s\n", docNode->error_details);
+					WebcfgInfo("subdoc_name and err_code : %s %d\n",docNode->name, err);
+					WebcfgInfo("failure_reason %s\n", result);
 
 					updateTmpList(docNode, gmp->name_space, gmp->etag, "failed", result, err, 0, 0);
 					if(docNode->cloud_trans_id !=NULL)
