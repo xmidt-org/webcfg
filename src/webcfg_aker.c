@@ -409,6 +409,30 @@ AKER_STATUS processAkerSubdoc(webconfig_tmp_data_t *docNode, multipartdocs_t *ak
 				}
 				reqParam_destroy(paramCount, reqParam);
 			}
+			else
+			{
+				err = getStatusErrorCodeAndMessage(BLOB_PARAM_VALIDATION_FAILURE, &result);
+
+				if(docNode != NULL)
+				{
+					WebcfgInfo("subdoc_name and err_code : %s %lu\n",docNode->name, (long)docNode->error_code);
+					WebcfgInfo("failure_reason %s\n", docNode->error_details);
+
+					updateTmpList(docNode, gmp->name_space, gmp->etag, "failed", result, err, 0, 0);
+					if(docNode->cloud_trans_id !=NULL)
+					{
+						addWebConfgNotifyMsg(gmp->name_space, gmp->etag, "failed", result, docNode->cloud_trans_id, 0, "status", err, NULL, 200);
+
+					}
+				}
+				WEBCFG_FREE(result);
+				rv = AKER_FAILURE;
+
+				if(reqParam !=NULL)
+				{
+					reqParam_destroy(paramCount, reqParam);
+				}
+			}
 			webcfgparam_destroy( pm );
 		}
 		else
