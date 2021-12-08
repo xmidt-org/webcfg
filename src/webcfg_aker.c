@@ -427,11 +427,6 @@ AKER_STATUS processAkerSubdoc(webconfig_tmp_data_t *docNode, multipartdocs_t *ak
 				}
 				WEBCFG_FREE(result);
 				rv = AKER_FAILURE;
-
-				if(reqParam !=NULL)
-				{
-					reqParam_destroy(paramCount, reqParam);
-				}
 			}
 			webcfgparam_destroy( pm );
 		}
