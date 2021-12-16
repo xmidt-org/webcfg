@@ -75,6 +75,22 @@ bool isRbusEnabled()
 	return isRbus;
 }
 
+bool isRfcEnabled() 
+{
+        bool isRfc = false;
+	if(get_rbus_RfcEnable()) 
+	{
+		isRfc = true;
+	}
+	else
+	{
+		isRfc = false;
+	}
+	WebcfgDebug("Webconfig RFC  = %s\n", isRfc ? "true":"false");
+	return isRfc;
+}
+
+
 bool isRbusInitialized( ) 
 {
     return rbus_handle != NULL ? true : false;
@@ -101,21 +117,16 @@ void webpaRbus_Uninit()
 }
 
 /**
- * Data set handler for Webpa parameters
+ * Data set handler for parameters owned by Webconfig
  */
-rbusError_t webcfgDataSetHandler(rbusHandle_t handle, rbusProperty_t prop, rbusSetHandlerOptions_t* opts) {
-
-    WebcfgDebug("Inside webcfgDataSetHandler\n");
+rbusError_t webcfgRfcSetHandler(rbusHandle_t handle, rbusProperty_t prop, rbusSetHandlerOptions_t* opts)
+{
     (void) handle;
     (void) opts;
-    bool RFC_ENABLE;
     char const* paramName = rbusProperty_GetName(prop);
-    if((strncmp(paramName,  WEBCFG_RFC_PARAM, maxParamLen) != 0) &&
-	(strncmp(paramName, WEBCFG_URL_PARAM, maxParamLen) != 0) &&
-	(strncmp(paramName, WEBCFG_SUPPLEMENTARY_TELEMETRY_PARAM, maxParamLen) != 0) &&
-	(strncmp(paramName, WEBCFG_FORCESYNC_PARAM, maxParamLen) != 0)
-	) {
-        WebcfgError("Unexpected parameter = %s\n", paramName); //free paramName req.?
+    if(strncmp(paramName,  WEBCFG_RFC_PARAM, maxParamLen) != 0) 
+    {
+        WebcfgError("Unexpected parameter = %s\n", paramName);
         return RBUS_ERROR_ELEMENT_DOES_NOT_EXIST;
     }
 
@@ -130,9 +141,8 @@ rbusError_t webcfgDataSetHandler(rbusHandle_t handle, rbusProperty_t prop, rbusS
         return RBUS_ERROR_INVALID_INPUT;
     }
 
-    RFC_ENABLE = get_rbus_RfcEnable();
-    if(strncmp(paramName, WEBCFG_RFC_PARAM, maxParamLen) == 0) {
-        WebcfgDebug("Inside RFC datamodel handler \n");
+    if(strncmp(paramName, WEBCFG_RFC_PARAM, maxParamLen) == 0)
+    {
         if(type_t == RBUS_BOOLEAN) {
 	    bool paramval = rbusValue_GetBoolean(paramValue_t);
 	    WebcfgDebug("paramval is %d\n", paramval);
@@ -160,11 +170,36 @@ rbusError_t webcfgDataSetHandler(rbusHandle_t handle, rbusProperty_t prop, rbusS
             WebcfgError("Unexpected value type for property %s \n", paramName);
 	    return RBUS_ERROR_INVALID_INPUT;
         }
+    }
+    return RBUS_ERROR_SUCCESS;
+}
 
-    }else if(strncmp(paramName, WEBCFG_URL_PARAM, maxParamLen) == 0) {
-        WebcfgDebug("Inside datamodel handler for URL\n");
+rbusError_t webcfgUrlSetHandler(rbusHandle_t handle, rbusProperty_t prop, rbusSetHandlerOptions_t* opts) 
+{
+    (void) handle;
+    (void) opts;
+    char const* paramName = rbusProperty_GetName(prop);
 
-	if (!RFC_ENABLE)
+    if(strncmp(paramName, WEBCFG_URL_PARAM, maxParamLen) != 0)
+    {
+        WebcfgError("Unexpected parameter = %s\n", paramName);
+        return RBUS_ERROR_ELEMENT_DOES_NOT_EXIST;
+    }
+
+    rbusError_t retPsmSet = RBUS_ERROR_BUS_ERROR;
+    WebcfgDebug("Parameter name is %s \n", paramName);
+    rbusValueType_t type_t;
+    rbusValue_t paramValue_t = rbusProperty_GetValue(prop);
+    if(paramValue_t) {
+        type_t = rbusValue_GetType(paramValue_t);
+    } else {
+	WebcfgError("Invalid input to set\n");
+        return RBUS_ERROR_INVALID_INPUT;
+    }
+
+    if(strncmp(paramName, WEBCFG_URL_PARAM, maxParamLen) == 0) {
+
+	if (!isRfcEnabled())
 	{
 		WebcfgError("RfcEnable is disabled so, %s SET failed\n",paramName);
 		return RBUS_ERROR_ACCESS_NOT_ALLOWED;
@@ -181,7 +216,6 @@ rbusError_t webcfgDataSetHandler(rbusHandle_t handle, rbusProperty_t prop, rbusS
                 URLVal = strdup(data);
                 free(data);
 		WebcfgDebug("URLVal after processing %s\n", URLVal);
-		WebcfgDebug("URLVal bus_StoreValueIntoDB\n");
 		retPsmSet = rbus_StoreValueIntoDB( WEBCFG_URL_PARAM, URLVal );
 		if (retPsmSet != RBUS_ERROR_SUCCESS)
 		{
@@ -198,32 +232,96 @@ rbusError_t webcfgDataSetHandler(rbusHandle_t handle, rbusProperty_t prop, rbusS
 	    return RBUS_ERROR_INVALID_INPUT;
         }
     }
-	else if(strncmp(paramName, WEBCFG_DATA_PARAM, maxParamLen) == 0)
+    return RBUS_ERROR_SUCCESS;
+}
+
+rbusError_t webcfgDataSetHandler(rbusHandle_t handle, rbusProperty_t prop, rbusSetHandlerOptions_t* opts)
+ {
+    (void) handle;
+    (void) opts;
+    char const* paramName = rbusProperty_GetName(prop);
+
+    rbusError_t retPsmSet = RBUS_ERROR_BUS_ERROR;
+    WebcfgDebug("Parameter name is %s \n", paramName);
+   
+    if(strncmp(paramName, WEBCFG_DATA_PARAM, maxParamLen) == 0)
     {
         WebcfgError("Data Set is not allowed\n");
         retPsmSet = RBUS_ERROR_ACCESS_NOT_ALLOWED;
+        return retPsmSet;
     }
-    	else if(strncmp(paramName, WEBCFG_SUPPORTED_DOCS_PARAM, maxParamLen) == 0)
+    return RBUS_ERROR_SUCCESS;
+}
+
+rbusError_t webcfgSupportedDocsSetHandler(rbusHandle_t handle, rbusProperty_t prop, rbusSetHandlerOptions_t* opts) {
+
+    (void) handle;
+    (void) opts;
+    char const* paramName = rbusProperty_GetName(prop);
+
+    rbusError_t retPsmSet = RBUS_ERROR_BUS_ERROR;
+    WebcfgDebug("Parameter name is %s \n", paramName);
+ 
+    if(strncmp(paramName, WEBCFG_SUPPORTED_DOCS_PARAM, maxParamLen) == 0)
     {
         WebcfgError("SupportedDocs Set is not allowed\n");
         retPsmSet = RBUS_ERROR_ACCESS_NOT_ALLOWED;
+        return retPsmSet;
     }
-    	else if(strncmp(paramName, WEBCFG_SUPPORTED_VERSION_PARAM, maxParamLen) == 0)
+    return RBUS_ERROR_SUCCESS;
+}
+
+rbusError_t webcfgSupportedVersionSetHandler(rbusHandle_t handle, rbusProperty_t prop, rbusSetHandlerOptions_t* opts) {
+
+    (void) handle;
+    (void) opts;
+    char const* paramName = rbusProperty_GetName(prop);
+
+    rbusError_t retPsmSet = RBUS_ERROR_BUS_ERROR;
+    WebcfgDebug("Parameter name is %s \n", paramName);
+
+    if(strncmp(paramName, WEBCFG_SUPPORTED_VERSION_PARAM, maxParamLen) == 0)
     {
         WebcfgError("SupportedSchemaVersion Set is not allowed\n");
         retPsmSet = RBUS_ERROR_ACCESS_NOT_ALLOWED;
+        return retPsmSet;
     }
-	else if(strncmp(paramName, WEBCFG_SUPPLEMENTARY_TELEMETRY_PARAM, maxParamLen) == 0){
-        WebcfgDebug("Inside datamodel handler for SupplementaryURL\n");
+    return RBUS_ERROR_SUCCESS;
+}
 
-	if (!RFC_ENABLE)
+rbusError_t webcfgTelemetrySetHandler(rbusHandle_t handle, rbusProperty_t prop, rbusSetHandlerOptions_t* opts) {
+
+    (void) handle;
+    (void) opts;
+    char const* paramName = rbusProperty_GetName(prop);
+    if(strncmp(paramName, WEBCFG_SUPPLEMENTARY_TELEMETRY_PARAM, maxParamLen) != 0) 
+    {
+        WebcfgError("Unexpected parameter = %s\n", paramName);
+        return RBUS_ERROR_ELEMENT_DOES_NOT_EXIST;
+    }
+
+    rbusError_t retPsmSet = RBUS_ERROR_BUS_ERROR;
+    WebcfgDebug("Parameter name is %s \n", paramName);
+    rbusValueType_t type_t;
+    rbusValue_t paramValue_t = rbusProperty_GetValue(prop);
+    if(paramValue_t) {
+        type_t = rbusValue_GetType(paramValue_t);
+    } else {
+	WebcfgError("Invalid input to set\n");
+        return RBUS_ERROR_INVALID_INPUT;
+    }
+   
+    if(strncmp(paramName, WEBCFG_SUPPLEMENTARY_TELEMETRY_PARAM, maxParamLen) == 0){
+
+	if (!isRfcEnabled())
 	{
 		WebcfgError("RfcEnable is disabled so, %s SET failed\n",paramName);
 		return RBUS_ERROR_ACCESS_NOT_ALLOWED;
 	}
         if(type_t == RBUS_STRING) {
             char* data = rbusValue_ToString(paramValue_t, NULL, 0);
-            if(data) {
+            if(data)
+            {
                 WebcfgDebug("Call datamodel function  with data %s\n", data);
 
                 if(SupplementaryURLVal) {
@@ -233,7 +331,6 @@ rbusError_t webcfgDataSetHandler(rbusHandle_t handle, rbusProperty_t prop, rbusS
                 SupplementaryURLVal = strdup(data);
                 free(data);
 		WebcfgDebug("SupplementaryURLVal after processing %s\n", SupplementaryURLVal);
-		WebcfgDebug("SupplementaryURLVal bus_StoreValueIntoDB\n");
 		retPsmSet = rbus_StoreValueIntoDB( WEBCFG_SUPPLEMENTARY_TELEMETRY_PARAM, SupplementaryURLVal );
 		if (retPsmSet != RBUS_ERROR_SUCCESS)
 		{
@@ -245,12 +342,38 @@ rbusError_t webcfgDataSetHandler(rbusHandle_t handle, rbusProperty_t prop, rbusS
 			WebcfgInfo("psm_set success ret %d for parameter %s and value %s\n", retPsmSet, paramName, SupplementaryURLVal);
 		}
             }
-        } else {
+        }
+         else {
             WebcfgError("Unexpected value type for property %s\n", paramName);
 	    return RBUS_ERROR_INVALID_INPUT;
         }
-    }else if(strncmp(paramName, WEBCFG_FORCESYNC_PARAM, maxParamLen) == 0) {
-	if (!RFC_ENABLE)
+    }   
+     return RBUS_ERROR_SUCCESS;
+}
+      
+
+rbusError_t webcfgFrSetHandler(rbusHandle_t handle, rbusProperty_t prop, rbusSetHandlerOptions_t* opts) {
+
+    (void) handle;
+    (void) opts;
+    char const* paramName = rbusProperty_GetName(prop);
+    if(strncmp(paramName, WEBCFG_FORCESYNC_PARAM, maxParamLen) != 0)
+    {
+        WebcfgError("Unexpected parameter = %s\n", paramName); 
+        return RBUS_ERROR_ELEMENT_DOES_NOT_EXIST;
+    }
+
+    WebcfgDebug("Parameter name is %s \n", paramName);
+    rbusValueType_t type_t;
+    rbusValue_t paramValue_t = rbusProperty_GetValue(prop);
+    if(paramValue_t) {
+        type_t = rbusValue_GetType(paramValue_t);
+    } else {
+	WebcfgError("Invalid input to set\n");
+        return RBUS_ERROR_INVALID_INPUT;
+    }
+    if(strncmp(paramName, WEBCFG_FORCESYNC_PARAM, maxParamLen) == 0) {
+	if (!isRfcEnabled())
 	{
 		WebcfgError("RfcEnable is disabled so, %s SET failed\n",paramName);
 		return RBUS_ERROR_ACCESS_NOT_ALLOWED;
@@ -299,23 +422,21 @@ rbusError_t webcfgDataSetHandler(rbusHandle_t handle, rbusProperty_t prop, rbusS
         }
 
     }
-    WebcfgDebug("webcfgDataSetHandler End\n");
     return RBUS_ERROR_SUCCESS;
 }
 
 /**
- * Common data get handler for all parameters owned by Webconfig
+ * Data get handler for parameters owned by Webconfig
  */
-rbusError_t webcfgDataGetHandler(rbusHandle_t handle, rbusProperty_t property, rbusGetHandlerOptions_t* opts) {
-    
-    WebcfgDebug("In webcfgDataGetHandler\n");
+rbusError_t webcfgRfcGetHandler(rbusHandle_t handle, rbusProperty_t property, rbusGetHandlerOptions_t* opts) 
+{
+
     (void) handle;
     (void) opts;
     char const* propertyName;
-    bool RFC_ENABLE;
     rbusError_t retPsmGet = RBUS_ERROR_BUS_ERROR;
 
-    propertyName = strdup(rbusProperty_GetName(property));
+    propertyName = rbusProperty_GetName(property);
     if(propertyName) {
         WebcfgDebug("Property Name is %s \n", propertyName);
     } else {
@@ -323,17 +444,22 @@ rbusError_t webcfgDataGetHandler(rbusHandle_t handle, rbusProperty_t property, r
         return RBUS_ERROR_INVALID_INPUT;
     }
 
-    RFC_ENABLE = get_rbus_RfcEnable();
-    if(strncmp(propertyName, WEBCFG_RFC_PARAM, maxParamLen) == 0) {
+    if(strncmp(propertyName, WEBCFG_RFC_PARAM, maxParamLen) == 0)
+    {
         rbusValue_t value;
         rbusValue_Init(&value);
 	char *tmpchar = NULL;
 	retPsmGet = rbus_GetValueFromDB( paramRFCEnable, &tmpchar );
 	if (retPsmGet != RBUS_ERROR_SUCCESS){
 		WebcfgError("psm_get failed ret %d for parameter %s and value %s\n", retPsmGet, propertyName, tmpchar);
+                if(value)
+                {
+                	rbusValue_Release(value);
+ 		}
 		return retPsmGet;
 	}
-	else{
+	else
+	{
 		WebcfgInfo("psm_get success ret %d for parameter %s and value %s\n", retPsmGet, propertyName, tmpchar);
 		if(tmpchar != NULL)
 		{
@@ -347,18 +473,36 @@ rbusError_t webcfgDataGetHandler(rbusHandle_t handle, rbusProperty_t property, r
 		WebcfgDebug("RfcVal fetched %d\n", RfcVal);
 	}
 
-	rbusValue_SetBoolean(value, RfcVal); 
-	WebcfgDebug("After RfcVal set to value\n");
+	rbusValue_SetBoolean(value, RfcVal);
         rbusProperty_SetValue(property, value);
 	WebcfgDebug("Rfc value fetched is %s\n", (rbusValue_GetBoolean(value)==true)?"true":"false");
         rbusValue_Release(value);
+   }
+   return RBUS_ERROR_SUCCESS;
+}
 
-    }else if(strncmp(propertyName, WEBCFG_URL_PARAM, maxParamLen) == 0) {
+rbusError_t webcfgUrlGetHandler(rbusHandle_t handle, rbusProperty_t property, rbusGetHandlerOptions_t* opts) 
+{
+    
+    (void) handle;
+    (void) opts;
+    char const* propertyName;
+    rbusError_t retPsmGet = RBUS_ERROR_BUS_ERROR;
+
+    propertyName = rbusProperty_GetName(property);
+    if(propertyName) {
+        WebcfgDebug("Property Name is %s \n", propertyName);
+    } else {
+        WebcfgError("Unable to handle get request for property \n");
+        return RBUS_ERROR_INVALID_INPUT;
+    }
+   if(strncmp(propertyName, WEBCFG_URL_PARAM, maxParamLen) == 0)
+   {
 
 	rbusValue_t value;
         rbusValue_Init(&value);
 
-	if(!RFC_ENABLE)
+	if(!isRfcEnabled())
 	{
 		WebcfgError("RfcEnable is disabled so, %s Get from DB failed\n",propertyName);
 		rbusValue_SetString(value, "");
@@ -366,7 +510,6 @@ rbusError_t webcfgDataGetHandler(rbusHandle_t handle, rbusProperty_t property, r
 		rbusValue_Release(value);
 		return 0;
 	}
-
         if(URLVal){
             rbusValue_SetString(value, URLVal);
 	}
@@ -374,6 +517,10 @@ rbusError_t webcfgDataGetHandler(rbusHandle_t handle, rbusProperty_t property, r
 		retPsmGet = rbus_GetValueFromDB( WEBCFG_URL_PARAM, &URLVal );
 		if (retPsmGet != RBUS_ERROR_SUCCESS){
 			WebcfgError("psm_get failed ret %d for parameter %s and value %s\n", retPsmGet, propertyName, URLVal);
+                        if(value)
+                	{
+                		rbusValue_Release(value);
+ 			}
 			return retPsmGet;
 		}
 		else{
@@ -387,20 +534,34 @@ rbusError_t webcfgDataGetHandler(rbusHandle_t handle, rbusProperty_t property, r
 				WebcfgError("URL is empty\n");
 				rbusValue_SetString(value, "");
 			}
-			WebcfgDebug("After URLVal set to value\n");
 		}
 	}
         rbusProperty_SetValue(property, value);
         rbusValue_Release(value);
 
     }
+    return RBUS_ERROR_SUCCESS;
+}
 
-	 else if(strncmp(propertyName, WEBCFG_DATA_PARAM , maxParamLen) == 0)
+rbusError_t webcfgDataGetHandler(rbusHandle_t handle, rbusProperty_t property, rbusGetHandlerOptions_t* opts) {
+    
+    (void) handle;
+    (void) opts;
+    char const* propertyName;
+
+    propertyName = rbusProperty_GetName(property);
+    if(propertyName) {
+        WebcfgDebug("Property Name is %s \n", propertyName);
+    } else {
+        WebcfgError("Unable to handle get request for property \n");
+        return RBUS_ERROR_INVALID_INPUT;
+    }
+    if(strncmp(propertyName, WEBCFG_DATA_PARAM , maxParamLen) == 0)
     {
         rbusValue_t value;
         rbusValue_Init(&value);
 
-	if(!RFC_ENABLE)
+	if(!isRfcEnabled())
 	{
 		WebcfgError("RfcEnable is disabled so, %s Get from DB failed\n",propertyName);
 		rbusValue_SetString(value, "");
@@ -422,12 +583,28 @@ rbusError_t webcfgDataGetHandler(rbusHandle_t handle, rbusProperty_t property, r
         rbusProperty_SetValue(property, value);
         rbusValue_Release(value);
     }
-    	else if(strncmp(propertyName, WEBCFG_SUPPORTED_DOCS_PARAM, maxParamLen) == 0)
+    return RBUS_ERROR_SUCCESS;
+}
+
+rbusError_t webcfgSupportedDocsGetHandler(rbusHandle_t handle, rbusProperty_t property, rbusGetHandlerOptions_t* opts) {
+    
+    (void) handle;
+    (void) opts;
+    char const* propertyName;
+
+    propertyName = rbusProperty_GetName(property);
+    if(propertyName) {
+        WebcfgDebug("Property Name is %s \n", propertyName);
+    } else {
+        WebcfgError("Unable to handle get request for property \n");
+        return RBUS_ERROR_INVALID_INPUT;
+    }
+    if(strncmp(propertyName, WEBCFG_SUPPORTED_DOCS_PARAM, maxParamLen) == 0)
     {
         rbusValue_t value;
         rbusValue_Init(&value);
 
-	if(!RFC_ENABLE)
+	if(!isRfcEnabled())
 	{
 		WebcfgError("RfcEnable is disabled so, %s Get from DB failed\n",propertyName);
 		rbusValue_SetString(value, "");
@@ -451,12 +628,28 @@ rbusError_t webcfgDataGetHandler(rbusHandle_t handle, rbusProperty_t property, r
         rbusValue_Release(value);
 
     }
-   	else if(strncmp(propertyName, WEBCFG_SUPPORTED_VERSION_PARAM, maxParamLen) == 0)
+    return RBUS_ERROR_SUCCESS;
+}
+
+rbusError_t webcfgSupportedVersionGetHandler(rbusHandle_t handle, rbusProperty_t property, rbusGetHandlerOptions_t* opts) {
+    
+    (void) handle;
+    (void) opts;
+    char const* propertyName;
+
+    propertyName = rbusProperty_GetName(property);
+    if(propertyName) {
+        WebcfgDebug("Property Name is %s \n", propertyName);
+    } else {
+        WebcfgError("Unable to handle get request for property \n");
+        return RBUS_ERROR_INVALID_INPUT;
+    }
+    if (strncmp(propertyName, WEBCFG_SUPPORTED_VERSION_PARAM, maxParamLen) == 0)
     {
         rbusValue_t value;
         rbusValue_Init(&value);
 
-	if(!RFC_ENABLE)
+	if(!isRfcEnabled())
 	{
 		WebcfgError("RfcEnable is disabled so, %s Get from DB failed\n",propertyName);
 		rbusValue_SetString(value, "");
@@ -478,14 +671,31 @@ rbusError_t webcfgDataGetHandler(rbusHandle_t handle, rbusProperty_t property, r
         rbusProperty_SetValue(property, value);
         WebcfgDebug("SupportedVersion value fetched is %s\n", rbusValue_GetString(value, NULL));
         rbusValue_Release(value);
+    }
+    return RBUS_ERROR_SUCCESS;	
+}
 
-    }	
-	else if(strncmp(propertyName, WEBCFG_SUPPLEMENTARY_TELEMETRY_PARAM, maxParamLen)==0){
+rbusError_t webcfgTelemetryGetHandler(rbusHandle_t handle, rbusProperty_t property, rbusGetHandlerOptions_t* opts) {
+    
+    (void) handle;
+    (void) opts;
+    char const* propertyName;
+    rbusError_t retPsmGet = RBUS_ERROR_BUS_ERROR;
+
+    propertyName = rbusProperty_GetName(property);
+    if(propertyName) {
+        WebcfgDebug("Property Name is %s \n", propertyName);
+    } else {
+        WebcfgError("Unable to handle get request for property \n");
+        return RBUS_ERROR_INVALID_INPUT;
+    }
+    if(strncmp(propertyName, WEBCFG_SUPPLEMENTARY_TELEMETRY_PARAM, maxParamLen)==0)
+    {
 
 	rbusValue_t value;
         rbusValue_Init(&value);
 
-	if(!RFC_ENABLE)
+	if(!isRfcEnabled())
 	{
 		WebcfgError("RfcEnable is disabled so, %s Get from DB failed\n",propertyName);
 		rbusValue_SetString(value, "");
@@ -493,7 +703,6 @@ rbusError_t webcfgDataGetHandler(rbusHandle_t handle, rbusProperty_t property, r
 		rbusValue_Release(value);
 		return 0;
 	}
-
         if(SupplementaryURLVal){
             rbusValue_SetString(value, SupplementaryURLVal);
 	}
@@ -501,6 +710,10 @@ rbusError_t webcfgDataGetHandler(rbusHandle_t handle, rbusProperty_t property, r
 		retPsmGet = rbus_GetValueFromDB( WEBCFG_SUPPLEMENTARY_TELEMETRY_PARAM, &SupplementaryURLVal );
 		if (retPsmGet != RBUS_ERROR_SUCCESS){
 			WebcfgError("psm_get failed ret %d for parameter %s and value %s\n", retPsmGet, propertyName, SupplementaryURLVal);
+                        if(value)
+                	{
+                		rbusValue_Release(value);
+ 			}
 			return retPsmGet;
 		}
 		else{
@@ -514,13 +727,29 @@ rbusError_t webcfgDataGetHandler(rbusHandle_t handle, rbusProperty_t property, r
 				WebcfgError("SupplementaryURL is empty\n");
 				rbusValue_SetString(value, "");
 			}
-			WebcfgDebug("After SupplementaryURLVal set to value\n");
 		}
 	}
         rbusProperty_SetValue(property, value);
         rbusValue_Release(value);
 
-    }else if(strncmp(propertyName, WEBCFG_FORCESYNC_PARAM, maxParamLen) == 0) {
+    }
+    return RBUS_ERROR_SUCCESS;	
+}
+
+rbusError_t webcfgFrGetHandler(rbusHandle_t handle, rbusProperty_t property, rbusGetHandlerOptions_t* opts) {
+    
+    (void) handle;
+    (void) opts;
+    char const* propertyName;
+
+    propertyName = rbusProperty_GetName(property);
+    if(propertyName) {
+        WebcfgDebug("Property Name is %s \n", propertyName);
+    } else {
+        WebcfgError("Unable to handle get request for property \n");
+        return RBUS_ERROR_INVALID_INPUT;
+    }
+    if(strncmp(propertyName, WEBCFG_FORCESYNC_PARAM, maxParamLen) == 0) {
 
 	rbusValue_t value;
         rbusValue_Init(&value);
@@ -528,19 +757,12 @@ rbusError_t webcfgDataGetHandler(rbusHandle_t handle, rbusProperty_t property, r
         rbusProperty_SetValue(property, value);
         rbusValue_Release(value);
 
-	if(!RFC_ENABLE)
+	if(!isRfcEnabled())
 	{
 		WebcfgError("RfcEnable is disabled so, %s Get from DB failed\n",propertyName);
 		return 0;
 	}
     }
-
-    /*if(propertyName) {
-        free((char*)propertyName);
-        propertyName = NULL;
-    }*/
-
-    WebcfgDebug("webcfgDataGetHandler End\n");
     return RBUS_ERROR_SUCCESS;
 }
 
@@ -584,13 +806,13 @@ WEBCFG_STATUS regWebConfigDataModel()
 
 	rbusDataElement_t dataElements[NUM_WEBCFG_ELEMENTS] = {
 
-		{WEBCFG_RFC_PARAM, RBUS_ELEMENT_TYPE_PROPERTY, {webcfgDataGetHandler, webcfgDataSetHandler, NULL, NULL, NULL, NULL}},
-		{WEBCFG_URL_PARAM, RBUS_ELEMENT_TYPE_PROPERTY, {webcfgDataGetHandler, webcfgDataSetHandler, NULL, NULL, NULL, NULL}},
-		{WEBCFG_FORCESYNC_PARAM, RBUS_ELEMENT_TYPE_PROPERTY, {webcfgDataGetHandler, webcfgDataSetHandler, NULL, NULL, NULL, NULL}},
-		{WEBCFG_SUPPLEMENTARY_TELEMETRY_PARAM, RBUS_ELEMENT_TYPE_PROPERTY, {webcfgDataGetHandler, webcfgDataSetHandler, NULL, NULL, NULL, NULL}},
+		{WEBCFG_RFC_PARAM, RBUS_ELEMENT_TYPE_PROPERTY, {webcfgRfcGetHandler, webcfgRfcSetHandler, NULL, NULL, NULL, NULL}},
+		{WEBCFG_URL_PARAM, RBUS_ELEMENT_TYPE_PROPERTY, {webcfgUrlGetHandler, webcfgUrlSetHandler, NULL, NULL, NULL, NULL}},
+		{WEBCFG_FORCESYNC_PARAM, RBUS_ELEMENT_TYPE_PROPERTY, {webcfgFrGetHandler, webcfgFrSetHandler, NULL, NULL, NULL, NULL}},
+		{WEBCFG_SUPPLEMENTARY_TELEMETRY_PARAM, RBUS_ELEMENT_TYPE_PROPERTY, {webcfgTelemetryGetHandler, webcfgTelemetrySetHandler, NULL, NULL, NULL, NULL}},
 		{WEBCFG_DATA_PARAM, RBUS_ELEMENT_TYPE_PROPERTY, {webcfgDataGetHandler, webcfgDataSetHandler, NULL, NULL, NULL, NULL}},
-		{WEBCFG_SUPPORTED_DOCS_PARAM, RBUS_ELEMENT_TYPE_PROPERTY, {webcfgDataGetHandler, webcfgDataSetHandler, NULL, NULL, NULL, NULL}},
-		{WEBCFG_SUPPORTED_VERSION_PARAM, RBUS_ELEMENT_TYPE_PROPERTY, {webcfgDataGetHandler, webcfgDataSetHandler, NULL, NULL, NULL, NULL}},
+		{WEBCFG_SUPPORTED_DOCS_PARAM, RBUS_ELEMENT_TYPE_PROPERTY, {webcfgSupportedDocsGetHandler, webcfgSupportedDocsSetHandler, NULL, NULL, NULL, NULL}},
+		{WEBCFG_SUPPORTED_VERSION_PARAM, RBUS_ELEMENT_TYPE_PROPERTY, {webcfgSupportedVersionGetHandler, webcfgSupportedVersionSetHandler, NULL, NULL, NULL, NULL}},
 		{WEBCFG_UPSTREAM_EVENT, RBUS_ELEMENT_TYPE_EVENT, {NULL, NULL, NULL, NULL, eventSubHandler, NULL}}
 	};
 	ret = rbus_regDataElements(rbus_handle, NUM_WEBCFG_ELEMENTS, dataElements);

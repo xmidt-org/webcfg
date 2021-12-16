@@ -163,9 +163,7 @@ int getForceSync(char** pString, char **transactionId)
 		WebcfgDebug("B4 get_rbus_ForceSync\n");
 		get_rbus_ForceSync(&str, &transID);
 		*pString = str;
-		*pString = strdup("root");
 		*transactionId = transID;
-		*transactionId = strdup("12345678_12345678abcd_123abc");
 		WebcfgDebug("get_rbus_ForceSync. *pString %s *transactionId %s\n", *pString, *transactionId);
 	}
 #else
