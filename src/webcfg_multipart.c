@@ -49,7 +49,11 @@
 #define ETAG_HEADER 		       "Etag:"
 #define CONTENT_LENGTH_HEADER 	       "Content-Length:"
 #define CURL_TIMEOUT_SEC	   25L
+#if ! defined(DEVICE_EXTENDER)
 #define CA_CERT_PATH 		   "/etc/ssl/certs/ca-certificates.crt"
+#else
+#define CA_CERT_PATH               "/usr/opensync/certs/ca.crt"
+#endif
 #define CCSP_CRASH_STATUS_CODE      192
 #define MAX_PARAMETERNAME_LEN		4096
 #define SUBDOC_TAG_COUNT            4
@@ -1159,7 +1163,7 @@ void stripspaces(char *str, char **final_str)
 
 static void get_webCfg_interface(char **interface)
 {
-
+#if ! defined(DEVICE_EXTENDER)
         FILE *fp = fopen(DEVICE_PROPS_FILE, "r");
 
         if (NULL != fp)
@@ -1194,6 +1198,7 @@ static void get_webCfg_interface(char **interface)
         {
                 WebcfgDebug("interface fetched is %s\n", *interface);
         }
+#endif
 }
 
 void loadInitURLFromFile(char **url)
