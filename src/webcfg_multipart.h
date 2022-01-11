@@ -72,6 +72,8 @@ void derive_root_doc_version_string(char **rootVersion, uint32_t *root_ver, int 
 void reset_global_eventFlag();
 int get_global_eventFlag(void);
 void set_global_eventFlag();
+void set_global_ETAG(char *etag);
+char *get_global_ETAG(void);
 pthread_t get_global_process_threadid();
 void delete_multipart();
 int get_multipartdoc_count();

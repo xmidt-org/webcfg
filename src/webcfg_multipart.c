@@ -137,6 +137,17 @@ void set_global_eventFlag()
 {
 	eventFlag = 1;
 }
+
+void set_global_ETAG(char *etag)
+{
+	webcfgStrncpy(g_ETAG, etag, sizeof(g_ETAG));
+}
+
+char *get_global_ETAG(void)
+{
+    return g_ETAG;
+}
+
 /*----------------------------------------------------------------------------*/
 /*                             Function Prototypes                            */
 /*----------------------------------------------------------------------------*/

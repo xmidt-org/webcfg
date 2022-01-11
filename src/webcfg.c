@@ -687,6 +687,8 @@ int testUtility()
 		char *ptr_count = data_body;
 		char *ptr1_count = data_body;
 		char *temp = NULL;
+		char *etag_header = NULL;
+		char* version = NULL;
 
 		while((ptr_count - data_body) < test_dataSize )
 		{
@@ -698,11 +700,42 @@ int testUtility()
 				strncpy(ct,temp,(sizeof(ct)-1));
 				break;
 			}
+			ptr_count++;
+		}
 
+		ptr_count = data_body;
+		ptr1_count = data_body;
+		while((ptr_count - data_body) < test_dataSize )
+		{
+			ptr_count = memchr(ptr_count, 'E', test_dataSize - (ptr_count - data_body));
+			if(0 == memcmp(ptr_count, "Etag:", strlen("Etag:")))
+			{
+				ptr1_count = memchr(ptr_count+1, '\r', test_dataSize - (ptr_count - data_body));
+				etag_header = strndup(ptr_count, (ptr1_count-ptr_count));
+				if(etag_header !=NULL)
+				{
+					WebcfgDebug("etag header extracted is %s\n", etag_header);
+					//Extract root version from Etag: <value> header.
+					version = strtok(etag_header, ":");
+					if(version !=NULL)
+					{
+						version = strtok(NULL, ":");
+						version++;
+						//g_ETAG should be updated only for primary sync.
+						if(!get_global_supplementarySync())
+						{
+							set_global_ETAG(version);
+							WebcfgInfo("g_ETAG updated for test utility %s\n", get_global_ETAG());
+						}
+						break;
+					}
+				}
+			}
 			ptr_count++;
 		}
 		free(data_body);
 		free(temp);
+		WEBCFG_FREE(etag_header);
 		transaction_uuid = strdup(generate_trans_uuid());
 		if(data !=NULL)
 		{
