@@ -79,6 +79,11 @@ void processWebcfgEvents(){
 	return;
 }
 
+void webcfgStrncpy(char *destStr, const char *srcStr, size_t destSize)
+{
+    strncpy(destStr, srcStr, destSize-1);
+    destStr[destSize-1] = '\0';
+}
 
 WEBCFG_STATUS checkAndUpdateTmpRetryCount(webconfig_tmp_data_t *temp, char *docname)
 {
