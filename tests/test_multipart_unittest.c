@@ -47,6 +47,7 @@
 #include "webcfg_aker.h"
 #endif
 
+int numLoops;
 
 #define MAX_HEADER_LEN	4096
 #define UNUSED(x) (void )(x)

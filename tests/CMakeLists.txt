@@ -265,12 +265,36 @@ endif (WEBCONFIG_BIN_SUPPORT)
 
 add_custom_target(coverage
 COMMAND lcov -q --capture --directory 
-${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/test_webcfgpack.dir/__/src --output-file test_webcfgpack.info
+${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/test_events_supp.dir/__/src --output-file test_events_supp.info
+COMMAND lcov -q --capture --directory 
+${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/test_multipart.dir/__/src --output-file test_multipart.info
+COMMAND lcov -q --capture --directory 
+${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/test_metadata.dir/__/src --output-file test_metadata.info
+COMMAND lcov -q --capture --directory 
+${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/test_mul_supp.dir/__/src --output-file test_mul_supp.info
+COMMAND lcov -q --capture --directory 
+${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/test_db.dir/__/src --output-file test_db.info
 COMMAND lcov -q --capture --directory 
 ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/test_webcfgparam.dir/__/src --output-file test_webcfgparam.info
+COMMAND lcov -q --capture --directory 
+${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/test_events.dir/__/src --output-file test_events.info
+COMMAND lcov -q --capture --directory 
+${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/test_root.dir/__/src --output-file test_root.info
+COMMAND lcov -q --capture --directory 
+${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/test_multipart_unittest.dir/__/src --output-file test_multipart_unittest.info
+COMMAND lcov -q --capture --directory 
+${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/test_webcfgpack.dir/__/src --output-file test_webcfgpack.info
 
 COMMAND lcov
+-a test_events_supp.info
+-a test_multipart.info
+-a test_metadata.info
+-a test_mul_supp.info
+-a test_db.info
 -a test_webcfgparam.info
+-a test_events.info
+-a test_root.info
+-a test_multipart_unittest.info
 -a test_webcfgpack.info
 --output-file coverage.info
 
