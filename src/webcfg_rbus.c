@@ -795,6 +795,7 @@ rbusError_t eventSubHandler(rbusHandle_t handle, rbusEventSubAction_t action, co
 WEBCFG_STATUS regWebConfigDataModel()
 {
 	rbusError_t ret = RBUS_ERROR_SUCCESS;
+	rbusError_t retPsmGet = RBUS_ERROR_BUS_ERROR;
 	WEBCFG_STATUS status = WEBCFG_SUCCESS;
 
 	WebcfgInfo("Registering parameters %s, %s, %s %s\n", WEBCFG_RFC_PARAM, WEBCFG_FORCESYNC_PARAM, WEBCFG_URL_PARAM, WEBCFG_SUPPLEMENTARY_TELEMETRY_PARAM);
@@ -824,6 +825,24 @@ WEBCFG_STATUS regWebConfigDataModel()
 
 		memset(ForceSyncTransID, 0, 256);
 		webcfgStrncpy( ForceSyncTransID, "", sizeof(ForceSyncTransID));
+
+		// Initialise rfc enable global variable value
+		char *tmpchar = NULL;
+		retPsmGet = rbus_GetValueFromDB(paramRFCEnable, &tmpchar);
+		if (retPsmGet != RBUS_ERROR_SUCCESS){
+			WebcfgError("psm_get failed ret %d for parameter %s and value %s\n", retPsmGet, WEBCFG_RFC_PARAM, tmpchar);
+		}
+		else{
+			WebcfgInfo("psm_get success ret %d for parameter %s and value %s\n", retPsmGet, WEBCFG_RFC_PARAM, tmpchar);
+			if(tmpchar != NULL)
+			{
+				if(((strcmp (tmpchar, "true") == 0)) || (strcmp (tmpchar, "TRUE") == 0))
+				{
+					RfcVal = true;
+				}
+				free(tmpchar);
+			}
+		}
 	}
 	else
 	{
