@@ -363,15 +363,13 @@ rbusError_t webcfgFrSetHandler(rbusHandle_t handle, rbusProperty_t prop, rbusSet
     (void) handle;
     (void) opts;
     char const* paramName = rbusProperty_GetName(prop);
-    WebcfgInfo("Inside FR Set\n");
-
     if(strncmp(paramName, WEBCFG_FORCESYNC_PARAM, maxParamLen) != 0)
     {
         WebcfgError("Unexpected parameter = %s\n", paramName); 
         return RBUS_ERROR_ELEMENT_DOES_NOT_EXIST;
     }
 
-    WebcfgInfo("Parameter name is %s \n", paramName);
+    WebcfgDebug("Parameter name is %s \n", paramName);
     rbusValueType_t type_t;
     rbusValue_t paramValue_t = rbusProperty_GetValue(prop);
     if(paramValue_t) {
@@ -389,7 +387,7 @@ rbusError_t webcfgFrSetHandler(rbusHandle_t handle, rbusProperty_t prop, rbusSet
         if(type_t == RBUS_STRING) {
             char* data = rbusValue_ToString(paramValue_t, NULL, 0);
             if(data) {
-                WebcfgInfo("Call datamodel function  with data %s \n", data);
+                WebcfgDebug("Call datamodel function  with data %s \n", data);
 
 		if(strlen(data) == strlen("telemetry"))
 		{
@@ -397,8 +395,6 @@ rbusError_t webcfgFrSetHandler(rbusHandle_t handle, rbusProperty_t prop, rbusSet
 			{
 				char telemetryUrl[256] = {0};
 				Get_Supplementary_URL("Telemetry", telemetryUrl);
-				WebcfgInfo("The telemetryUrl is %s\n", telemetryUrl);
-
 				if(strncmp(telemetryUrl,"NULL",strlen("NULL")) == 0)
 				{
 					WebcfgError("Telemetry url is null so, force sync SET failed\n");
@@ -414,7 +410,7 @@ rbusError_t webcfgFrSetHandler(rbusHandle_t handle, rbusProperty_t prop, rbusSet
                 }
 		int session_status = 0;
 		int ret = set_rbus_ForceSync(data, &session_status);
-		WebcfgInfo("set_rbus_ForceSync ret %d\n", ret);
+		WebcfgDebug("set_rbus_ForceSync ret %d\n", ret);
 		if(session_status)
 		{
 			WebcfgInfo("session_status is 1\n");
@@ -428,7 +424,7 @@ rbusError_t webcfgFrSetHandler(rbusHandle_t handle, rbusProperty_t prop, rbusSet
 			return RBUS_ERROR_BUS_ERROR;
 		}
                 WEBCFG_FREE(data);
-		WebcfgInfo("forceSyncVal after processing %s\n", forceSyncVal);
+		WebcfgDebug("forceSyncVal after processing %s\n", forceSyncVal);
             }
         } else {
             WebcfgError("Unexpected value type for property %s \n", paramName);
@@ -1363,7 +1359,6 @@ int parseForceSyncJson(char *jsonpayload, char **forceSyncVal, char **forceSynct
 					{
 						char telemetryUrl[256] = {0};
 						Get_Supplementary_URL("Telemetry", telemetryUrl);
-						WebcfgInfo("The telemetryUrl is %s\n", telemetryUrl);
 						if(strncmp(telemetryUrl,"NULL",strlen("NULL")) == 0)
 						{
 							WebcfgError("Telemetry url is null so, force sync SET failed\n");
