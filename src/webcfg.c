@@ -35,10 +35,6 @@
 #include "webcfg_blob.h"
 #include "webcfg_timer.h"
 
-#if defined(WEBCONFIG_BIN_SUPPORT)
-#include "webcfg_rbus.h"
-#endif
-
 #ifdef FEATURE_SUPPORT_AKER
 #include "webcfg_aker.h"
 #endif
@@ -365,11 +361,6 @@ void *WebConfigMultipartTask(void *status)
 	set_global_retry_timestamp(0);
 	set_retry_timer(0);
 	set_global_supplementarySync(0);
-
-#if defined(WEBCONFIG_BIN_SUPPORT)
-	reset_telemetryUrlCheck();
-#endif
-
 #ifdef FEATURE_SUPPORT_AKER
 	set_send_aker_flag(false);
 #endif
