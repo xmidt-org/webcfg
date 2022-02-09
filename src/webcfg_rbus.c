@@ -1346,15 +1346,18 @@ int parseForceSyncJson(char *jsonpayload, char **forceSyncVal, char **forceSynct
 			force_sync_transid = cJSON_GetObjectItem( json, "transaction_id" )->valuestring;
 			if ((force_sync_str != NULL) && strlen(force_sync_str) > 0)
 			{
-				if(0 == strncmp(force_sync_str,"telemetry",strlen("telemetry")))
+				if(strlen(force_sync_str) == strlen("telemetry"))
 				{
-					char telemetryUrl[256] = {0};
-					Get_Supplementary_URL("Telemetry", telemetryUrl);
-					if(strncmp(telemetryUrl,"NULL",strlen("NULL")) == 0)
+					if(0 == strncmp(force_sync_str,"telemetry",strlen("telemetry")))
 					{
-						WebcfgError("Telemetry url is null so, force sync SET failed\n");
-						cJSON_Delete(json);
-						return -1;
+						char telemetryUrl[256] = {0};
+						Get_Supplementary_URL("Telemetry", telemetryUrl);
+						if(strncmp(telemetryUrl,"NULL",strlen("NULL")) == 0)
+						{
+							WebcfgError("Telemetry url is null so, force sync SET failed\n");
+							cJSON_Delete(json);
+							return -1;
+						}
 					}
 				}
 				*forceSyncVal = strdup(force_sync_str);
