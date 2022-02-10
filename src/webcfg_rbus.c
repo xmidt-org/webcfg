@@ -383,14 +383,17 @@ rbusError_t webcfgFrSetHandler(rbusHandle_t handle, rbusProperty_t prop, rbusSet
             if(data) {
                 WebcfgDebug("Call datamodel function  with data %s \n", data);
 
-		if(0 == strncmp(data,"telemetry",strlen("telemetry")))
+		if(strlen(data) == strlen("telemetry"))
 		{
-			char telemetryUrl[256] = {0};
-			Get_Supplementary_URL("Telemetry", telemetryUrl);
-			if(strncmp(telemetryUrl,"NULL",strlen("NULL")) == 0)
+			if(0 == strncmp(data,"telemetry",strlen("telemetry")))
 			{
-				WebcfgError("Telemetry url is null so, force sync SET failed\n");
-				return RBUS_ERROR_BUS_ERROR;
+				char telemetryUrl[256] = {0};
+				Get_Supplementary_URL("Telemetry", telemetryUrl);
+				if(strncmp(telemetryUrl,"NULL",strlen("NULL")) == 0)
+				{
+					WebcfgError("Telemetry url is null so, force sync SET failed\n");
+					return RBUS_ERROR_BUS_ERROR;
+				}
 			}
 		}
 
@@ -1343,6 +1346,20 @@ int parseForceSyncJson(char *jsonpayload, char **forceSyncVal, char **forceSynct
 			force_sync_transid = cJSON_GetObjectItem( json, "transaction_id" )->valuestring;
 			if ((force_sync_str != NULL) && strlen(force_sync_str) > 0)
 			{
+				if(strlen(force_sync_str) == strlen("telemetry"))
+				{
+					if(0 == strncmp(force_sync_str,"telemetry",strlen("telemetry")))
+					{
+						char telemetryUrl[256] = {0};
+						Get_Supplementary_URL("Telemetry", telemetryUrl);
+						if(strncmp(telemetryUrl,"NULL",strlen("NULL")) == 0)
+						{
+							WebcfgError("Telemetry url is null so, force sync SET failed\n");
+							cJSON_Delete(json);
+							return -1;
+						}
+					}
+				}
 				*forceSyncVal = strdup(force_sync_str);
 				WebcfgDebug("*forceSyncVal value parsed from payload is %s\n", *forceSyncVal);
 			}
@@ -1373,6 +1390,7 @@ int set_rbus_ForceSync(char* pString, int *pStatus)
 {
     char *transactionId = NULL;
     char *value = NULL;
+    int parseJsonRet = 0;
 
     memset( ForceSync, 0, sizeof( ForceSync ));
 
@@ -1382,7 +1400,11 @@ int set_rbus_ForceSync(char* pString, int *pStatus)
 	if(strlen(pString)>0)
 	{
 		WebcfgInfo("Received poke request, proceed to parseForceSyncJson\n");
-		parseForceSyncJson(pString, &value, &transactionId);
+		parseJsonRet = parseForceSyncJson(pString, &value, &transactionId);
+		if(-1 == parseJsonRet)
+		{
+			return 0; // 0 corresponds to indicate error or failure
+		}
 		if(value !=NULL)
 		{
 			WebcfgDebug("After parseForceSyncJson. value %s transactionId %s\n", value, transactionId);
