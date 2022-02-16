@@ -1427,6 +1427,12 @@ int set_rbus_ForceSync(char* pString, int *pStatus)
             *pStatus = 1;
             return 0;
         }
+	else if(get_maintenanceSync())
+	{
+		WebcfgInfo("Maintenance window sync is in progress, Ignoring this request.\n");
+		*pStatus = 1;
+		return 0;
+	}
 	else if(strlen(ForceSyncTransID)>0)
         {
             WebcfgInfo("Force sync is already in progress, Ignoring this request.\n");
