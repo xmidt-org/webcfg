@@ -719,6 +719,7 @@ WEBCFG_STATUS processMsgpackSubdoc(char *transaction_id)
 						WebcfgDebug("Update doc trans_id to validate events.\n");
 						updateTmpList(subdoc_node, mp->name_space, mp->etag, "pending", "none", 0, doc_transId, 0);
 						//If request type is BLOB, start event handler thread to process various error handling operations based on the events received from components.
+					#ifdef RDK_PERSISTENT_PATH_VIDEO
 						if(eventFlag == 0)
 						{
 							WebcfgInfo("starting initEventHandlingTask\n");
@@ -726,6 +727,7 @@ WEBCFG_STATUS processMsgpackSubdoc(char *transaction_id)
 							processWebcfgEvents();
 							eventFlag = 1;
 						}
+					#endif
 					}
 					else
 					{

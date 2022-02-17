@@ -345,6 +345,7 @@ AKER_STATUS processAkerSubdoc(webconfig_tmp_data_t *docNode, multipartdocs_t *ak
 						updateTmpList(docNode, gmp->name_space, gmp->etag, "pending", "none", 0, doc_transId, 0);
 
 						//Start event handler thread to process aker events if it is not started already.
+					#ifdef RDK_PERSISTENT_PATH_VIDEO
 						WebcfgDebug("get_global_eventFlag is %d\n", get_global_eventFlag());
 						if(get_global_eventFlag() == 0)
 						{
@@ -353,6 +354,7 @@ AKER_STATUS processAkerSubdoc(webconfig_tmp_data_t *docNode, multipartdocs_t *ak
 							processWebcfgEvents();
 							set_global_eventFlag();
 						}
+					#endif
 					}
 					else
 					{

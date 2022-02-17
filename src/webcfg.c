@@ -125,6 +125,13 @@ void *WebConfigMultipartTask(void *status)
 	//To disable supplementary sync for RDKV platforms
 #if !defined(RDK_PERSISTENT_PATH_VIDEO)
 	initMaintenanceTimer();
+	if(get_global_eventFlag() == 0)
+	{
+		WebcfgInfo("starting initEventHandlingTask in Boot\n");
+		initEventHandlingTask();
+		processWebcfgEvents();
+		set_global_eventFlag();
+	}
 #endif
 	//For Primary sync set flag to 0
 	set_global_supplementarySync(0);
