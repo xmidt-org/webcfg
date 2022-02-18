@@ -54,6 +54,11 @@
 #define WEBCFG_SUPPORTED_DOCS_PARAM	"Device.X_RDK_WebConfig.SupportedDocs"
 #define WEBCFG_SUPPORTED_VERSION_PARAM	"Device.X_RDK_WebConfig.SupportedSchemaVersion"
 #define WEBCFG_SUPPLEMENTARY_TELEMETRY_PARAM  "Device.X_RDK_WebConfig.SupplementaryServiceUrls.Telemetry"
+
+#ifdef WAN_FAILOVER_SUPPORTED
+#define WEBCFG_INTERFACE_PARAM "Device.X_RDK_WanManager.CurrentActiveInterface"
+#endif
+
 #define WEBCFG_UPSTREAM_EVENT  "Webconfig.Upstream"
 #define PARAM_RFC_ENABLE "eRT.com.cisco.spvtg.ccsp.webpa.WebConfigRfcEnable"
 
@@ -95,4 +100,7 @@ int get_rbus_ForceSync(char** pString, char **transactionId );
 bool get_rbus_RfcEnable();
 void sendNotification_rbus(char *payload, char *source, char *destination);
 void waitForUpstreamEventSubscribe(int wait_time);
+#ifdef WAN_FAILOVER_SUPPORTED
+int subscribeTo_CurrentActiveInterface_Event();
+#endif
 #endif

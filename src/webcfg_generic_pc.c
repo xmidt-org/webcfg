@@ -36,6 +36,9 @@ char *__attribute__((weak)) getDeviceBootTime(void);
 char *__attribute__((weak)) getSerialNumber(void);
 char *__attribute__((weak)) getProductClass(void);
 char *__attribute__((weak)) getModelName(void);
+#ifdef WAN_FAILOVER_SUPPORTED
+char *__attribute__((weak)) getInterfaceName(void);
+#endif
 char *__attribute__((weak)) getPartnerID(void);
 char *__attribute__((weak)) getAccountID(void);
 char *__attribute__((weak)) getRebootReason(void);
@@ -87,6 +90,14 @@ char *getModelName(void)
     char *MN=strdup("CGM4140COM");
     return MN;
 }
+
+#ifdef WAN_FAILOVER_SUPPORTED
+char *getInterfaceName(void)
+{
+    char *MN=strdup("erouter0");
+    return MN;
+}
+#endif 
 
 char *getPartnerID(void)
 {
