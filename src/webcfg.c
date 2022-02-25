@@ -128,7 +128,7 @@ void *WebConfigMultipartTask(void *status)
 	initMaintenanceTimer();
 	if(get_global_eventFlag() == 0)
 	{
-		WebcfgInfo("starting initEventHandlingTask in Boot\n");
+		WebcfgInfo("Starting initEventHandlingTask\n");
 		initEventHandlingTask();
 		processWebcfgEvents();
 		set_global_eventFlag();
