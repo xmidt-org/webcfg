@@ -44,7 +44,9 @@
 
 
 #ifdef MULTIPART_UTILITY
-#ifdef BUILD_YOCTO
+#ifdef DEVICE_EXTENDER
+#define TEST_FILE_LOCATION              "/usr/opensync/data/multipart.bin"
+#elif BUILD_YOCTO
 #define TEST_FILE_LOCATION		"/nvram/multipart.bin"
 #else
 #define TEST_FILE_LOCATION		"/tmp/multipart.bin"
