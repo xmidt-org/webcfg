@@ -572,7 +572,7 @@ WEBCFG_STATUS processMsgpackSubdoc(char *transaction_id)
 #ifdef FEATURE_SUPPORT_AKER
 	int backoffRetryTime = 0;
 	int max_retry_sleep = 0;
-	int backoff_max_time = 6;
+	int backoff_max_time = 7; // Increased backoff to 127s to handle aker max 85s timeout when NTP sync is delayed
 	int c=4;
 	multipartdocs_t *akerIndex = NULL;
 	int akerSet = 0;
