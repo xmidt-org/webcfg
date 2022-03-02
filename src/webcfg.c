@@ -126,6 +126,8 @@ void *WebConfigMultipartTask(void *status)
 	//To disable supplementary sync for RDKV platforms
 #if !defined(RDK_PERSISTENT_PATH_VIDEO)
 	initMaintenanceTimer();
+
+	//The event handler intialisation is disabled in RDKV platforms as blob type is not applicable
 	if(get_global_eventFlag() == 0)
 	{
 		WebcfgInfo("Starting initEventHandlingTask\n");
