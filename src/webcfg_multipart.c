@@ -590,6 +590,16 @@ WEBCFG_STATUS processMsgpackSubdoc(char *transaction_id)
 		ret = WDMP_FAILURE;
 		err = 0;
 
+		WebcfgDebug("check global mp\n");
+		multipartdocs_t *temp_mp = NULL;
+		temp_mp = get_global_mp();
+
+		if(temp_mp == NULL)
+		{
+			WebcfgInfo("mp cache list is empty. Exiting from subdoc processing.\n");
+			break;
+		}
+
 		webconfig_tmp_data_t * subdoc_node = NULL;
 		subdoc_node = getTmpNode(mp->name_space);
 
