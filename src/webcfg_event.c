@@ -951,6 +951,15 @@ WEBCFG_STATUS retryMultipartSubdoc(webconfig_tmp_data_t *docNode, char *docName)
 
 	while( gmp != NULL)
 	{
+		multipartdocs_t *temp_mp = NULL;
+		temp_mp = get_global_mp();
+
+		if(temp_mp == NULL)
+		{
+			WebcfgInfo("mp cache list is empty. Exiting from subdoc retry.\n");
+			break;
+		}
+
 		if(strcmp(gmp->name_space, docName) == 0)
 		{
 			WebcfgDebug("gmp->name_space %s\n", gmp->name_space);
