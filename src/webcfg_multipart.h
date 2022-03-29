@@ -74,6 +74,10 @@ int get_global_eventFlag(void);
 void set_global_eventFlag();
 void set_global_ETAG(char *etag);
 char *get_global_ETAG(void);
+#ifdef WAN_FAILOVER_SUPPORTED
+void set_global_interface(char * value);
+char * get_global_interface(void);
+#endif
 pthread_t get_global_process_threadid();
 void delete_multipart();
 int get_multipartdoc_count();

@@ -148,6 +148,18 @@ char *get_global_ETAG(void)
     return g_ETAG;
 }
 
+#ifdef WAN_FAILOVER_SUPPORTED
+void set_global_interface(char * value)
+{
+     strncpy(g_interface, value, sizeof(g_interface)-1);
+}	
+
+char * get_global_interface(void)
+{
+     return g_interface;
+}     
+#endif
+
 /*----------------------------------------------------------------------------*/
 /*                             Function Prototypes                            */
 /*----------------------------------------------------------------------------*/
@@ -160,7 +172,7 @@ void addToDBList(webconfig_db_data_t *webcfgdb);
 char* generate_trans_uuid();
 WEBCFG_STATUS processMsgpackSubdoc(char *transaction_id);
 void loadInitURLFromFile(char **url);
-static void get_webCfg_interface(char **interface);
+void get_webCfg_interface(char **interface);
 
 #ifdef FEATURE_SUPPORT_AKER
 WEBCFG_STATUS checkAkerDoc();
@@ -304,8 +316,14 @@ WEBCFG_STATUS webcfg_http_request(char **configData, int r_count, int status, lo
 		res = curl_easy_setopt(curl, CURLOPT_TIMEOUT, CURL_TIMEOUT_SEC);
 		WebcfgDebug("fetching interface from device.properties\n");
 		if(strlen(g_interface) == 0)
-		{
-			get_webCfg_interface(&interface);
+		{   
+		        #ifdef WAN_FAILOVER_SUPPORTED	
+				interface = getInterfaceName();
+				WebcfgInfo("Interface fetched from getInterfaceName is %s\n", interface);
+			#else	
+				get_webCfg_interface(&interface);
+				WebcfgInfo("Interface fetched from Device.properties is %s\n", interface);
+			#endif
 			if(interface !=NULL)
 		        {
 		               strncpy(g_interface, interface, sizeof(g_interface)-1);
@@ -1174,7 +1192,7 @@ void stripspaces(char *str, char **final_str)
 	*final_str = str;
 }
 
-static void get_webCfg_interface(char **interface)
+void get_webCfg_interface(char **interface)
 {
 #if ! defined(DEVICE_EXTENDER)
         FILE *fp = fopen(DEVICE_PROPS_FILE, "r");
