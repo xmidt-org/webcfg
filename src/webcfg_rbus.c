@@ -1594,6 +1594,7 @@ void waitForUpstreamEventSubscribe(int wait_time)
 }
 
 #ifdef WAN_FAILOVER_SUPPORTED
+
 static void eventReceiveHandler(
     rbusHandle_t rbus_handle,
     rbusEvent_t const* event,
@@ -1603,16 +1604,30 @@ static void eventReceiveHandler(
     char * interface = NULL;
     rbusValue_t newValue = rbusObject_GetValue(event->data, "value");
     rbusValue_t oldValue = rbusObject_GetValue(event->data, "oldValue");
-    WebcfgInfo("Consumer receiver ValueChange event for param %s\n", event->name);
+    WebcfgInfo("Consumer received ValueChange event for param %s\n", event->name);
 
     if(newValue) {    
         interface = (char *) rbusValue_GetString(newValue, NULL);
-	set_global_interface(interface);
+	if(interface != NULL) {
+		set_global_interface(interface);
+	}	
     }	
-    if(newValue !=NULL && oldValue!=NULL && get_global_interface()!=NULL) {
+    if(newValue != NULL && oldValue != NULL && get_global_interface() != NULL) {
             WebcfgInfo("New Value: %s Old Value: %s New Interface Value: %s\n", rbusValue_GetString(newValue, NULL), rbusValue_GetString(oldValue, NULL), get_global_interface());
     }    
+    else {
+	    if(newValue == NULL) {
+		    WebcfgError("NewValue is NULL");
+	    }
+	    if(oldValue == NULL) {
+		    WebcfgError("oldValue is NULL\n");
+	    }
+	    if(interface == NULL) {
+		    WebcfgError("interface value is NULL\n")
+	    }
+    }
 }
+    
 
 static void subscribeAsyncHandler(
     rbusHandle_t rbus_handle,
