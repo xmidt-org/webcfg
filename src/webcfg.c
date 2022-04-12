@@ -58,6 +58,7 @@
 pthread_mutex_t sync_mutex=PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t sync_condition=PTHREAD_COND_INITIALIZER;
 bool g_shutdown  = false;
+bool webcfgReady = false;
 bool bootSyncInProgress = false;
 bool maintenanceSyncInProgress = false;
 pthread_t* g_mpthreadId;
@@ -122,6 +123,8 @@ void *WebConfigMultipartTask(void *status)
 #endif
 	//For Primary sync set flag to 0
 	set_global_supplementarySync(0);
+	WebcfgInfo("Webconfig is ready to process requests. set webcfgReady to true\n");
+	set_webcfgReady(true);
 	set_bootSync(true);
 	processWebconfgSync((int)Status, NULL);
 
@@ -333,6 +336,8 @@ void *WebConfigMultipartTask(void *status)
 	JoinThread (get_global_client_threadid());
 
 	reset_global_eventFlag();
+	WebcfgDebug("set webcfgReady to false during shutdown\n");
+	set_webcfgReady(false);
 	set_doc_fail(0);
 	reset_numOfMpDocs();
 	reset_successDocCount();
@@ -385,6 +390,16 @@ bool get_global_shutdown()
 void set_global_shutdown(bool shutdown)
 {
     g_shutdown = shutdown;
+}
+
+bool get_webcfgReady()
+{
+    return webcfgReady;
+}
+
+void set_webcfgReady(bool ready)
+{
+   webcfgReady  = ready;
 }
 
 bool get_bootSync()
