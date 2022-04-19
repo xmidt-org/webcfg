@@ -124,10 +124,6 @@ void *WebConfigMultipartTask(void *status)
 #endif
 	WebcfgDebug("initDB %s\n", WEBCFG_DB_FILE);
 
-	//Testing purpose. Delay webconfig to verify webconfig not ready case.
-	WebcfgInfo("sleep of 30s to delay webconfig start up\n");
-	sleep(30);
-	WebcfgInfo("sleep of 30s done\n");
 	initDB(WEBCFG_DB_FILE);
 
 	//To disable supplementary sync for RDKV platforms
