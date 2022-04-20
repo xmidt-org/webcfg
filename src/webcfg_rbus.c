@@ -420,7 +420,13 @@ rbusError_t webcfgFrSetHandler(rbusHandle_t handle, rbusProperty_t prop, rbusSet
 		int session_status = 0;
 		int ret = set_rbus_ForceSync(data, &session_status);
 		WebcfgDebug("set_rbus_ForceSync ret %d\n", ret);
-		if(session_status)
+		if(session_status == 2)
+		{
+			WebcfgInfo("session_status is 2\n");
+			WEBCFG_FREE(data);
+			return RBUS_ERROR_NOT_INITIALIZED;
+		}
+		else if(session_status == 1)
 		{
 			WebcfgInfo("session_status is 1\n");
 			WEBCFG_FREE(data);
@@ -1437,7 +1443,13 @@ int set_rbus_ForceSync(char* pString, int *pStatus)
 
     if((ForceSync[0] !='\0') && (strlen(ForceSync)>0))
     {
-        if(get_bootSync())
+	if(!get_webcfgReady())
+        {
+            WebcfgInfo("Webconfig is not ready to process requests, Ignoring this request.\n");
+            *pStatus = 2;
+            return 0;
+        }
+        else if(get_bootSync())
         {
             WebcfgInfo("Bootup sync is already in progress, Ignoring this request.\n");
             *pStatus = 1;
