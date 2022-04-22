@@ -39,6 +39,9 @@ char * getDeviceBootTime();
 char * getSerialNumber();
 char * getProductClass();
 char * getModelName();
+#ifdef WAN_FAILOVER_SUPPORTED
+char * getInterfaceName();
+#endif
 char * getPartnerID();
 char * getAccountID();
 char * getConnClientParamName();

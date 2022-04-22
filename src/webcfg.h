@@ -80,6 +80,8 @@ void set_g_testfile(int value);
 
 bool get_global_shutdown();
 void set_global_shutdown(bool shutdown);
+bool get_webcfgReady();
+void set_webcfgReady(bool ready);
 bool get_bootSync();
 void set_bootSync(bool bootsync);
 bool get_maintenanceSync();

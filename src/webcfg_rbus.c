@@ -23,6 +23,9 @@
 #include <wdmp-c.h>
 #include "webcfg_rbus.h"
 #include "webcfg_metadata.h"
+#ifdef WAN_FAILOVER_SUPPORTED
+#include "webcfg_multipart.h"
+#endif
 
 static rbusHandle_t rbus_handle;
 
@@ -40,6 +43,19 @@ static char ForceSync[256]={'\0'};
 static char ForceSyncTransID[256]={'\0'};
 
 static int subscribed = 0;
+
+#ifdef WAN_FAILOVER_SUPPORTED
+static void eventReceiveHandler(
+    rbusHandle_t rbus_handle,
+    rbusEvent_t const* event,
+    rbusEventSubscription_t* subscription);
+
+static void subscribeAsyncHandler(
+    rbusHandle_t rbus_handle,
+    rbusEventSubscription_t* subscription,
+    rbusError_t error);
+#endif
+
 rbusDataElement_t eventDataElement[1] = {
 		{WEBCFG_EVENT_NAME, RBUS_ELEMENT_TYPE_PROPERTY, {NULL, rbusWebcfgEventHandler, NULL, NULL, NULL, NULL}}
 	};
@@ -404,7 +420,13 @@ rbusError_t webcfgFrSetHandler(rbusHandle_t handle, rbusProperty_t prop, rbusSet
 		int session_status = 0;
 		int ret = set_rbus_ForceSync(data, &session_status);
 		WebcfgDebug("set_rbus_ForceSync ret %d\n", ret);
-		if(session_status)
+		if(session_status == 2)
+		{
+			WebcfgInfo("session_status is 2\n");
+			WEBCFG_FREE(data);
+			return RBUS_ERROR_NOT_INITIALIZED;
+		}
+		else if(session_status == 1)
 		{
 			WebcfgInfo("session_status is 1\n");
 			WEBCFG_FREE(data);
@@ -1421,7 +1443,13 @@ int set_rbus_ForceSync(char* pString, int *pStatus)
 
     if((ForceSync[0] !='\0') && (strlen(ForceSync)>0))
     {
-        if(get_bootSync())
+	if(!get_webcfgReady())
+        {
+            WebcfgInfo("Webconfig is not ready to process requests, Ignoring this request.\n");
+            *pStatus = 2;
+            return 0;
+        }
+        else if(get_bootSync())
         {
             WebcfgInfo("Bootup sync is already in progress, Ignoring this request.\n");
             *pStatus = 1;
@@ -1576,3 +1604,54 @@ void waitForUpstreamEventSubscribe(int wait_time)
 		}
 	}
 }
+
+#ifdef WAN_FAILOVER_SUPPORTED
+static void eventReceiveHandler(
+    rbusHandle_t rbus_handle,
+    rbusEvent_t const* event,
+    rbusEventSubscription_t* subscription)
+{
+    (void)rbus_handle;
+    char * interface = NULL;
+    rbusValue_t newValue = rbusObject_GetValue(event->data, "value");
+    rbusValue_t oldValue = rbusObject_GetValue(event->data, "oldValue");
+    WebcfgInfo("Consumer receiver ValueChange event for param %s\n", event->name);
+
+    if(newValue) {    
+        interface = (char *) rbusValue_GetString(newValue, NULL);
+	set_global_interface(interface);
+    }	
+    if(newValue !=NULL && oldValue!=NULL && get_global_interface()!=NULL) {
+            WebcfgInfo("New Value: %s Old Value: %s New Interface Value: %s\n", rbusValue_GetString(newValue, NULL), rbusValue_GetString(oldValue, NULL), get_global_interface());
+    }    
+}
+
+static void subscribeAsyncHandler(
+    rbusHandle_t rbus_handle,
+    rbusEventSubscription_t* subscription,
+    rbusError_t error)
+{
+  (void)rbus_handle;
+
+  WebcfgInfo("subscribeAsyncHandler event %s, error %d - %s\n", subscription->eventName, error, rbusError_ToString(error));
+}
+
+
+//Subscribe for Device.X_RDK_WanManager.CurrentActiveInterface
+int subscribeTo_CurrentActiveInterface_Event()
+{
+      int rc = RBUS_ERROR_SUCCESS;
+      WebcfgDebug("Subscribing to %s Event\n", WEBCFG_INTERFACE_PARAM);
+      rc = rbusEvent_SubscribeAsync (
+        rbus_handle,
+        WEBCFG_INTERFACE_PARAM,
+        eventReceiveHandler,
+	subscribeAsyncHandler,
+        "Webcfg_Interface",
+        10*20);
+      if(rc != RBUS_ERROR_SUCCESS) {
+	      WebcfgError("%s subscribe failed : %d - %s\n", WEBCFG_INTERFACE_PARAM, rc, rbusError_ToString(rc));
+      }  
+      return rc;
+}      
+#endif

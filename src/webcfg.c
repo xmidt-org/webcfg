@@ -63,6 +63,7 @@
 pthread_mutex_t sync_mutex=PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t sync_condition=PTHREAD_COND_INITIALIZER;
 bool g_shutdown  = false;
+bool webcfgReady = false;
 bool bootSyncInProgress = false;
 bool maintenanceSyncInProgress = false;
 pthread_t* g_mpthreadId;
@@ -140,6 +141,8 @@ void *WebConfigMultipartTask(void *status)
 #endif
 	//For Primary sync set flag to 0
 	set_global_supplementarySync(0);
+	WebcfgInfo("Webconfig is ready to process requests. set webcfgReady to true\n");
+	set_webcfgReady(true);
 	set_bootSync(true);
 	processWebconfgSync((int)Status, NULL);
 
@@ -370,6 +373,8 @@ void *WebConfigMultipartTask(void *status)
 	JoinThread (get_global_client_threadid());
 #endif
 	reset_global_eventFlag();
+	WebcfgDebug("set webcfgReady to false during shutdown\n");
+	set_webcfgReady(false);
 	set_doc_fail(0);
 	reset_numOfMpDocs();
 	reset_successDocCount();
@@ -425,6 +430,16 @@ bool get_global_shutdown()
 void set_global_shutdown(bool shutdown)
 {
     g_shutdown = shutdown;
+}
+
+bool get_webcfgReady()
+{
+    return webcfgReady;
+}
+
+void set_webcfgReady(bool ready)
+{
+   webcfgReady  = ready;
 }
 
 bool get_bootSync()
@@ -519,6 +534,7 @@ void processWebconfgSync(int status, char* docname)
 		WebcfgInfo("webcfg_http_request BACKOFF_SLEEP_DELAY_SEC is %d seconds\n", BACKOFF_SLEEP_DELAY_SEC);
 		sleep(BACKOFF_SLEEP_DELAY_SEC);
 		retry_count++;
+		r_count++;
 		if(retry_count <= 3)
 		{
 			WebcfgInfo("Webconfig curl retry_count to server is %d\n", retry_count);

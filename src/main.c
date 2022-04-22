@@ -81,6 +81,9 @@ int main()
 		set_global_systemReadyTime(systemReadyTime);
 		// wait for upstream subscriber for 5mins
 		waitForUpstreamEventSubscribe(300);
+		#ifdef WAN_FAILOVER_SUPPORTED
+		subscribeTo_CurrentActiveInterface_Event();
+		#endif
 		ret = rbus_GetValueFromDB( PARAM_RFC_ENABLE, &strValue );
 		if (ret == 0)
 		{
