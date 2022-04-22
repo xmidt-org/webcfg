@@ -1744,6 +1744,7 @@ void createCurlHeader( struct curl_slist *list, struct curl_slist **header_list,
 
         if(strlen(g_systemReadyTime) ==0)
         {
+
                 systemReadyTime = get_global_systemReadyTime();
                 if(systemReadyTime !=NULL)
                 {
@@ -1758,7 +1759,7 @@ void createCurlHeader( struct curl_slist *list, struct curl_slist **header_list,
                 systemReadyTime_header = (char *) malloc(sizeof(char)*MAX_BUF_SIZE);
                 if(systemReadyTime_header !=NULL)
                 {
-	                snprintf(systemReadyTime_header, MAX_BUF_SIZE, "X-System-Ready-Time: %s", g_systemReadyTime);
+			snprintf(systemReadyTime_header, MAX_BUF_SIZE, "X-System-Ready-Time: %s", g_systemReadyTime);
 	                WebcfgInfo("systemReadyTime_header formed %s\n", systemReadyTime_header);
 	                list = curl_slist_append(list, systemReadyTime_header);
 	                WEBCFG_FREE(systemReadyTime_header);
