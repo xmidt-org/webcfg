@@ -31,6 +31,9 @@
 /*----------------------------------------------------------------------------*/
 /*                             Function Prototypes                            */
 /*----------------------------------------------------------------------------*/
+
+char *global_systemReadyTime = NULL;
+
 #ifndef WEBCONFIG_BIN_SUPPORT
 char *__attribute__((weak)) getDeviceBootTime(void);
 char *__attribute__((weak)) getSerialNumber(void);
@@ -142,7 +145,17 @@ char *getFirmwareUpgradeEndTime(void)
 
 char *get_global_systemReadyTime(void)
 {
-    return NULL;
+    return global_systemReadyTime;
+}
+
+void set_global_systemReadyTime(char* systemReadyTime)
+{
+    if(global_systemReadyTime != NULL)
+    {
+	free(global_systemReadyTime);
+	global_systemReadyTime = NULL;
+    }
+    global_systemReadyTime = strdup(systemReadyTime);
 }
 
 int setForceSync(char* pString, char *transactionId,int *session_status)
