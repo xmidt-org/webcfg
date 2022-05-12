@@ -151,7 +151,7 @@ void set_doc_fail( int value);
 
 char * get_DB_BLOB_base64();
 
-void checkDBList(char *docname, uint32_t version,char *rootstr);
+WEBCFG_STATUS checkDBList(char *docname, uint32_t version,char *rootstr);
 
 WEBCFG_STATUS updateDBlist(char *docname, uint32_t version,char *rootstr);
 
@@ -162,6 +162,8 @@ void checkTmpRootUpdate();
 int writebase64ToDBFile(char *base64_file_path, char *data);
 
 char * base64blobencoder(char * blob_data, size_t blob_size );
+
+void printDB();
 
 /**
  *  This function converts a msgpack buffer into an webconfig_db_t structure
@@ -185,4 +187,8 @@ webconfig_db_data_t* decodeData(const void * data, size_t len);
 const char* webcfgdbparam_strerror( int errnum );
 
 WEBCFG_STATUS updateFailureTimeStamp(webconfig_tmp_data_t *temp, char *docname, long long timestamp);
+
+int get_root_change();
+
+void reset_root_change();
 #endif

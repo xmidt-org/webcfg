@@ -63,6 +63,7 @@ pthread_mutex_t webconfig_tmp_data_mut=PTHREAD_MUTEX_INITIALIZER;
 static int numOfMpDocs = 0;
 static int success_doc_count = 0;
 static int doc_fail_flag = 0;
+static int root_change = 0; //To check root version DB write required or not
 /*----------------------------------------------------------------------------*/
 /*                             Function Prototypes                            */
 /*----------------------------------------------------------------------------*/
@@ -408,6 +409,18 @@ void set_doc_fail( int value)
     doc_fail_flag = value;
 }
 
+int get_root_change()
+{
+    WebcfgInfo("root_change is %d\n", root_change);
+    return root_change;
+}
+
+void reset_root_change()
+{
+    root_change = 0;
+    WebcfgInfo("root_change value is reset\n");
+}
+
 blob_t * get_DB_BLOB()
 {
      WebcfgDebug("Proceed to generateBlob\n");
@@ -541,10 +554,12 @@ WEBCFG_STATUS addToTmpList()
 	return retStatus;
 }
 
-
-void checkDBList(char *docname, uint32_t version, char* rootstr)
+WEBCFG_STATUS checkDBList(char *docname, uint32_t version, char* rootstr)
 {
-	if(updateDBlist(docname, version, rootstr) != WEBCFG_SUCCESS)
+	WEBCFG_STATUS checkStatus = WEBCFG_SUCCESS;
+	checkStatus = updateDBlist(docname, version, rootstr);
+
+	if((checkStatus != WEBCFG_SUCCESS) && (checkStatus != WEBCFG_NO_CHANGE))
 	{
 		webconfig_db_data_t * webcfgdb = NULL;
 		webcfgdb = (webconfig_db_data_t *) malloc (sizeof(webconfig_db_data_t));
@@ -576,8 +591,15 @@ void checkDBList(char *docname, uint32_t version, char* rootstr)
 		else
 		{
 			WebcfgError("Failed in memory allocation for webcfgdb\n");
+			return WEBCFG_FAILURE;
 		}
 	}
+	else if(checkStatus == WEBCFG_NO_CHANGE)
+	{
+		return WEBCFG_NO_CHANGE;
+	}
+
+	return WEBCFG_SUCCESS;
 }
 
 WEBCFG_STATUS updateDBlist(char *docname, uint32_t version, char* rootstr)
@@ -590,23 +612,43 @@ WEBCFG_STATUS updateDBlist(char *docname, uint32_t version, char* rootstr)
 	{
 		pthread_mutex_lock (&webconfig_db_mut);
 		WebcfgDebug("mutex_lock in updateDBlist\n");
-		WebcfgDebug("node is pointing to webcfgdb->name %s, docname %s, dblen %zu, doclen %zu webcfgdb->root_string %s\n",webcfgdb->name, docname, strlen(webcfgdb->name), strlen(docname), webcfgdb->root_string);
+		WebcfgInfo("node is pointing to webcfgdb->name %s, docname %s, dblen %zu, doclen %zu webcfgdb->root_string %s\n",webcfgdb->name, docname, strlen(webcfgdb->name), strlen(docname), webcfgdb->root_string);
 		if( strcmp(docname, webcfgdb->name) == 0)
 		{
-			webcfgdb->version = version;
 			if( strcmp("root", webcfgdb->name) == 0)
 			{
 				if(webcfgdb->root_string !=NULL)
 				{
+					if((webcfgdb->version == version) && (strcmp(webcfgdb->root_string, rootstr) == 0))
+					{
+						pthread_mutex_unlock (&webconfig_db_mut);
+						WebcfgInfo("mutex_unlock since no root change required\n");
+						return WEBCFG_NO_CHANGE;
+					}
+
 					WEBCFG_FREE(webcfgdb->root_string);
 					webcfgdb->root_string = NULL;
 				}
+				else //To avoid db write due to NULL in webcfgdb->root_string in above condition
+				{
+					WebcfgInfo("webcfgdb->root_string is NULL\n");
+					if((webcfgdb->version == version) && (rootstr == NULL))
+					{
+						pthread_mutex_unlock (&webconfig_db_mut);
+						WebcfgInfo("mutex_unlock since no root change required\n");
+						return WEBCFG_NO_CHANGE;
+					}
+				}
+
 				if(rootstr!=NULL)
 				{
 					webcfgdb->root_string = strdup(rootstr);
 				}
+
 			}
-			WebcfgDebug("webcfgdb %s is updated to version %lu webcfgdb->root_string %s\n", docname, (long)webcfgdb->version, webcfgdb->root_string);
+
+			webcfgdb->version = version;
+			WebcfgInfo("webcfgdb %s is updated to version %lu webcfgdb->root_string %s with root_string %s\n", docname, (long)webcfgdb->version, webcfgdb->root_string, rootstr);
 			pthread_mutex_unlock (&webconfig_db_mut);
 			WebcfgDebug("mutex_unlock if docname is webcfgdb name\n");
 			return WEBCFG_SUCCESS;
@@ -1224,4 +1266,18 @@ WEBCFG_STATUS updateFailureTimeStamp(webconfig_tmp_data_t *temp, char *docname, 
 	}
 	WebcfgError("updateFailureTimeStamp failed as doc %s is not in tmp list\n", docname);
 	return WEBCFG_FAILURE;
+}
+
+void printDB()
+{
+	webconfig_db_data_t *webcfgdb = NULL;
+	webcfgdb = get_global_db_node();
+
+	while(NULL != webcfgdb)
+	{
+		pthread_mutex_lock (&webconfig_db_mut);
+		WebcfgInfo("Printing webcfgdb->name %s, dblen %zu, webcfgdb->root_string %s, webcfgdb->version %lu\n",webcfgdb->name, strlen(webcfgdb->name), webcfgdb->root_string, (long)webcfgdb->version);
+		webcfgdb = webcfgdb->next;
+		pthread_mutex_unlock (&webconfig_db_mut);
+	}
 }
