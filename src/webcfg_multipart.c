@@ -239,18 +239,18 @@ WEBCFG_STATUS webcfg_http_request(char **configData, int r_count, int status, lo
 		{
 			//loadInitURLFromFile(&webConfigURL);
 			Get_Webconfig_URL(configURL);
-			WebcfgDebug("primary sync url fetched is %s\n", configURL);
+			WebcfgInfo("primary sync url fetched is %s\n", configURL);
 		}
 		else
 		{
 			if(docname != NULL && strlen(docname)>0)
 			{
-				WebcfgDebug("Supplementary sync for %s\n",docname);
+				WebcfgInfo("Supplementary sync for %s\n",docname);
 				strncpy(docname_upper , docname,(sizeof(docname_upper)-1));
 				docname_upper[0] = toupper(docname_upper[0]);
-				WebcfgDebug("docname is %s and in uppercase is %s\n", docname, docname_upper);
+				WebcfgInfo("docname is %s and in uppercase is %s\n", docname, docname_upper);
 				Get_Supplementary_URL(docname_upper, configURL);
-				WebcfgDebug("Supplementary sync url fetched is %s\n", configURL);
+				WebcfgInfo("Supplementary sync url fetched is %s\n", configURL);
 				if( strcmp(configURL, "NULL") == 0)
 				{
 					WebcfgInfo("Supplementary sync with cloud is disabled as configURL is NULL\n");
@@ -264,7 +264,7 @@ WEBCFG_STATUS webcfg_http_request(char **configData, int r_count, int status, lo
 		if(strlen(configURL)>0)
 		{
 			//Replace {mac} string from default init url with actual deviceMAC
-			WebcfgDebug("replaceMacWord to actual device mac\n");
+			WebcfgInfo("replaceMacWord to actual device mac\n");
 			webConfigURL = replaceMacWord(configURL, c, get_deviceMAC());
 			if(get_global_supplementarySync() == 0)
 			{
@@ -283,7 +283,7 @@ WEBCFG_STATUS webcfg_http_request(char **configData, int r_count, int status, lo
 			curl_easy_cleanup(curl);
 			return WEBCFG_FAILURE;
 		}
-		WebcfgDebug("ConfigURL fetched is %s\n", webConfigURL);
+		WebcfgInfo("ConfigURL fetched is %s\n", webConfigURL);
 
 		if(!get_global_supplementarySync())
 		{
@@ -296,7 +296,7 @@ WEBCFG_STATUS webcfg_http_request(char **configData, int r_count, int status, lo
 			WebcfgInfo("docList is %s\n", docList);
 			snprintf(syncURL, MAX_BUF_SIZE, "%s?group_id=%s", webConfigURL, docList);
 			WEBCFG_FREE(webConfigURL);
-			WebcfgDebug("syncURL is %s\n", syncURL);
+			WebcfgInfo("syncURL is %s\n", syncURL);
 			webConfigURL =strdup( syncURL);
 		}
 
@@ -314,7 +314,7 @@ WEBCFG_STATUS webcfg_http_request(char **configData, int r_count, int status, lo
 			return WEBCFG_FAILURE;
 		}
 		res = curl_easy_setopt(curl, CURLOPT_TIMEOUT, CURL_TIMEOUT_SEC);
-		WebcfgDebug("fetching interface from device.properties\n");
+		WebcfgInfo("fetching interface from device.properties\n");
 		if(strlen(g_interface) == 0)
 		{   
 		        #ifdef WAN_FAILOVER_SUPPORTED	
@@ -327,14 +327,14 @@ WEBCFG_STATUS webcfg_http_request(char **configData, int r_count, int status, lo
 			if(interface !=NULL)
 		        {
 		               strncpy(g_interface, interface, sizeof(g_interface)-1);
-		               WebcfgDebug("g_interface copied is %s\n", g_interface);
+		               WebcfgInfo("g_interface copied is %s\n", g_interface);
 		               WEBCFG_FREE(interface);
 		        }
 		}
 		WebcfgInfo("g_interface fetched is %s\n", g_interface);
 		if(strlen(g_interface) > 0)
 		{
-			WebcfgDebug("setting interface %s\n", g_interface);
+			WebcfgInfo("setting interface %s\n", g_interface);
 			res = curl_easy_setopt(curl, CURLOPT_INTERFACE, g_interface);
 		}
 
@@ -393,7 +393,7 @@ WEBCFG_STATUS webcfg_http_request(char **configData, int r_count, int status, lo
 		{
 			if(response_code == 200)
                         {
-				WebcfgDebug("checking content type\n");
+				WebcfgInfo("checking content type\n");
 				content_res = curl_easy_getinfo(curl, CURLINFO_CONTENT_TYPE, &ct);
 				WebcfgInfo("ct is %s, content_res is %d\n", ct, content_res);
 
@@ -408,7 +408,7 @@ WEBCFG_STATUS webcfg_http_request(char **configData, int r_count, int status, lo
 
 						uint32_t version = strtoul(g_ETAG,NULL,0);
 						err = getStatusErrorCodeAndMessage(INVALID_CONTENT_TYPE, &result);
-						WebcfgDebug("The error_details is %s and err_code is %d\n", result, err);
+						WebcfgInfo("The error_details is %s and err_code is %d\n", result, err);
 						addWebConfgNotifyMsg("root", version, "failed", result, *transaction_id ,0, "status", err, NULL, 200);
 						WEBCFG_FREE(result);
 					}
@@ -419,7 +419,7 @@ WEBCFG_STATUS webcfg_http_request(char **configData, int r_count, int status, lo
 
 						*configData=data.data;
 						*dataSize = data.size;
-						WebcfgDebug("Data size is %d\n",(int)data.size);
+						WebcfgInfo("Data size is %d\n",(int)data.size);
 						rv = 1;
 					}
 				}
@@ -1543,11 +1543,11 @@ void createCurlHeader( struct curl_slist *list, struct curl_slist **header_list,
 	size_t supported_version_size = 0;
 	size_t supplementary_docs_size = 0;
 
-	WebcfgDebug("Start of createCurlheader\n");
+	WebcfgInfo("Start of createCurlheader\n");
 	//Fetch auth JWT token from cloud.
 	getAuthToken();
 
-	WebcfgDebug("get_global_auth_token() is %s\n", get_global_auth_token());
+	WebcfgInfo("get_global_auth_token() is %s\n", get_global_auth_token());
 
 	auth_header = (char *) malloc(sizeof(char)*MAX_HEADER_LEN);
 	if(auth_header !=NULL)
@@ -1591,7 +1591,7 @@ void createCurlHeader( struct curl_slist *list, struct curl_slist **header_list,
 				supported_version_size = strlen(supportedVersion)+strlen("X-System-Schema-Version: ");
 				supportedVersion_header = (char *) malloc(supported_version_size+1);
 				memset(supportedVersion_header,0,supported_version_size+1);
-				WebcfgDebug("supportedVersion fetched is %s\n", supportedVersion);
+				WebcfgInfo("supportedVersion fetched is %s\n", supportedVersion);
 				snprintf(supportedVersion_header, supported_version_size+1, "X-System-Schema-Version: %s", supportedVersion);
 				WebcfgInfo("supportedVersion_header formed %s\n", supportedVersion_header);
 				list = curl_slist_append(list, supportedVersion_header);
@@ -1616,7 +1616,7 @@ void createCurlHeader( struct curl_slist *list, struct curl_slist **header_list,
 				supported_doc_size = strlen(supportedDocs)+strlen("X-System-Supported-Docs: ");
 				supportedDocs_header = (char *) malloc(supported_doc_size+1);
 				memset(supportedDocs_header,0,supported_doc_size+1);
-				WebcfgDebug("supportedDocs fetched is %s\n", supportedDocs);
+				WebcfgInfo("supportedDocs fetched is %s\n", supportedDocs);
 				snprintf(supportedDocs_header, supported_doc_size+1, "X-System-Supported-Docs: %s", supportedDocs);
 				WebcfgInfo("supportedDocs_header formed %s\n", supportedDocs_header);
 				list = curl_slist_append(list, supportedDocs_header);
@@ -1643,7 +1643,7 @@ void createCurlHeader( struct curl_slist *list, struct curl_slist **header_list,
 				supplementary_docs_size = strlen(supplementaryDocs)+strlen("X-System-SupplementaryService-Sync: ");
 				supplementaryDocs_header = (char *) malloc(supplementary_docs_size+1);
 				memset(supplementaryDocs_header,0,supplementary_docs_size+1);
-				WebcfgDebug("supplementaryDocs fetched is %s\n", supplementaryDocs);
+				WebcfgInfo("supplementaryDocs fetched is %s\n", supplementaryDocs);
 				snprintf(supplementaryDocs_header, supplementary_docs_size+1, "X-System-SupplementaryService-Sync: %s", supplementaryDocs);
 				WebcfgInfo("supplementaryDocs_header formed %s\n", supplementaryDocs_header);
 				list = curl_slist_append(list, supplementaryDocs_header);
@@ -1666,7 +1666,7 @@ void createCurlHeader( struct curl_slist *list, struct curl_slist **header_list,
 		if(bootTime !=NULL)
 		{
 		       strncpy(g_bootTime, bootTime, sizeof(g_bootTime)-1);
-		       WebcfgDebug("g_bootTime fetched is %s\n", g_bootTime);
+		       WebcfgInfo("g_bootTime fetched is %s\n", g_bootTime);
 		       WEBCFG_FREE(bootTime);
 		}
 	}
@@ -1693,7 +1693,7 @@ void createCurlHeader( struct curl_slist *list, struct curl_slist **header_list,
 		if(FwVersion !=NULL)
 		{
 		       strncpy(g_FirmwareVersion, FwVersion, sizeof(g_FirmwareVersion)-1);
-		       WebcfgDebug("g_FirmwareVersion fetched is %s\n", g_FirmwareVersion);
+		       WebcfgInfo("g_FirmwareVersion fetched is %s\n", g_FirmwareVersion);
 		       WEBCFG_FREE(FwVersion);
 		}
 	}
@@ -1749,7 +1749,7 @@ void createCurlHeader( struct curl_slist *list, struct curl_slist **header_list,
                 if(systemReadyTime !=NULL)
                 {
                        strncpy(g_systemReadyTime, systemReadyTime, sizeof(g_systemReadyTime)-1);
-                       WebcfgDebug("g_systemReadyTime fetched is %s\n", g_systemReadyTime);
+                       WebcfgInfo("g_systemReadyTime fetched is %s\n", g_systemReadyTime);
                        WEBCFG_FREE(systemReadyTime);
                 }
         }
@@ -1767,7 +1767,7 @@ void createCurlHeader( struct curl_slist *list, struct curl_slist **header_list,
         }
         else
         {
-                WebcfgDebug("Failed to get systemReadyTime\n");
+                WebcfgInfo("Failed to get systemReadyTime\n");
         }
 
 	getForceSync(&ForceSyncDoc, &syncTransID);
@@ -1815,7 +1815,7 @@ void createCurlHeader( struct curl_slist *list, struct curl_slist **header_list,
 		if(productClass !=NULL)
 		{
 		       strncpy(g_productClass, productClass, sizeof(g_productClass)-1);
-		       WebcfgDebug("g_productClass fetched is %s\n", g_productClass);
+		       WebcfgInfo("g_productClass fetched is %s\n", g_productClass);
 		       WEBCFG_FREE(productClass);
 		}
 	}
@@ -1842,7 +1842,7 @@ void createCurlHeader( struct curl_slist *list, struct curl_slist **header_list,
 		if(ModelName !=NULL)
 		{
 		       strncpy(g_ModelName, ModelName, sizeof(g_ModelName)-1);
-		       WebcfgDebug("g_ModelName fetched is %s\n", g_ModelName);
+		       WebcfgInfo("g_ModelName fetched is %s\n", g_ModelName);
 		       WEBCFG_FREE(ModelName);
 		}
 	}
@@ -1881,7 +1881,7 @@ void createCurlHeader( struct curl_slist *list, struct curl_slist **header_list,
 			if(PartnerID !=NULL)
 			{
 			       strncpy(g_PartnerID, PartnerID, sizeof(g_PartnerID)-1);
-			       WebcfgDebug("g_PartnerID fetched is %s\n", g_PartnerID);
+			       WebcfgInfo("g_PartnerID fetched is %s\n", g_PartnerID);
 			       WEBCFG_FREE(PartnerID);
 			}
 		}
@@ -1908,7 +1908,7 @@ void createCurlHeader( struct curl_slist *list, struct curl_slist **header_list,
 			if(AccountID !=NULL)
 			{
 			       strncpy(g_AccountID, AccountID, sizeof(g_AccountID)-1);
-			       WebcfgDebug("g_AccountID fetched is %s\n", g_AccountID);
+			       WebcfgInfo("g_AccountID fetched is %s\n", g_AccountID);
 			       WEBCFG_FREE(AccountID);
 			}
 		}

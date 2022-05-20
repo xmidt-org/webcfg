@@ -56,6 +56,7 @@ char* get_global_serialNum()
 
 void getAuthToken()
 {
+	WebcfgInfo("Inside getAuthToken\n");
 	//local var to update webpa_auth_token only in success case
 	char output[4069] = {'\0'} ;
 	char *serial_number=NULL;
@@ -64,7 +65,7 @@ void getAuthToken()
 	if( strlen(WEBPA_READ_HEADER) !=0 && strlen(WEBPA_CREATE_HEADER) !=0)
 	{
                 get_deviceMAC();
-                WebcfgDebug("deviceMAC: %s\n",get_deviceMAC());
+                WebcfgInfo("deviceMAC: %s\n",get_deviceMAC());
 
 		if( get_deviceMAC() != NULL && strlen(get_deviceMAC()) !=0 )
 		{
@@ -75,7 +76,7 @@ void getAuthToken()
 		                if(serial_number !=NULL)
 		                {
 					strncpy(serialNum ,serial_number, sizeof(serialNum)-1);
-					WebcfgDebug("serialNum: %s\n", serialNum);
+					WebcfgInfo("serialNum: %s\n", serialNum);
 					WEBCFG_FREE(serial_number);
 					flag_unk = 0;
 		                }
@@ -105,6 +106,7 @@ void getAuthToken()
 				{
 					WebcfgInfo("update webpa_auth_token in success case\n");
 					webcfgStrncpy(webpa_auth_token, output, sizeof(webpa_auth_token));
+					WebcfgInfo("getAuthToken_Out::Output token=%s\n",output);
 				}
 			}
 			else
@@ -131,17 +133,21 @@ void getAuthToken()
 void createNewAuthToken(char *newToken, size_t len, char *hw_mac, char* hw_serial_number)
 {
 	//Call create script
+	WebcfgInfo("Call create script\n");
+        WebcfgInfo("createNewAuthToken_InputArgs::newToken: %s, len= %d, hw_mac = %s,hw_serial_number=%s \n", *newToken, len, *hw_mac, *hw_serial_number);
 	char output[12] = {'\0'};
 	execute_token_script(output,WEBPA_CREATE_HEADER,sizeof(output),hw_mac,hw_serial_number);
 	if (strlen(output)>0  && strcmp(output,"SUCCESS")==0)
 	{
 		//Call read script
+		WebcfgInfo("Call read script\n");
 		execute_token_script(newToken,WEBPA_READ_HEADER,len,hw_mac,hw_serial_number);
 	}
 	else
 	{
 		WebcfgError("Failed to create new token\n");
 	}
+	WebcfgInfo("createNewAuthToken_OutputArgs::newToken: %s \n", *newToken);
 }
 
 /*----------------------------------------------------------------------------*/
@@ -150,6 +156,7 @@ void createNewAuthToken(char *newToken, size_t len, char *hw_mac, char* hw_seria
 
 void execute_token_script(char *token, char *name, size_t len, char *mac, char *serNum)
 {
+    WebcfgInfo("execute_token_script_InputArgs::token: %s, name= %s, len=%d, mac = %s, serNum=%s \n", *token, *name, len, *mac, *serNum);
     FILE* out = NULL, *file = NULL;
     char command[MAX_BUF_SIZE] = {'\0'};
     if(strlen(name)>0)
@@ -171,6 +178,7 @@ void execute_token_script(char *token, char *name, size_t len, char *mac, char *
             WebcfgError ("File %s open error\n", name);
         }
     }
+	WebcfgInfo("execute_token_script_OutputArgs::token: %s \n", *token);
 }
 
 
