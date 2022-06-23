@@ -29,6 +29,7 @@
 /*                                   Macros                                   */
 /*----------------------------------------------------------------------------*/
 #define UNUSED(x) (void )(x)
+char *global_systemReadyTime = NULL;
 /*----------------------------------------------------------------------------*/
 /*                             Function Prototypes                            */
 /*----------------------------------------------------------------------------*/
@@ -145,6 +146,16 @@ char *getFirmwareUpgradeEndTime(void)
 char *get_global_systemReadyTime(void)
 {
     return NULL;
+}
+
+void set_global_systemReadyTime(char* systemReadyTime)
+{
+    if(global_systemReadyTime != NULL)
+    {
+       free(global_systemReadyTime);
+       global_systemReadyTime = NULL;
+    }
+    global_systemReadyTime = strdup(systemReadyTime);
 }
 
 int setForceSync(char* pString, char *transactionId,int *session_status)
