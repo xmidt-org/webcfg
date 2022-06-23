@@ -813,6 +813,64 @@ rbusError_t eventSubHandler(rbusHandle_t handle, rbusEventSubAction_t action, co
 }
 
 /**
+ *Method handler to fetch the webcfg cache
+ */
+rbusError_t sendBlobHandler(rbusHandle_t handle, char const* methodName, rbusObject_t inParams, rbusObject_t outParams, rbusMethodAsyncHandle_t asyncHandle)
+{
+	(void) handle;
+	(void) outParams;
+	(void) asyncHandle;
+	WebcfgInfo("methodHandler called: %s\n", methodName);
+	rbusObject_fwrite(inParams, 1, stdout);
+
+	if((methodName !=NULL) && (strcmp(methodName, WEBCFG_UTIL_METHOD) == 0))
+	{
+		rbusProperty_t tempProp;
+		rbusValue_t propValue;
+		int len, bloblen= 0;
+		char * valueString = NULL;
+		void *blobData = NULL;
+		uint32_t etag = 0;
+
+		tempProp = rbusObject_GetProperties(inParams);
+		propValue = rbusProperty_GetValue(tempProp);
+
+		valueString = strdup(rbusValue_GetString(propValue, &len));
+		printf("The valueString is %s\n", valueString);
+
+		if(fetchMpBlobData(valueString, &blobData, &bloblen, &etag) == 0)
+		{
+			rbusValue_t value;
+
+			rbusValue_Init(&value);
+			rbusValue_SetUInt32(value, etag);
+			rbusObject_SetValue(outParams, "etag", value);
+			rbusValue_Release(value);
+			printf("The etag value is %lu\n", (long)etag);
+			printf("The blob is %s\n", (char *)blobData);
+			rbusValue_Init(&value);
+			rbusValue_SetBytes(value, (uint8_t *)blobData, bloblen);
+			rbusObject_SetValue(outParams, "data", value);
+			rbusValue_Release(value);
+
+		}
+		else
+		{
+			WebcfgError("Mentioned %s doc is not found\n", valueString);
+			free(valueString);
+			return RBUS_ERROR_BUS_ERROR;
+		}
+	}
+	else
+	{
+		WebcfgError("Method %s received is not supported\n", methodName);
+		return RBUS_ERROR_BUS_ERROR;
+	}
+	WebcfgInfo("send RBUS_ERROR_SUCCESS\n");
+	return RBUS_ERROR_SUCCESS;
+}
+
+/**
  * Register data elements for dataModel implementation using rbus.
  * Data element over bus will be Device.X_RDK_WebConfig.RfcEnable, Device.X_RDK_WebConfig.ForceSync,
  * Device.X_RDK_WebConfig.URL
@@ -839,7 +897,8 @@ WEBCFG_STATUS regWebConfigDataModel()
 		{WEBCFG_DATA_PARAM, RBUS_ELEMENT_TYPE_PROPERTY, {webcfgDataGetHandler, webcfgDataSetHandler, NULL, NULL, NULL, NULL}},
 		{WEBCFG_SUPPORTED_DOCS_PARAM, RBUS_ELEMENT_TYPE_PROPERTY, {webcfgSupportedDocsGetHandler, webcfgSupportedDocsSetHandler, NULL, NULL, NULL, NULL}},
 		{WEBCFG_SUPPORTED_VERSION_PARAM, RBUS_ELEMENT_TYPE_PROPERTY, {webcfgSupportedVersionGetHandler, webcfgSupportedVersionSetHandler, NULL, NULL, NULL, NULL}},
-		{WEBCFG_UPSTREAM_EVENT, RBUS_ELEMENT_TYPE_EVENT, {NULL, NULL, NULL, NULL, eventSubHandler, NULL}}
+		{WEBCFG_UPSTREAM_EVENT, RBUS_ELEMENT_TYPE_EVENT, {NULL, NULL, NULL, NULL, eventSubHandler, NULL}},
+		{WEBCFG_UTIL_METHOD, RBUS_ELEMENT_TYPE_METHOD, {NULL, NULL, NULL, NULL, NULL, sendBlobHandler}}
 	};
 	ret = rbus_regDataElements(rbus_handle, NUM_WEBCFG_ELEMENTS, dataElements);
 	if(ret == RBUS_ERROR_SUCCESS)
