@@ -29,6 +29,27 @@
 
 pthread_mutex_t sync_mutex=PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t sync_condition=PTHREAD_COND_INITIALIZER;
+
+int fetchMpBlobData(char *docname, void **blobdata, int *len, uint32_t *etag)
+{
+    UNUSED(docname);
+    UNUSED(blobdata);
+    UNUSED(len);
+    UNUSED(etag);
+
+    return 0;
+}
+
+bool get_webcfgReady()
+{
+    return false;
+}
+
+bool get_maintenanceSync()
+{
+    return false;
+}
+
 void set_global_supplementarySync(int value)
 {
     UNUSED(value);
