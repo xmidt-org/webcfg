@@ -62,7 +62,7 @@
 #define WEBCFG_UPSTREAM_EVENT  "Webconfig.Upstream"
 #define PARAM_RFC_ENABLE "eRT.com.cisco.spvtg.ccsp.webpa.WebConfigRfcEnable"
 
-#define WEBCFG_UTIL_METHOD "rbus.fetch"
+#define WEBCFG_UTIL_METHOD "Device.X_RDK_WebConfig.FetchCachedBlob"
 
 #define CCSP_Msg_Bus_OK             100
 #define CCSP_Msg_Bus_OOM            101

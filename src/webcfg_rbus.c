@@ -836,7 +836,13 @@ rbusError_t sendBlobHandler(rbusHandle_t handle, char const* methodName, rbusObj
 		propValue = rbusProperty_GetValue(tempProp);
 
 		valueString = strdup(rbusValue_GetString(propValue, &len));
-		printf("The valueString is %s\n", valueString);
+
+		if(strcmp(valueString,"") == 0)
+		{
+			WebcfgError("The subdoc name is not valid\n");
+			free(valueString);
+			return RBUS_ERROR_INVALID_INPUT;
+		}
 
 		if(fetchMpBlobData(valueString, &blobData, &bloblen, &etag) == 0)
 		{
@@ -858,7 +864,7 @@ rbusError_t sendBlobHandler(rbusHandle_t handle, char const* methodName, rbusObj
 		{
 			WebcfgError("Mentioned %s doc is not found\n", valueString);
 			free(valueString);
-			return RBUS_ERROR_BUS_ERROR;
+			return RBUS_ERROR_ELEMENT_DOES_NOT_EXIST;
 		}
 	}
 	else
