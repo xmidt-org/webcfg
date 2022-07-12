@@ -821,7 +821,7 @@ rbusError_t sendBlobHandler(rbusHandle_t handle, char const* methodName, rbusObj
 	(void) outParams;
 	(void) asyncHandle;
 	WebcfgInfo("methodHandler called: %s\n", methodName);
-	rbusObject_fwrite(inParams, 1, stdout);
+	//rbusObject_fwrite(inParams, 1, stdout);           //For Debug Purpose
 
 	if((methodName !=NULL) && (strcmp(methodName, WEBCFG_UTIL_METHOD) == 0))
 	{
@@ -835,12 +835,11 @@ rbusError_t sendBlobHandler(rbusHandle_t handle, char const* methodName, rbusObj
 		tempProp = rbusObject_GetProperties(inParams);
 		propValue = rbusProperty_GetValue(tempProp);
 
-		valueString = strdup(rbusValue_GetString(propValue, &len));
+		valueString = (char *)rbusValue_GetString(propValue, &len);
 
-		if(strcmp(valueString,"") == 0)
+		if(!(strlen(valueString) > 0))
 		{
 			WebcfgError("The subdoc name is not valid\n");
-			free(valueString);
 			return RBUS_ERROR_INVALID_INPUT;
 		}
 
@@ -852,8 +851,10 @@ rbusError_t sendBlobHandler(rbusHandle_t handle, char const* methodName, rbusObj
 			rbusValue_SetUInt32(value, etag);
 			rbusObject_SetValue(outParams, "etag", value);
 			rbusValue_Release(value);
-			printf("The etag value is %lu\n", (long)etag);
-			printf("The blob is %s\n", (char *)blobData);
+
+			WebcfgDebug("The etag value is %lu\n", (long)etag);
+			WebcfgDebug("The blob is %s\n", (char *)blobData);
+
 			rbusValue_Init(&value);
 			rbusValue_SetBytes(value, (uint8_t *)blobData, bloblen);
 			rbusObject_SetValue(outParams, "data", value);
@@ -863,7 +864,6 @@ rbusError_t sendBlobHandler(rbusHandle_t handle, char const* methodName, rbusObj
 		else
 		{
 			WebcfgError("Mentioned %s doc is not found\n", valueString);
-			free(valueString);
 			return RBUS_ERROR_ELEMENT_DOES_NOT_EXIST;
 		}
 	}
@@ -872,7 +872,7 @@ rbusError_t sendBlobHandler(rbusHandle_t handle, char const* methodName, rbusObj
 		WebcfgError("Method %s received is not supported\n", methodName);
 		return RBUS_ERROR_BUS_ERROR;
 	}
-	WebcfgInfo("send RBUS_ERROR_SUCCESS\n");
+	WebcfgInfo("Method %s received, send RBUS_ERROR_SUCCESS\n", methodName);
 	return RBUS_ERROR_SUCCESS;
 }
 

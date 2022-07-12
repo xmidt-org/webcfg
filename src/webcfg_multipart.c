@@ -2489,8 +2489,8 @@ int fetchMpBlobData(char *docname, void **blobdata, int *len, uint32_t *etag)
 			*etag = temp->etag;
 			*blobdata = temp->data;
 			*len = (int)temp->data_size;
-			printf("Len is %d\n", *len);
-			printf("temp->data_size is %zu\n", temp->data_size);
+			WebcfgDebug("Len is %d\n", *len);
+			WebcfgDebug("temp->data_size is %zu\n", temp->data_size);
 			return 0;
 		}
 		temp = temp->next;
