@@ -837,7 +837,13 @@ rbusError_t sendBlobHandler(rbusHandle_t handle, char const* methodName, rbusObj
 
 		valueString = (char *)rbusValue_GetString(propValue, &len);
 
-		if(!(strlen(valueString) > 0))
+		if(valueString == NULL)
+		{
+			WebcfgError("The subdoc name is not valid\n");
+			return RBUS_ERROR_INVALID_INPUT;
+		}
+
+		if((valueString != NULL) && (strlen(valueString) == 0))
 		{
 			WebcfgError("The subdoc name is not valid\n");
 			return RBUS_ERROR_INVALID_INPUT;
