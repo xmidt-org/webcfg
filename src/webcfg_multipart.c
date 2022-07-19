@@ -201,7 +201,6 @@ WEBCFG_STATUS webcfg_http_request(char **configData, int r_count, int status, lo
 	struct curl_slist *headers_list = NULL;
 	double total;
 	long response_code = 0;
-	char *interface = NULL;
 	char *ct = NULL;
 	char *webConfigURL = NULL;
 	char *transID = NULL;
@@ -314,24 +313,28 @@ WEBCFG_STATUS webcfg_http_request(char **configData, int r_count, int status, lo
 			return WEBCFG_FAILURE;
 		}
 		res = curl_easy_setopt(curl, CURLOPT_TIMEOUT, CURL_TIMEOUT_SEC);
+
+#ifndef RDK_USE_DEFAULT_INTERFACE
 		WebcfgDebug("fetching interface from device.properties\n");
 		if(strlen(g_interface) == 0)
-		{   
-		        #ifdef WAN_FAILOVER_SUPPORTED	
+		{
+			char *interface = NULL;
+			#ifdef WAN_FAILOVER_SUPPORTED	
 				interface = getInterfaceName();
 				WebcfgInfo("Interface fetched from getInterfaceName is %s\n", interface);
 			#else	
 				get_webCfg_interface(&interface);
 				WebcfgInfo("Interface fetched from Device.properties is %s\n", interface);
 			#endif
-			if(interface !=NULL)
-		        {
-		               strncpy(g_interface, interface, sizeof(g_interface)-1);
-		               WebcfgDebug("g_interface copied is %s\n", g_interface);
-		               WEBCFG_FREE(interface);
-		        }
+			if(interface != NULL)
+			{
+				strncpy(g_interface, interface, sizeof(g_interface)-1);
+				WebcfgDebug("g_interface copied is %s\n", g_interface);
+				WEBCFG_FREE(interface);
+			}
 		}
 		WebcfgInfo("g_interface fetched is %s\n", g_interface);
+#endif
 		if(strlen(g_interface) > 0)
 		{
 			WebcfgDebug("setting interface %s\n", g_interface);
