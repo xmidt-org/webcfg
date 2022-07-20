@@ -2482,6 +2482,11 @@ int fetchMpBlobData(char *docname, void **blobdata, int *len, uint32_t *etag)
 	multipartdocs_t *temp = NULL;
 	temp = get_global_mp();
 
+	if(temp == NULL)
+	{
+		WebcfgError("Multipart Cache is NULL");
+		return 2;
+	}
 	while(temp != NULL)
 	{
 		if(strcmp(temp->name_space, docname) == 0)

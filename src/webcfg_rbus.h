@@ -76,6 +76,16 @@
 #define CCSP_ERR_INVALID_PARAMETER_VALUE 9007
 #define CCSP_ERR_UNSUPPORTED_NAMESPACE 204
 
+typedef enum _webcfgError
+{
+	ERROR_FAILURE = 1,
+
+	ERROR_INVALID_INPUT,
+
+	ERROR_ELEMENT_DOES_NOT_EXIST
+
+}webcfgError_t;
+
 bool isRbusEnabled();
 
 bool isRfcEnabled();
