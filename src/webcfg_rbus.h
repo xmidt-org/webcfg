@@ -78,6 +78,8 @@
 
 typedef enum _webcfgError
 {
+	ERROR_SUCCESS = 0,
+
 	ERROR_FAILURE = 1,
 
 	ERROR_INVALID_INPUT,
@@ -112,6 +114,8 @@ int get_rbus_ForceSync(char** pString, char **transactionId );
 bool get_rbus_RfcEnable();
 void sendNotification_rbus(char *payload, char *source, char *destination);
 void waitForUpstreamEventSubscribe(int wait_time);
+
+webcfgError_t fetchMpBlobData(char *docname, void **blobdata, int *len, uint32_t *etag);
 #ifdef WAN_FAILOVER_SUPPORTED
 int subscribeTo_CurrentActiveInterface_Event();
 #endif

@@ -74,7 +74,6 @@ int get_global_eventFlag(void);
 void set_global_eventFlag();
 void set_global_ETAG(char *etag);
 char *get_global_ETAG(void);
-int fetchMpBlobData(char *docname, void **blobdata, int *len, uint32_t *etag);
 #ifdef WAN_FAILOVER_SUPPORTED
 void set_global_interface(char * value);
 char * get_global_interface(void);

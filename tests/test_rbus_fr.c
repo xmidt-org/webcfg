@@ -30,14 +30,9 @@
 pthread_mutex_t sync_mutex=PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t sync_condition=PTHREAD_COND_INITIALIZER;
 
-int fetchMpBlobData(char *docname, void **blobdata, int *len, uint32_t *etag)
+multipartdocs_t *get_global_mp(void)
 {
-    UNUSED(docname);
-    UNUSED(blobdata);
-    UNUSED(len);
-    UNUSED(etag);
-
-    return 0;
+    return NULL;
 }
 
 bool get_webcfgReady()

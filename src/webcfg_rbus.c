@@ -818,6 +818,9 @@ char * webcfgError_ToString(webcfgError_t e)
 	char * error_string = NULL;
 	switch(e)
 	{
+		case ERROR_SUCCESS:
+			error_string = strdup("method success");
+			break;
 		case ERROR_FAILURE:
 			error_string = strdup("method failure");
 			break;
@@ -858,6 +861,36 @@ void setFetchCachedBlobErrCode(rbusObject_t outParams, webcfgError_t errorCode)
 }
 
 /**
+ *Used to fetch the multipart blob from global cache
+ */
+webcfgError_t fetchMpBlobData(char *docname, void **blobdata, int *len, uint32_t *etag)
+{
+	multipartdocs_t *temp = NULL;
+	temp = get_global_mp();
+
+	if(temp == NULL)
+	{
+		WebcfgError("Multipart Cache is NULL");
+		return ERROR_FAILURE;
+	}
+	while(temp != NULL)
+	{
+		if(strcmp(temp->name_space, docname) == 0)
+		{
+			*etag = temp->etag;
+			*blobdata = temp->data;
+			*len = (int)temp->data_size;
+			WebcfgDebug("Len is %d\n", *len);
+			WebcfgDebug("temp->data_size is %zu\n", temp->data_size);
+			return ERROR_SUCCESS;
+		}
+		temp = temp->next;
+	}
+	WebcfgError("Doc not found \n");
+	return ERROR_ELEMENT_DOES_NOT_EXIST;
+}
+
+/**
  *Method handler to fetch the webcfg cache
  */
 rbusError_t fetchCachedBlobHandler(rbusHandle_t handle, char const* methodName, rbusObject_t inParams, rbusObject_t outParams, rbusMethodAsyncHandle_t asyncHandle)
@@ -873,10 +906,11 @@ rbusError_t fetchCachedBlobHandler(rbusHandle_t handle, char const* methodName, 
 	{
 		rbusProperty_t tempProp;
 		rbusValue_t propValue;
-		int len, bloblen, ret= 0;
+		int len, bloblen = 0;
 		char * valueString = NULL;
 		void *blobData = NULL;
 		uint32_t etag = 0;
+		webcfgError_t ret = ERROR_FAILURE;
 
 		if(!isRfcEnabled())
 		{
@@ -906,7 +940,7 @@ rbusError_t fetchCachedBlobHandler(rbusHandle_t handle, char const* methodName, 
 
 		ret = fetchMpBlobData(valueString, &blobData, &bloblen, &etag);
 
-		if(ret == 0)
+		if(ret == ERROR_SUCCESS)
 		{
 			rbusValue_t value;
 
@@ -926,13 +960,13 @@ rbusError_t fetchCachedBlobHandler(rbusHandle_t handle, char const* methodName, 
 			WebcfgInfo("Method %s received, send RBUS_ERROR_SUCCESS\n", methodName);
 			return RBUS_ERROR_SUCCESS;
 		}
-		else if(ret == 1)
+		else if(ret == ERROR_ELEMENT_DOES_NOT_EXIST)
 		{
 			WebcfgError("Mentioned %s doc is not found\n", valueString);
 			setFetchCachedBlobErrCode(outParams, ERROR_ELEMENT_DOES_NOT_EXIST);
 			return RBUS_ERROR_BUS_ERROR;
 		}
-		else if(ret == 2)
+		else if(ret == ERROR_FAILURE)
 		{
 			WebcfgError("Multipart Cache is NULL\n");
 			setFetchCachedBlobErrCode(outParams, ERROR_FAILURE);
