@@ -830,6 +830,9 @@ char * webcfgError_ToString(webcfgError_t e)
 		case ERROR_ELEMENT_DOES_NOT_EXIST:
 			error_string = strdup("subdoc name is not found in cache");
 			break;
+		default:
+			error_string = strdup("unknown error");
+			break;
 	}
 	return error_string;
 }
@@ -842,8 +845,7 @@ void setFetchCachedBlobErrCode(rbusObject_t outParams, webcfgError_t errorCode)
 
 		char * errorString = webcfgError_ToString(errorCode);
 
-		WebcfgInfo("The errorCode is %d\n", errorCode);
-		WebcfgInfo("The errorString is %s\n", errorString);
+		WebcfgInfo("error_code : %d, error_string: %s\n", errorCode, errorString);
 
 		rbusValue_Init(&value);
 		rbusValue_SetUInt8(value, errorCode);
@@ -855,7 +857,10 @@ void setFetchCachedBlobErrCode(rbusObject_t outParams, webcfgError_t errorCode)
 		rbusObject_SetValue(outParams, "error_string" ,value);
 		rbusValue_Release(value);
 
-		free(errorString);
+		if(errorString != NULL)
+		{
+			free(errorString);
+		}
 	}
 
 }
@@ -886,7 +891,7 @@ webcfgError_t fetchMpBlobData(char *docname, void **blobdata, int *len, uint32_t
 		}
 		temp = temp->next;
 	}
-	WebcfgError("Doc not found \n");
+	WebcfgError("Subdoc not found \n");
 	return ERROR_ELEMENT_DOES_NOT_EXIST;
 }
 
@@ -926,14 +931,14 @@ rbusError_t fetchCachedBlobHandler(rbusHandle_t handle, char const* methodName, 
 
 		if(valueString == NULL)
 		{
-			WebcfgError("The subdoc name is not valid\n");
+			WebcfgError("Subdoc value is NULL\n");
 			setFetchCachedBlobErrCode(outParams, ERROR_INVALID_INPUT);
 			return RBUS_ERROR_BUS_ERROR;
 		}
 
 		if((valueString != NULL) && (strlen(valueString) == 0))
 		{
-			WebcfgError("The subdoc name is not valid\n");
+			WebcfgError("Subdoc value is empty\n");
 			setFetchCachedBlobErrCode(outParams, ERROR_INVALID_INPUT);
 			return RBUS_ERROR_BUS_ERROR;
 		}
@@ -957,12 +962,12 @@ rbusError_t fetchCachedBlobHandler(rbusHandle_t handle, char const* methodName, 
 			rbusObject_SetValue(outParams, "data", value);
 			rbusValue_Release(value);
 
-			WebcfgInfo("Method %s received, send RBUS_ERROR_SUCCESS\n", methodName);
+			WebcfgInfo("%s returns RBUS_ERROR_SUCCESS\n", methodName);
 			return RBUS_ERROR_SUCCESS;
 		}
 		else if(ret == ERROR_ELEMENT_DOES_NOT_EXIST)
 		{
-			WebcfgError("Mentioned %s doc is not found\n", valueString);
+			WebcfgError("Mentioned %s subdoc is not found\n", valueString);
 			setFetchCachedBlobErrCode(outParams, ERROR_ELEMENT_DOES_NOT_EXIST);
 			return RBUS_ERROR_BUS_ERROR;
 		}

@@ -2476,4 +2476,3 @@ int get_multipartdoc_count()
 	}
 	return count;
 }
-
