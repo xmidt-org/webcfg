@@ -812,6 +812,178 @@ rbusError_t eventSubHandler(rbusHandle_t handle, rbusEventSubAction_t action, co
     return RBUS_ERROR_SUCCESS;
 }
 
+char * webcfgError_ToString(webcfgError_t e)
+{
+
+	char * error_string = NULL;
+	switch(e)
+	{
+		case ERROR_SUCCESS:
+			error_string = strdup("method success");
+			break;
+		case ERROR_FAILURE:
+			error_string = strdup("method failure");
+			break;
+		case ERROR_INVALID_INPUT:
+			error_string = strdup("Invalid Input");
+			break;
+		case ERROR_ELEMENT_DOES_NOT_EXIST:
+			error_string = strdup("subdoc name is not found in cache");
+			break;
+		default:
+			error_string = strdup("unknown error");
+			break;
+	}
+	return error_string;
+}
+
+void setFetchCachedBlobErrCode(rbusObject_t outParams, webcfgError_t errorCode)
+{
+	if(outParams != NULL)
+	{
+		rbusValue_t value;
+
+		char * errorString = webcfgError_ToString(errorCode);
+
+		WebcfgError("error_code : %d, error_string: %s\n", errorCode, errorString);
+
+		rbusValue_Init(&value);
+		rbusValue_SetUInt8(value, errorCode);
+		rbusObject_SetValue(outParams, "error_code", value);
+		rbusValue_Release(value);
+
+		rbusValue_Init(&value);
+		rbusValue_SetString(value, errorString);
+		rbusObject_SetValue(outParams, "error_string" ,value);
+		rbusValue_Release(value);
+
+		if(errorString != NULL)
+		{
+			free(errorString);
+		}
+	}
+
+}
+
+/**
+ *Used to fetch the multipart blob from global cache
+ */
+webcfgError_t fetchMpBlobData(char *docname, void **blobdata, int *len, uint32_t *etag)
+{
+	multipartdocs_t *temp = NULL;
+	temp = get_global_mp();
+
+	if(temp == NULL)
+	{
+		WebcfgError("Multipart Cache is NULL");
+		return ERROR_FAILURE;
+	}
+	while(temp != NULL)
+	{
+		if(strcmp(temp->name_space, docname) == 0)
+		{
+			*etag = temp->etag;
+			*blobdata = temp->data;
+			*len = (int)temp->data_size;
+			WebcfgDebug("Len is %d\n", *len);
+			WebcfgDebug("temp->data_size is %zu\n", temp->data_size);
+			return ERROR_SUCCESS;
+		}
+		temp = temp->next;
+	}
+	WebcfgError("Subdoc not found \n");
+	return ERROR_ELEMENT_DOES_NOT_EXIST;
+}
+
+/**
+ *Method handler to fetch the webcfg cache
+ */
+rbusError_t fetchCachedBlobHandler(rbusHandle_t handle, char const* methodName, rbusObject_t inParams, rbusObject_t outParams, rbusMethodAsyncHandle_t asyncHandle)
+{
+	(void) handle;
+	(void) outParams;
+	(void) asyncHandle;
+	WebcfgInfo("methodHandler called: %s\n", methodName);
+
+	//rbusObject_fwrite(inParams, 1, stdout);           //For Debug Purpose
+
+	if((methodName !=NULL) && (strcmp(methodName, WEBCFG_UTIL_METHOD) == 0))
+	{
+		rbusProperty_t tempProp;
+		rbusValue_t propValue;
+		int len, bloblen = 0;
+		char * valueString = NULL;
+		void *blobData = NULL;
+		uint32_t etag = 0;
+		webcfgError_t ret = ERROR_FAILURE;
+
+		if(!isRfcEnabled())
+		{
+			WebcfgError("RfcEnable is disabled so, %s to fetch subdoc from cache failed\n",methodName);
+			setFetchCachedBlobErrCode(outParams, ERROR_FAILURE);
+			return RBUS_ERROR_BUS_ERROR;
+		}
+
+		tempProp = rbusObject_GetProperties(inParams);
+		propValue = rbusProperty_GetValue(tempProp);
+
+		valueString = (char *)rbusValue_GetString(propValue, &len);
+
+		if(valueString == NULL)
+		{
+			WebcfgError("Subdoc value is NULL\n");
+			setFetchCachedBlobErrCode(outParams, ERROR_INVALID_INPUT);
+			return RBUS_ERROR_BUS_ERROR;
+		}
+
+		if((valueString != NULL) && (strlen(valueString) == 0))
+		{
+			WebcfgError("Subdoc value is empty\n");
+			setFetchCachedBlobErrCode(outParams, ERROR_INVALID_INPUT);
+			return RBUS_ERROR_BUS_ERROR;
+		}
+
+		ret = fetchMpBlobData(valueString, &blobData, &bloblen, &etag);
+
+		if(ret == ERROR_SUCCESS)
+		{
+			rbusValue_t value;
+
+			rbusValue_Init(&value);
+			rbusValue_SetUInt32(value, etag);
+			rbusObject_SetValue(outParams, "etag", value);
+			rbusValue_Release(value);
+
+			WebcfgDebug("The etag value is %lu\n", (long)etag);
+			WebcfgDebug("The blob is %s\n", (char *)blobData);
+
+			rbusValue_Init(&value);
+			rbusValue_SetBytes(value, (uint8_t *)blobData, bloblen);
+			rbusObject_SetValue(outParams, "data", value);
+			rbusValue_Release(value);
+
+			WebcfgInfo("%s returns RBUS_ERROR_SUCCESS\n", methodName);
+			return RBUS_ERROR_SUCCESS;
+		}
+		else if(ret == ERROR_ELEMENT_DOES_NOT_EXIST)
+		{
+			WebcfgError("Mentioned %s subdoc is not found\n", valueString);
+			setFetchCachedBlobErrCode(outParams, ERROR_ELEMENT_DOES_NOT_EXIST);
+			return RBUS_ERROR_BUS_ERROR;
+		}
+		else if(ret == ERROR_FAILURE)
+		{
+			WebcfgError("Multipart Cache is NULL\n");
+			setFetchCachedBlobErrCode(outParams, ERROR_FAILURE);
+			return RBUS_ERROR_BUS_ERROR;
+		}
+	}
+
+	WebcfgError("Method %s received is not supported\n", methodName);
+	setFetchCachedBlobErrCode(outParams, ERROR_FAILURE);
+	return RBUS_ERROR_BUS_ERROR;
+}
+
 /**
  * Register data elements for dataModel implementation using rbus.
  * Data element over bus will be Device.X_RDK_WebConfig.RfcEnable, Device.X_RDK_WebConfig.ForceSync,
@@ -839,7 +1011,8 @@ WEBCFG_STATUS regWebConfigDataModel()
 		{WEBCFG_DATA_PARAM, RBUS_ELEMENT_TYPE_PROPERTY, {webcfgDataGetHandler, webcfgDataSetHandler, NULL, NULL, NULL, NULL}},
 		{WEBCFG_SUPPORTED_DOCS_PARAM, RBUS_ELEMENT_TYPE_PROPERTY, {webcfgSupportedDocsGetHandler, webcfgSupportedDocsSetHandler, NULL, NULL, NULL, NULL}},
 		{WEBCFG_SUPPORTED_VERSION_PARAM, RBUS_ELEMENT_TYPE_PROPERTY, {webcfgSupportedVersionGetHandler, webcfgSupportedVersionSetHandler, NULL, NULL, NULL, NULL}},
-		{WEBCFG_UPSTREAM_EVENT, RBUS_ELEMENT_TYPE_EVENT, {NULL, NULL, NULL, NULL, eventSubHandler, NULL}}
+		{WEBCFG_UPSTREAM_EVENT, RBUS_ELEMENT_TYPE_EVENT, {NULL, NULL, NULL, NULL, eventSubHandler, NULL}},
+		{WEBCFG_UTIL_METHOD, RBUS_ELEMENT_TYPE_METHOD, {NULL, NULL, NULL, NULL, NULL, fetchCachedBlobHandler}}
 	};
 	ret = rbus_regDataElements(rbus_handle, NUM_WEBCFG_ELEMENTS, dataElements);
 	if(ret == RBUS_ERROR_SUCCESS)
