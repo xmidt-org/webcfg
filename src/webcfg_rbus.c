@@ -845,7 +845,7 @@ void setFetchCachedBlobErrCode(rbusObject_t outParams, webcfgError_t errorCode)
 
 		char * errorString = webcfgError_ToString(errorCode);
 
-		WebcfgInfo("error_code : %d, error_string: %s\n", errorCode, errorString);
+		WebcfgError("error_code : %d, error_string: %s\n", errorCode, errorString);
 
 		rbusValue_Init(&value);
 		rbusValue_SetUInt8(value, errorCode);
