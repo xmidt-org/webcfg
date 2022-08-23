@@ -19,6 +19,10 @@ project(webcfg)
 include(ExternalProject)
 include(CTest)
 
+if (BUILD_CAMERA)
+add_definitions(-DBUILD_CAMERA)
+endif(BUILD_CAMERA)
+
 add_definitions(-std=c99)
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=c99 -g -Werror -Wall -Wno-sizeof-pointer-memaccess -Wno-format-truncation -D_GNU_SOURCE=1")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c99 -g -Werror -Wall -Wno-sizeof-pointer-memaccess -Wno-format-truncation -D_GNU_SOURCE=1")

@@ -163,8 +163,13 @@ char * get_global_interface(void)
 /*----------------------------------------------------------------------------*/
 /*                             Function Prototypes                            */
 /*----------------------------------------------------------------------------*/
+#ifdef BUILD_CAMERA
+size_t writer_callback_fn(void *buffer, size_t size, size_t nmemb, void *datain);
+size_t headr_callback(char *buffer, size_t size, size_t nitems, void* data);
+#else
 size_t writer_callback_fn(void *buffer, size_t size, size_t nmemb, struct token_data *data);
 size_t headr_callback(char *buffer, size_t size, size_t nitems);
+#endif
 void stripspaces(char *str, char **final_str);
 void line_parser(char *ptr, int no_of_bytes, char **name_space, uint32_t *etag, char **data, size_t *data_size);
 void subdoc_parser(char *ptr, int no_of_bytes);
@@ -1071,8 +1076,15 @@ WEBCFG_STATUS processMsgpackSubdoc(char *transaction_id)
  * @param[in] nmemb size of delivered data
  * @param[out] data curl response data saved.
 */
+#ifdef BUILD_CAMERA
+size_t writer_callback_fn(void *buffer, size_t size, size_t nmemb, void *datain)
+#else
 size_t writer_callback_fn(void *buffer, size_t size, size_t nmemb, struct token_data *data)
+#endif
 {
+#ifdef BUILD_CAMERA
+    struct token_data *data = (struct token_data*) datain;
+#endif
     size_t index = data->size;
     size_t n = (size * nmemb);
     char* tmp; 
@@ -1098,7 +1110,11 @@ size_t writer_callback_fn(void *buffer, size_t size, size_t nmemb, struct token_
 /* @brief callback function to extract response header data.
    This is to get multipart root version which is received as header.
 */
+#ifdef BUILD_CAMERA
+size_t headr_callback(char *buffer, size_t size, size_t nitems, void *data)
+#else
 size_t headr_callback(char *buffer, size_t size, size_t nitems)
+#endif
 {
 	size_t etag_len = 0;
 	char* header_value = NULL;
