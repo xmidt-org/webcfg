@@ -21,7 +21,7 @@
 <environment>
   <components>
     <webcfg>
-     <dependencies>sdk,curl,cjson,rbus,libsyswrapper,libexchanger,webconfig-framework</dependencies>
+     <dependencies>sdk,curl,rbus,libsyswrapper,webcfg-cpeabs</dependencies>
      <paths>
        <scripts>webcfg/</scripts>
        <target>webcfg/</target>
