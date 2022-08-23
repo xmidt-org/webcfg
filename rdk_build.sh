@@ -45,16 +45,6 @@ export RDK_DIR=$RDK_PROJECT_ROOT_PATH
 export RDK_FSROOT_PATH=$RDK_PROJECT_ROOT_PATH/sdk/fsroot/ramdisk
 
 if [ "$XCAM_MODEL" == "SCHC2" ]; then
-RDK_PATCHES=$RDK_PROJECT_ROOT_PATH/build/components/amba/opensource/patch
-else
-RDK_PATCHES=$RDK_PROJECT_ROOT_PATH/build/components/opensource/patch
-fi
-#source $RDK_SCRIPTS_PATH/soc/build/soc_env.sh
-
-# To enable rtMessage
-export RTMESSAGE=yes
-
-if [ "$XCAM_MODEL" == "SCHC2" ]; then
  echo "Configuring for XCAM2"
  source  ${RDK_PROJECT_ROOT_PATH}/build/components/amba/sdk/setenv2
 elif [ "$XCAM_MODEL" == "SERXW3" ] || [ "$XCAM_MODEL" == "SERICAM2" ] || [ "$XCAM_MODEL" == "XHB1" ] || [ "$XCAM_MODEL" == "XHC3" ]; then
@@ -95,14 +85,9 @@ while true; do
   shift
 done
 ARGS=$@
-# component-specific vars
-if [ "$XCAM_MODEL" == "SCHC2" ]; then
-	export CROSS_COMPILE=$RDK_TOOLCHAIN_PATH/bin/arm-linux-gnueabihf-
-  export CC=${CROSS_COMPILE}gcc
-  export CXX=${CROSS_COMPILE}g++
-  export DEFAULT_HOST=arm-linux
-  export PKG_CONFIG_PATH="$RDK_PROJECT_ROOT_PATH/opensource/lib/pkgconfig/:$RDK_FSROOT_PATH/img/fs/shadow_root/usr/local/lib/pkgconfig/:$RDK_TOOLCHAIN_PATH/lib/pkgconfig/:$PKG_CONFIG_PATH"
-fi
+export CC=${CROSS_COMPILE}gcc
+export CXX=${CROSS_COMPILE}g++
+export PKG_CONFIG_PATH="$RDK_PROJECT_ROOT_PATH/opensource/lib/pkgconfig/:$RDK_FSROOT_PATH/img/fs/shadow_root/usr/local/lib/pkgconfig/:$RDK_TOOLCHAIN_PATH/lib/pkgconfig/:$PKG_CONFIG_PATH"
 PREFIX_FOLDER=`shopt -s extglob; echo ${RDK_TARGET_PATH%%+(/)}`
 
 # functional modules
@@ -111,15 +96,9 @@ function configure()
     echo "Executing configure common code"
     cd $RDK_SOURCE_PATH
 
-    if [ $XCAM_MODEL == "SCHC2" ]; then
-      export LDFLAGS+="-L${RDK_PROJECT_ROOT_PATH}/opensource/lib -lmsgpackc -lcjson -lcurl -lcimplog -ltrower-base64 -lwdmp-c -lwrp-c -llinenoise -L${RDK_PROJECT_ROOT_PATH}/rdklogger/src/.libs -lrdkloggers -L${RDK_PROJECT_ROOT_PATH}/opensource/src/rtmessage/ -lrtMessage -Wl,-rpath-link=${RDK_PROJECT_ROOT_PATH}/libexchanger/Release/src -Wl,-rpath-link=${RDK_PROJECT_ROOT_PATH}/libexchanger/password/src -L${RDK_PROJECT_ROOT_PATH}/libsyswrapper/source/.libs/  -lsecure_wrapper -L${RDK_PROJECT_ROOT_PATH}/rbuscore/build/rbus-core/lib/ -lrbus-core -L${RDK_PROJECT_ROOT_PATH}/rbus/build/src/ -lrbus -L${RDK_PROJECT_ROOT_PATH}/webcfg-cpeabs/build/src/ -lcpeabs -Wl,-rpath-link=${RDK_PROJECT_ROOT_PATH}/opensource/lib"
-    else
-      export LDFLAGS+="-L${RDK_PROJECT_ROOT_PATH}/opensource/lib -lmsgpackc -lcjson -lcurl -lcimplog -ltrower-base64 -lwdmp-c -lwrp-c -llinenoise -L${RDK_PROJECT_ROOT_PATH}/rdklogger/src/.libs -lrdkloggers -L${RDK_PROJECT_ROOT_PATH}/opensource/src/rtmessage/ -lrtMessage -L${RDK_PROJECT_ROOT_PATH}/libsyswrapper/source/.libs/ -lsecure_wrapper -L${RDK_PROJECT_ROOT_PATH}/rbuscore/build/rbus-core/lib/ -lrbus-core -L${RDK_PROJECT_ROOT_PATH}/rbus/build/src/ -lrbus -L${RDK_PROJECT_ROOT_PATH}/webcfg-cpeabs/build/src/ -lcpeabs -Wl,-rpath-link=${RDK_PROJECT_ROOT_PATH}/opensource/lib"
-    fi
-    export CFLAGS+="-O2 -g -Wall -I$PREFIX_FOLDER/include -I${RDK_PROJECT_ROOT_PATH}/opensource/include -fPIC  -I${RDK_PROJECT_ROOT_PATH}/opensource/include/glib-2.0/ -I${RDK_PROJECT_ROOT_PATH}/opensource/lib/glib-2.0/include/ -I${RDK_PROJECT_ROOT_PATH}/opensource/include/glib-2.0/glib -I${RDK_PROJECT_ROOT_PATH}/opensource/include/cjson/ -I${RDK_PROJECT_ROOT_PATH}/opensource/include/cimplog/ -I${RDK_PROJECT_ROOT_PATH}/opensource/include/curl/ -I${RDK_PROJECT_ROOT_PATH}/opensource/include/trower-base64/ -I${RDK_PROJECT_ROOT_PATH}/opensource/include/wdmp-c/ -I${RDK_PROJECT_ROOT_PATH}/opensource/include/wrp-c/ -I${RDK_PROJECT_ROOT_PATH}/opensource/src/rtmessage -I${RDK_PROJECT_ROOT_PATH}/rbuscore/rbus-core/include/ -I${RDK_PROJECT_ROOT_PATH}/rbuscore/rbus-core/session_manager/ -I${RDK_PROJECT_ROOT_PATH}/rbus/include/ -I${RDK_PROJECT_ROOT_PATH}/rdklogger/include -I${RDK_PROJECT_ROOT_PATH}/libsyswrapper/source/ -I${RDK_FSROOT_PATH}/usr/include/ -I${RDK_FSROOT_PATH}/usr/include/ -DENABLE_RDKC_SUPPORT"
-    export ac_cv_func_malloc_0_nonnull=yes
-    export ac_cv_func_memset=yes
-    
+      export LDFLAGS+="-L${RDK_FSROOT_PATH}/usr/lib -lrbus -lrbus-core -L${RDK_PROJECT_ROOT_PATH}/opensource/lib -lmsgpackc -lcimplog -ltrower-base64 -lwdmp-c -lwrp-c -L${RDK_PROJECT_ROOT_PATH}/webcfg-cpeabs/build/src/ -lcpeabs -Wl,-rpath-link=${RDK_FSROOT_PATH}/usr/lib"
+
+    export CFLAGS+="-O2 -g -Wall -I$PREFIX_FOLDER/include -I${RDK_PROJECT_ROOT_PATH}/opensource/include -fPIC -I${RDK_PROJECT_ROOT_PATH}/opensource/include/cimplog/ -I${RDK_PROJECT_ROOT_PATH}/opensource/include/cjson/ -I${RDK_PROJECT_ROOT_PATH}/opensource/include/wdmp-c/ -I${RDK_PROJECT_ROOT_PATH}/opensource/include/wrp-c/ -I${RDK_FSROOT_PATH}/usr/include/ -I${RDK_FSROOT_PATH}/usr/include/rbus/ -I${RDK_PROJECT_ROOT_PATH}/opensource/include/rtmessage/"
     cmake -DWEBCONFIG_BIN_SUPPORT=true -DBUILD_YOCTO=true -DBUILD_TESTING=OFF -DBUILD_CAMERA=true
 }
 
