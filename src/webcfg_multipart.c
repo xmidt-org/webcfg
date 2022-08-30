@@ -163,8 +163,8 @@ char * get_global_interface(void)
 /*----------------------------------------------------------------------------*/
 /*                             Function Prototypes                            */
 /*----------------------------------------------------------------------------*/
-size_t writer_callback_fn(void *buffer, size_t size, size_t nmemb, struct token_data *data);
-size_t headr_callback(char *buffer, size_t size, size_t nitems);
+size_t writer_callback_fn(void *buffer, size_t size, size_t nmemb, void *datain);
+size_t headr_callback(char *buffer, size_t size, size_t nitems, void* data);
 void stripspaces(char *str, char **final_str);
 void line_parser(char *ptr, int no_of_bytes, char **name_space, uint32_t *etag, char **data, size_t *data_size);
 void subdoc_parser(char *ptr, int no_of_bytes);
@@ -1074,8 +1074,9 @@ WEBCFG_STATUS processMsgpackSubdoc(char *transaction_id)
  * @param[in] nmemb size of delivered data
  * @param[out] data curl response data saved.
 */
-size_t writer_callback_fn(void *buffer, size_t size, size_t nmemb, struct token_data *data)
+size_t writer_callback_fn(void *buffer, size_t size, size_t nmemb, void *datain)
 {
+    struct token_data *data = (struct token_data*) datain;
     size_t index = data->size;
     size_t n = (size * nmemb);
     char* tmp; 
@@ -1101,7 +1102,7 @@ size_t writer_callback_fn(void *buffer, size_t size, size_t nmemb, struct token_
 /* @brief callback function to extract response header data.
    This is to get multipart root version which is received as header.
 */
-size_t headr_callback(char *buffer, size_t size, size_t nitems)
+size_t headr_callback(char *buffer, size_t size, size_t nitems, void* data)
 {
 	size_t etag_len = 0;
 	char* header_value = NULL;
