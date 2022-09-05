@@ -65,6 +65,9 @@ int main()
 	signal(SIGHUP, sig_handler);
 	signal(SIGALRM, sig_handler);
 #endif
+#ifdef RDK_LOGGER_ENABLE
+        rdk_logger_init("/etc/debug.ini");
+#endif
 	WebcfgInfo("********** Starting component: %s **********\n ", WEBCFG_COMPONENT_NAME);
 	webcfg_drop_root_privilege();
 	curl_global_init(CURL_GLOBAL_DEFAULT);

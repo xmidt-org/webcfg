@@ -8,6 +8,9 @@
 #if ! defined(DEVICE_EXTENDER)
 #include <cimplog.h>
 #endif
+#ifdef RDK_LOGGER_ENABLE
+#include "rdk_debug.h"
+#endif
 
 #define WEBCFG_LOGGING_MODULE                     "WEBCONFIG"
 /**
@@ -36,6 +39,13 @@
 #else
 #define WebConfigLog(...)       printf(__VA_ARGS__)
 
+#ifdef RDK_LOGGER_ENABLE
+
+#define WebcfgError(...) RDK_LOG(RDK_LOG_ERROR,"LOG.RDK.WEBCONFIG", __VA_ARGS__)
+#define WebcfgInfo(...) RDK_LOG(RDK_LOG_INFO,"LOG.RDK.WEBCONFIG", __VA_ARGS__)
+#define WebcfgDebug(...) RDK_LOG(RDK_LOG_DEBUG,"LOG.RDK.WEBCONFIG", __VA_ARGS__)
+
+#else
 #define WebcfgError(...)	printf(__VA_ARGS__)
 #define WebcfgInfo(...)		printf(__VA_ARGS__)
 #define WebcfgDebug(...)	printf(__VA_ARGS__)
