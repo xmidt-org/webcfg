@@ -40,7 +40,7 @@
 #define buffLen 1024
 #define maxParamLen 128
 
-#define NUM_WEBCFG_ELEMENTS 8
+#define NUM_WEBCFG_ELEMENTS 9
 
 #define WEBCFG_COMPONENT_NAME "webconfig"
 #define MAX_PARAMETERNAME_LEN			4096
@@ -62,6 +62,8 @@
 #define WEBCFG_UPSTREAM_EVENT  "Webconfig.Upstream"
 #define PARAM_RFC_ENABLE "eRT.com.cisco.spvtg.ccsp.webpa.WebConfigRfcEnable"
 
+#define WEBCFG_UTIL_METHOD "Device.X_RDK_WebConfig.FetchCachedBlob"
+
 #define CCSP_Msg_Bus_OK             100
 #define CCSP_Msg_Bus_OOM            101
 #define CCSP_Msg_Bus_ERROR          102
@@ -73,6 +75,18 @@
 #define CCSP_ERR_UNSUPPORTED_PROTOCOL 9013
 #define CCSP_ERR_INVALID_PARAMETER_VALUE 9007
 #define CCSP_ERR_UNSUPPORTED_NAMESPACE 204
+
+typedef enum _webcfgError
+{
+	ERROR_SUCCESS = 0,
+
+	ERROR_FAILURE = 1,
+
+	ERROR_INVALID_INPUT,
+
+	ERROR_ELEMENT_DOES_NOT_EXIST
+
+}webcfgError_t;
 
 bool isRbusEnabled();
 
@@ -100,6 +114,8 @@ int get_rbus_ForceSync(char** pString, char **transactionId );
 bool get_rbus_RfcEnable();
 void sendNotification_rbus(char *payload, char *source, char *destination);
 void waitForUpstreamEventSubscribe(int wait_time);
+
+webcfgError_t fetchMpBlobData(char *docname, void **blobdata, int *len, uint32_t *etag);
 #ifdef WAN_FAILOVER_SUPPORTED
 int subscribeTo_CurrentActiveInterface_Event();
 #endif

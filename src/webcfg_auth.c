@@ -72,7 +72,7 @@ void getAuthToken()
 			{
 				WebcfgInfo("getSerialNumber\n");
 				serial_number = getSerialNumber();
-		                if(serial_number !=NULL)
+		                if(serial_number != NULL && strlen(serial_number) > 0)
 		                {
 					strncpy(serialNum ,serial_number, sizeof(serialNum)-1);
 					WebcfgDebug("serialNum: %s\n", serialNum);

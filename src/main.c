@@ -22,6 +22,7 @@
 #endif
 #include "webcfg.h"
 #include "webcfg_log.h"
+#include "webcfg_generic.h"
 #include "webcfg_rbus.h"
 #include "webcfg_privilege.h"
 #include <unistd.h>

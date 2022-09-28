@@ -163,8 +163,8 @@ char * get_global_interface(void)
 /*----------------------------------------------------------------------------*/
 /*                             Function Prototypes                            */
 /*----------------------------------------------------------------------------*/
-size_t writer_callback_fn(void *buffer, size_t size, size_t nmemb, struct token_data *data);
-size_t headr_callback(char *buffer, size_t size, size_t nitems);
+size_t writer_callback_fn(void *buffer, size_t size, size_t nmemb, void *datain);
+size_t headr_callback(char *buffer, size_t size, size_t nitems, void* data);
 void stripspaces(char *str, char **final_str);
 void line_parser(char *ptr, int no_of_bytes, char **name_space, uint32_t *etag, char **data, size_t *data_size);
 void subdoc_parser(char *ptr, int no_of_bytes);
@@ -201,7 +201,6 @@ WEBCFG_STATUS webcfg_http_request(char **configData, int r_count, int status, lo
 	struct curl_slist *headers_list = NULL;
 	double total;
 	long response_code = 0;
-	char *interface = NULL;
 	char *ct = NULL;
 	char *webConfigURL = NULL;
 	char *transID = NULL;
@@ -314,24 +313,28 @@ WEBCFG_STATUS webcfg_http_request(char **configData, int r_count, int status, lo
 			return WEBCFG_FAILURE;
 		}
 		res = curl_easy_setopt(curl, CURLOPT_TIMEOUT, CURL_TIMEOUT_SEC);
+
+#ifndef RDK_USE_DEFAULT_INTERFACE
 		WebcfgDebug("fetching interface from device.properties\n");
 		if(strlen(g_interface) == 0)
-		{   
-		        #ifdef WAN_FAILOVER_SUPPORTED	
+		{
+			char *interface = NULL;
+			#ifdef WAN_FAILOVER_SUPPORTED	
 				interface = getInterfaceName();
 				WebcfgInfo("Interface fetched from getInterfaceName is %s\n", interface);
 			#else	
 				get_webCfg_interface(&interface);
 				WebcfgInfo("Interface fetched from Device.properties is %s\n", interface);
 			#endif
-			if(interface !=NULL)
-		        {
-		               strncpy(g_interface, interface, sizeof(g_interface)-1);
-		               WebcfgDebug("g_interface copied is %s\n", g_interface);
-		               WEBCFG_FREE(interface);
-		        }
+			if(interface != NULL)
+			{
+				strncpy(g_interface, interface, sizeof(g_interface)-1);
+				WebcfgDebug("g_interface copied is %s\n", g_interface);
+				WEBCFG_FREE(interface);
+			}
 		}
 		WebcfgInfo("g_interface fetched is %s\n", g_interface);
+#endif
 		if(strlen(g_interface) > 0)
 		{
 			WebcfgDebug("setting interface %s\n", g_interface);
@@ -1071,8 +1074,9 @@ WEBCFG_STATUS processMsgpackSubdoc(char *transaction_id)
  * @param[in] nmemb size of delivered data
  * @param[out] data curl response data saved.
 */
-size_t writer_callback_fn(void *buffer, size_t size, size_t nmemb, struct token_data *data)
+size_t writer_callback_fn(void *buffer, size_t size, size_t nmemb, void *datain)
 {
+    struct token_data *data = (struct token_data*) datain;
     size_t index = data->size;
     size_t n = (size * nmemb);
     char* tmp; 
@@ -1098,7 +1102,7 @@ size_t writer_callback_fn(void *buffer, size_t size, size_t nmemb, struct token_
 /* @brief callback function to extract response header data.
    This is to get multipart root version which is received as header.
 */
-size_t headr_callback(char *buffer, size_t size, size_t nitems)
+size_t headr_callback(char *buffer, size_t size, size_t nitems, void* data)
 {
 	size_t etag_len = 0;
 	char* header_value = NULL;

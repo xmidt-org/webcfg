@@ -29,6 +29,22 @@
 
 pthread_mutex_t sync_mutex=PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t sync_condition=PTHREAD_COND_INITIALIZER;
+
+multipartdocs_t *get_global_mp(void)
+{
+    return NULL;
+}
+
+bool get_webcfgReady()
+{
+    return false;
+}
+
+bool get_maintenanceSync()
+{
+    return false;
+}
+
 void set_global_supplementarySync(int value)
 {
     UNUSED(value);
