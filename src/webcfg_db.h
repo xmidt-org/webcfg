@@ -163,8 +163,6 @@ int writebase64ToDBFile(char *base64_file_path, char *data);
 
 char * base64blobencoder(char * blob_data, size_t blob_size );
 
-void printDB();
-
 /**
  *  This function converts a msgpack buffer into an webconfig_db_t structure
  *  if possible.

@@ -411,14 +411,12 @@ void set_doc_fail( int value)
 
 int get_root_change()
 {
-    WebcfgInfo("root_change is %d\n", root_change);
     return root_change;
 }
 
 void reset_root_change()
 {
     root_change = 0;
-    WebcfgInfo("root_change value is reset\n");
 }
 
 blob_t * get_DB_BLOB()
@@ -612,7 +610,7 @@ WEBCFG_STATUS updateDBlist(char *docname, uint32_t version, char* rootstr)
 	{
 		pthread_mutex_lock (&webconfig_db_mut);
 		WebcfgDebug("mutex_lock in updateDBlist\n");
-		WebcfgInfo("node is pointing to webcfgdb->name %s, docname %s, dblen %zu, doclen %zu webcfgdb->root_string %s\n",webcfgdb->name, docname, strlen(webcfgdb->name), strlen(docname), webcfgdb->root_string);
+		WebcfgDebug("node is pointing to webcfgdb->name %s, docname %s, dblen %zu, doclen %zu webcfgdb->root_string %s\n",webcfgdb->name, docname, strlen(webcfgdb->name), strlen(docname), webcfgdb->root_string);
 		if( strcmp(docname, webcfgdb->name) == 0)
 		{
 			if( strcmp("root", webcfgdb->name) == 0)
@@ -622,7 +620,7 @@ WEBCFG_STATUS updateDBlist(char *docname, uint32_t version, char* rootstr)
 					if((webcfgdb->version == version) && (strcmp(webcfgdb->root_string, rootstr) == 0))
 					{
 						pthread_mutex_unlock (&webconfig_db_mut);
-						WebcfgInfo("mutex_unlock since no root change required\n");
+						WebcfgDebug("mutex_unlock since no root change required\n");
 						return WEBCFG_NO_CHANGE;
 					}
 
@@ -635,7 +633,7 @@ WEBCFG_STATUS updateDBlist(char *docname, uint32_t version, char* rootstr)
 					if((webcfgdb->version == version) && (rootstr == NULL))
 					{
 						pthread_mutex_unlock (&webconfig_db_mut);
-						WebcfgInfo("mutex_unlock since no root change required\n");
+						WebcfgDebug("mutex_unlock since no root change required\n");
 						return WEBCFG_NO_CHANGE;
 					}
 				}
@@ -648,7 +646,7 @@ WEBCFG_STATUS updateDBlist(char *docname, uint32_t version, char* rootstr)
 			}
 
 			webcfgdb->version = version;
-			WebcfgInfo("webcfgdb %s is updated to version %lu webcfgdb->root_string %s with root_string %s\n", docname, (long)webcfgdb->version, webcfgdb->root_string, rootstr);
+			WebcfgDebug("webcfgdb %s is updated to version %lu webcfgdb->root_string %s with root_string %s\n", docname, (long)webcfgdb->version, webcfgdb->root_string, rootstr);
 			pthread_mutex_unlock (&webconfig_db_mut);
 			WebcfgDebug("mutex_unlock if docname is webcfgdb name\n");
 			return WEBCFG_SUCCESS;
@@ -1266,18 +1264,4 @@ WEBCFG_STATUS updateFailureTimeStamp(webconfig_tmp_data_t *temp, char *docname, 
 	}
 	WebcfgError("updateFailureTimeStamp failed as doc %s is not in tmp list\n", docname);
 	return WEBCFG_FAILURE;
-}
-
-void printDB()
-{
-	webconfig_db_data_t *webcfgdb = NULL;
-	webcfgdb = get_global_db_node();
-
-	while(NULL != webcfgdb)
-	{
-		pthread_mutex_lock (&webconfig_db_mut);
-		WebcfgInfo("Printing webcfgdb->name %s, dblen %zu, webcfgdb->root_string %s, webcfgdb->version %lu\n",webcfgdb->name, strlen(webcfgdb->name), webcfgdb->root_string, (long)webcfgdb->version);
-		webcfgdb = webcfgdb->next;
-		pthread_mutex_unlock (&webconfig_db_mut);
-	}
 }

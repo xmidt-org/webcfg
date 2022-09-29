@@ -1475,17 +1475,12 @@ void refreshConfigVersionList(char *versionsList, int http_status)
 	derive_root_doc_version_string(&root_str, &root_version, http_status);
 	WebcfgDebug("update root_version %lu rootString %s to DB\n", (long)root_version, root_str);
 
-	WebcfgInfo("Before root update check\n");
-	printDB();
 	retStatus = checkDBList("root", root_version, root_str);
 	if(retStatus == WEBCFG_SUCCESS)
 	{
-		WebcfgInfo("addNewDocEntry. get_successDocCount %d\n", get_successDocCount());
+		WebcfgDebug("addNewDocEntry. get_successDocCount %d\n", get_successDocCount());
 		addNewDocEntry(get_successDocCount());
 	}
-	WebcfgInfo("After root update check\n");
-	printDB();
-
 	webconfig_db_data_t *temp = NULL;
 	temp = get_global_db_node();
 
