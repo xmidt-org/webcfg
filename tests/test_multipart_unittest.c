@@ -320,15 +320,216 @@ void test_akerWait(){
 	CU_ASSERT_EQUAL(0,wait);
 }
 #endif
+
+void test_checkRootDelete(){
+	webconfig_tmp_data_t *tmpData = (webconfig_tmp_data_t *)malloc(sizeof(webconfig_tmp_data_t));
+	tmpData->name = strdup("moca");
+	tmpData->version = 1234;
+	tmpData->status = strdup("success");
+	tmpData->trans_id = 4104;
+	tmpData->retry_count = 0;
+	tmpData->error_code = 0;
+	tmpData->error_details = strdup("none");
+	tmpData->next = NULL;
+	set_global_tmp_node(tmpData);
+	int m=checkRootDelete();
+	CU_ASSERT_EQUAL(0,m);
+	if(tmpData)
+	{
+		WEBCFG_FREE(tmpData->name);
+		WEBCFG_FREE(tmpData->status);
+		WEBCFG_FREE(tmpData->error_details);
+		WEBCFG_FREE(tmpData);
+	}
+
+}
+
+void test_checkRootDeleteFailure(){
+	webconfig_tmp_data_t *tmpData = (webconfig_tmp_data_t *)malloc(sizeof(webconfig_tmp_data_t));
+	tmpData->name = strdup("privatessid");
+	tmpData->version = 1234;
+	tmpData->status = strdup("pending");
+	tmpData->trans_id = 4104;
+	tmpData->retry_count = 0;
+	tmpData->error_code = 0;
+	tmpData->error_details = strdup("failed");
+	tmpData->next = NULL;
+	set_global_tmp_node(tmpData);
+	int m=checkRootDelete();
+	CU_ASSERT_EQUAL(1,m);
+	if(tmpData)
+	{
+		WEBCFG_FREE(tmpData->name);
+		WEBCFG_FREE(tmpData->status);
+		WEBCFG_FREE(tmpData->error_details);
+		WEBCFG_FREE(tmpData);
+	}
+}
+void test_updateRootVersionToDB(){
+	webconfig_tmp_data_t *tmpData = (webconfig_tmp_data_t *)malloc(sizeof(webconfig_tmp_data_t));
+	tmpData->name = strdup("root");
+	tmpData->version = 232323;
+	tmpData->status = strdup("pending");
+	tmpData->trans_id = 4104;
+	tmpData->retry_count = 0;
+	tmpData->error_code = 0;
+	tmpData->error_details = strdup("none");
+	tmpData->next = NULL;
+	set_global_tmp_node(tmpData);
+	set_global_ETAG("123");
+	int m=updateRootVersionToDB();
+	CU_ASSERT_EQUAL(0,m);
+	if(tmpData)
+	{
+		WEBCFG_FREE(tmpData->name);
+		WEBCFG_FREE(tmpData->status);
+		WEBCFG_FREE(tmpData->error_details);
+		WEBCFG_FREE(tmpData);
+	}
+
+}
+
+void test_updateRootVersionToDBNoroot(){
+	webconfig_tmp_data_t *tmpData = (webconfig_tmp_data_t *)malloc(sizeof(webconfig_tmp_data_t));
+	tmpData->name = strdup("wan");
+	tmpData->version = 232323;
+	tmpData->status = strdup("pending");
+	tmpData->trans_id = 4104;
+	tmpData->retry_count = 0;
+	tmpData->error_code = 0;
+	tmpData->error_details = strdup("none");
+	tmpData->next = NULL;
+	set_global_tmp_node(tmpData);
+	set_global_ETAG("123");
+	int m=updateRootVersionToDB();
+	CU_ASSERT_EQUAL(0,m);
+	if(tmpData)
+	{
+		WEBCFG_FREE(tmpData->name);
+		WEBCFG_FREE(tmpData->status);
+		WEBCFG_FREE(tmpData->error_details);
+		WEBCFG_FREE(tmpData);
+	}
+
+}
+void test_set_global_ETAG(){
+	set_global_ETAG("1234");
+	CU_ASSERT_STRING_EQUAL(get_global_ETAG(),"1234");
+}
+
+void test_get_global_ETAG(){
+	printf("etag is %s\n", get_global_ETAG());
+	CU_ASSERT_FATAL( NULL != get_global_ETAG() );
+}
+
+void test_set_global_transID(){
+	set_global_transID("3344411a");
+	CU_ASSERT_STRING_EQUAL(get_global_transID(),"3344411a");
+}
+
+void test_get_global_transID(){
+	printf("transID is %s\n", get_global_transID());
+	CU_ASSERT_FATAL( NULL != get_global_transID() );
+}
+void test_set_global_contentLen(){
+	set_global_contentLen("1001");
+	CU_ASSERT_STRING_EQUAL(get_global_contentLen(),"1001");
+}
+
+void test_get_global_contentLen(){
+	printf("contentLen is %s\n", get_global_contentLen());
+	CU_ASSERT_FATAL( NULL != get_global_contentLen() );
+}
+void test_set_global_eventFlag(){
+	set_global_eventFlag(1);
+	CU_ASSERT_EQUAL(get_global_eventFlag(),1);
+}
+
+void test_get_global_eventFlag(){
+	printf("eventFlag is %d\n", get_global_eventFlag());
+	CU_ASSERT_FATAL( 0 != get_global_eventFlag() );
+}
+#ifdef WAN_FAILOVER_SUPPORTED
+void test_set_global_interface(){
+	set_global_interface("eth0");
+	CU_ASSERT_STRING_EQUAL(get_global_interface(),"eth0");
+}
+
+void test_get_global_interface(){
+	printf("interface is %s\n", get_global_interface());
+	CU_ASSERT_FATAL( NULL != get_global_interface() );
+}
+#endif
+void test_print_tmp_doc_list(){
+	webconfig_tmp_data_t *tmpData = (webconfig_tmp_data_t *)malloc(sizeof(webconfig_tmp_data_t));
+	tmpData->name = strdup("wan");
+	tmpData->version = 232323;
+	tmpData->status = strdup("pending");
+	tmpData->trans_id = 4104;
+	tmpData->retry_count = 0;
+	tmpData->error_code = 0;
+	tmpData->error_details = strdup("none");
+	tmpData->next = NULL;
+	int m=print_tmp_doc_list(1);
+	CU_ASSERT_EQUAL(0,m);
+	if(tmpData)
+	{
+		WEBCFG_FREE(tmpData->name);
+		WEBCFG_FREE(tmpData->status);
+		WEBCFG_FREE(tmpData->error_details);
+		WEBCFG_FREE(tmpData);
+	}
+
+}
+void test_get_global_mp_null(){
+	CU_ASSERT_FATAL( NULL == get_global_mp());
+}
+
+void test_get_global_mp(){
+	multipartdocs_t *multipartdocs = (multipartdocs_t *)malloc(sizeof(multipartdocs_t));
+	multipartdocs->name_space = strdup("portforwarding");
+	multipartdocs->data = (char* )malloc(64);
+	multipartdocs->isSupplementarySync = 0;
+	multipartdocs->next = NULL;
+	set_global_mp(multipartdocs);
+	CU_ASSERT_FATAL( NULL !=get_global_mp());
+	if(multipartdocs)
+	{
+		WEBCFG_FREE(multipartdocs->name_space);
+		WEBCFG_FREE(multipartdocs->data);
+		multipartdocs->data_size = 0;
+		WEBCFG_FREE(multipartdocs);
+	}
+}
+
 void add_suites( CU_pSuite *suite )
 {
     *suite = CU_add_suite( "tests", NULL, NULL );
-      CU_add_test( *suite, "test  generate_trans_uuid", test_generate_trans_uuid); 
+      CU_add_test( *suite, "test  generate_trans_uuid", test_generate_trans_uuid);
       CU_add_test( *suite, "test  replaceMacWord", test_replaceMac);  
       CU_add_test( *suite, "test  createCurlHeader", test_createHeader);
       CU_add_test( *suite, "test  validateParam", test_validateParam);
       CU_add_test( *suite, "test  checkRootUpdate", test_checkRootUpdate);
-      CU_add_test( *suite, "test  checkDBList", test_checkDBList);
+      CU_add_test( *suite, "test  checkRootDelete", test_checkRootDelete);
+      CU_add_test( *suite, "test  checkRootDeleteFailure", test_checkRootDeleteFailure);
+      CU_add_test( *suite, "test  updateRootVersionToDB", test_updateRootVersionToDB);
+      CU_add_test( *suite, "test  updateRootVersionToDBNoroot", test_updateRootVersionToDBNoroot);
+      CU_add_test( *suite, "test  set_global_ETAG", test_set_global_ETAG);
+      CU_add_test( *suite, "test  get_global_ETAG", test_get_global_ETAG);
+      CU_add_test( *suite, "test  set_global_transID", test_set_global_transID);
+      CU_add_test( *suite, "test  get_global_transID", test_get_global_transID);
+      CU_add_test( *suite, "test  set_global_contentLen", test_set_global_contentLen);
+      CU_add_test( *suite, "test  get_global_contentLen", test_get_global_contentLen);
+      CU_add_test( *suite, "test  set_global_eventFlag", test_set_global_eventFlag);
+      CU_add_test( *suite, "test  get_global_eventFlag", test_get_global_eventFlag);
+#ifdef WAN_FAILOVER_SUPPORTED
+      CU_add_test( *suite, "test  set_global_interface", test_set_global_interface);
+      CU_add_test( *suite, "test  get_global_interface", test_get_global_interface);
+#endif
+      CU_add_test( *suite, "test  print_tmp_doc_list", test_print_tmp_doc_list);
+      CU_add_test( *suite, "test  get_global_mp_null", test_get_global_mp_null);
+      CU_add_test( *suite, "test  get_global_mp", test_get_global_mp);
+     CU_add_test( *suite, "test  checkDBList", test_checkDBList);
       CU_add_test( *suite, "test  updateDBlist", test_updateDBlist);
       CU_add_test( *suite, "test  pack append doc", test_appendedDoc);
 #ifdef FEATURE_SUPPORT_AKER

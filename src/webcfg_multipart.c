@@ -1155,6 +1155,7 @@ size_t headr_callback(char *buffer, size_t size, size_t nitems, void* data)
 		}
 	}
 	WebcfgDebug("header_callback size %zu\n", size);
+	WebcfgDebug("data %s\n", (char*)data);
 	return nitems;
 }
 
@@ -2194,7 +2195,7 @@ WEBCFG_STATUS deleteFromMpList(char* doc_name)
 	return WEBCFG_FAILURE;
 }
 
-void print_tmp_doc_list(size_t mp_count)
+WEBCFG_STATUS print_tmp_doc_list(size_t mp_count)
 {
 	int count =0;
 	webconfig_tmp_data_t *temp = NULL;
@@ -2211,7 +2212,7 @@ void print_tmp_doc_list(size_t mp_count)
 			break;
 		}
 	}
-	return;
+	return WEBCFG_SUCCESS;
 }
 
 char *replaceMacWord(const char *s, const char *macW, const char *deviceMACW)
@@ -2359,7 +2360,7 @@ WEBCFG_STATUS checkRootUpdate()
 }
 
 //Update root version to DB.
-void updateRootVersionToDB()
+WEBCFG_STATUS updateRootVersionToDB()
 {
 	char * temp = strdup(g_ETAG);
 	uint32_t version=0;
@@ -2381,6 +2382,7 @@ void updateRootVersionToDB()
 	}
 
 	WebcfgDebug("The Etag is %lu\n",(long)version );
+	return WEBCFG_SUCCESS;
 }
 
 //Delete root doc from tmp list and mp cache list when all the docs are success.

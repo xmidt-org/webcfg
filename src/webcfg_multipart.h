@@ -49,12 +49,12 @@ typedef struct multipartdocs
 int readFromFile(char *filename, char **data, int *len);
 WEBCFG_STATUS parseMultipartDocument(void *config_data, char *ct , size_t data_size, char* trans_uuid);
 void getConfigDocList(char *docList);
-void print_tmp_doc_list(size_t mp_count);
+WEBCFG_STATUS print_tmp_doc_list(size_t mp_count);
 void loadInitURLFromFile(char **url);
 uint32_t get_global_root();
 WEBCFG_STATUS checkRootUpdate();
 WEBCFG_STATUS checkRootDelete();
-void updateRootVersionToDB();
+WEBCFG_STATUS updateRootVersionToDB();
 void deleteRootAndMultipartDocs();
 char * get_global_transID(void);
 char* generate_trans_uuid();
