@@ -2386,7 +2386,7 @@ WEBCFG_STATUS updateRootVersionToDB()
 }
 
 //Delete root doc from tmp list and mp cache list when all the docs are success.
-void deleteRootAndMultipartDocs()
+WEBCFG_STATUS deleteRootAndMultipartDocs()
 {
 	//Delete root only when all the primary and supplementary docs are applied .
 	if(checkRootDelete() == WEBCFG_SUCCESS)
@@ -2398,6 +2398,12 @@ void deleteRootAndMultipartDocs()
 		delete_tmp_list();
 		delete_multipart();
 		WebcfgDebug("After free mp\n");
+		return WEBCFG_SUCCESS;
+	}
+	else
+	{
+		WebcfgError("deleteRootAndMultipartDocs failed\n");
+		return WEBCFG_FAILURE;
 	}
 }
 

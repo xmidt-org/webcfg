@@ -55,7 +55,7 @@ uint32_t get_global_root();
 WEBCFG_STATUS checkRootUpdate();
 WEBCFG_STATUS checkRootDelete();
 WEBCFG_STATUS updateRootVersionToDB();
-void deleteRootAndMultipartDocs();
+WEBCFG_STATUS deleteRootAndMultipartDocs();
 char * get_global_transID(void);
 char* generate_trans_uuid();
 void set_global_transID(char *id);
@@ -78,7 +78,6 @@ char *get_global_ETAG(void);
 void set_global_interface(char * value);
 char * get_global_interface(void);
 #endif
-pthread_t get_global_process_threadid();
 void delete_multipart();
 int get_multipartdoc_count();
 WEBCFG_STATUS deleteFromMpList(char* doc_name);

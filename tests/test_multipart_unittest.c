@@ -206,11 +206,11 @@ void test_checkRootUpdate(){
 	webconfig_tmp_data_t *tmpData = (webconfig_tmp_data_t *)malloc(sizeof(webconfig_tmp_data_t));
 	tmpData->name = strdup("wan");
 	tmpData->version = 410448631;
-	tmpData->status = strdup("ACK");
+	tmpData->status = strdup("success");
 	tmpData->trans_id = 14464;
 	tmpData->retry_count = 0;
 	tmpData->error_code = 0;
-	tmpData->error_details = strdup("success");
+	tmpData->error_details = strdup("none");
 	tmpData->next = NULL;
 	set_global_tmp_node(tmpData);
 	int m=checkRootUpdate();
@@ -449,6 +449,12 @@ void test_get_global_eventFlag(){
 	printf("eventFlag is %d\n", get_global_eventFlag());
 	CU_ASSERT_FATAL( 0 != get_global_eventFlag() );
 }
+
+void test_reset_global_eventFlag(){
+	reset_global_eventFlag();
+	CU_ASSERT_EQUAL(get_global_eventFlag(),0);
+}
+
 #ifdef WAN_FAILOVER_SUPPORTED
 void test_set_global_interface(){
 	set_global_interface("eth0");
@@ -499,7 +505,130 @@ void test_get_global_mp(){
 		WEBCFG_FREE(multipartdocs->data);
 		multipartdocs->data_size = 0;
 		WEBCFG_FREE(multipartdocs);
+		set_global_mp(NULL);
 	}
+}
+
+void test_deleteRootAndMultipartDocs(){
+	multipartdocs_t *multipartdocs = (multipartdocs_t *)malloc(sizeof(multipartdocs_t));
+	multipartdocs->name_space = strdup("moca");
+	multipartdocs->data = (char* )malloc(64);
+	multipartdocs->isSupplementarySync = 0;
+	multipartdocs->next = NULL;
+	set_global_mp(multipartdocs);
+	CU_ASSERT_FATAL( NULL !=get_global_mp());
+	webconfig_tmp_data_t *tmpData = (webconfig_tmp_data_t *)malloc(sizeof(webconfig_tmp_data_t));
+	tmpData->name = strdup("moca");
+	tmpData->version = 1234;
+	tmpData->status = strdup("success");
+	tmpData->trans_id = 4104;
+	tmpData->retry_count = 0;
+	tmpData->error_code = 0;
+	tmpData->error_details = strdup("none");
+	tmpData->next = NULL;
+	set_global_tmp_node(tmpData);
+	int m=deleteRootAndMultipartDocs();
+	CU_ASSERT_EQUAL(0,m);
+	set_global_tmp_node(NULL);
+	set_global_mp(NULL);
+}
+
+void test_deleteRootAndMultipartDocs_fail(){
+	multipartdocs_t *multipartdocs = (multipartdocs_t *)malloc(sizeof(multipartdocs_t));
+	multipartdocs->name_space = strdup("wan");
+	multipartdocs->data = (char* )malloc(64);
+	multipartdocs->isSupplementarySync = 0;
+	multipartdocs->next = NULL;
+	set_global_mp(multipartdocs);
+	CU_ASSERT_FATAL( NULL !=get_global_mp());
+	webconfig_tmp_data_t *tmpData = (webconfig_tmp_data_t *)malloc(sizeof(webconfig_tmp_data_t));
+	tmpData->name = strdup("wan");
+	tmpData->version = 3456;
+	tmpData->status = strdup("pending");
+	tmpData->trans_id = 1231;
+	tmpData->retry_count = 0;
+	tmpData->error_code = 0;
+	tmpData->error_details = strdup("failed");
+	tmpData->next = NULL;
+	set_global_tmp_node(tmpData);
+	int m=deleteRootAndMultipartDocs();
+	CU_ASSERT_EQUAL(1,m);
+	set_global_tmp_node(NULL);
+	set_global_mp(NULL);
+}
+
+void test_deleteFromMpList(){
+	multipartdocs_t *multipartdocs = (multipartdocs_t *)malloc(sizeof(multipartdocs_t));
+	multipartdocs->name_space = strdup("wan");
+	multipartdocs->data = (char* )malloc(64);
+	multipartdocs->isSupplementarySync = 0;
+	multipartdocs->next = NULL;
+	set_global_mp(multipartdocs);
+	int m= deleteFromMpList("wan");
+	CU_ASSERT_EQUAL(0,m);
+	set_global_mp(NULL);
+}
+
+void test_deleteFromMpListFailure(){
+	multipartdocs_t *multipartdocs = (multipartdocs_t *)malloc(sizeof(multipartdocs_t));
+	multipartdocs->name_space = strdup("wan");
+	multipartdocs->data = (char* )malloc(64);
+	multipartdocs->isSupplementarySync = 0;
+	multipartdocs->next = NULL;
+	set_global_mp(multipartdocs);
+	int m= deleteFromMpList("moca");
+	CU_ASSERT_EQUAL(1,m);
+	set_global_mp(NULL);
+}
+
+void test_deleteFromMpListInvalidDoc(){
+	multipartdocs_t *multipartdocs = (multipartdocs_t *)malloc(sizeof(multipartdocs_t));
+	multipartdocs->name_space = strdup("wan");
+	multipartdocs->data = (char* )malloc(64);
+	multipartdocs->isSupplementarySync = 0;
+	multipartdocs->next = NULL;
+	set_global_mp(multipartdocs);
+	int m= deleteFromMpList(NULL);
+	CU_ASSERT_EQUAL(1,m);
+	set_global_mp(NULL);
+}
+
+void test_deleteFromMpList_2docs(){
+	addToMpList(123, "wan", "data1", 10);
+	addToMpList(1234, "moca", "data2", 20);
+	int m= deleteFromMpList("moca");
+	CU_ASSERT_EQUAL(0,m);
+	set_global_mp(NULL);
+}
+
+void test_addToMpList(){
+	addToMpList(123, "wan", "data1", 10);
+        CU_ASSERT_STRING_EQUAL(get_global_mp()->name_space, "wan");
+	CU_ASSERT_EQUAL(get_global_mp()->etag,123);
+	addToMpList(1234, "moca", "data2", 20);
+	CU_ASSERT_STRING_EQUAL(get_global_mp()->next->name_space, "moca");
+	CU_ASSERT_EQUAL(get_global_mp()->next->etag,1234);
+	delete_multipart();
+	set_global_mp(NULL);
+}
+
+void test_delete_mp_doc(){
+	addToMpList(123, "wan", "data1", 10);
+	addToMpList(1234, "moca", "data2", 20);
+	delete_mp_doc("moca");
+	delete_mp_doc("wan");
+	CU_ASSERT_FATAL( NULL == get_global_mp() );
+}
+
+void test_get_multipartdoc_count(){
+	addToMpList(44, "wan", "data1", 10);
+	addToMpList(555, "moca", "data2", 20);
+	addToMpList(666, "privatessid", "data3", 20);
+	addToMpList(7777, "lan", "data4", 30);
+	addToMpList(1111, "mesh", "data5", 20);
+	CU_ASSERT_EQUAL(5,get_multipartdoc_count());
+	delete_multipart();
+	CU_ASSERT_FATAL( NULL == get_global_mp() );
 }
 
 void add_suites( CU_pSuite *suite )
@@ -522,6 +651,7 @@ void add_suites( CU_pSuite *suite )
       CU_add_test( *suite, "test  get_global_contentLen", test_get_global_contentLen);
       CU_add_test( *suite, "test  set_global_eventFlag", test_set_global_eventFlag);
       CU_add_test( *suite, "test  get_global_eventFlag", test_get_global_eventFlag);
+      CU_add_test( *suite, "test  reset_global_eventFlag", test_reset_global_eventFlag);
 #ifdef WAN_FAILOVER_SUPPORTED
       CU_add_test( *suite, "test  set_global_interface", test_set_global_interface);
       CU_add_test( *suite, "test  get_global_interface", test_get_global_interface);
@@ -529,7 +659,9 @@ void add_suites( CU_pSuite *suite )
       CU_add_test( *suite, "test  print_tmp_doc_list", test_print_tmp_doc_list);
       CU_add_test( *suite, "test  get_global_mp_null", test_get_global_mp_null);
       CU_add_test( *suite, "test  get_global_mp", test_get_global_mp);
-     CU_add_test( *suite, "test  checkDBList", test_checkDBList);
+      CU_add_test( *suite, "test  deleteRootAndMultipartDocs", test_deleteRootAndMultipartDocs);
+      CU_add_test( *suite, "test  deleteRootAndMultipartDocs_fail", test_deleteRootAndMultipartDocs_fail);
+      CU_add_test( *suite, "test  checkDBList", test_checkDBList);
       CU_add_test( *suite, "test  updateDBlist", test_updateDBlist);
       CU_add_test( *suite, "test  pack append doc", test_appendedDoc);
 #ifdef FEATURE_SUPPORT_AKER
@@ -537,8 +669,13 @@ void add_suites( CU_pSuite *suite )
       CU_add_test( *suite, "test  Aker delete blob send", test_DeleteErrorsendAkerblob);
       CU_add_test( *suite, "test  Aker wait", test_akerWait);
 #endif
-      
-     
+      CU_add_test( *suite, "test  deleteFromMpList", test_deleteFromMpList);
+      CU_add_test( *suite, "test  deleteFromMpListFailure", test_deleteFromMpListFailure);
+      CU_add_test( *suite, "test  deleteFromMpListInvalidDoc", test_deleteFromMpListInvalidDoc);
+      CU_add_test( *suite, "test  deleteFromMpList_2docs", test_deleteFromMpList_2docs);
+      CU_add_test( *suite, "test  addToMpList", test_addToMpList);
+      CU_add_test( *suite, "test  delete_mp_doc", test_delete_mp_doc);
+      CU_add_test( *suite, "test  get_multipartdoc_count", test_get_multipartdoc_count);
 }
 
 /*----------------------------------------------------------------------------*/
