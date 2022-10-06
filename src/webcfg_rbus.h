@@ -39,12 +39,12 @@
 
 #define buffLen 1024
 #define maxParamLen 128
-
-#define NUM_WEBCFG_ELEMENTS 9
+#define NUM_WEBCFG_ELEMENTS 11
 
 #define WEBCFG_COMPONENT_NAME "webconfig"
 #define MAX_PARAMETERNAME_LEN			4096
 #define WEBCFG_EVENT_NAME "webconfigSignal"
+#define WEBCFG_SUBDOC_RESET_EVENT "webcfgSubdocForceReset"
 
 // Data elements provided by webconfig
 #define WEBCFG_RFC_PARAM "Device.X_RDK_WebConfig.RfcEnable"
@@ -54,6 +54,7 @@
 #define WEBCFG_SUPPORTED_DOCS_PARAM	"Device.X_RDK_WebConfig.SupportedDocs"
 #define WEBCFG_SUPPORTED_VERSION_PARAM	"Device.X_RDK_WebConfig.SupportedSchemaVersion"
 #define WEBCFG_SUPPLEMENTARY_TELEMETRY_PARAM  "Device.X_RDK_WebConfig.SupplementaryServiceUrls.Telemetry"
+#define WEBCFG_PRIMARY_SUBDOC_FORCERESET_PARAM  "Device.X_RDK_WebConfig.PrimarySubdocForceReset"
 
 #ifdef WAN_FAILOVER_SUPPORTED
 #define WEBCFG_INTERFACE_PARAM "Device.X_RDK_WanManager.CurrentActiveInterface"
