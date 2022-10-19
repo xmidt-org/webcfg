@@ -171,6 +171,7 @@ bool webcfg_mqtt_init()
 				mosquitto_connect_callback_set(mosq, on_connect);
 				mosquitto_subscribe_callback_set(mosq, on_subscribe);
 				mosquitto_message_callback_set(mosq, on_message);
+				mosquitto_message_callback_set(mosq, on_publish);
 
 				//get_from_file("PORT=", &PORT);
 				//WebcfgInfo("hostname is %s and PORT is %s\n", hostname, PORT);
@@ -252,7 +253,7 @@ void on_subscribe(struct mosquitto *mosq, void *obj, int mid, int qos_count, con
         int i;
         bool have_subscription = false;
 
-	WebcfgInfo("on_subscribe: qos_count %d\n", qos_count);
+	WebcfgInfo("on_subscribe callback: qos_count %d\n", qos_count);
         //SUBSCRIBE can contain many topics at once
         for(i=0; i<qos_count; i++)
 	{
@@ -273,6 +274,11 @@ void on_subscribe(struct mosquitto *mosq, void *obj, int mid, int qos_count, con
 void on_message(struct mosquitto *mosq, void *obj, const struct mosquitto_message *msg)
 {
         WebcfgInfo("Received message from %s qos %d payload %s\n", msg->topic, msg->qos, (char *)msg->payload);
+
+	WebcfgInfo("test publish_notify_mqtt\n");
+	size_t msg_len = strlen("published ACK msg_bytes");
+	publish_notify_mqtt("published ACK msg_bytes", msg_len);
+	WebcfgInfo("publish_notify_mqtt done\n");
 }
 
 void on_publish(struct mosquitto *mosq, void *obj, int mid)
