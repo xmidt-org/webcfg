@@ -47,14 +47,14 @@ bool webcfg_mqtt_init()
 
 	mosquitto_lib_init();
 
-	int clean_session = false;
+	int clean_session = true;
 
 	//client_id = get_deviceMAC();
 	get_from_file("CID=", &client_id);
 	WebcfgInfo("client_id is %s\n", client_id);
 	
-	if(client_id !=NULL)
-	{
+	//if(client_id !=NULL)
+	//{
 		username = client_id;
 		WebcfgInfo("client_id is %s username is %s\n", client_id, username);
 
@@ -85,14 +85,22 @@ bool webcfg_mqtt_init()
 		//cb_userdata.userdata = userdata;
 		//cb_userdata.callback = callback;
 
-		mosq = mosquitto_new(client_id, clean_session, NULL);
+		if(client_id !=NULL)
+		{
+			mosq = mosquitto_new(client_id, clean_session, NULL);
+		}
+		else
+		{
+			WebcfgInfo("client_id is NULL, init with clean_session true\n");
+			mosq = mosquitto_new(NULL, true, NULL);
+		}
 		if(!mosq)
 		{
 			WebcfgError("Error initializing mosq instance\n");
 			return MOSQ_ERR_NOMEM;
 		}
 
-		if(username !=NULL)
+		/*if(username !=NULL)
 		{
 			rc = mosquitto_username_pw_set(mosq, username, "password");
 			if(rc)
@@ -101,7 +109,7 @@ bool webcfg_mqtt_init()
 				mosquitto_destroy(mosq);
 				return rc;
 			}
-		}
+		}*/
 
 		get_from_file("PORT=", &PORT);
 		WebcfgInfo("hostname is %s and PORT is %s\n", hostname, PORT);
@@ -171,7 +179,6 @@ bool webcfg_mqtt_init()
 				mosquitto_connect_callback_set(mosq, on_connect);
 				mosquitto_subscribe_callback_set(mosq, on_subscribe);
 				mosquitto_message_callback_set(mosq, on_message);
-				mosquitto_message_callback_set(mosq, on_publish);
 
 				//get_from_file("PORT=", &PORT);
 				//WebcfgInfo("hostname is %s and PORT is %s\n", hostname, PORT);
@@ -205,13 +212,13 @@ bool webcfg_mqtt_init()
 			return MOSQ_ERR_NOMEM;
 		}
 		}
-	}
+	/*}
 	else
 	{
 		WebcfgError("Failed to get client_id\n");
 		return 1;
 
-	}
+	}*/
 	return rc;
 }
 
