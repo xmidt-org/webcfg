@@ -442,6 +442,43 @@ WEBCFG_STATUS webcfg_http_request(char **configData, int r_count, int status, lo
 	return WEBCFG_FAILURE;
 }
 
+WEBCFG_STATUS processPayload(char * payload, int payloadLen)
+{
+	char *transaction_uuid = NULL;
+	int status = 0;
+	char *name_space = NULL;
+	uint32_t  etag = 0;
+
+	if(transaction_uuid == NULL)
+	{
+		transaction_uuid = generate_trans_uuid();
+	}
+
+	name_space = strdup("wan");
+	etag = 22334455;
+
+	WebcfgInfo("addToMpList\n");
+	addToMpList(etag, name_space, payload, payloadLen);
+
+	status = processMsgpackSubdoc(transaction_uuid);
+
+	if(name_space != NULL)
+	{
+		WEBCFG_FREE(name_space);
+	}
+
+	if(status ==0)
+	{
+		WebcfgInfo("processMsgpackSubdoc success\n");
+		return WEBCFG_SUCCESS;
+	}
+	else
+	{
+		WebcfgInfo("processMsgpackSubdoc done,docs are sent for apply\n");
+	}
+	return WEBCFG_FAILURE;
+}
+
 WEBCFG_STATUS parseMultipartDocument(void *config_data, char *ct , size_t data_size, char* trans_uuid)
 {
 	char *boundary = NULL;

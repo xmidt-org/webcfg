@@ -25,6 +25,7 @@
 #include <arpa/nameser.h>
 #include <resolv.h>
 #include "webcfg_generic.h"
+#include "webcfg_multipart.h"
 #include "webcfg_mqtt.h"
 
 void on_connect(struct mosquitto *mosq, void *obj, int reason_code);
@@ -122,6 +123,7 @@ bool webcfg_mqtt_init()
 			mosquitto_connect_callback_set(mosq, on_connect);
 			mosquitto_subscribe_callback_set(mosq, on_subscribe);
 			mosquitto_message_callback_set(mosq, on_message);
+			mosquitto_publish_callback_set(mosq, on_publish);
 
 			rc = mosquitto_connect(mosq, hostname, port, KEEPALIVE);
 			WebcfgInfo("mosquitto_connect rc %d\n", rc);
@@ -179,6 +181,7 @@ bool webcfg_mqtt_init()
 				mosquitto_connect_callback_set(mosq, on_connect);
 				mosquitto_subscribe_callback_set(mosq, on_subscribe);
 				mosquitto_message_callback_set(mosq, on_message);
+				mosquitto_publish_callback_set(mosq, on_publish);
 
 				//get_from_file("PORT=", &PORT);
 				//WebcfgInfo("hostname is %s and PORT is %s\n", hostname, PORT);
@@ -280,12 +283,11 @@ void on_subscribe(struct mosquitto *mosq, void *obj, int mid, int qos_count, con
 /* callback called when the client receives a message. */
 void on_message(struct mosquitto *mosq, void *obj, const struct mosquitto_message *msg)
 {
-        WebcfgInfo("Received message from %s qos %d payload %s\n", msg->topic, msg->qos, (char *)msg->payload);
+	WebcfgInfo("Received message from %s qos %d payloadlen %d payload %s\n", msg->topic, msg->qos, msg->payloadlen, (char *)msg->payload);
 
-	WebcfgInfo("test publish_notify_mqtt\n");
-	size_t msg_len = strlen("published ACK msg_bytes");
-	publish_notify_mqtt("published ACK msg_bytes", msg_len);
-	WebcfgInfo("publish_notify_mqtt done\n");
+	int status = 0;
+	status = processPayload((char *)msg->payload, msg->payloadlen);
+	WebcfgInfo("processPayload status %d\n", status);
 }
 
 void on_publish(struct mosquitto *mosq, void *obj, int mid)
