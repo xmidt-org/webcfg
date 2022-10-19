@@ -103,6 +103,32 @@ bool webcfg_mqtt_init()
 			}
 		}
 
+		get_from_file("PORT=", &PORT);
+		WebcfgInfo("hostname is %s and PORT is %s\n", hostname, PORT);
+		int port = PORT ? atoi(PORT) : MQTT_PORT;
+		WebcfgInfo("port int %d\n", port);
+		if(port == 80)
+		{
+			WebcfgInfo("connect to mqtt broker without tls\n");
+			//connect to mqtt broker
+			mosquitto_connect_callback_set(mosq, on_connect);
+			mosquitto_subscribe_callback_set(mosq, on_subscribe);
+			mosquitto_message_callback_set(mosq, on_message);
+
+			rc = mosquitto_connect(mosq, hostname, port, KEEPALIVE);
+			WebcfgInfo("mosquitto_connect rc %d\n", rc);
+			if(rc != MOSQ_ERR_SUCCESS)
+			{
+				WebcfgError("mqtt connect Error: %s\n", mosquitto_strerror(rc));
+				mosquitto_destroy(mosq);
+				return rc;
+			}
+			WebcfgInfo("broker connect success. mosquitto_loop_forever\n");
+			rc = mosquitto_loop_forever(mosq, -1, 1);
+			WebcfgInfo("after loop rc is %d\n", rc);
+		}
+		else
+		{
 		struct libmosquitto_tls *tls;
 		tls = malloc (sizeof (struct libmosquitto_tls));
 		if(tls)
@@ -146,9 +172,10 @@ bool webcfg_mqtt_init()
 				mosquitto_subscribe_callback_set(mosq, on_subscribe);
 				mosquitto_message_callback_set(mosq, on_message);
 
-				get_from_file("PORT=", &PORT);
-				WebcfgInfo("hostname is %s and port is %d\n", hostname, PORT);
-				int port = PORT ? atoi(PORT) : MQTT_PORT;
+				//get_from_file("PORT=", &PORT);
+				//WebcfgInfo("hostname is %s and PORT is %s\n", hostname, PORT);
+				//int port = PORT ? atoi(PORT) : MQTT_PORT;
+				WebcfgInfo("port %d\n", port);
 				rc = mosquitto_connect(mosq, hostname, port, KEEPALIVE);
 				WebcfgInfo("mosquitto_connect rc %d\n", rc);
 				if(rc != MOSQ_ERR_SUCCESS)
@@ -157,7 +184,13 @@ bool webcfg_mqtt_init()
 					mosquitto_destroy(mosq);
 					return rc;
 				}
-
+				else
+				{
+					WebcfgInfo("mqtt broker connect success %d\n", rc);
+				}
+				WebcfgInfo("mosquitto_loop_forever\n");
+				rc = mosquitto_loop_forever(mosq, -1, 1);
+				WebcfgInfo("after loop rc is %d\n", rc);
 			}
 			else
 			{
@@ -169,6 +202,7 @@ bool webcfg_mqtt_init()
 		{
 			WebcfgError("Allocation failed\n");
 			return MOSQ_ERR_NOMEM;
+		}
 		}
 	}
 	else
