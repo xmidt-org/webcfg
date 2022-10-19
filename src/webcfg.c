@@ -34,7 +34,7 @@
 #include "webcfg_event.h"
 #include "webcfg_blob.h"
 #include "webcfg_timer.h"
-
+#include "webcfg_mqtt.h"
 #ifdef FEATURE_SUPPORT_AKER
 #include "webcfg_aker.h"
 #endif
@@ -509,6 +509,14 @@ void processWebconfgSync(int status, char* docname)
 			break;
 		}
 		#endif
+
+		if(get_global_supplementarySync() == 0)
+		{
+			WebcfgInfo("webcfg_mqtt_init\n");
+			webcfg_mqtt_init();
+			WebcfgInfo("webcfg_mqtt_init done.\n");
+		}
+		return;
 
 		if(retry_count >3)
 		{

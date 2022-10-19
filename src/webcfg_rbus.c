@@ -22,6 +22,7 @@
 #include <stdlib.h>
 #include <wdmp-c.h>
 #include "webcfg_rbus.h"
+#include "webcfg_mqtt.h"
 #include "webcfg_metadata.h"
 #ifdef WAN_FAILOVER_SUPPORTED
 #include "webcfg_multipart.h"
@@ -1722,6 +1723,10 @@ void sendNotification_rbus(char *payload, char *source, char *destination)
 
 			msg_len = wrp_struct_to (notif_wrp_msg, WRP_BYTES, &msg_bytes);
 
+			WebcfgInfo("publish_notify_mqtt\n");
+			publish_notify_mqtt(msg_bytes, msg_len);
+			WebcfgInfo("publish_notify_mqtt done\n");
+			return;
 			// 30s wait interval for subscription 	
 			if(!subscribed)
 			{
