@@ -1726,6 +1726,13 @@ void sendNotification_rbus(char *payload, char *source, char *destination)
 			WebcfgInfo("publish_notify_mqtt\n");
 			publish_notify_mqtt(msg_bytes, msg_len);
 			WebcfgInfo("publish_notify_mqtt done\n");
+			wrp_free_struct (notif_wrp_msg );
+                        WebcfgInfo("freed notify wrp msg\n");
+                        if(msg_bytes)
+			{
+				WEBCFG_FREE(msg_bytes);
+			}
+			WebcfgInfo("freed msg_bytes\n");
 			return;
 			// 30s wait interval for subscription 	
 			if(!subscribed)

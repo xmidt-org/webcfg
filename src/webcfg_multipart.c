@@ -650,7 +650,9 @@ WEBCFG_STATUS parseMultipartDocument(void *config_data, char *ct , size_t data_s
 			ptr_lb = memchr(ptr_lb, '\n', data_size - (ptr_lb - str_body));
 			ptr_lb++;
 		}
+		WebcfgInfo("free str_body\n");
 		WEBCFG_FREE(str_body);
+		WebcfgInfo("str_body freed\n");
 		WEBCFG_FREE(line_boundary);
 		WEBCFG_FREE(last_line_boundary);
 
