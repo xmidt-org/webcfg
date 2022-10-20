@@ -444,18 +444,11 @@ WEBCFG_STATUS webcfg_http_request(char **configData, int r_count, int status, lo
 
 int processPayload(char * data, int dataSize)
 {
-	//char *data = NULL;
-	//char command[30] = {0};
-	//int test_dataSize = 0;
 	int mstatus = 0;
 
 	char *transaction_uuid =NULL;
 	char ct[256] = {0};
 
-	//if(readFromFile(TEST_FILE_LOCATION, &data, &test_dataSize) == 1)
-	//{
-		//set_g_testfile(1);
-		//WebcfgInfo("Using Test file \n");
 
 		char * data_body = malloc(sizeof(char) * dataSize+1);
 		memset(data_body, 0, sizeof(char) * dataSize+1);
@@ -502,7 +495,7 @@ int processPayload(char * data, int dataSize)
 						if(!get_global_supplementarySync())
 						{
 							set_global_ETAG(version);
-							WebcfgInfo("g_ETAG updated for test utility %s\n", get_global_ETAG());
+							WebcfgInfo("g_ETAG updated in processPayload %s\n", get_global_ETAG());
 						}
 						break;
 					}
@@ -526,7 +519,7 @@ int processPayload(char * data, int dataSize)
 			}
 			else
 			{
-				WebcfgError("Failed to apply root webConfigData received from server\n");
+				WebcfgDebug("Failed to apply root webConfigData received from server\n");
 			}
 		}
 		else
@@ -534,22 +527,7 @@ int processPayload(char * data, int dataSize)
 			WEBCFG_FREE(transaction_uuid);
 			WebcfgError("webConfigData is empty, need to retry\n");
 		}
-		/*sprintf(command,"rm -rf %s",TEST_FILE_LOCATION);
-		if(-1 != system(command))
-		{
-			WebcfgInfo("The %s file is removed successfully\n",TEST_FILE_LOCATION);
-		}
-		else
-		{
-			WebcfgError("Error in removing %s file\n",TEST_FILE_LOCATION);
-		}*/
 		return 1;
-	/*}
-	else
-	{
-		set_g_testfile(0);
-		return 0;
-	}*/
 }
 
 WEBCFG_STATUS parseMultipartDocument(void *config_data, char *ct , size_t data_size, char* trans_uuid)
