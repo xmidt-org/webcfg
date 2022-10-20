@@ -285,18 +285,25 @@ void on_message(struct mosquitto *mosq, void *obj, const struct mosquitto_messag
 {
 	if(msg !=NULL)
 	{
-		WebcfgInfo("Received message from %s qos %d payloadlen %d payload %s\n", msg->topic, msg->qos, msg->payloadlen, (char *)msg->payload);
+		if(msg->payload !=NULL)
+		{
+			WebcfgInfo("Received message from %s qos %d payloadlen %d payload %s\n", msg->topic, msg->qos, msg->payloadlen, (char *)msg->payload);
 
-		int dataSize = msg->payloadlen;
-		char * data = malloc(sizeof(char) * dataSize+1);
-		memset(data, 0, sizeof(char) * dataSize+1);
-		data = memcpy(data, (char *) msg->payload, dataSize+1);
-		data[dataSize] = '\0';
+			int dataSize = msg->payloadlen;
+			char * data = malloc(sizeof(char) * dataSize+1);
+			memset(data, 0, sizeof(char) * dataSize+1);
+			data = memcpy(data, (char *) msg->payload, dataSize+1);
+			data[dataSize] = '\0';
 
-		int status = 0;
-		WebcfgInfo("Received dataSize is %d\n", dataSize);
-		status = processPayload((char *)data, dataSize);
-		WebcfgInfo("processPayload status %d\n", status);
+			int status = 0;
+			WebcfgInfo("Received dataSize is %d\n", dataSize);
+			status = processPayload((char *)data, dataSize);
+			WebcfgInfo("processPayload status %d\n", status);
+		}
+		else
+		{
+			WebcfgError("Received payload from mqtt is NULL\n");
+		}
 	}
 	else
 	{
