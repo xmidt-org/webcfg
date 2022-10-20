@@ -442,41 +442,114 @@ WEBCFG_STATUS webcfg_http_request(char **configData, int r_count, int status, lo
 	return WEBCFG_FAILURE;
 }
 
-WEBCFG_STATUS processPayload(char * payload, int payloadLen)
+int processPayload(char * data, int dataSize)
 {
-	char *transaction_uuid = NULL;
-	int status = 0;
-	char *name_space = NULL;
-	uint32_t  etag = 0;
+	//char *data = NULL;
+	//char command[30] = {0};
+	//int test_dataSize = 0;
+	int mstatus = 0;
 
-	if(transaction_uuid == NULL)
-	{
-		transaction_uuid = generate_trans_uuid();
-	}
+	char *transaction_uuid =NULL;
+	char ct[256] = {0};
 
-	name_space = strdup("wan");
-	etag = 22334455;
+	//if(readFromFile(TEST_FILE_LOCATION, &data, &test_dataSize) == 1)
+	//{
+		//set_g_testfile(1);
+		//WebcfgInfo("Using Test file \n");
 
-	WebcfgInfo("addToMpList\n");
-	addToMpList(etag, name_space, payload, payloadLen);
+		char * data_body = malloc(sizeof(char) * dataSize+1);
+		memset(data_body, 0, sizeof(char) * dataSize+1);
+		data_body = memcpy(data_body, data, dataSize+1);
+		data_body[dataSize] = '\0';
+		char *ptr_count = data_body;
+		char *ptr1_count = data_body;
+		char *temp = NULL;
+		char *etag_header = NULL;
+		char* version = NULL;
 
-	status = processMsgpackSubdoc(transaction_uuid);
+		while((ptr_count - data_body) < dataSize )
+		{
+			ptr_count = memchr(ptr_count, 'C', dataSize - (ptr_count - data_body));
+			if(0 == memcmp(ptr_count, "Content-type:", strlen("Content-type:")))
+			{
+				ptr1_count = memchr(ptr_count+1, '\r', dataSize - (ptr_count - data_body));
+				temp = strndup(ptr_count, (ptr1_count-ptr_count));
+				strncpy(ct,temp,(sizeof(ct)-1));
+				break;
+			}
+			ptr_count++;
+		}
 
-	if(name_space != NULL)
-	{
-		WEBCFG_FREE(name_space);
-	}
+		ptr_count = data_body;
+		ptr1_count = data_body;
+		while((ptr_count - data_body) < dataSize )
+		{
+			ptr_count = memchr(ptr_count, 'E', dataSize - (ptr_count - data_body));
+			if(0 == memcmp(ptr_count, "Etag:", strlen("Etag:")))
+			{
+				ptr1_count = memchr(ptr_count+1, '\r', dataSize - (ptr_count - data_body));
+				etag_header = strndup(ptr_count, (ptr1_count-ptr_count));
+				if(etag_header !=NULL)
+				{
+					WebcfgInfo("etag header extracted is %s\n", etag_header);
+					//Extract root version from Etag: <value> header.
+					version = strtok(etag_header, ":");
+					if(version !=NULL)
+					{
+						version = strtok(NULL, ":");
+						version++;
+						//g_ETAG should be updated only for primary sync.
+						if(!get_global_supplementarySync())
+						{
+							set_global_ETAG(version);
+							WebcfgInfo("g_ETAG updated for test utility %s\n", get_global_ETAG());
+						}
+						break;
+					}
+				}
+			}
+			ptr_count++;
+		}
+		free(data_body);
+		free(temp);
+		WEBCFG_FREE(etag_header);
+		transaction_uuid = strdup(generate_trans_uuid());
+		if(data !=NULL)
+		{
+			WebcfgInfo("webConfigData fetched successfully\n");
+			WebcfgDebug("parseMultipartDocument\n");
+			mstatus = parseMultipartDocument(data, ct, (size_t)dataSize, transaction_uuid);
 
-	if(status ==0)
-	{
-		WebcfgInfo("processMsgpackSubdoc success\n");
-		return WEBCFG_SUCCESS;
-	}
+			if(mstatus == WEBCFG_SUCCESS)
+			{
+				WebcfgInfo("webConfigData applied successfully\n");
+			}
+			else
+			{
+				WebcfgError("Failed to apply root webConfigData received from server\n");
+			}
+		}
+		else
+		{
+			WEBCFG_FREE(transaction_uuid);
+			WebcfgError("webConfigData is empty, need to retry\n");
+		}
+		/*sprintf(command,"rm -rf %s",TEST_FILE_LOCATION);
+		if(-1 != system(command))
+		{
+			WebcfgInfo("The %s file is removed successfully\n",TEST_FILE_LOCATION);
+		}
+		else
+		{
+			WebcfgError("Error in removing %s file\n",TEST_FILE_LOCATION);
+		}*/
+		return 1;
+	/*}
 	else
 	{
-		WebcfgInfo("processMsgpackSubdoc done,docs are sent for apply\n");
-	}
-	return WEBCFG_FAILURE;
+		set_g_testfile(0);
+		return 0;
+	}*/
 }
 
 WEBCFG_STATUS parseMultipartDocument(void *config_data, char *ct , size_t data_size, char* trans_uuid)
