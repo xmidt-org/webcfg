@@ -54,8 +54,8 @@ bool webcfg_mqtt_init()
 	get_from_file("CID=", &client_id);
 	WebcfgInfo("client_id is %s\n", client_id);
 	
-	//if(client_id !=NULL)
-	//{
+	if(client_id !=NULL)
+	{
 		username = client_id;
 		WebcfgInfo("client_id is %s username is %s\n", client_id, username);
 
@@ -192,9 +192,6 @@ bool webcfg_mqtt_init()
 				mosquitto_message_callback_set(mosq, on_message);
 				mosquitto_publish_callback_set(mosq, on_publish);
 
-				//get_from_file("PORT=", &PORT);
-				//WebcfgInfo("hostname is %s and PORT is %s\n", hostname, PORT);
-				//int port = PORT ? atoi(PORT) : MQTT_PORT;
 				WebcfgInfo("port %d\n", port);
 				rc = mosquitto_connect(mosq, hostname, port, KEEPALIVE);
 				WebcfgInfo("mosquitto_connect rc %d\n", rc);
@@ -231,13 +228,13 @@ bool webcfg_mqtt_init()
 			return MOSQ_ERR_NOMEM;
 		}
 		}
-	/*}
+	}
 	else
 	{
 		WebcfgError("Failed to get client_id\n");
 		return 1;
 
-	}*/
+	}
 	return rc;
 }
 
@@ -349,9 +346,15 @@ void publish_notify_mqtt(void *payload,ssize_t len)
 	{
 		WebcfgInfo("Publish payload success %d\n", rc);
 	}
-	//WebcfgInfo("mosquitto_loop\n");
-	//mosquitto_loop(mosq, 0, 1);
-	//WebcfgInfo("mosquitto_loop done\n");
+	char *pub_loop_enabled = NULL;
+	get_from_file("PUB_LOOP=", &pub_loop_enabled);
+	WebcfgInfo("pub_loop_enabled is %s\n", pub_loop_enabled);
+	if(pub_loop_enabled)
+	{
+		WebcfgInfo("Publish mosquitto_loop\n");
+		mosquitto_loop(mosq, 0, 1);
+		WebcfgInfo("Publish mosquitto_loop done\n");
+	}
 }
 
 void get_from_file(char *key, char **val)
