@@ -133,8 +133,17 @@ bool webcfg_mqtt_init()
 				mosquitto_destroy(mosq);
 				return rc;
 			}
-			WebcfgInfo("broker connect success. mosquitto_loop_forever\n");
-			rc = mosquitto_loop_forever(mosq, -1, 1);
+			//WebcfgInfo("broker connect success. mosquitto_loop_forever\n");
+			//rc = mosquitto_loop_forever(mosq, -1, 1);
+			/* Run the network loop in a background thread, this call returns quickly. */
+			//WebcfgInfo("broker connect success. mosquitto_loop\n");
+			rc = mosquitto_loop_start(mosq);
+			if(rc != MOSQ_ERR_SUCCESS)
+			{
+				mosquitto_destroy(mosq);
+				WebcfgError( "mosquitto_loop_start Error: %s\n", mosquitto_strerror(rc));
+				return 1;
+			}
 			WebcfgInfo("after loop rc is %d\n", rc);
 		}
 		else
@@ -199,8 +208,15 @@ bool webcfg_mqtt_init()
 				{
 					WebcfgInfo("mqtt broker connect success %d\n", rc);
 				}
-				WebcfgInfo("mosquitto_loop_forever\n");
-				rc = mosquitto_loop_forever(mosq, -1, 1);
+				/*WebcfgInfo("mosquitto_loop_forever\n");
+				rc = mosquitto_loop_forever(mosq, -1, 1);*/
+				rc = mosquitto_loop_start(mosq);
+				if(rc != MOSQ_ERR_SUCCESS)
+				{
+					mosquitto_destroy(mosq);
+					WebcfgError("mosquitto_loop_start Error: %s\n", mosquitto_strerror(rc));
+					return rc;
+				}
 				WebcfgInfo("after loop rc is %d\n", rc);
 			}
 			else
@@ -333,6 +349,9 @@ void publish_notify_mqtt(void *payload,ssize_t len)
 	{
 		WebcfgInfo("Publish payload success %d\n", rc);
 	}
+	//WebcfgInfo("mosquitto_loop\n");
+	//mosquitto_loop(mosq, 0, 1);
+	//WebcfgInfo("mosquitto_loop done\n");
 }
 
 void get_from_file(char *key, char **val)
