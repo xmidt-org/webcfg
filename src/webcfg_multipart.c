@@ -463,6 +463,11 @@ int processPayload(char * data, int dataSize)
 		while((ptr_count - data_body) < dataSize )
 		{
 			ptr_count = memchr(ptr_count, 'C', dataSize - (ptr_count - data_body));
+			if(ptr_count == NULL)
+			{
+				WebcfgError("Content-type header not found\n");
+				break;
+			}
 			if(0 == memcmp(ptr_count, "Content-type:", strlen("Content-type:")))
 			{
 				ptr1_count = memchr(ptr_count+1, '\r', dataSize - (ptr_count - data_body));
@@ -478,6 +483,11 @@ int processPayload(char * data, int dataSize)
 		while((ptr_count - data_body) < dataSize )
 		{
 			ptr_count = memchr(ptr_count, 'E', dataSize - (ptr_count - data_body));
+			if(ptr_count == NULL)
+			{
+				WebcfgError("etag_header not found\n");
+				break;
+			}
 			if(0 == memcmp(ptr_count, "Etag:", strlen("Etag:")))
 			{
 				ptr1_count = memchr(ptr_count+1, '\r', dataSize - (ptr_count - data_body));
