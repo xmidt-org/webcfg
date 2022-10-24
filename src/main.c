@@ -27,6 +27,7 @@
 #include "webcfg_privilege.h"
 #include <unistd.h>
 #include <pthread.h>
+#include "webcfg_mqtt.h"
 /*----------------------------------------------------------------------------*/
 /*                             Function Prototypes                            */
 /*----------------------------------------------------------------------------*/
@@ -100,6 +101,7 @@ int main()
 			{
 				WebcfgInfo("WebConfig Rfc is enabled, starting initWebConfigMultipartTask.\n");
 				initWebConfigMultipartTask((unsigned long) systemStatus);
+				webcfg_mqtt_init();
 			}
 			else
 			{

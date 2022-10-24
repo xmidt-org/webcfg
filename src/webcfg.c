@@ -510,13 +510,13 @@ void processWebconfgSync(int status, char* docname)
 		}
 		#endif
 
-		if(get_global_supplementarySync() == 0)
+		/*if(get_global_supplementarySync() == 0)
 		{
 			WebcfgInfo("webcfg_mqtt_init\n");
 			webcfg_mqtt_init();
 			WebcfgInfo("webcfg_mqtt_init done.\n");
 		}
-		return;
+		return;*/
 
 		if(retry_count >3)
 		{
