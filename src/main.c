@@ -101,6 +101,7 @@ int main()
 			{
 				WebcfgInfo("WebConfig Rfc is enabled, starting initWebConfigMultipartTask.\n");
 				initWebConfigMultipartTask((unsigned long) systemStatus);
+				WebcfgInfo("Starting webcfg_mqtt_init\n");
 				webcfg_mqtt_init();
 			}
 			else

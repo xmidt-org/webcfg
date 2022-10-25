@@ -35,4 +35,7 @@
 bool webcfg_mqtt_init();
 void get_from_file(char *key, char **val);
 void publish_notify_mqtt(void *payload,ssize_t len);
+int get_global_mqtt_connected();
+void reset_global_mqttConnected();
+void set_global_mqttConnected();
 #endif

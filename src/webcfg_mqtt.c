@@ -33,7 +33,23 @@ void on_subscribe(struct mosquitto *mosq, void *obj, int mid, int qos_count, con
 void on_message(struct mosquitto *mosq, void *obj, const struct mosquitto_message *msg);
 void on_publish(struct mosquitto *mosq, void *obj, int mid);
 
+static int g_mqttConnected = 0;
 struct mosquitto *mosq = NULL;
+
+int get_global_mqtt_connected()
+{
+    return g_mqttConnected;
+}
+
+void reset_global_mqttConnected()
+{
+	g_mqttConnected = 0;
+}
+
+void set_global_mqttConnected()
+{
+	g_mqttConnected = 1;
+}
 
 //Initialize mqtt library and connect to mqtt broker
 bool webcfg_mqtt_init()
@@ -133,6 +149,11 @@ bool webcfg_mqtt_init()
 				mosquitto_destroy(mosq);
 				return rc;
 			}
+			else
+			{
+				WebcfgInfo("mosquitto_connect with port 80 is success\n");
+				set_global_mqttConnected();
+			}
 			//WebcfgInfo("broker connect success. mosquitto_loop_forever\n");
 			//rc = mosquitto_loop_forever(mosq, -1, 1);
 			/* Run the network loop in a background thread, this call returns quickly. */
@@ -204,6 +225,7 @@ bool webcfg_mqtt_init()
 				else
 				{
 					WebcfgInfo("mqtt broker connect success %d\n", rc);
+					set_global_mqttConnected();
 				}
 				/*WebcfgInfo("mosquitto_loop_forever\n");
 				rc = mosquitto_loop_forever(mosq, -1, 1);*/

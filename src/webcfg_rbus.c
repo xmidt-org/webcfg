@@ -1723,21 +1723,29 @@ void sendNotification_rbus(char *payload, char *source, char *destination)
 
 			msg_len = wrp_struct_to (notif_wrp_msg, WRP_BYTES, &msg_bytes);
 
-			WebcfgInfo("publish_notify_mqtt with json string payload\n");
-			//publish_notify_mqtt(msg_bytes, msg_len);
-			char *payload_str = strdup(payload);
-			WebcfgInfo("payload_str %s len %d\n", payload_str, strlen(payload_str));
-			publish_notify_mqtt(payload_str, strlen(payload_str));
-			//WEBCFG_FREE(payload_str);
-			WebcfgInfo("publish_notify_mqtt done\n");
-			wrp_free_struct (notif_wrp_msg );
-                        WebcfgInfo("freed notify wrp msg\n");
-                        if(msg_bytes)
+			//add mqtt feature flag check
+			if(get_global_mqtt_connected())
 			{
-				WEBCFG_FREE(msg_bytes);
+				WebcfgInfo("publish_notify_mqtt with json string payload\n");
+				//publish_notify_mqtt(msg_bytes, msg_len);
+				char *payload_str = strdup(payload);
+				WebcfgInfo("payload_str %s len %d\n", payload_str, strlen(payload_str));
+				publish_notify_mqtt(payload_str, strlen(payload_str));
+				//WEBCFG_FREE(payload_str);
+				WebcfgInfo("publish_notify_mqtt done\n");
+				wrp_free_struct (notif_wrp_msg );
+		                WebcfgInfo("freed notify wrp msg\n");
+		                if(msg_bytes)
+				{
+					WEBCFG_FREE(msg_bytes);
+				}
+				WebcfgInfo("freed msg_bytes\n");
+				return;
 			}
-			WebcfgInfo("freed msg_bytes\n");
-			return;
+			else
+			{
+				WebcfgError("Failed to publish notification as mqtt broker is not connected\n");
+			}
 			// 30s wait interval for subscription 	
 			if(!subscribed)
 			{
