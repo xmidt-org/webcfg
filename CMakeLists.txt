@@ -53,7 +53,10 @@ include_directories(${INCLUDE_DIR}/nanomsg
 endif (FEATURE_SUPPORT_AKER)
 
 if (WEBCONFIG_BIN_SUPPORT)
-include_directories(${INCLUDE_DIR}/rbus)
+include_directories(${INCLUDE_DIR}/rbus
+		    ${INCLUDE_DIR}/rtmessage
+)
+
 endif (WEBCONFIG_BIN_SUPPORT)
 
 if (NOT BUILD_YOCTO)
