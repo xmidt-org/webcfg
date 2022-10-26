@@ -22,10 +22,16 @@
 
 #include <stdio.h>
 #include <stdbool.h>
+#include <uuid/uuid.h>
 #include <mosquitto.h>
 #include <openssl/ssl.h>
+#include <time.h>
 #include "webcfg.h"
 #include "webcfg_log.h"
+#include "webcfg_multipart.h"
+#include "webcfg_metadata.h"
+#include "webcfg_auth.h"
+#include "webcfg_generic.h"
 
 #define HOST_FILE_LOCATION   "/nvram/hostname.txt"
 #define MOSQ_TLS_VERSION     "tlsv1.2"
@@ -34,8 +40,10 @@
 
 bool webcfg_mqtt_init();
 void get_from_file(char *key, char **val);
-void publish_notify_mqtt(void *payload,ssize_t len);
+void publish_notify_mqtt(char *pub_topic, void *payload,ssize_t len);
 int get_global_mqtt_connected();
 void reset_global_mqttConnected();
 void set_global_mqttConnected();
+int createMqttHeader(int status, char **header_list);
+int triggerBootupSync();
 #endif

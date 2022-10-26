@@ -102,7 +102,24 @@ int main()
 				WebcfgInfo("WebConfig Rfc is enabled, starting initWebConfigMultipartTask.\n");
 				initWebConfigMultipartTask((unsigned long) systemStatus);
 				WebcfgInfo("Starting webcfg_mqtt_init\n");
-				webcfg_mqtt_init();
+				int mqconn = webcfg_mqtt_init();
+				if(mqconn == 1)
+				{
+					WebcfgInfo("mqtt is connected, trigger bootup sync cmd\n");
+					int bootsync = triggerBootupSync();
+					if(bootsync)
+					{
+						WebcfgInfo("Triggered bootup sync via mqtt\n");
+					}
+					else
+					{
+						WebcfgError("Failed to trigger bootup sync via mqtt\n");
+					}
+				}
+				else
+				{
+					WebcfgError("mqtt connect failed , need to retry.\n");
+				}
 			}
 			else
 			{

@@ -352,12 +352,19 @@ void on_publish(struct mosquitto *mosq, void *obj, int mid)
 }
 
 /* This function pretends to read some data from a sensor and publish it.*/
-void publish_notify_mqtt(void *payload,ssize_t len)
+void publish_notify_mqtt(char *pub_topic, void *payload,ssize_t len)
 {
         int rc;
-	char *pub_topic = NULL;
-	get_from_file("PUB_TOPIC=", &pub_topic);
-	WebcfgInfo("pub_topic is %s\n", pub_topic);
+	//char *pub_topic = NULL;
+	if(pub_topic == NULL)
+	{
+		get_from_file("PUB_TOPIC=", &pub_topic);
+		WebcfgInfo("pub_topic from file is %s\n", pub_topic);
+	}
+	else
+	{
+		WebcfgInfo("pub_topic is %s\n", pub_topic);
+	}
         rc = mosquitto_publish(mosq, NULL, pub_topic, len, payload, 2, false);
 	WebcfgInfo("Publish rc %d\n", rc);
         if(rc != MOSQ_ERR_SUCCESS)
@@ -411,4 +418,473 @@ void get_from_file(char *key, char **val)
         {
                 WebcfgDebug("val fetched is %s\n", *val);
         }
+}
+
+int triggerBootupSync()
+{
+	char *mqttheaderList = NULL;
+	mqttheaderList = (char *) malloc(sizeof(char) * 1024);
+	int status = 0; //TODO: Get device operational status in webconfig.
+	char *pub_get_topic = NULL;
+
+	if(mqttheaderList != NULL)
+	{
+		WebcfgInfo("B4 createMqttHeader\n");
+		createMqttHeader(status, &mqttheaderList);
+		if(mqttheaderList !=NULL)
+		{
+			WebcfgInfo("mqttheaderList generated is \n%s len %d\n", mqttheaderList, strlen(mqttheaderList));
+			get_from_file("PUB_GET_TOPIC=", &pub_get_topic);
+			WebcfgInfo("pub_get_topic from file is %s\n", pub_get_topic);
+			publish_notify_mqtt(pub_get_topic, (void*)mqttheaderList, strlen(mqttheaderList));
+			WebcfgInfo("triggerBootupSync published to topic %s\n", pub_get_topic);
+		}
+		else
+		{
+			WebcfgError("Failed to generate mqttheaderList\n");
+			return 0;
+		}
+	}
+	else
+	{
+		WebcfgError("Failed to allocate mqttheaderList\n");
+		return 0;
+	}
+	WebcfgInfo("triggerBootupSync end\n");
+	return 1;
+}
+
+int createMqttHeader(int status, char **header_list)
+{
+	char *version_header = NULL;
+	char *auth_header = NULL;
+	char *accept_header = NULL;
+	char *status_header=NULL;
+	char *schema_header=NULL;
+	char *bootTime = NULL, *bootTime_header = NULL;
+	char *FwVersion = NULL, *FwVersion_header=NULL;
+	char *supportedDocs = NULL;
+	char *supportedVersion = NULL;
+	char *supplementaryDocs = NULL;
+        char *productClass = NULL, *productClass_header = NULL;
+	char *ModelName = NULL, *ModelName_header = NULL;
+	char *systemReadyTime = NULL, *systemReadyTime_header=NULL;
+	char *telemetryVersion_header = NULL;
+	char *PartnerID = NULL, *PartnerID_header = NULL;
+	char *AccountID = NULL, *AccountID_header = NULL;
+	struct timespec cTime;
+	char currentTime[32];
+	char *currentTime_header=NULL;
+	char *uuid_header = NULL;
+	char *transaction_uuid = NULL;
+	char version[512]={'\0'};
+	//char* syncTransID = NULL;
+	char* ForceSyncDoc = NULL;
+	size_t supported_doc_size = 0;
+	size_t supported_version_size = 0;
+	size_t supplementary_docs_size = 0;
+
+	WebcfgDebug("Start of createCurlheader\n");
+	//Fetch auth JWT token from cloud.
+	getAuthToken();
+
+	WebcfgDebug("get_global_auth_token() is %s\n", get_global_auth_token());
+
+	auth_header = (char *) malloc(sizeof(char)*MAX_HEADER_LEN);
+	if(auth_header !=NULL)
+	{
+		snprintf(auth_header, MAX_HEADER_LEN, "Authorization:Bearer %s", (0 < strlen(get_global_auth_token()) ? get_global_auth_token() : NULL));
+		//list = curl_slist_append(list, auth_header);
+		//WEBCFG_FREE(auth_header);
+	}
+
+	if(!get_global_supplementarySync())
+	{
+		version_header = (char *) malloc(sizeof(char)*MAX_BUF_SIZE);
+		if(version_header !=NULL)
+		{
+			refreshConfigVersionList(version, 0);
+			snprintf(version_header, MAX_BUF_SIZE, "IF-NONE-MATCH:%s", ((strlen(version)!=0) ? version : "0"));
+			WebcfgInfo("version_header formed %s\n", version_header);
+			//list = curl_slist_append(list, version_header);
+			//WEBCFG_FREE(version_header);
+		}
+	}
+	accept_header = (char *) malloc(sizeof(char)*MAX_HEADER_LEN);
+	if(accept_header !=NULL)
+	{
+		snprintf(accept_header, MAX_BUF_SIZE, "Accept: application/msgpack");
+		//list = curl_slist_append(list, "Accept: application/msgpack");
+	}
+
+	schema_header = (char *) malloc(sizeof(char)*MAX_BUF_SIZE);
+	if(schema_header !=NULL)
+	{
+		snprintf(schema_header, MAX_BUF_SIZE, "Schema-Version: %s", "v1.0");
+		WebcfgInfo("schema_header formed %s\n", schema_header);
+		//list = curl_slist_append(list, schema_header);
+		//WEBCFG_FREE(schema_header);
+	}
+
+	if(!get_global_supplementarySync())
+	{
+		if(supportedVersion_header == NULL)
+		{
+			supportedVersion = getsupportedVersion();
+
+			if(supportedVersion !=NULL)
+			{
+				supported_version_size = strlen(supportedVersion)+strlen("X-System-Schema-Version: ");
+				supportedVersion_header = (char *) malloc(supported_version_size+1);
+				memset(supportedVersion_header,0,supported_version_size+1);
+				WebcfgDebug("supportedVersion fetched is %s\n", supportedVersion);
+				snprintf(supportedVersion_header, supported_version_size+1, "X-System-Schema-Version: %s", supportedVersion);
+				WebcfgInfo("supportedVersion_header formed %s\n", supportedVersion_header);
+				//list = curl_slist_append(list, supportedVersion_header);
+			}
+			else
+			{
+				WebcfgInfo("supportedVersion fetched is NULL\n");
+			}
+		}
+		else
+		{
+			WebcfgInfo("supportedVersion_header formed %s\n", supportedVersion_header);
+			//list = curl_slist_append(list, supportedVersion_header);
+		}
+
+		if(supportedDocs_header == NULL)
+		{
+			supportedDocs = getsupportedDocs();
+
+			if(supportedDocs !=NULL)
+			{
+				supported_doc_size = strlen(supportedDocs)+strlen("X-System-Supported-Docs: ");
+				supportedDocs_header = (char *) malloc(supported_doc_size+1);
+				memset(supportedDocs_header,0,supported_doc_size+1);
+				WebcfgDebug("supportedDocs fetched is %s\n", supportedDocs);
+				snprintf(supportedDocs_header, supported_doc_size+1, "X-System-Supported-Docs: %s", supportedDocs);
+				WebcfgInfo("supportedDocs_header formed %s\n", supportedDocs_header);
+				//list = curl_slist_append(list, supportedDocs_header);
+			}
+			else
+			{
+				WebcfgInfo("SupportedDocs fetched is NULL\n");
+			}
+		}
+		else
+		{
+			WebcfgInfo("supportedDocs_header formed %s\n", supportedDocs_header);
+			//list = curl_slist_append(list, supportedDocs_header);
+		}
+	}
+	else
+	{
+		if(supplementaryDocs_header == NULL)
+		{
+			supplementaryDocs = getsupplementaryDocs();
+
+			if(supplementaryDocs !=NULL)
+			{
+				supplementary_docs_size = strlen(supplementaryDocs)+strlen("X-System-SupplementaryService-Sync: ");
+				supplementaryDocs_header = (char *) malloc(supplementary_docs_size+1);
+				memset(supplementaryDocs_header,0,supplementary_docs_size+1);
+				WebcfgDebug("supplementaryDocs fetched is %s\n", supplementaryDocs);
+				snprintf(supplementaryDocs_header, supplementary_docs_size+1, "X-System-SupplementaryService-Sync: %s", supplementaryDocs);
+				WebcfgInfo("supplementaryDocs_header formed %s\n", supplementaryDocs_header);
+				//list = curl_slist_append(list, supplementaryDocs_header);
+			}
+			else
+			{
+				WebcfgInfo("supplementaryDocs fetched is NULL\n");
+			}
+		}
+		else
+		{
+			WebcfgInfo("supplementaryDocs_header formed %s\n", supplementaryDocs_header);
+			//list = curl_slist_append(list, supplementaryDocs_header);
+		}
+	}
+
+	if(strlen(g_bootTime) ==0)
+	{
+		bootTime = getDeviceBootTime();
+		if(bootTime !=NULL)
+		{
+		       strncpy(g_bootTime, bootTime, sizeof(g_bootTime)-1);
+		       WebcfgDebug("g_bootTime fetched is %s\n", g_bootTime);
+		       WEBCFG_FREE(bootTime);
+		}
+	}
+
+	if(strlen(g_bootTime))
+	{
+		bootTime_header = (char *) malloc(sizeof(char)*MAX_BUF_SIZE);
+		if(bootTime_header !=NULL)
+		{
+			snprintf(bootTime_header, MAX_BUF_SIZE, "X-System-Boot-Time: %s", g_bootTime);
+			WebcfgInfo("bootTime_header formed %s\n", bootTime_header);
+			//list = curl_slist_append(list, bootTime_header);
+			//WEBCFG_FREE(bootTime_header);
+		}
+	}
+	else
+	{
+		WebcfgError("Failed to get bootTime\n");
+	}
+
+	if(strlen(g_FirmwareVersion) ==0)
+	{
+		FwVersion = getFirmwareVersion();
+		if(FwVersion !=NULL)
+		{
+		       strncpy(g_FirmwareVersion, FwVersion, sizeof(g_FirmwareVersion)-1);
+		       WebcfgDebug("g_FirmwareVersion fetched is %s\n", g_FirmwareVersion);
+		       WEBCFG_FREE(FwVersion);
+		}
+	}
+
+	if(strlen(g_FirmwareVersion))
+	{
+		FwVersion_header = (char *) malloc(sizeof(char)*MAX_BUF_SIZE);
+		if(FwVersion_header !=NULL)
+		{
+			snprintf(FwVersion_header, MAX_BUF_SIZE, "X-System-Firmware-Version: %s", g_FirmwareVersion);
+			WebcfgInfo("FwVersion_header formed %s\n", FwVersion_header);
+			//list = curl_slist_append(list, FwVersion_header);
+			//WEBCFG_FREE(FwVersion_header);
+		}
+	}
+	else
+	{
+		WebcfgError("Failed to get FwVersion\n");
+	}
+
+	status_header = (char *) malloc(sizeof(char)*MAX_BUF_SIZE);
+	if(status_header !=NULL)
+	{
+		if(status !=0)
+		{
+			snprintf(status_header, MAX_BUF_SIZE, "X-System-Status: %s", "Non-Operational");
+		}
+		else
+		{
+			snprintf(status_header, MAX_BUF_SIZE, "X-System-Status: %s", "Operational");
+		}
+		WebcfgInfo("status_header formed %s\n", status_header);
+		//list = curl_slist_append(list, status_header);
+		//WEBCFG_FREE(status_header);
+	}
+
+	memset(currentTime, 0, sizeof(currentTime));
+	getCurrent_Time(&cTime);
+	snprintf(currentTime,sizeof(currentTime),"%d",(int)cTime.tv_sec);
+	currentTime_header = (char *) malloc(sizeof(char)*MAX_BUF_SIZE);
+	if(currentTime_header !=NULL)
+	{
+		snprintf(currentTime_header, MAX_BUF_SIZE, "X-System-Current-Time: %s", currentTime);
+		WebcfgInfo("currentTime_header formed %s\n", currentTime_header);
+		//list = curl_slist_append(list, currentTime_header);
+		//WEBCFG_FREE(currentTime_header);
+	}
+
+        if(strlen(g_systemReadyTime) ==0)
+        {
+
+                systemReadyTime = get_global_systemReadyTime();
+                if(systemReadyTime !=NULL)
+                {
+                       strncpy(g_systemReadyTime, systemReadyTime, sizeof(g_systemReadyTime)-1);
+                       WebcfgDebug("g_systemReadyTime fetched is %s\n", g_systemReadyTime);
+                       WEBCFG_FREE(systemReadyTime);
+                }
+        }
+
+        if(strlen(g_systemReadyTime))
+        {
+                systemReadyTime_header = (char *) malloc(sizeof(char)*MAX_BUF_SIZE);
+                if(systemReadyTime_header !=NULL)
+                {
+			snprintf(systemReadyTime_header, MAX_BUF_SIZE, "X-System-Ready-Time: %s", g_systemReadyTime);
+	                WebcfgInfo("systemReadyTime_header formed %s\n", systemReadyTime_header);
+	                //list = curl_slist_append(list, systemReadyTime_header);
+	                //WEBCFG_FREE(systemReadyTime_header);
+                }
+        }
+        else
+        {
+                WebcfgDebug("Failed to get systemReadyTime\n");
+        }
+
+	/*getForceSync(&ForceSyncDoc, &syncTransID);
+
+	if(syncTransID !=NULL)
+	{
+		if(ForceSyncDoc !=NULL)
+		{
+			if (strlen(syncTransID)>0)
+			{
+				WebcfgInfo("updating transaction_uuid with force syncTransID\n");
+				transaction_uuid = strdup(syncTransID);
+			}
+			WEBCFG_FREE(ForceSyncDoc);
+		}
+		WEBCFG_FREE(syncTransID);
+	}*/
+
+	if(transaction_uuid == NULL)
+	{
+		transaction_uuid = generate_trans_uuid();
+	}
+
+	if(transaction_uuid !=NULL)
+	{
+		uuid_header = (char *) malloc(sizeof(char)*MAX_BUF_SIZE);
+		if(uuid_header !=NULL)
+		{
+			snprintf(uuid_header, MAX_BUF_SIZE, "Transaction-ID: %s", transaction_uuid);
+			WebcfgInfo("uuid_header formed %s\n", uuid_header);
+			//list = curl_slist_append(list, uuid_header);
+			*trans_uuid = strdup(transaction_uuid);
+			WEBCFG_FREE(transaction_uuid);
+			//WEBCFG_FREE(uuid_header);
+		}
+	}
+	else
+	{
+		WebcfgError("Failed to generate transaction_uuid\n");
+	}
+
+	if(strlen(g_productClass) ==0)
+	{
+		productClass = getProductClass();
+		if(productClass !=NULL)
+		{
+		       strncpy(g_productClass, productClass, sizeof(g_productClass)-1);
+		       WebcfgDebug("g_productClass fetched is %s\n", g_productClass);
+		       WEBCFG_FREE(productClass);
+		}
+	}
+
+	if(strlen(g_productClass))
+	{
+		productClass_header = (char *) malloc(sizeof(char)*MAX_BUF_SIZE);
+		if(productClass_header !=NULL)
+		{
+			snprintf(productClass_header, MAX_BUF_SIZE, "X-System-Product-Class: %s", g_productClass);
+			WebcfgInfo("productClass_header formed %s\n", productClass_header);
+			//list = curl_slist_append(list, productClass_header);
+			//WEBCFG_FREE(productClass_header);
+		}
+	}
+	else
+	{
+		WebcfgError("Failed to get productClass\n");
+	}
+
+	if(strlen(g_ModelName) ==0)
+	{
+		ModelName = getModelName();
+		if(ModelName !=NULL)
+		{
+		       strncpy(g_ModelName, ModelName, sizeof(g_ModelName)-1);
+		       WebcfgDebug("g_ModelName fetched is %s\n", g_ModelName);
+		       WEBCFG_FREE(ModelName);
+		}
+	}
+
+	if(strlen(g_ModelName))
+	{
+		ModelName_header = (char *) malloc(sizeof(char)*MAX_BUF_SIZE);
+		if(ModelName_header !=NULL)
+		{
+			snprintf(ModelName_header, MAX_BUF_SIZE, "X-System-Model-Name: %s", g_ModelName);
+			WebcfgInfo("ModelName_header formed %s\n", ModelName_header);
+			//list = curl_slist_append(list, ModelName_header);
+			//WEBCFG_FREE(ModelName_header);
+		}
+	}
+	else
+	{
+		WebcfgError("Failed to get ModelName\n");
+	}
+
+	//Addtional headers for telemetry sync
+	if(get_global_supplementarySync())
+	{
+		telemetryVersion_header = (char *) malloc(sizeof(char)*MAX_BUF_SIZE);
+		if(telemetryVersion_header !=NULL)
+		{
+			snprintf(telemetryVersion_header, MAX_BUF_SIZE, "X-System-Telemetry-Profile-Version: %s", "2.0");
+			WebcfgInfo("telemetryVersion_header formed %s\n", telemetryVersion_header);
+			//list = curl_slist_append(list, telemetryVersion_header);
+			//WEBCFG_FREE(telemetryVersion_header);
+		}
+
+		if(strlen(g_PartnerID) ==0)
+		{
+			PartnerID = getPartnerID();
+			if(PartnerID !=NULL)
+			{
+			       strncpy(g_PartnerID, PartnerID, sizeof(g_PartnerID)-1);
+			       WebcfgDebug("g_PartnerID fetched is %s\n", g_PartnerID);
+			       WEBCFG_FREE(PartnerID);
+			}
+		}
+
+		if(strlen(g_PartnerID))
+		{
+			PartnerID_header = (char *) malloc(sizeof(char)*MAX_BUF_SIZE);
+			if(PartnerID_header !=NULL)
+			{
+				snprintf(PartnerID_header, MAX_BUF_SIZE, "X-System-PartnerID: %s", g_PartnerID);
+				WebcfgInfo("PartnerID_header formed %s\n", PartnerID_header);
+				//list = curl_slist_append(list, PartnerID_header);
+				//WEBCFG_FREE(PartnerID_header);
+			}
+		}
+		else
+		{
+			WebcfgError("Failed to get PartnerID\n");
+		}
+
+		if(strlen(g_AccountID) ==0)
+		{
+			AccountID = getAccountID();
+			if(AccountID !=NULL)
+			{
+			       strncpy(g_AccountID, AccountID, sizeof(g_AccountID)-1);
+			       WebcfgDebug("g_AccountID fetched is %s\n", g_AccountID);
+			       WEBCFG_FREE(AccountID);
+			}
+		}
+
+		if(strlen(g_AccountID))
+		{
+			AccountID_header = (char *) malloc(sizeof(char)*MAX_BUF_SIZE);
+			if(AccountID_header !=NULL)
+			{
+				snprintf(AccountID_header, MAX_BUF_SIZE, "X-System-AccountID: %s", g_AccountID);
+				WebcfgInfo("AccountID_header formed %s\n", AccountID_header);
+				//list = curl_slist_append(list, AccountID_header);
+				//WEBCFG_FREE(AccountID_header);
+			}
+		}
+		else
+		{
+			WebcfgError("Failed to get AccountID\n");
+		}
+	}
+	if(!get_global_supplementarySync())
+	{
+		WebcfgInfo("Framing primary sync header\n");
+		snprintf(*header_list, MAX_BUF_SIZE, "%s\r\n%s\r\n%s\r\n%s\r\n%s\r\n%s\r\n%s\r\n%s\r\n%s\r\n%s\r\n%s\r\n%s\r\n%s\r\n%s\r", auth_header, version_header, accept_header, schema_header, supportedVersion_header, supportedDocs_header, bootTime_header, FwVersion_header, status_header, currentTime_header, systemReadyTime_header, uuid_header, productClass_header, ModelName_header);
+	}
+	else
+	{
+		WebcfgInfo("Framing supplementary sync header\n");
+		snprintf(*header_list, MAX_BUF_SIZE, "%s\r\n%s\r\n%s\r\n%s\r\n%s\r\n%s\r\n%s\r\n%s\r\n%s\r\n%s\r\n%s\r\n%s\r\n%s\r\n%s\r\n%s\r\n%s\r\n%s\r\n%s\r", auth_header, version_header, accept_header, schema_header, supportedVersion_header, supportedDocs_header, supplementaryDocs_header, bootTime_header, FwVersion_header, status_header, currentTime_header, systemReadyTime_header, uuid_header, productClass_header, ModelName_header, telemetryVersion_header, PartnerID_header, AccountID_header );
+	}
+	WebcfgInfo("mqtt header_list is \n%s\n", *header_list);
+	return 0;
 }

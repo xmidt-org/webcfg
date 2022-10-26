@@ -1730,7 +1730,7 @@ void sendNotification_rbus(char *payload, char *source, char *destination)
 				//publish_notify_mqtt(msg_bytes, msg_len);
 				char *payload_str = strdup(payload);
 				WebcfgInfo("payload_str %s len %d\n", payload_str, strlen(payload_str));
-				publish_notify_mqtt(payload_str, strlen(payload_str));
+				publish_notify_mqtt(NULL, payload_str, strlen(payload_str));
 				//WEBCFG_FREE(payload_str);
 				WebcfgInfo("publish_notify_mqtt done\n");
 				wrp_free_struct (notif_wrp_msg );
