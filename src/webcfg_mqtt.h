@@ -38,12 +38,12 @@
 #define KEEPALIVE       180
 #define MQTT_PORT            443
 
-bool webcfg_mqtt_init();
+bool webcfg_mqtt_init(int status);
 void get_from_file(char *key, char **val);
 void publish_notify_mqtt(char *pub_topic, void *payload,ssize_t len);
 int get_global_mqtt_connected();
 void reset_global_mqttConnected();
 void set_global_mqttConnected();
-int createMqttHeader(int status, char **header_list);
+int createMqttHeader(char **header_list);
 int triggerBootupSync();
 #endif
