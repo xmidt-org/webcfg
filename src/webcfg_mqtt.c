@@ -38,6 +38,18 @@ static int systemStatus = 0;
 struct mosquitto *mosq = NULL;
 static char g_deviceId[64]={'\0'};
 
+//
+static char g_systemReadyTime[64]={'\0'};
+static char g_FirmwareVersion[64]={'\0'};
+static char g_bootTime[64]={'\0'};
+static char g_productClass[64]={'\0'};
+static char g_ModelName[64]={'\0'};
+static char g_PartnerID[64]={'\0'};
+static char g_AccountID[64]={'\0'};
+static char *supportedVersion_header=NULL;
+static char *supportedDocs_header=NULL;
+static char *supplementaryDocs_header=NULL;
+//
 int get_global_mqtt_connected()
 {
     return g_mqttConnected;
@@ -485,17 +497,19 @@ int createMqttHeader(char **header_list)
 	char *telemetryVersion_header = NULL;
 	char *PartnerID = NULL, *PartnerID_header = NULL;
 	char *AccountID = NULL, *AccountID_header = NULL;
+	char *deviceId_header = NULL, *doc_header = NULL;
+	char *contenttype_header = NULL, *contentlen_header = NULL;
 	struct timespec cTime;
 	char currentTime[32];
 	char *currentTime_header=NULL;
 	char *uuid_header = NULL;
 	char *transaction_uuid = NULL;
 	char version[512]={'\0'};
-	char* ForceSyncDoc = NULL;
 	size_t supported_doc_size = 0;
 	size_t supported_version_size = 0;
 	size_t supplementary_docs_size = 0;
 	char docList[512] = {'\0'};
+	char *deviceId = NULL;
 
 	WebcfgInfo("Start of createMqttHeader\n");
 
@@ -550,7 +564,7 @@ int createMqttHeader(char **header_list)
 			//WEBCFG_FREE(version_header);
 		}
 	}
-	accept_header = (char *) malloc(sizeof(char)*MAX_HEADER_LEN);
+	accept_header = (char *) malloc(sizeof(char)*MAX_BUF_SIZE);
 	if(accept_header !=NULL)
 	{
 		snprintf(accept_header, MAX_BUF_SIZE, "Accept: application/msgpack");
@@ -755,8 +769,8 @@ int createMqttHeader(char **header_list)
 		{
 			snprintf(uuid_header, MAX_BUF_SIZE, "Transaction-ID: %s", transaction_uuid);
 			WebcfgInfo("uuid_header formed %s\n", uuid_header);
-			*trans_uuid = strdup(transaction_uuid);
-			WEBCFG_FREE(transaction_uuid);
+			//char *trans_uuid = strdup(transaction_uuid);
+			//WEBCFG_FREE(transaction_uuid);
 			//WEBCFG_FREE(uuid_header);
 		}
 	}
@@ -843,12 +857,12 @@ int createMqttHeader(char **header_list)
 		WebcfgError("Failed to get PartnerID\n");
 	}
 
-	contenttype_header = (char *) malloc(sizeof(char)*MAX_HEADER_LEN);
+	contenttype_header = (char *) malloc(sizeof(char)*MAX_BUF_SIZE);
 	if(contenttype_header !=NULL)
 	{
 		snprintf(contenttype_header, MAX_BUF_SIZE, "Content-type: application/json");
 	}
-	contentlen_header = (char *) malloc(sizeof(char)*MAX_HEADER_LEN);
+	contentlen_header = (char *) malloc(sizeof(char)*MAX_BUF_SIZE);
 	if(contentlen_header !=NULL)
 	{
 		snprintf(contentlen_header, MAX_BUF_SIZE, "Content-length: 0");
@@ -893,7 +907,7 @@ int createMqttHeader(char **header_list)
 	if(!get_global_supplementarySync())
 	{
 		WebcfgInfo("Framing primary sync header\n");
-		snprintf(*header_list, MAX_BUF_SIZE, "%s\r\n%s\r\n%s\r\n%s\r\n%s\r\n%s\r\n%s\r\n%s\r\n%s\r\n%s\r\n%s\r\n%s\r\n%s\r\n%s\r\n%s\r\n%s\r\n", doc_header, version_header, accept_header, schema_header, supportedVersion_header, supportedDocs_header, bootTime_header, FwVersion_header, status_header, currentTime_header, systemReadyTime_header, uuid_header, productClass_header, ModelName_header, contenttype_header, contentlen_header,PartnerID_header);
+		snprintf(*header_list, MAX_BUF_SIZE, "%s\r\n%s\r\n%s\r\n%s\r\n%s\r\n%s\r\n%s\r\n%s\r\n%s\r\n%s\r\n%s\r\n%s\r\n%s\r\n%s\r\n%s\r\n%s\r\n%s\r\n", doc_header, version_header, accept_header, schema_header, supportedVersion_header, supportedDocs_header, bootTime_header, FwVersion_header, status_header, currentTime_header, systemReadyTime_header, uuid_header, productClass_header, ModelName_header, contenttype_header, contentlen_header,PartnerID_header);
 	}
 	else
 	{

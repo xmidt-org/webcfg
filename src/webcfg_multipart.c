@@ -87,6 +87,46 @@ char *supplementaryDocs_header=NULL;
 static multipartdocs_t *g_mp_head = NULL;
 pthread_mutex_t multipart_t_mut =PTHREAD_MUTEX_INITIALIZER;
 static int eventFlag = 0;
+/*char *get_supportedVersion_header(void)
+{
+    return supportedVersion_header;
+}
+char *get_supportedDocs_header(void)
+{
+    return g_supportedDocs_header;
+}
+char *get_supplementaryDocs_header(void)
+{
+    return g_supplementaryDocs_header;
+}
+char *get_global_bootTime(void)
+{
+    return g_bootTime;
+}
+char *get_global_FirmwareVersion(void)
+{
+    return g_FirmwareVersion;
+}
+char *get_global_systemReadyTime(void)
+{
+    return g_systemReadyTime;
+}
+char *get_global_productClass(void)
+{
+    return g_productClass;
+}
+char *get_global_ModelName(void)
+{
+    return g_ModelName;
+}
+char *get_global_PartnerID(void)
+{
+    return g_PartnerID;
+}
+char *get_global_AccountID(void)
+{
+    return g_AccountID;
+}*/
 char * get_global_transID(void)
 {
     return g_transID;
