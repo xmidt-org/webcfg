@@ -509,19 +509,13 @@ int createMqttHeader(char **header_list)
 	size_t supported_version_size = 0;
 	size_t supplementary_docs_size = 0;
 	char docList[512] = {'\0'};
-	char *deviceId = NULL;
 
 	WebcfgInfo("Start of createMqttHeader\n");
 
-	if(strlen(g_deviceId) ==0)
+	if( get_deviceMAC() != NULL && strlen(get_deviceMAC()) !=0 )
 	{
-		deviceId = get_deviceMAC();
-		if(deviceId !=NULL)
-		{
-		       strncpy(g_deviceId, deviceId, sizeof(g_deviceId)-1);
-		       WebcfgInfo("g_deviceId fetched is %s\n", g_deviceId);
-		       WEBCFG_FREE(deviceId);
-		}
+	       strncpy(g_deviceId, get_deviceMAC(), sizeof(g_deviceId)-1);
+	       WebcfgInfo("g_deviceId fetched is %s\n", g_deviceId);
 	}
 
 	if(strlen(g_deviceId))
