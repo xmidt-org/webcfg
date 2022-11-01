@@ -62,7 +62,7 @@ set(HEADERS ${HEADERS} webcfg_rbus.h webcfg_mqtt.h)
 set(SOURCES ${SOURCES} main.c webcfg_rbus.c webcfg_mqtt.c)
 add_executable(webconfig ${SOURCES} ${HEADERS})
 set_property(TARGET webconfig PROPERTY C_STANDARD 99)
-set(COMMON_LIBS -lwrp-c -lpthread -lwdmp-c -lmsgpackc -ltrower-base64 -lm -lcjson -lrt -luuid -lcurl -lrbus -lrbus-core -lmosquitto)
+set(COMMON_LIBS -lwrp-c -lpthread -lwdmp-c -lmsgpackc -ltrower-base64 -lm -lcjson -lrt -luuid -lcurl -lrbus -lmosquitto)
 
 if (NOT DEVICE_EXTENDER)
 set(COMMON_LIBS ${COMMON_LIBS} -lcimplog)
