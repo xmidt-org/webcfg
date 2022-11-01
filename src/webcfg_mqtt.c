@@ -66,7 +66,7 @@ void set_global_mqttConnected()
 }
 
 //Initialize mqtt library and connect to mqtt broker
-bool webcfg_mqtt_init(int status)
+bool webcfg_mqtt_init(int status, char *systemreadytime)
 {
 	char *client_id , *username = NULL;
 	char * topic, *hostname = NULL;
@@ -80,6 +80,14 @@ bool webcfg_mqtt_init(int status)
 
 	systemStatus = status;
 	WebcfgInfo("systemStatus is %d\n", systemStatus);
+
+	if(systemreadytime !=NULL)
+	{
+		char *systemReadyTime = strdup(systemreadytime);
+		strncpy(g_systemReadyTime, systemReadyTime, sizeof(g_systemReadyTime)-1);
+		WebcfgInfo("g_systemReadyTime is %s\n", g_systemReadyTime);
+	}
+
 	int clean_session = true;
 
 	//client_id = get_deviceMAC();
@@ -726,13 +734,13 @@ int createMqttHeader(char **header_list)
 
         if(strlen(g_systemReadyTime) ==0)
         {
-
+		WebcfgInfo("get_global_systemReadyTime\n");
                 systemReadyTime = get_global_systemReadyTime();
                 if(systemReadyTime !=NULL)
                 {
                        strncpy(g_systemReadyTime, systemReadyTime, sizeof(g_systemReadyTime)-1);
-                       WebcfgDebug("g_systemReadyTime fetched is %s\n", g_systemReadyTime);
-                       WEBCFG_FREE(systemReadyTime);
+                       WebcfgInfo("g_systemReadyTime fetched is %s\n", g_systemReadyTime);
+                       //WEBCFG_FREE(systemReadyTime);
                 }
         }
 
@@ -855,11 +863,13 @@ int createMqttHeader(char **header_list)
 	if(contenttype_header !=NULL)
 	{
 		snprintf(contenttype_header, MAX_BUF_SIZE, "Content-type: application/json");
+		WebcfgInfo("contenttype_header formed %s\n", contenttype_header);
 	}
 	contentlen_header = (char *) malloc(sizeof(char)*MAX_BUF_SIZE);
 	if(contentlen_header !=NULL)
 	{
 		snprintf(contentlen_header, MAX_BUF_SIZE, "Content-length: 0");
+		WebcfgInfo("contentlen_header formed %s\n", contentlen_header);
 	}
 	//Addtional headers for telemetry sync
 	if(get_global_supplementarySync())
@@ -901,12 +911,12 @@ int createMqttHeader(char **header_list)
 	if(!get_global_supplementarySync())
 	{
 		WebcfgInfo("Framing primary sync header\n");
-		snprintf(*header_list, MAX_BUF_SIZE, "%s\r\n%s\r\n%s\r\n%s\r\n%s\r\n%s\r\n%s\r\n%s\r\n%s\r\n%s\r\n%s\r\n%s\r\n%s\r\n%s\r\n%s\r\n%s\r\n%s\r\n", doc_header, version_header, accept_header, schema_header, supportedVersion_header, supportedDocs_header, bootTime_header, FwVersion_header, status_header, currentTime_header, systemReadyTime_header, uuid_header, productClass_header, ModelName_header, contenttype_header, contentlen_header,PartnerID_header);
+		snprintf(*header_list, 1024, "%s\r\n%s\r\n%s\r\n%s\r\n%s\r\n%s\r\n%s\r\n%s\r\n%s\r\n%s\r\n%s\r\n%s\r\n%s\r\n%s\r\n%s\r\n%s\r\n%s\r\n%s\r\n", deviceId_header, doc_header, version_header, accept_header, schema_header,  (supportedVersion_header!=NULL)?supportedVersion_header:"X-System-Schema-Version:NULL", (supportedDocs_header!=NULL)?supportedDocs_header:"X-System-Supported-Docs:NULL", bootTime_header, FwVersion_header, status_header, currentTime_header, systemReadyTime_header, uuid_header, productClass_header, ModelName_header, contenttype_header, contentlen_header,PartnerID_header);
 	}
 	else
 	{
 		WebcfgInfo("Framing supplementary sync header\n");
-		snprintf(*header_list, MAX_BUF_SIZE, "%s\r\n%s\r\n%s\r\n%s\r\n%s\r\n%s\r\n%s\r\n%s\r\n%s\r\n%s\r\n%s\r\n%s\r\n%s\r\n%s\r\n%s\r\n%s\r\n%s\r\n%s\r\n%s\r\n%s\r\n", doc_header, version_header, accept_header, schema_header, supportedVersion_header, supportedDocs_header, bootTime_header, FwVersion_header, status_header, currentTime_header, systemReadyTime_header, uuid_header, productClass_header, ModelName_header,contenttype_header, contentlen_header, PartnerID_header,supplementaryDocs_header, telemetryVersion_header, AccountID_header);
+		snprintf(*header_list, 1024, "%s\r\n%s\r\n%s\r\n%s\r\n%s\r\n%s\r\n%s\r\n%s\r\n%s\r\n%s\r\n%s\r\n%s\r\n%s\r\n%s\r\n%s\r\n%s\r\n%s\r\n%s\r\n%s\r\n%s\r\n%s\r\n", deviceId_header,doc_header, version_header, accept_header, schema_header, supportedVersion_header, supportedDocs_header, bootTime_header, FwVersion_header, status_header, currentTime_header, systemReadyTime_header, uuid_header, productClass_header, ModelName_header,contenttype_header, contentlen_header, PartnerID_header,supplementaryDocs_header, telemetryVersion_header, AccountID_header);
 	}
 	WebcfgInfo("mqtt header_list is \n%s\n", *header_list);
 	return 0;
