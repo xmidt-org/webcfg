@@ -559,7 +559,7 @@ int createMqttHeader(char **header_list)
 		doc_header = (char *) malloc(sizeof(char)*MAX_BUF_SIZE);
 		if(doc_header !=NULL)
 		{
-			snprintf(doc_header, MAX_BUF_SIZE, "Doc-Name:%s", ((strlen(docList)!=0) ? docList : "NULL"));
+			snprintf(doc_header, MAX_BUF_SIZE, "\r\nDoc-Name:%s", ((strlen(docList)!=0) ? docList : "NULL"));
 			WebcfgInfo("doc_header formed %s\n", doc_header);
 			//WEBCFG_FREE(doc_header);
 		}
@@ -570,7 +570,7 @@ int createMqttHeader(char **header_list)
 		if(version_header !=NULL)
 		{
 			refreshConfigVersionList(version, 0);
-			snprintf(version_header, MAX_BUF_SIZE, "IF-NONE-MATCH:%s", ((strlen(version)!=0) ? version : "0"));
+			snprintf(version_header, MAX_BUF_SIZE, "\r\nIF-NONE-MATCH:%s", ((strlen(version)!=0) ? version : "0"));
 			WebcfgInfo("version_header formed %s\n", version_header);
 			//WEBCFG_FREE(version_header);
 		}
@@ -578,13 +578,13 @@ int createMqttHeader(char **header_list)
 	accept_header = (char *) malloc(sizeof(char)*MAX_BUF_SIZE);
 	if(accept_header !=NULL)
 	{
-		snprintf(accept_header, MAX_BUF_SIZE, "Accept: application/msgpack");
+		snprintf(accept_header, MAX_BUF_SIZE, "\r\nAccept: application/msgpack");
 	}
 
 	schema_header = (char *) malloc(sizeof(char)*MAX_BUF_SIZE);
 	if(schema_header !=NULL)
 	{
-		snprintf(schema_header, MAX_BUF_SIZE, "Schema-Version: %s", "v2.0");
+		snprintf(schema_header, MAX_BUF_SIZE, "\r\nSchema-Version: %s", "v2.0");
 		WebcfgInfo("schema_header formed %s\n", schema_header);
 		//WEBCFG_FREE(schema_header);
 	}
@@ -601,7 +601,7 @@ int createMqttHeader(char **header_list)
 				supportedVersion_header = (char *) malloc(supported_version_size+1);
 				memset(supportedVersion_header,0,supported_version_size+1);
 				WebcfgDebug("supportedVersion fetched is %s\n", supportedVersion);
-				snprintf(supportedVersion_header, supported_version_size+1, "X-System-Schema-Version: %s", supportedVersion);
+				snprintf(supportedVersion_header, supported_version_size+1, "\r\nX-System-Schema-Version: %s", supportedVersion);
 				WebcfgInfo("supportedVersion_header formed %s\n", supportedVersion_header);
 			}
 			else
@@ -624,7 +624,7 @@ int createMqttHeader(char **header_list)
 				supportedDocs_header = (char *) malloc(supported_doc_size+1);
 				memset(supportedDocs_header,0,supported_doc_size+1);
 				WebcfgDebug("supportedDocs fetched is %s\n", supportedDocs);
-				snprintf(supportedDocs_header, supported_doc_size+1, "X-System-Supported-Docs: %s", supportedDocs);
+				snprintf(supportedDocs_header, supported_doc_size+1, "\r\nX-System-Supported-Docs: %s", supportedDocs);
 				WebcfgInfo("supportedDocs_header formed %s\n", supportedDocs_header);
 			}
 			else
@@ -649,7 +649,7 @@ int createMqttHeader(char **header_list)
 				supplementaryDocs_header = (char *) malloc(supplementary_docs_size+1);
 				memset(supplementaryDocs_header,0,supplementary_docs_size+1);
 				WebcfgDebug("supplementaryDocs fetched is %s\n", supplementaryDocs);
-				snprintf(supplementaryDocs_header, supplementary_docs_size+1, "X-System-SupplementaryService-Sync: %s", supplementaryDocs);
+				snprintf(supplementaryDocs_header, supplementary_docs_size+1, "\r\nX-System-SupplementaryService-Sync: %s", supplementaryDocs);
 				WebcfgInfo("supplementaryDocs_header formed %s\n", supplementaryDocs_header);
 			}
 			else
@@ -679,7 +679,7 @@ int createMqttHeader(char **header_list)
 		bootTime_header = (char *) malloc(sizeof(char)*MAX_BUF_SIZE);
 		if(bootTime_header !=NULL)
 		{
-			snprintf(bootTime_header, MAX_BUF_SIZE, "X-System-Boot-Time: %s", g_bootTime);
+			snprintf(bootTime_header, MAX_BUF_SIZE, "\r\nX-System-Boot-Time: %s", g_bootTime);
 			WebcfgInfo("bootTime_header formed %s\n", bootTime_header);
 			//WEBCFG_FREE(bootTime_header);
 		}
@@ -705,7 +705,7 @@ int createMqttHeader(char **header_list)
 		FwVersion_header = (char *) malloc(sizeof(char)*MAX_BUF_SIZE);
 		if(FwVersion_header !=NULL)
 		{
-			snprintf(FwVersion_header, MAX_BUF_SIZE, "X-System-Firmware-Version: %s", g_FirmwareVersion);
+			snprintf(FwVersion_header, MAX_BUF_SIZE, "\r\nX-System-Firmware-Version: %s", g_FirmwareVersion);
 			WebcfgInfo("FwVersion_header formed %s\n", FwVersion_header);
 			//WEBCFG_FREE(FwVersion_header);
 		}
@@ -720,11 +720,11 @@ int createMqttHeader(char **header_list)
 	{
 		if(systemStatus !=0)
 		{
-			snprintf(status_header, MAX_BUF_SIZE, "X-System-Status: %s", "Non-Operational");
+			snprintf(status_header, MAX_BUF_SIZE, "\r\nX-System-Status: %s", "Non-Operational");
 		}
 		else
 		{
-			snprintf(status_header, MAX_BUF_SIZE, "X-System-Status: %s", "Operational");
+			snprintf(status_header, MAX_BUF_SIZE, "\r\nX-System-Status: %s", "Operational");
 		}
 		WebcfgInfo("status_header formed %s\n", status_header);
 		//WEBCFG_FREE(status_header);
@@ -736,7 +736,7 @@ int createMqttHeader(char **header_list)
 	currentTime_header = (char *) malloc(sizeof(char)*MAX_BUF_SIZE);
 	if(currentTime_header !=NULL)
 	{
-		snprintf(currentTime_header, MAX_BUF_SIZE, "X-System-Current-Time: %s", currentTime);
+		snprintf(currentTime_header, MAX_BUF_SIZE, "\r\nX-System-Current-Time: %s", currentTime);
 		WebcfgInfo("currentTime_header formed %s\n", currentTime_header);
 		//WEBCFG_FREE(currentTime_header);
 	}
@@ -758,7 +758,7 @@ int createMqttHeader(char **header_list)
                 systemReadyTime_header = (char *) malloc(sizeof(char)*MAX_BUF_SIZE);
                 if(systemReadyTime_header !=NULL)
                 {
-			snprintf(systemReadyTime_header, MAX_BUF_SIZE, "X-System-Ready-Time: %s", g_systemReadyTime);
+			snprintf(systemReadyTime_header, MAX_BUF_SIZE, "\r\nX-System-Ready-Time: %s", g_systemReadyTime);
 	                WebcfgInfo("systemReadyTime_header formed %s\n", systemReadyTime_header);
 	                //WEBCFG_FREE(systemReadyTime_header);
                 }
@@ -778,7 +778,7 @@ int createMqttHeader(char **header_list)
 		uuid_header = (char *) malloc(sizeof(char)*MAX_BUF_SIZE);
 		if(uuid_header !=NULL)
 		{
-			snprintf(uuid_header, MAX_BUF_SIZE, "Transaction-ID: %s", transaction_uuid);
+			snprintf(uuid_header, MAX_BUF_SIZE, "\r\nTransaction-ID: %s", transaction_uuid);
 			WebcfgInfo("uuid_header formed %s\n", uuid_header);
 			//char *trans_uuid = strdup(transaction_uuid);
 			//WEBCFG_FREE(transaction_uuid);
@@ -806,7 +806,7 @@ int createMqttHeader(char **header_list)
 		productClass_header = (char *) malloc(sizeof(char)*MAX_BUF_SIZE);
 		if(productClass_header !=NULL)
 		{
-			snprintf(productClass_header, MAX_BUF_SIZE, "X-System-Product-Class: %s", g_productClass);
+			snprintf(productClass_header, MAX_BUF_SIZE, "\r\nX-System-Product-Class: %s", g_productClass);
 			WebcfgInfo("productClass_header formed %s\n", productClass_header);
 			//WEBCFG_FREE(productClass_header);
 		}
@@ -832,7 +832,7 @@ int createMqttHeader(char **header_list)
 		ModelName_header = (char *) malloc(sizeof(char)*MAX_BUF_SIZE);
 		if(ModelName_header !=NULL)
 		{
-			snprintf(ModelName_header, MAX_BUF_SIZE, "X-System-Model-Name: %s", g_ModelName);
+			snprintf(ModelName_header, MAX_BUF_SIZE, "\r\nX-System-Model-Name: %s", g_ModelName);
 			WebcfgInfo("ModelName_header formed %s\n", ModelName_header);
 			//WEBCFG_FREE(ModelName_header);
 		}
@@ -858,7 +858,7 @@ int createMqttHeader(char **header_list)
 		PartnerID_header = (char *) malloc(sizeof(char)*MAX_BUF_SIZE);
 		if(PartnerID_header !=NULL)
 		{
-			snprintf(PartnerID_header, MAX_BUF_SIZE, "X-System-PartnerID: %s", g_PartnerID);
+			snprintf(PartnerID_header, MAX_BUF_SIZE, "\r\nX-System-PartnerID: %s", g_PartnerID);
 			WebcfgInfo("PartnerID_header formed %s\n", PartnerID_header);
 			//WEBCFG_FREE(PartnerID_header);
 		}
@@ -871,13 +871,13 @@ int createMqttHeader(char **header_list)
 	contenttype_header = (char *) malloc(sizeof(char)*MAX_BUF_SIZE);
 	if(contenttype_header !=NULL)
 	{
-		snprintf(contenttype_header, MAX_BUF_SIZE, "Content-type: application/json");
+		snprintf(contenttype_header, MAX_BUF_SIZE, "\r\nContent-type: application/json");
 		WebcfgInfo("contenttype_header formed %s\n", contenttype_header);
 	}
 	contentlen_header = (char *) malloc(sizeof(char)*MAX_BUF_SIZE);
 	if(contentlen_header !=NULL)
 	{
-		snprintf(contentlen_header, MAX_BUF_SIZE, "Content-length: 0");
+		snprintf(contentlen_header, MAX_BUF_SIZE, "\r\nContent-length: 0");
 		WebcfgInfo("contentlen_header formed %s\n", contentlen_header);
 	}
 	//Addtional headers for telemetry sync
@@ -886,7 +886,7 @@ int createMqttHeader(char **header_list)
 		telemetryVersion_header = (char *) malloc(sizeof(char)*MAX_BUF_SIZE);
 		if(telemetryVersion_header !=NULL)
 		{
-			snprintf(telemetryVersion_header, MAX_BUF_SIZE, "X-System-Telemetry-Profile-Version: %s", "2.0");
+			snprintf(telemetryVersion_header, MAX_BUF_SIZE, "\r\nX-System-Telemetry-Profile-Version: %s", "2.0");
 			WebcfgInfo("telemetryVersion_header formed %s\n", telemetryVersion_header);
 			//WEBCFG_FREE(telemetryVersion_header);
 		}
@@ -907,7 +907,7 @@ int createMqttHeader(char **header_list)
 			AccountID_header = (char *) malloc(sizeof(char)*MAX_BUF_SIZE);
 			if(AccountID_header !=NULL)
 			{
-				snprintf(AccountID_header, MAX_BUF_SIZE, "X-System-AccountID: %s", g_AccountID);
+				snprintf(AccountID_header, MAX_BUF_SIZE, "\r\nX-System-AccountID: %s", g_AccountID);
 				WebcfgInfo("AccountID_header formed %s\n", AccountID_header);
 				//WEBCFG_FREE(AccountID_header);
 			}
@@ -920,12 +920,12 @@ int createMqttHeader(char **header_list)
 	if(!get_global_supplementarySync())
 	{
 		WebcfgInfo("Framing primary sync header\n");
-		snprintf(*header_list, 1024, "%s\r\n%s\r\n%s\r\n%s\r\n%s\r\n%s\r\n%s\r\n%s\r\n%s\r\n%s\r\n%s\r\n%s\r\n%s\r\n%s\r\n%s\r\n%s\r\n%s\r\n%s\r\n", deviceId_header, doc_header, version_header, accept_header, schema_header,  (supportedVersion_header!=NULL)?supportedVersion_header:"X-System-Schema-Version:NULL", (supportedDocs_header!=NULL)?supportedDocs_header:"X-System-Supported-Docs:NULL", bootTime_header, FwVersion_header, status_header, currentTime_header, systemReadyTime_header, uuid_header, productClass_header, ModelName_header, contenttype_header, contentlen_header,PartnerID_header);
+		snprintf(*header_list, 1024, "%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s", (deviceId_header!=NULL)?deviceId_header:"",(doc_header!=NULL)?doc_header:"", (version_header!=NULL)?version_header:"", (accept_header!=NULL)?accept_header:"", (schema_header!=NULL)?schema_header:"", (supportedVersion_header!=NULL)?supportedVersion_header:"", (supportedDocs_header!=NULL)?supportedDocs_header:"", (bootTime_header!=NULL)?bootTime_header:"", (FwVersion_header!=NULL)?FwVersion_header:"", (status_header!=NULL)?status_header:"", (currentTime_header!=NULL)?currentTime_header:"", (systemReadyTime_header!=NULL)?systemReadyTime_header:"", (uuid_header!=NULL)?uuid_header:"", (productClass_header!=NULL)?productClass_header:"", (ModelName_header!=NULL)?ModelName_header:"", (contenttype_header!=NULL)?contenttype_header:"", (contentlen_header!=NULL)?contentlen_header:"",(PartnerID_header!=NULL)?PartnerID_header:"");
 	}
 	else
 	{
 		WebcfgInfo("Framing supplementary sync header\n");
-		snprintf(*header_list, 1024, "%s\r\n%s\r\n%s\r\n%s\r\n%s\r\n%s\r\n%s\r\n%s\r\n%s\r\n%s\r\n%s\r\n%s\r\n%s\r\n%s\r\n%s\r\n%s\r\n%s\r\n%s\r\n%s\r\n%s\r\n%s\r\n", deviceId_header,doc_header, version_header, accept_header, schema_header, supportedVersion_header, supportedDocs_header, bootTime_header, FwVersion_header, status_header, currentTime_header, systemReadyTime_header, uuid_header, productClass_header, ModelName_header,contenttype_header, contentlen_header, PartnerID_header,supplementaryDocs_header, telemetryVersion_header, AccountID_header);
+		snprintf(*header_list, 1024, "%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s", (deviceId_header!=NULL)?deviceId_header:"",(doc_header!=NULL)?doc_header:"", (version_header!=NULL)?version_header:"", (accept_header!=NULL)?accept_header:"", (schema_header!=NULL)?schema_header:"", (supportedVersion_header!=NULL)?supportedVersion_header:"", (supportedDocs_header!=NULL)?supportedDocs_header:"", (bootTime_header)?bootTime_header:"", (FwVersion_header)?FwVersion_header:"", (status_header)?status_header:"", (currentTime_header)?currentTime_header:"", (systemReadyTime_header!=NULL)?systemReadyTime_header:"", (uuid_header!=NULL)?uuid_header:"", (productClass_header!=NULL)?productClass_header:"", (ModelName_header!=NULL)?ModelName_header:"",(contenttype_header!=NULL)?contenttype_header:"", (contentlen_header!=NULL)?contentlen_header:"", (PartnerID_header!=NULL)?PartnerID_header:"",(supplementaryDocs_header!=NULL)?supplementaryDocs_header:"", (telemetryVersion_header!=NULL)?telemetryVersion_header:"", (AccountID_header!=NULL)?AccountID_header:"");
 	}
 	WebcfgInfo("mqtt header_list is \n%s\n", *header_list);
 	return 0;
