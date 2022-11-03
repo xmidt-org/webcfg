@@ -31,6 +31,7 @@
 #include "webcfg_multipart.h"
 #include "webcfg_metadata.h"
 #include "webcfg_auth.h"
+#include "webcfg_db.h"
 #include "webcfg_generic.h"
 
 #define HOST_FILE_LOCATION   "/nvram/hostname.txt"

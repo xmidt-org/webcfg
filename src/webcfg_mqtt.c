@@ -37,7 +37,8 @@ static int g_mqttConnected = 0;
 static int systemStatus = 0;
 struct mosquitto *mosq = NULL;
 static char g_deviceId[64]={'\0'};
-
+//global flag to do bootupsync only once after connect and subscribe callback.
+static int bootupsync = 0;
 //
 static char g_systemReadyTime[64]={'\0'};
 static char g_FirmwareVersion[64]={'\0'};
@@ -331,16 +332,20 @@ void on_subscribe(struct mosquitto *mosq, void *obj, int mid, int qos_count, con
 		{
                         have_subscription = true;
                 }
-
-		WebcfgInfo("mqtt is connected and subscribed to topic, trigger bootup sync to cloud.\n");
-		int bootsync = triggerBootupSync();
-		if(bootsync)
+		WebcfgInfo("on_subscribe: bootupsync %d\n", bootupsync);
+		if(!bootupsync)
 		{
-			WebcfgInfo("Triggered bootup sync via mqtt\n");
-		}
-		else
-		{
-			WebcfgError("Failed to trigger bootup sync via mqtt\n");
+			WebcfgInfo("mqtt is connected and subscribed to topic, trigger bootup sync to cloud.\n");
+			int ret = triggerBootupSync();
+			if(ret)
+			{
+				WebcfgInfo("Triggered bootup sync via mqtt\n");
+			}
+			else
+			{
+				WebcfgError("Failed to trigger bootup sync via mqtt\n");
+			}
+			bootupsync = 1;
 		}
         }
         if(have_subscription == false)
@@ -367,6 +372,9 @@ void on_message(struct mosquitto *mosq, void *obj, const struct mosquitto_messag
 
 			int status = 0;
 			WebcfgInfo("Received dataSize is %d\n", dataSize);
+			WebcfgInfo("write to file /tmp/subscribe_message.bin\n");
+			writeToDBFile("/tmp/subscribe_message.bin",(char *)data,dataSize);
+			WebcfgInfo("write to file done\n");
 			status = processPayload((char *)data, dataSize);
 			WebcfgInfo("processPayload status %d\n", status);
 		}
