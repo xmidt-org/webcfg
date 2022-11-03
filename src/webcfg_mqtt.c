@@ -531,7 +531,8 @@ int createMqttHeader(char **header_list)
 		deviceId_header = (char *) malloc(sizeof(char)*MAX_BUF_SIZE);
 		if(deviceId_header !=NULL)
 		{
-			snprintf(deviceId_header, MAX_BUF_SIZE, "Device-Id: mac:%s", g_deviceId);
+			//snprintf(deviceId_header, MAX_BUF_SIZE, "Device-Id: mac:%s", g_deviceId);
+			snprintf(deviceId_header, MAX_BUF_SIZE, "Mac: %s", g_deviceId);
 			WebcfgInfo("deviceId_header formed %s\n", deviceId_header);
 			//WEBCFG_FREE(deviceId_header);
 		}
