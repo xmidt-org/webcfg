@@ -508,7 +508,7 @@ int processPayload(char * data, int dataSize)
 				WebcfgError("Content-type header not found\n");
 				break;
 			}
-			if(0 == memcmp(ptr_count, "Content-type:", strlen("Content-type:")))
+			if(0 == memcmp(ptr_count, "Content-Type:", strlen("Content-Type:")))
 			{
 				ptr1_count = memchr(ptr_count+1, '\r', dataSize - (ptr_count - data_body));
 				temp = strndup(ptr_count, (ptr1_count-ptr_count));
