@@ -555,7 +555,7 @@ void processWebconfgSync(int status, char* docname)
 int handlehttpResponse(long response_code, char *webConfigData, int retry_count, char* transaction_uuid, char *ct, size_t dataSize)
 {
 	int first_digit=0;
-	int msgpack_status=0;
+	//int msgpack_status=0;
 	int err = 0;
 	char version[512]={'\0'};
 	uint32_t db_root_version = 0;
@@ -584,7 +584,7 @@ int handlehttpResponse(long response_code, char *webConfigData, int retry_count,
 		if(webConfigData !=NULL && (strlen(webConfigData)>0))
 		{
 			WebcfgDebug("webConfigData fetched successfully\n");
-			WebcfgDebug("parseMultipartDocument\n");
+			/*WebcfgDebug("parseMultipartDocument\n");
 			msgpack_status = parseMultipartDocument(webConfigData, ct, dataSize, transaction_uuid);
 
 			if(msgpack_status == WEBCFG_SUCCESS)
@@ -596,7 +596,8 @@ int handlehttpResponse(long response_code, char *webConfigData, int retry_count,
 			{
 				WebcfgDebug("root webConfigData processed, check apply status events\n");
 				return 1;
-			}
+			}*/
+			return 1;
 		}
 		else
 		{
