@@ -41,7 +41,8 @@
 
 bool webcfg_mqtt_init(int status, char *systemreadytime);
 void get_from_file(char *key, char **val);
-void publish_notify_mqtt(char *pub_topic, void *payload,ssize_t len);
+void publish_notify_mqtt(char *pub_topic, void *payload, ssize_t len, char * dest);
+char * createMqttPubHeader(char * payload, char * dest, ssize_t * payload_len);
 int get_global_mqtt_connected();
 void reset_global_mqttConnected();
 void set_global_mqttConnected();

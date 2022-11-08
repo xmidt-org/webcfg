@@ -395,10 +395,25 @@ void on_publish(struct mosquitto *mosq, void *obj, int mid)
 }
 
 /* This function pretends to read some data from a sensor and publish it.*/
-void publish_notify_mqtt(char *pub_topic, void *payload,ssize_t len)
+void publish_notify_mqtt(char *pub_topic, void *payload, ssize_t len, char * dest)
 {
         int rc;
 	//char *pub_topic = NULL;
+	if(dest != NULL)
+	{
+		ssize_t payload_len = 0;
+		char * pub_payload = createMqttPubHeader(payload, dest, &payload_len);
+		if(pub_payload != NULL)
+		{
+			len = payload_len;
+			WEBCFG_FREE(payload);
+			payload = (char *) malloc(sizeof(char) * 1024);
+			payload = strdup(pub_payload);
+
+			WEBCFG_FREE(pub_payload);
+		}
+	}
+
 	if(pub_topic == NULL)
 	{
 		get_from_file("PUB_TOPIC=", &pub_topic);
@@ -408,6 +423,8 @@ void publish_notify_mqtt(char *pub_topic, void *payload,ssize_t len)
 	{
 		WebcfgInfo("pub_topic is %s\n", pub_topic);
 	}
+	WebcfgInfo("Payload published is \n%s\n", (char*)payload);
+	//writeToDBFile("/tmp/payload.bin", (char *)payload, len);
         rc = mosquitto_publish(mosq, NULL, pub_topic, len, payload, 2, false);
 	WebcfgInfo("Publish rc %d\n", rc);
         if(rc != MOSQ_ERR_SUCCESS)
@@ -478,7 +495,7 @@ int triggerBootupSync()
 			WebcfgInfo("mqttheaderList generated is \n%s len %d\n", mqttheaderList, strlen(mqttheaderList));
 			get_from_file("PUB_GET_TOPIC=", &pub_get_topic);
 			WebcfgInfo("pub_get_topic from file is %s\n", pub_get_topic);
-			publish_notify_mqtt(pub_get_topic, (void*)mqttheaderList, strlen(mqttheaderList));
+			publish_notify_mqtt(pub_get_topic, (void*)mqttheaderList, strlen(mqttheaderList), NULL);
 			WebcfgInfo("triggerBootupSync published to topic %s\n", pub_get_topic);
 		}
 		else
@@ -932,4 +949,50 @@ int createMqttHeader(char **header_list)
 	}
 	WebcfgInfo("mqtt header_list is \n%s\n", *header_list);
 	return 0;
+}
+
+char * createMqttPubHeader(char * payload, char * dest, ssize_t * payload_len)
+{
+	char * destination = NULL;
+	char * content_type = NULL;
+	char * content_length = NULL;
+	char *pub_headerlist = NULL;
+
+	pub_headerlist = (char *) malloc(sizeof(char) * 1024);
+
+	if(pub_headerlist != NULL)
+	{
+		if(payload != NULL)
+		{
+			if(dest != NULL)
+			{
+				destination = (char *) malloc(sizeof(char)*MAX_BUF_SIZE);
+				if(destination !=NULL)
+				{
+					snprintf(destination, MAX_BUF_SIZE, "Destination: %s", dest);
+					WebcfgInfo("destination formed %s\n", destination);
+				}
+			}
+
+			content_type = (char *) malloc(sizeof(char)*MAX_BUF_SIZE);
+			if(content_type !=NULL)
+			{
+				snprintf(content_type, MAX_BUF_SIZE, "\r\nContent-type: application/json");
+				WebcfgInfo("content_type formed %s\n", content_type);
+			}
+
+			content_length = (char *) malloc(sizeof(char)*MAX_BUF_SIZE);
+			if(content_length !=NULL)
+			{
+				snprintf(content_length, MAX_BUF_SIZE, "\r\nContent-length: %zu", strlen(payload));
+				WebcfgInfo("content_length formed %s\n", content_length);
+			}
+
+			WebcfgInfo("Framing publish notification header\n");
+			snprintf(pub_headerlist, 1024, "%s%s%s\r\n\r\n%s\r\n", (destination!=NULL)?destination:"", (content_type!=NULL)?content_type:"", (content_length!=NULL)?content_length:"",(payload!=NULL)?payload:"");
+	    }
+	}
+	WebcfgInfo("mqtt pub_headerlist is \n%s", pub_headerlist);
+	*payload_len = strlen(pub_headerlist);
+	return pub_headerlist;
 }
