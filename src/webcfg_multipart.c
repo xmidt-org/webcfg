@@ -482,6 +482,7 @@ WEBCFG_STATUS webcfg_http_request(char **configData, int r_count, int status, lo
 	return WEBCFG_FAILURE;
 }
 
+#ifdef WEBCONFIG_MQTT_SUPPORT
 int processPayload(char * data, int dataSize)
 {
 	int mstatus = 0;
@@ -579,6 +580,7 @@ int processPayload(char * data, int dataSize)
 		}
 		return 1;
 }
+#endif
 
 WEBCFG_STATUS parseMultipartDocument(void *config_data, char *ct , size_t data_size, char* trans_uuid)
 {
@@ -1249,7 +1251,7 @@ size_t headr_callback(char *buffer, size_t size, size_t nitems, void* data)
 	char* final_header = NULL;
 	char header_str[64] = {'\0'};
 	size_t content_len = 0;
-
+	(void) data;
 	etag_len = strlen(ETAG_HEADER);
 	content_len = strlen(CONTENT_LENGTH_HEADER);
 	if( nitems > etag_len )

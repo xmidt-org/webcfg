@@ -16,6 +16,15 @@ set(PROJ_WEBCFG webcfg)
 
 if (WEBCONFIG_BIN_SUPPORT)
 add_definitions(-DWEBCONFIG_BIN_SUPPORT)
+
+if (WEBCONFIG_MQTT_SUPPORT)
+add_definitions(-DWEBCONFIG_MQTT_SUPPORT)
+endif (WEBCONFIG_MQTT_SUPPORT)
+
+if (WEBCONFIG_HTTP_SUPPORT)
+add_definitions(-DWEBCONFIG_HTTP_SUPPORT)
+endif (WEBCONFIG_HTTP_SUPPORT)
+
 endif (WEBCONFIG_BIN_SUPPORT)
 
 if (FEATURE_SUPPORT_AKER)
@@ -58,11 +67,17 @@ endif()
 
 #Support webconfig independent bin for new design
 if (WEBCONFIG_BIN_SUPPORT)
-set(HEADERS ${HEADERS} webcfg_rbus.h webcfg_mqtt.h)
-set(SOURCES ${SOURCES} main.c webcfg_rbus.c webcfg_mqtt.c)
+set(HEADERS ${HEADERS} webcfg_rbus.h)
+set(SOURCES ${SOURCES} main.c webcfg_rbus.c)
+
+if (WEBCONFIG_MQTT_SUPPORT)
+set(HEADERS ${HEADERS} webcfg_mqtt.h)
+set(SOURCES ${SOURCES} webcfg_mqtt.c)
+endif (WEBCONFIG_MQTT_SUPPORT)
+
 add_executable(webconfig ${SOURCES} ${HEADERS})
 set_property(TARGET webconfig PROPERTY C_STANDARD 99)
-set(COMMON_LIBS -lwrp-c -lpthread -lwdmp-c -lmsgpackc -ltrower-base64 -lm -lcjson -lrt -luuid -lcurl -lrbus -lmosquitto)
+set(COMMON_LIBS -lwrp-c -lpthread -lwdmp-c -lmsgpackc -ltrower-base64 -lm -lcjson -lrt -luuid -lcurl -lrbus)
 
 if (NOT DEVICE_EXTENDER)
 set(COMMON_LIBS ${COMMON_LIBS} -lcimplog)
@@ -73,6 +88,10 @@ endif()
 if (FEATURE_SUPPORT_AKER)
 set(COMMON_LIBS ${COMMON_LIBS} -llibparodus)
 endif(FEATURE_SUPPORT_AKER)
+
+if (WEBCONFIG_MQTT_SUPPORT)
+set(COMMON_LIBS ${COMMON_LIBS} -lmosquitto)
+endif (WEBCONFIG_MQTT_SUPPORT)
 
 target_link_libraries (webconfig ${CMAKE_THREAD_LIBS_INIT} ${COMMON_LIBS})
 install (TARGETS webconfig DESTINATION bin)

@@ -492,7 +492,7 @@ int triggerBootupSync()
 		createMqttHeader(&mqttheaderList);
 		if(mqttheaderList !=NULL)
 		{
-			WebcfgInfo("mqttheaderList generated is \n%s len %d\n", mqttheaderList, strlen(mqttheaderList));
+			WebcfgInfo("mqttheaderList generated is \n%s len %zu\n", mqttheaderList, strlen(mqttheaderList));
 			get_from_file("PUB_GET_TOPIC=", &pub_get_topic);
 			WebcfgInfo("pub_get_topic from file is %s\n", pub_get_topic);
 			publish_notify_mqtt(pub_get_topic, (void*)mqttheaderList, strlen(mqttheaderList), NULL);

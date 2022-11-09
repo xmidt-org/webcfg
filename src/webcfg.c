@@ -34,7 +34,11 @@
 #include "webcfg_event.h"
 #include "webcfg_blob.h"
 #include "webcfg_timer.h"
+
+#ifdef WEBCONFIG_MQTT_SUPPORT
 #include "webcfg_mqtt.h"
+#endif
+
 #ifdef FEATURE_SUPPORT_AKER
 #include "webcfg_aker.h"
 #endif
@@ -584,7 +588,8 @@ int handlehttpResponse(long response_code, char *webConfigData, int retry_count,
 		if(webConfigData !=NULL && (strlen(webConfigData)>0))
 		{
 			WebcfgDebug("webConfigData fetched successfully\n");
-			/*WebcfgDebug("parseMultipartDocument\n");
+#ifdef WEBCONFIG_HTTP_SUPPORT
+			WebcfgDebug("parseMultipartDocument\n");
 			msgpack_status = parseMultipartDocument(webConfigData, ct, dataSize, transaction_uuid);
 
 			if(msgpack_status == WEBCFG_SUCCESS)
@@ -596,8 +601,12 @@ int handlehttpResponse(long response_code, char *webConfigData, int retry_count,
 			{
 				WebcfgDebug("root webConfigData processed, check apply status events\n");
 				return 1;
-			}*/
+			}
+#else
+			(void) ct;
+			(void) dataSize;
 			return 1;
+#endif
 		}
 		else
 		{

@@ -22,7 +22,11 @@
 #include <stdlib.h>
 #include <wdmp-c.h>
 #include "webcfg_rbus.h"
+
+#ifdef WEBCONFIG_MQTT_SUPPORT
 #include "webcfg_mqtt.h"
+#endif
+
 #include "webcfg_metadata.h"
 #ifdef WAN_FAILOVER_SUPPORTED
 #include "webcfg_multipart.h"
@@ -1723,13 +1727,13 @@ void sendNotification_rbus(char *payload, char *source, char *destination)
 
 			msg_len = wrp_struct_to (notif_wrp_msg, WRP_BYTES, &msg_bytes);
 
-			//add mqtt feature flag check
+		#ifdef WEBCONFIG_MQTT_SUPPORT
 			if(get_global_mqtt_connected())
 			{
 				WebcfgInfo("publish_notify_mqtt with json string payload\n");
 				//publish_notify_mqtt(msg_bytes, msg_len);
 				char *payload_str = strdup(payload);
-				WebcfgInfo("payload_str %s len %d\n", payload_str, strlen(payload_str));
+				WebcfgInfo("payload_str %s len %zu\n", payload_str, strlen(payload_str));
 				publish_notify_mqtt(NULL, payload_str, strlen(payload_str), destination);
 				//WEBCFG_FREE(payload_str);
 				WebcfgInfo("publish_notify_mqtt done\n");
@@ -1746,6 +1750,7 @@ void sendNotification_rbus(char *payload, char *source, char *destination)
 			{
 				WebcfgError("Failed to publish notification as mqtt broker is not connected\n");
 			}
+		#endif
 			// 30s wait interval for subscription 	
 			if(!subscribed)
 			{
