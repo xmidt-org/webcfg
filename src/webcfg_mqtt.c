@@ -39,6 +39,7 @@ struct mosquitto *mosq = NULL;
 static char g_deviceId[64]={'\0'};
 //global flag to do bootupsync only once after connect and subscribe callback.
 static int bootupsync = 0;
+static int subscribeFlag = 0;
 //
 static char g_systemReadyTime[64]={'\0'};
 static char g_FirmwareVersion[64]={'\0'};
@@ -304,15 +305,21 @@ void on_connect(struct mosquitto *mosq, void *obj, int reason_code)
 	{
 		WebcfgInfo("subscribe to topic %s\n", topic);
 	}
-        rc = mosquitto_subscribe(mosq, NULL, topic, 1);
-        if(rc != MOSQ_ERR_SUCCESS)
+
+	if(!subscribeFlag)
 	{
-                WebcfgError("Error subscribing: %s\n", mosquitto_strerror(rc));
-                mosquitto_disconnect(mosq);
-        }
-	else
-	{
-		WebcfgInfo("subscribe to topic %s success\n", topic);
+		rc = mosquitto_subscribe(mosq, NULL, topic, 1);
+
+		if(rc != MOSQ_ERR_SUCCESS)
+		{
+		        WebcfgError("Error subscribing: %s\n", mosquitto_strerror(rc));
+		        mosquitto_disconnect(mosq);
+		}
+		else
+		{
+			WebcfgInfo("subscribe to topic %s success\n", topic);
+			subscribeFlag = 1;
+		}
 	}
 }
 
