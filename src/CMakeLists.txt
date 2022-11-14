@@ -77,7 +77,11 @@ endif (WEBCONFIG_MQTT_SUPPORT)
 
 add_executable(webconfig ${SOURCES} ${HEADERS})
 set_property(TARGET webconfig PROPERTY C_STANDARD 99)
-set(COMMON_LIBS -lwrp-c -lpthread -lwdmp-c -lmsgpackc -ltrower-base64 -lm -lcjson -lrt -luuid -lcurl -lrbus)
+set(COMMON_LIBS -lwrp-c -lpthread -lwdmp-c -lmsgpackc -ltrower-base64 -lm -lcjson -lrt -luuid -lrbus)
+
+if ((NOT WEBCONFIG_MQTT_SUPPORT) OR (WEBCONFIG_HTTP_SUPPORT))
+set(COMMON_LIBS ${COMMON_LIBS} -lcurl)
+endif()
 
 if (NOT DEVICE_EXTENDER)
 set(COMMON_LIBS ${COMMON_LIBS} -lcimplog)

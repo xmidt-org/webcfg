@@ -1007,6 +1007,7 @@ WEBCFG_STATUS regWebConfigDataModel()
 		return WEBCFG_FAILURE;
 	}
 
+#if !defined (WEBCONFIG_MQTT_SUPPORT)
 	rbusDataElement_t dataElements[NUM_WEBCFG_ELEMENTS] = {
 
 		{WEBCFG_RFC_PARAM, RBUS_ELEMENT_TYPE_PROPERTY, {webcfgRfcGetHandler, webcfgRfcSetHandler, NULL, NULL, NULL, NULL}},
@@ -1019,16 +1020,28 @@ WEBCFG_STATUS regWebConfigDataModel()
 		{WEBCFG_UPSTREAM_EVENT, RBUS_ELEMENT_TYPE_EVENT, {NULL, NULL, NULL, NULL, eventSubHandler, NULL}},
 		{WEBCFG_UTIL_METHOD, RBUS_ELEMENT_TYPE_METHOD, {NULL, NULL, NULL, NULL, NULL, fetchCachedBlobHandler}}
 	};
+#else
+	rbusDataElement_t dataElements[NUM_WEBCFG_ELEMENTS] = {
+
+		{WEBCFG_RFC_PARAM, RBUS_ELEMENT_TYPE_PROPERTY, {webcfgRfcGetHandler, webcfgRfcSetHandler, NULL, NULL, NULL, NULL}},
+		{WEBCFG_DATA_PARAM, RBUS_ELEMENT_TYPE_PROPERTY, {webcfgDataGetHandler, webcfgDataSetHandler, NULL, NULL, NULL, NULL}},
+		{WEBCFG_SUPPORTED_DOCS_PARAM, RBUS_ELEMENT_TYPE_PROPERTY, {webcfgSupportedDocsGetHandler, webcfgSupportedDocsSetHandler, NULL, NULL, NULL, NULL}},
+		{WEBCFG_SUPPORTED_VERSION_PARAM, RBUS_ELEMENT_TYPE_PROPERTY, {webcfgSupportedVersionGetHandler, webcfgSupportedVersionSetHandler, NULL, NULL, NULL, NULL}},
+		{WEBCFG_UPSTREAM_EVENT, RBUS_ELEMENT_TYPE_EVENT, {NULL, NULL, NULL, NULL, eventSubHandler, NULL}},
+		{WEBCFG_UTIL_METHOD, RBUS_ELEMENT_TYPE_METHOD, {NULL, NULL, NULL, NULL, NULL, fetchCachedBlobHandler}}
+	};
+#endif
 	ret = rbus_regDataElements(rbus_handle, NUM_WEBCFG_ELEMENTS, dataElements);
 	if(ret == RBUS_ERROR_SUCCESS)
 	{
 		WebcfgDebug("Registered data element %s with rbus \n ", WEBCFG_RFC_PARAM);
+#if !defined (WEBCONFIG_MQTT_SUPPORT)
 		memset(ForceSync, 0, 256);
 		webcfgStrncpy( ForceSync, "", sizeof(ForceSync));
 
 		memset(ForceSyncTransID, 0, 256);
 		webcfgStrncpy( ForceSyncTransID, "", sizeof(ForceSyncTransID));
-
+#endif
 		// Initialise rfc enable global variable value
 		char *tmpchar = NULL;
 		retPsmGet = rbus_GetValueFromDB(paramRFCEnable, &tmpchar);
