@@ -35,6 +35,10 @@
 #include "webcfg_blob.h"
 #include "webcfg_timer.h"
 
+#ifdef WEBCONFIG_MQTT_SUPPORT
+#include "webcfg_mqtt.h"
+#endif
+
 #ifdef FEATURE_SUPPORT_AKER
 #include "webcfg_aker.h"
 #endif
@@ -510,6 +514,14 @@ void processWebconfgSync(int status, char* docname)
 		}
 		#endif
 
+		/*if(get_global_supplementarySync() == 0)
+		{
+			WebcfgInfo("webcfg_mqtt_init\n");
+			webcfg_mqtt_init();
+			WebcfgInfo("webcfg_mqtt_init done.\n");
+		}
+		return;*/
+
 		if(retry_count >3)
 		{
 			WebcfgInfo("Webcfg curl retry to server has reached max limit. Exiting.\n");
@@ -547,7 +559,7 @@ void processWebconfgSync(int status, char* docname)
 int handlehttpResponse(long response_code, char *webConfigData, int retry_count, char* transaction_uuid, char *ct, size_t dataSize)
 {
 	int first_digit=0;
-	int msgpack_status=0;
+	//int msgpack_status=0;
 	int err = 0;
 	char version[512]={'\0'};
 	uint32_t db_root_version = 0;
@@ -576,6 +588,7 @@ int handlehttpResponse(long response_code, char *webConfigData, int retry_count,
 		if(webConfigData !=NULL && (strlen(webConfigData)>0))
 		{
 			WebcfgDebug("webConfigData fetched successfully\n");
+#ifdef WEBCONFIG_HTTP_SUPPORT
 			WebcfgDebug("parseMultipartDocument\n");
 			msgpack_status = parseMultipartDocument(webConfigData, ct, dataSize, transaction_uuid);
 
@@ -589,6 +602,11 @@ int handlehttpResponse(long response_code, char *webConfigData, int retry_count,
 				WebcfgDebug("root webConfigData processed, check apply status events\n");
 				return 1;
 			}
+#else
+			(void) ct;
+			(void) dataSize;
+			return 1;
+#endif
 		}
 		else
 		{

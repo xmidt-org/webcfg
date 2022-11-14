@@ -71,22 +71,62 @@ struct token_data {
 static char g_ETAG[64]={'\0'};
 char webpa_aut_token[4096]={'\0'};
 static char g_interface[32]={'\0'};
-static char g_systemReadyTime[64]={'\0'};
-static char g_FirmwareVersion[64]={'\0'};
-static char g_bootTime[64]={'\0'};
-static char g_productClass[64]={'\0'};
-static char g_ModelName[64]={'\0'};
-static char g_PartnerID[64]={'\0'};
-static char g_AccountID[64]={'\0'};
+char g_systemReadyTime[64]={'\0'};
+char g_FirmwareVersion[64]={'\0'};
+char g_bootTime[64]={'\0'};
+char g_productClass[64]={'\0'};
+char g_ModelName[64]={'\0'};
+char g_PartnerID[64]={'\0'};
+char g_AccountID[64]={'\0'};
 char g_RebootReason[64]={'\0'};
-static char g_transID[64]={'\0'};
+char g_transID[64]={'\0'};
 static char * g_contentLen = NULL;
-static char *supportedVersion_header=NULL;
-static char *supportedDocs_header=NULL;
-static char *supplementaryDocs_header=NULL;
+char *supportedVersion_header=NULL;
+char *supportedDocs_header=NULL;
+char *supplementaryDocs_header=NULL;
 static multipartdocs_t *g_mp_head = NULL;
 pthread_mutex_t multipart_t_mut =PTHREAD_MUTEX_INITIALIZER;
 static int eventFlag = 0;
+/*char *get_supportedVersion_header(void)
+{
+    return supportedVersion_header;
+}
+char *get_supportedDocs_header(void)
+{
+    return g_supportedDocs_header;
+}
+char *get_supplementaryDocs_header(void)
+{
+    return g_supplementaryDocs_header;
+}
+char *get_global_bootTime(void)
+{
+    return g_bootTime;
+}
+char *get_global_FirmwareVersion(void)
+{
+    return g_FirmwareVersion;
+}
+char *get_global_systemReadyTime(void)
+{
+    return g_systemReadyTime;
+}
+char *get_global_productClass(void)
+{
+    return g_productClass;
+}
+char *get_global_ModelName(void)
+{
+    return g_ModelName;
+}
+char *get_global_PartnerID(void)
+{
+    return g_PartnerID;
+}
+char *get_global_AccountID(void)
+{
+    return g_AccountID;
+}*/
 char * get_global_transID(void)
 {
     return g_transID;
@@ -442,6 +482,106 @@ WEBCFG_STATUS webcfg_http_request(char **configData, int r_count, int status, lo
 	return WEBCFG_FAILURE;
 }
 
+#ifdef WEBCONFIG_MQTT_SUPPORT
+int processPayload(char * data, int dataSize)
+{
+	int mstatus = 0;
+
+	char *transaction_uuid =NULL;
+	char ct[256] = {0};
+
+
+		char * data_body = malloc(sizeof(char) * dataSize+1);
+		memset(data_body, 0, sizeof(char) * dataSize+1);
+		data_body = memcpy(data_body, data, dataSize+1);
+		data_body[dataSize] = '\0';
+		char *ptr_count = data_body;
+		char *ptr1_count = data_body;
+		char *temp = NULL;
+		char *etag_header = NULL;
+		char* version = NULL;
+
+		while((ptr_count - data_body) < dataSize )
+		{
+			ptr_count = memchr(ptr_count, 'C', dataSize - (ptr_count - data_body));
+			if(ptr_count == NULL)
+			{
+				WebcfgError("Content-type header not found\n");
+				break;
+			}
+			if(0 == memcmp(ptr_count, "Content-Type:", strlen("Content-Type:")))
+			{
+				ptr1_count = memchr(ptr_count+1, '\r', dataSize - (ptr_count - data_body));
+				temp = strndup(ptr_count, (ptr1_count-ptr_count));
+				strncpy(ct,temp,(sizeof(ct)-1));
+				break;
+			}
+			ptr_count++;
+		}
+
+		ptr_count = data_body;
+		ptr1_count = data_body;
+		while((ptr_count - data_body) < dataSize )
+		{
+			ptr_count = memchr(ptr_count, 'E', dataSize - (ptr_count - data_body));
+			if(ptr_count == NULL)
+			{
+				WebcfgError("etag_header not found\n");
+				break;
+			}
+			if(0 == memcmp(ptr_count, "Etag:", strlen("Etag:")))
+			{
+				ptr1_count = memchr(ptr_count+1, '\r', dataSize - (ptr_count - data_body));
+				etag_header = strndup(ptr_count, (ptr1_count-ptr_count));
+				if(etag_header !=NULL)
+				{
+					WebcfgInfo("etag header extracted is %s\n", etag_header);
+					//Extract root version from Etag: <value> header.
+					version = strtok(etag_header, ":");
+					if(version !=NULL)
+					{
+						version = strtok(NULL, ":");
+						version++;
+						//g_ETAG should be updated only for primary sync.
+						if(!get_global_supplementarySync())
+						{
+							set_global_ETAG(version);
+							WebcfgInfo("g_ETAG updated in processPayload %s\n", get_global_ETAG());
+						}
+						break;
+					}
+				}
+			}
+			ptr_count++;
+		}
+		free(data_body);
+		free(temp);
+		WEBCFG_FREE(etag_header);
+		transaction_uuid = strdup(generate_trans_uuid());
+		if(data !=NULL)
+		{
+			WebcfgInfo("webConfigData fetched successfully\n");
+			WebcfgDebug("parseMultipartDocument\n");
+			mstatus = parseMultipartDocument(data, ct, (size_t)dataSize, transaction_uuid);
+
+			if(mstatus == WEBCFG_SUCCESS)
+			{
+				WebcfgInfo("webConfigData applied successfully\n");
+			}
+			else
+			{
+				WebcfgDebug("Failed to apply root webConfigData received from server\n");
+			}
+		}
+		else
+		{
+			WEBCFG_FREE(transaction_uuid);
+			WebcfgError("webConfigData is empty, need to retry\n");
+		}
+		return 1;
+}
+#endif
+
 WEBCFG_STATUS parseMultipartDocument(void *config_data, char *ct , size_t data_size, char* trans_uuid)
 {
 	char *boundary = NULL;
@@ -540,7 +680,9 @@ WEBCFG_STATUS parseMultipartDocument(void *config_data, char *ct , size_t data_s
 			ptr_lb = memchr(ptr_lb, '\n', data_size - (ptr_lb - str_body));
 			ptr_lb++;
 		}
+		WebcfgInfo("free str_body\n");
 		WEBCFG_FREE(str_body);
+		WebcfgInfo("str_body freed\n");
 		WEBCFG_FREE(line_boundary);
 		WEBCFG_FREE(last_line_boundary);
 
@@ -1109,7 +1251,7 @@ size_t headr_callback(char *buffer, size_t size, size_t nitems, void* data)
 	char* final_header = NULL;
 	char header_str[64] = {'\0'};
 	size_t content_len = 0;
-
+	(void) data;
 	etag_len = strlen(ETAG_HEADER);
 	content_len = strlen(CONTENT_LENGTH_HEADER);
 	if( nitems > etag_len )
