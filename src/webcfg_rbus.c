@@ -1000,7 +1000,11 @@ WEBCFG_STATUS regWebConfigDataModel()
 	rbusError_t retPsmGet = RBUS_ERROR_BUS_ERROR;
 	WEBCFG_STATUS status = WEBCFG_SUCCESS;
 
+#if !defined (WEBCONFIG_MQTT_SUPPORT)
 	WebcfgInfo("Registering parameters %s, %s, %s %s\n", WEBCFG_RFC_PARAM, WEBCFG_FORCESYNC_PARAM, WEBCFG_URL_PARAM, WEBCFG_SUPPLEMENTARY_TELEMETRY_PARAM);
+#else
+	WebcfgInfo("Registering parameters %s\n", WEBCFG_RFC_PARAM);
+#endif
 	if(!rbus_handle)
 	{
 		WebcfgError("regWebConfigDataModel Failed in getting bus handles\n");

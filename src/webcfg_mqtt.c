@@ -300,20 +300,21 @@ void on_connect(struct mosquitto *mosq, void *obj, int reason_code)
 		return;
         }
 
-	get_from_file("TOPIC=", &topic);
-	if(topic != NULL)
-	{
-		WebcfgInfo("subscribe to topic %s\n", topic);
-	}
-
 	if(!subscribeFlag)
 	{
+		get_from_file("TOPIC=", &topic);
+
+		if(topic != NULL)
+		{
+			WebcfgInfo("subscribe to topic %s\n", topic);
+		}
+
 		rc = mosquitto_subscribe(mosq, NULL, topic, 1);
 
 		if(rc != MOSQ_ERR_SUCCESS)
 		{
-		        WebcfgError("Error subscribing: %s\n", mosquitto_strerror(rc));
-		        mosquitto_disconnect(mosq);
+			WebcfgError("Error subscribing: %s\n", mosquitto_strerror(rc));
+			mosquitto_disconnect(mosq);
 		}
 		else
 		{
