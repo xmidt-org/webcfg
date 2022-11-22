@@ -185,8 +185,4 @@ webconfig_db_data_t* decodeData(const void * data, size_t len);
 const char* webcfgdbparam_strerror( int errnum );
 
 WEBCFG_STATUS updateFailureTimeStamp(webconfig_tmp_data_t *temp, char *docname, long long timestamp);
-
-int get_root_change();
-
-void reset_root_change();
 #endif

@@ -63,7 +63,6 @@ pthread_mutex_t webconfig_tmp_data_mut=PTHREAD_MUTEX_INITIALIZER;
 static int numOfMpDocs = 0;
 static int success_doc_count = 0;
 static int doc_fail_flag = 0;
-static int root_change = 0; //To check root version DB write required or not
 /*----------------------------------------------------------------------------*/
 /*                             Function Prototypes                            */
 /*----------------------------------------------------------------------------*/
@@ -407,16 +406,6 @@ int get_doc_fail()
 void set_doc_fail( int value)
 {
     doc_fail_flag = value;
-}
-
-int get_root_change()
-{
-    return root_change;
-}
-
-void reset_root_change()
-{
-    root_change = 0;
 }
 
 blob_t * get_DB_BLOB()
