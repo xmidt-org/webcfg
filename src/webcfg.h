@@ -48,7 +48,8 @@ extern int numLoops;
 typedef enum
 {
     WEBCFG_SUCCESS = 0,
-    WEBCFG_FAILURE
+    WEBCFG_FAILURE,
+    WEBCFG_NO_CHANGE
 } WEBCFG_STATUS;
 
 typedef enum
