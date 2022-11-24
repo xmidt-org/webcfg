@@ -39,7 +39,11 @@
 #define buffLen 1024
 #define maxParamLen 128
 
+#if !defined (WEBCONFIG_MQTT_SUPPORT)
 #define NUM_WEBCFG_ELEMENTS 9
+#else
+#define NUM_WEBCFG_ELEMENTS 6
+#endif
 
 #define WEBCFG_COMPONENT_NAME "webconfig"
 #define MAX_PARAMETERNAME_LEN			4096

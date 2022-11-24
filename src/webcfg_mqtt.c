@@ -300,20 +300,21 @@ void on_connect(struct mosquitto *mosq, void *obj, int reason_code)
 		return;
         }
 
-	get_from_file("TOPIC=", &topic);
-	if(topic != NULL)
-	{
-		WebcfgInfo("subscribe to topic %s\n", topic);
-	}
-
 	if(!subscribeFlag)
 	{
+		get_from_file("TOPIC=", &topic);
+
+		if(topic != NULL)
+		{
+			WebcfgInfo("subscribe to topic %s\n", topic);
+		}
+
 		rc = mosquitto_subscribe(mosq, NULL, topic, 1);
 
 		if(rc != MOSQ_ERR_SUCCESS)
 		{
-		        WebcfgError("Error subscribing: %s\n", mosquitto_strerror(rc));
-		        mosquitto_disconnect(mosq);
+			WebcfgError("Error subscribing: %s\n", mosquitto_strerror(rc));
+			mosquitto_disconnect(mosq);
 		}
 		else
 		{
@@ -954,6 +955,7 @@ int createMqttHeader(char **header_list)
 		WebcfgInfo("Framing supplementary sync header\n");
 		snprintf(*header_list, 1024, "%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s\r\n\r\n", (deviceId_header!=NULL)?deviceId_header:"",(doc_header!=NULL)?doc_header:"", (version_header!=NULL)?version_header:"", (accept_header!=NULL)?accept_header:"", (schema_header!=NULL)?schema_header:"", (supportedVersion_header!=NULL)?supportedVersion_header:"", (supportedDocs_header!=NULL)?supportedDocs_header:"", (bootTime_header)?bootTime_header:"", (FwVersion_header)?FwVersion_header:"", (status_header)?status_header:"", (currentTime_header)?currentTime_header:"", (systemReadyTime_header!=NULL)?systemReadyTime_header:"", (uuid_header!=NULL)?uuid_header:"", (productClass_header!=NULL)?productClass_header:"", (ModelName_header!=NULL)?ModelName_header:"",(contenttype_header!=NULL)?contenttype_header:"", (contentlen_header!=NULL)?contentlen_header:"", (PartnerID_header!=NULL)?PartnerID_header:"",(supplementaryDocs_header!=NULL)?supplementaryDocs_header:"", (telemetryVersion_header!=NULL)?telemetryVersion_header:"", (AccountID_header!=NULL)?AccountID_header:"");
 	}
+	writeToDBFile("/tmp/header_list.txt", *header_list, strlen(*header_list));
 	WebcfgInfo("mqtt header_list is \n%s\n", *header_list);
 	return 0;
 }
