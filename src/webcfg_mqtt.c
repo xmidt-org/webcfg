@@ -24,6 +24,7 @@
 #include <netinet/in.h>
 #include <arpa/nameser.h>
 #include <resolv.h>
+#include <ctype.h>
 #include "webcfg_generic.h"
 #include "webcfg_multipart.h"
 #include "webcfg_mqtt.h"
@@ -65,6 +66,16 @@ void reset_global_mqttConnected()
 void set_global_mqttConnected()
 {
 	g_mqttConnected = 1;
+}
+
+void convertToUppercase(char* deviceId)
+{
+	int j =0;
+	while (deviceId[j])
+	{
+		deviceId[j] = toupper(deviceId[j]);
+		j++;
+	}
 }
 
 //Initialize mqtt library and connect to mqtt broker
@@ -550,25 +561,24 @@ int createMqttHeader(char **header_list)
 	size_t supported_version_size = 0;
 	size_t supplementary_docs_size = 0;
 	char docList[512] = {'\0'};
-	char *tmp = NULL;
-	tmp = g_deviceId;
 
 	WebcfgInfo("Start of createMqttHeader\n");
 
 	if( get_deviceMAC() != NULL && strlen(get_deviceMAC()) !=0 )
 	{
-	      // strncpy(g_deviceId, get_deviceMAC(), sizeof(g_deviceId)-1);
-               get_from_file("CID=", &tmp);
-	       WebcfgInfo("g_deviceId fetched is %s\n", tmp);
+	       strncpy(g_deviceId, get_deviceMAC(), sizeof(g_deviceId)-1);
+              // get_from_file("CID=", &tmp);
+	       WebcfgInfo("g_deviceId fetched is %s\n", g_deviceId);
 	}
 
-	if(strlen(tmp))
+	if(strlen(g_deviceId))
 	{
 		deviceId_header = (char *) malloc(sizeof(char)*MAX_BUF_SIZE);
 		if(deviceId_header !=NULL)
 		{
-			//snprintf(deviceId_header, MAX_BUF_SIZE, "Device-Id: mac:%s", g_deviceId);
-			snprintf(deviceId_header, MAX_BUF_SIZE, "Mac: %s", tmp);
+			convertToUppercase(g_deviceId);
+			snprintf(deviceId_header, MAX_BUF_SIZE, "Device-Id: %s", g_deviceId);
+			//snprintf(deviceId_header, MAX_BUF_SIZE, "Mac: %s", tmp);
 			WebcfgInfo("deviceId_header formed %s\n", deviceId_header);
 			//WEBCFG_FREE(deviceId_header);
 		}
