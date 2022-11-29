@@ -42,7 +42,7 @@
 #if !defined (WEBCONFIG_MQTT_SUPPORT)
 #define NUM_WEBCFG_ELEMENTS 9
 #else
-#define NUM_WEBCFG_ELEMENTS 12
+#define NUM_WEBCFG_ELEMENTS 11
 #endif
 
 #define WEBCFG_COMPONENT_NAME "webconfig"
