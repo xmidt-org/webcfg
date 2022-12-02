@@ -82,7 +82,9 @@ void convertToUppercase(char* deviceId)
 bool webcfg_mqtt_init(int status, char *systemreadytime)
 {
 	char *client_id , *username = NULL;
-	char * topic, *hostname = NULL;
+	//char * topic, *hostname = NULL;
+	char topic[256] = { 0 };
+	char hostname[256] = { 0 };
 	char *PORT = NULL;
 	int rc;
 
@@ -112,22 +114,24 @@ bool webcfg_mqtt_init(int status, char *systemreadytime)
 		username = client_id;
 		WebcfgInfo("client_id is %s username is %s\n", client_id, username);
 
-		//fetch broker hostname ,topic from file
-		get_from_file("TOPIC=", &topic);
-		get_from_file("HOSTNAME=", &hostname);
-		if(topic != NULL)
+		Get_Mqtt_SubTopic( topic);
+		if(topic != NULL && strlen(topic)>0)
 		{
 			WebcfgInfo("The topic is %s\n", topic);
 		}
-
-		if(hostname != NULL)
+		else
+		{
+			WebcfgError("Invalid config, topic is NULL\n");
+			return MOSQ_ERR_INVAL;
+		}
+		Get_Mqtt_Broker(hostname);
+		if(hostname != NULL && strlen(hostname)>0)
 		{
 			WebcfgInfo("The hostname is %s\n", hostname);
 		}
-	
-		if(!hostname || !topic)
+		else
 		{
-			WebcfgError("Invalid config hostname or topic is NULL\n");
+			WebcfgError("Invalid config, hostname is NULL\n");
 			return MOSQ_ERR_INVAL;
 		}
 
@@ -301,7 +305,8 @@ bool webcfg_mqtt_init(int status, char *systemreadytime)
 void on_connect(struct mosquitto *mosq, void *obj, int reason_code)
 {
         int rc;
-	char * topic = NULL;
+	//char * topic = NULL;
+	char topic[256] = { 0 };
         WebcfgInfo("on_connect: reason_code %d %s\n", reason_code, mosquitto_connack_string(reason_code));
         if(reason_code != 0)
 	{
@@ -313,9 +318,8 @@ void on_connect(struct mosquitto *mosq, void *obj, int reason_code)
 
 	if(!subscribeFlag)
 	{
-		get_from_file("TOPIC=", &topic);
-
-		if(topic != NULL)
+		Get_Mqtt_SubTopic(topic);
+		if(topic != NULL && strlen(topic)>0)
 		{
 			WebcfgInfo("subscribe to topic %s\n", topic);
 		}
@@ -435,8 +439,18 @@ void publish_notify_mqtt(char *pub_topic, void *payload, ssize_t len, char * des
 
 	if(pub_topic == NULL)
 	{
-		get_from_file("PUB_TOPIC=", &pub_topic);
-		WebcfgInfo("pub_topic from file is %s\n", pub_topic);
+		char publish_topic[256] = { 0 };
+		Get_Mqtt_PublishNotifyTopic( publish_topic);
+		if(strlen(publish_topic)>0)
+		{
+			WebcfgInfo("publish_topic fetched from tr181 is %s\n", publish_topic);
+			pub_topic = strdup(publish_topic);
+			WebcfgInfo("pub_topic from file is %s\n", pub_topic);
+		}
+		else
+		{
+			WebcfgError("Failed to fetch publish topic\n");
+		}
 	}
 	else
 	{
@@ -512,10 +526,19 @@ int triggerBootupSync()
 		if(mqttheaderList !=NULL)
 		{
 			WebcfgInfo("mqttheaderList generated is \n%s len %zu\n", mqttheaderList, strlen(mqttheaderList));
-			get_from_file("PUB_GET_TOPIC=", &pub_get_topic);
-			WebcfgInfo("pub_get_topic from file is %s\n", pub_get_topic);
-			publish_notify_mqtt(pub_get_topic, (void*)mqttheaderList, strlen(mqttheaderList), NULL);
-			WebcfgInfo("triggerBootupSync published to topic %s\n", pub_get_topic);
+			char publish_get_topic[256] = { 0 };
+			Get_Mqtt_PublishGetTopic( publish_get_topic);
+			if(strlen(publish_get_topic) >0)
+			{
+				pub_get_topic = strdup(publish_get_topic);
+				WebcfgInfo("pub_get_topic from tr181 is %s\n", pub_get_topic);
+				publish_notify_mqtt(pub_get_topic, (void*)mqttheaderList, strlen(mqttheaderList), NULL);
+				WebcfgInfo("triggerBootupSync published to topic %s\n", pub_get_topic);
+			}
+			else
+			{
+				WebcfgError("Failed to fetch publish_get_topic\n");
+			}
 		}
 		else
 		{
