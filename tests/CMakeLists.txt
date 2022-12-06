@@ -39,7 +39,7 @@ add_executable(webcfgCli ${SOURCES})
 target_link_libraries (webcfgCli -lmsgpackc -lcurl -lpthread  -lm -luuid -ltrower-base64 -lwdmp-c -lcimplog -lcjson -lwrp-c)
 
 if (WEBCONFIG_BIN_SUPPORT)
-target_link_libraries (webcfgCli -lrbus -lrbus-core)
+target_link_libraries (webcfgCli -lrbus)
 endif (WEBCONFIG_BIN_SUPPORT)
 
 if (FEATURE_SUPPORT_AKER)
@@ -83,7 +83,7 @@ add_executable(test_multipart ${SOURCES})
 target_link_libraries (test_multipart -lcunit -lmsgpackc -lcurl -lpthread  -lm -luuid -ltrower-base64 -lwdmp-c -lcimplog -lcjson -lwrp-c)
 
 if (WEBCONFIG_BIN_SUPPORT)
-target_link_libraries (test_multipart -lrbus -lrbus-core)
+target_link_libraries (test_multipart -lrbus)
 endif (WEBCONFIG_BIN_SUPPORT)
 
 if (FEATURE_SUPPORT_AKER)
@@ -109,7 +109,7 @@ add_executable(test_mul_supp ${SOURCES})
 target_link_libraries (test_mul_supp -lcunit -lmsgpackc -lcurl -lpthread  -lm -luuid -ltrower-base64 -lwdmp-c -lcimplog -lcjson -lwrp-c)
 
 if (WEBCONFIG_BIN_SUPPORT)
-target_link_libraries (test_mul_supp -lrbus -lrbus-core)
+target_link_libraries (test_mul_supp -lrbus)
 endif (WEBCONFIG_BIN_SUPPORT)
 
 if (FEATURE_SUPPORT_AKER)
@@ -136,7 +136,7 @@ add_executable(test_events ${SOURCES})
 target_link_libraries (test_events -lcunit -lmsgpackc -lcurl -lpthread  -lm -luuid -ltrower-base64 -lwdmp-c -lcimplog -lcjson -lwrp-c)
 
 if (WEBCONFIG_BIN_SUPPORT)
-target_link_libraries (test_events -lrbus -lrbus-core)
+target_link_libraries (test_events -lrbus)
 endif (WEBCONFIG_BIN_SUPPORT)
 
 if (FEATURE_SUPPORT_AKER)
@@ -164,7 +164,7 @@ add_executable(test_events_supp  ${SOURCES})
 target_link_libraries (test_events_supp -lcunit -lmsgpackc -lcurl -lpthread  -lm -luuid -ltrower-base64 -lwdmp-c -lcimplog -lcjson -lwrp-c)
 
 if (WEBCONFIG_BIN_SUPPORT)
-target_link_libraries (test_events_supp -lrbus -lrbus-core)
+target_link_libraries (test_events_supp -lrbus)
 endif (WEBCONFIG_BIN_SUPPORT)
 
 if (FEATURE_SUPPORT_AKER)
@@ -201,7 +201,7 @@ add_executable(test_root ${SOURCES})
 target_link_libraries (test_root -lcunit -lmsgpackc -lcurl -lpthread  -lm -luuid -ltrower-base64 -lwdmp-c -lcimplog -lcjson -lwrp-c)
 
 if (WEBCONFIG_BIN_SUPPORT)
-target_link_libraries (test_root -lrbus -lrbus-core)
+target_link_libraries (test_root -lrbus)
 endif (WEBCONFIG_BIN_SUPPORT)
 
 if (FEATURE_SUPPORT_AKER)
@@ -239,7 +239,7 @@ add_executable(test_multipart_unittest ${SOURCES})
 target_link_libraries (test_multipart_unittest -lcunit -lmsgpackc -lcurl -lpthread  -lm -luuid -ltrower-base64 -lwdmp-c -lcimplog -lcjson -lwrp-c)
 
 if (WEBCONFIG_BIN_SUPPORT)
-target_link_libraries (test_multipart_unittest -lrbus -lrbus-core)
+target_link_libraries (test_multipart_unittest -lrbus)
 endif (WEBCONFIG_BIN_SUPPORT)
 
 if (FEATURE_SUPPORT_AKER)
@@ -254,7 +254,7 @@ target_link_libraries (test_multipart_unittest gcov -Wl,--no-as-needed )
 if (WEBCONFIG_BIN_SUPPORT)
 add_test(NAME test_rbus_fr COMMAND ${MEMORY_CHECK} ./test_rbus_fr)
 add_executable(test_rbus_fr test_rbus_fr.c ../src/webcfg_rbus.c )
-target_link_libraries (test_rbus_fr -lcunit -lwrp-c -lcimplog -lmsgpackc -lcurl -lpthread  -lm -luuid -ltrower-base64 -lwdmp-c -lcjson  -lrbus -lrbus-core)
+target_link_libraries (test_rbus_fr -lcunit -lwrp-c -lcimplog -lmsgpackc -lcurl -lpthread  -lm -luuid -ltrower-base64 -lwdmp-c -lcjson  -lrbus)
 
 target_link_libraries (test_rbus_fr gcov -Wl,--no-as-needed )
 endif (WEBCONFIG_BIN_SUPPORT)
