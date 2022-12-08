@@ -26,7 +26,6 @@
 #include <rbus/rbus_object.h>
 #include <rbus/rbus_property.h>
 #include <rbus/rbus_value.h>
-#include <rbus/rbuscore.h>
 
 #include <wdmp-c.h>
 #include <wrp-c.h>

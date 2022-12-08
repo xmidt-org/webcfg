@@ -151,7 +151,7 @@ void set_doc_fail( int value);
 
 char * get_DB_BLOB_base64();
 
-void checkDBList(char *docname, uint32_t version,char *rootstr);
+WEBCFG_STATUS checkDBList(char *docname, uint32_t version,char *rootstr);
 
 WEBCFG_STATUS updateDBlist(char *docname, uint32_t version,char *rootstr);
 

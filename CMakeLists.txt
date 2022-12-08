@@ -20,8 +20,8 @@ include(ExternalProject)
 include(CTest)
 
 add_definitions(-std=c99)
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=c99 -g -Werror -Wall -Wno-sizeof-pointer-memaccess -Wno-format-truncation -D_GNU_SOURCE=1")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c99 -g -Werror -Wall -Wno-sizeof-pointer-memaccess -Wno-format-truncation -D_GNU_SOURCE=1")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=c99 -g -Werror -Wall -Wno-sizeof-pointer-memaccess -Wno-format-truncation -Wno-unused-parameter -D_GNU_SOURCE=1")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c99 -g -Werror -Wall -Wno-sizeof-pointer-memaccess -Wno-format-truncation -Wno-unused-parameter -D_GNU_SOURCE=1")
 
 if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
 set(CMAKE_MACOSX_RPATH 1)
@@ -63,6 +63,7 @@ endif (WEBCONFIG_MQTT_SUPPORT)
 include_directories(${INCLUDE_DIR}/rbus
 		    ${INCLUDE_DIR}/rtmessage
 )
+
 endif (WEBCONFIG_BIN_SUPPORT)
 
 if (NOT BUILD_YOCTO)
@@ -212,7 +213,6 @@ endif (WEBCONFIG_MQTT_SUPPORT)
 # rbus external dependency
 #-------------------------------------------------------------------------------
 ExternalProject_Add(rbus
-     #DEPENDS rtMessage rbus-core
      PREFIX ${CMAKE_CURRENT_BINARY_DIR}/_prefix/rbus
      GIT_REPOSITORY https://github.com/rdkcentral/rbus.git
      GIT_TAG main

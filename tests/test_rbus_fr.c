@@ -37,7 +37,7 @@ multipartdocs_t *get_global_mp(void)
 
 bool get_webcfgReady()
 {
-    return false;
+    return true;
 }
 
 bool get_maintenanceSync()

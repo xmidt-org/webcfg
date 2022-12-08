@@ -206,7 +206,7 @@ void test_checkRootUpdate(){
 	webconfig_tmp_data_t *tmpData = (webconfig_tmp_data_t *)malloc(sizeof(webconfig_tmp_data_t));
 	tmpData->name = strdup("wan");
 	tmpData->version = 410448631;
-	tmpData->status = strdup("ACK");
+	tmpData->status = strdup("success");
 	tmpData->trans_id = 14464;
 	tmpData->retry_count = 0;
 	tmpData->error_code = 0;
