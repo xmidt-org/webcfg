@@ -33,5 +33,6 @@ void getAuthToken();
 void createNewAuthToken(char *newToken, size_t len, char *hw_mac, char* hw_serial_number);
 char* get_global_auth_token();
 char* get_global_serialNum();
+void execute_mqtt_script(char *name);
 
 #endif
