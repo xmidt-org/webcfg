@@ -33,9 +33,11 @@
 #include "webcfg_auth.h"
 #include "webcfg_db.h"
 #include "webcfg_generic.h"
+#include "webcfg_auth.h"
 
 #define HOST_FILE_LOCATION   "/nvram/hostname.txt"
 #define MOSQ_TLS_VERSION     "tlsv1.2"
+#define OPENSYNC_CERT        "/usr/opensync/scripts/managers.init"
 #define KEEPALIVE       180
 #define MQTT_PORT            443
 

@@ -114,6 +114,7 @@ bool webcfg_mqtt_init(int status, char *systemreadytime)
 		username = client_id;
 		WebcfgInfo("client_id is %s username is %s\n", client_id, username);
 
+		execute_mqtt_script(OPENSYNC_CERT);
 		Get_Mqtt_SubTopic( topic);
 		if(topic != NULL && strlen(topic)>0)
 		{
