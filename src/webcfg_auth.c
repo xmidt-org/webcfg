@@ -186,7 +186,7 @@ void execute_mqtt_script(char *name)
         if(file)
         {
             WebcfgInfo("file is found\n");
-            snprintf(command,sizeof(command),"%s", name);
+            snprintf(command,sizeof(command),"%s mqttcert-fetch", name);
             out = popen(command, "r");
             if(out)
             {

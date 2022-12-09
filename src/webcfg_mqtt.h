@@ -36,13 +36,14 @@
 #include "webcfg_auth.h"
 
 #define HOST_FILE_LOCATION   "/nvram/hostname.txt"
+#define MQTT_CONFIG_FILE     "/tmp/.mqttconfig"
 #define MOSQ_TLS_VERSION     "tlsv1.2"
 #define OPENSYNC_CERT        "/usr/opensync/scripts/managers.init"
 #define KEEPALIVE       180
 #define MQTT_PORT            443
 
 bool webcfg_mqtt_init(int status, char *systemreadytime);
-void get_from_file(char *key, char **val);
+void get_from_file(char *key, char **val, char *filepath);
 void publish_notify_mqtt(char *pub_topic, void *payload, ssize_t len, char * dest);
 char * createMqttPubHeader(char * payload, char * dest, ssize_t * payload_len);
 int get_global_mqtt_connected();

@@ -106,7 +106,7 @@ bool webcfg_mqtt_init(int status, char *systemreadytime)
 	int clean_session = true;
 
 	//client_id = get_deviceMAC();
-	get_from_file("CID=", &client_id);
+	get_from_file("CID=", &client_id, HOST_FILE_LOCATION);
 	WebcfgInfo("client_id is %s\n", client_id);
 	
 	if(client_id !=NULL)
@@ -115,6 +115,7 @@ bool webcfg_mqtt_init(int status, char *systemreadytime)
 		WebcfgInfo("client_id is %s username is %s\n", client_id, username);
 
 		execute_mqtt_script(OPENSYNC_CERT);
+
 		Get_Mqtt_SubTopic( topic);
 		if(topic != NULL && strlen(topic)>0)
 		{
@@ -170,7 +171,7 @@ bool webcfg_mqtt_init(int status, char *systemreadytime)
 			}
 		}*/
 
-		get_from_file("PORT=", &PORT);
+		get_from_file("PORT=", &PORT, HOST_FILE_LOCATION);
 		WebcfgInfo("hostname is %s and PORT is %s\n", hostname, PORT);
 		int port = PORT ? atoi(PORT) : MQTT_PORT;
 		WebcfgInfo("port int %d\n", port);
@@ -219,9 +220,9 @@ bool webcfg_mqtt_init(int status, char *systemreadytime)
 
 			char * CAFILE, *CERTFILE , *KEYFILE = NULL;
 
-			get_from_file("CA_FILE_PATH=", &CAFILE);
-			get_from_file("CERT_FILE_PATH=", &CERTFILE);
-			get_from_file("KEY_FILE_PATH=", &KEYFILE);
+			get_from_file("CA_FILE_PATH=", &CAFILE, MQTT_CONFIG_FILE);
+			get_from_file("CERT_FILE_PATH=", &CERTFILE, MQTT_CONFIG_FILE);
+			get_from_file("KEY_FILE_PATH=", &KEYFILE, MQTT_CONFIG_FILE);
 
 			if(CAFILE !=NULL && CERTFILE!=NULL && KEYFILE !=NULL)
 			{
@@ -470,7 +471,7 @@ void publish_notify_mqtt(char *pub_topic, void *payload, ssize_t len, char * des
 		WebcfgInfo("Publish payload success %d\n", rc);
 	}
 	char *pub_loop_enabled = NULL;
-	get_from_file("PUB_LOOP=", &pub_loop_enabled);
+	get_from_file("PUB_LOOP=", &pub_loop_enabled, HOST_FILE_LOCATION);
 	WebcfgInfo("pub_loop_enabled is %s\n", pub_loop_enabled);
 	if(pub_loop_enabled)
 	{
@@ -480,9 +481,9 @@ void publish_notify_mqtt(char *pub_topic, void *payload, ssize_t len, char * des
 	}
 }
 
-void get_from_file(char *key, char **val)
+void get_from_file(char *key, char **val, char *filepath)
 {
-        FILE *fp = fopen(HOST_FILE_LOCATION, "r");
+        FILE *fp = fopen(filepath, "r");
 
         if (NULL != fp)
         {
@@ -591,7 +592,7 @@ int createMqttHeader(char **header_list)
 	if( get_deviceMAC() != NULL && strlen(get_deviceMAC()) !=0 )
 	{
 	       strncpy(g_deviceId, get_deviceMAC(), sizeof(g_deviceId)-1);
-              // get_from_file("CID=", &tmp);
+              // get_from_file("CID=", &tmp, HOST_FILE_LOCATION);
 	       WebcfgInfo("g_deviceId fetched is %s\n", g_deviceId);
 	}
 
