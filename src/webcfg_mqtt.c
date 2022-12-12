@@ -85,6 +85,7 @@ bool webcfg_mqtt_init(int status, char *systemreadytime)
 	char topic[256] = { 0 };
 	char hostname[256] = { 0 };
 	int rc;
+	char PORT[32] = { 0 };
 
 	res_init();
 	WebcfgInfo("Initializing MQTT library\n");
@@ -149,9 +150,11 @@ bool webcfg_mqtt_init(int status, char *systemreadytime)
 			return MOSQ_ERR_NOMEM;
 		}
 
-		int port = MQTT_PORT;
-		WebcfgInfo("hostname is %s and port is %d\n", hostname, port);
-		//int port = PORT ? atoi(PORT) : MQTT_PORT;
+		Get_Mqtt_Port(PORT);
+		WebcfgInfo("PORT fetched from TR181 is %s\n", PORT);
+		int port = PORT ? atoi(PORT) : MQTT_PORT;
+		WebcfgInfo("port int %d\n", port);
+
 		struct libmosquitto_tls *tls;
 		tls = malloc (sizeof (struct libmosquitto_tls));
 		if(tls)
