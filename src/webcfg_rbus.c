@@ -39,9 +39,9 @@ static char* locationId =NULL;
 static char* NodeId =NULL;
 static char* Port =NULL;
 static char* broker = NULL;
-static char* SubscribeTopic = NULL;
+/*static char* SubscribeTopic = NULL;
 static char* PublishGetTopic = NULL;
-static char* PublishNotifyTopic = NULL;
+static char* PublishNotifyTopic = NULL;*/
 #endif
 
 static bool  RfcVal = false ;

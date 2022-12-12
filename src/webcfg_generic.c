@@ -76,9 +76,6 @@ int __attribute__((weak)) Get_Mqtt_LocationId( char *pString);
 int __attribute__((weak)) Get_Mqtt_Broker( char *pString);
 int __attribute__((weak)) Get_Mqtt_Port( char *pString);
 int __attribute__((weak)) Get_Mqtt_NodeId( char *pString);
-/*int __attribute__((weak)) Get_Mqtt_SubTopic( char *pString);
-int __attribute__((weak)) Get_Mqtt_PublishGetTopic( char *pString);
-int __attribute__((weak)) Get_Mqtt_PublishNotifyTopic( char *pString);*/
 #endif
 /*----------------------------------------------------------------------------*/
 /*                             External Functions                             */
@@ -261,24 +258,6 @@ int Get_Mqtt_Port( char *pString)
     UNUSED(pString);
     return 0;
 }
-/*int Get_Mqtt_SubTopic( char *pString)
-{
-    WebcfgDebug("Inside Get_Mqtt_SubTopic weak function.\n");
-    UNUSED(pString);
-    return 0;
-}
-int Get_Mqtt_PublishGetTopic( char *pString)
-{
-    WebcfgDebug("Inside Get_Mqtt_PublishGetTopic weak function.\n");
-    UNUSED(pString);
-    return 0;
-}
-int Get_Mqtt_PublishNotifyTopic( char *pString)
-{
-    WebcfgDebug("Inside Get_Mqtt_PublishNotifyTopic weak function.\n");
-    UNUSED(pString);
-    return 0;
-}*/
 #endif
 void setValues(const param_t paramVal[], const unsigned int paramCount, const int setType, char *transactionId, money_trace_spans *timeSpan, WDMP_STATUS *retStatus, int *ccspStatus)
 {

@@ -40,6 +40,10 @@
 #define OPENSYNC_CERT        "/usr/opensync/scripts/managers.init"
 #define KEEPALIVE       180
 #define MQTT_PORT            443
+#define MQTT_SUBSCRIBE_TOPIC_PREFIX "x/to/"
+#define MQTT_PUBLISH_GET_TOPIC_PREFIX "x/fr/get/chi/"
+#define MQTT_PUBLISH_NOTIFY_TOPIC_PREFIX "x/fr/poke/chi/"
+#define MAX_MQTT_LEN  128
 
 bool webcfg_mqtt_init(int status, char *systemreadytime);
 void get_from_file(char *key, char **val, char *filepath);

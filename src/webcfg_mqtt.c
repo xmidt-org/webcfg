@@ -49,6 +49,7 @@ static char g_productClass[64]={'\0'};
 static char g_ModelName[64]={'\0'};
 static char g_PartnerID[64]={'\0'};
 static char g_AccountID[64]={'\0'};
+static char g_NodeID[64] = { 0 };
 static char *supportedVersion_header=NULL;
 static char *supportedDocs_header=NULL;
 static char *supplementaryDocs_header=NULL;
@@ -82,10 +83,10 @@ void convertToUppercase(char* deviceId)
 bool webcfg_mqtt_init(int status, char *systemreadytime)
 {
 	char *client_id , *username = NULL;
-	char topic[256] = { 0 };
 	char hostname[256] = { 0 };
 	int rc;
 	char PORT[32] = { 0 };
+	int port = 0;
 
 	res_init();
 	WebcfgInfo("Initializing MQTT library\n");
@@ -104,8 +105,10 @@ bool webcfg_mqtt_init(int status, char *systemreadytime)
 
 	int clean_session = true;
 
-	client_id = get_deviceMAC();
-	WebcfgInfo("client_id fetched from get_deviceMAC is %s\n", client_id);
+	Get_Mqtt_NodeId(g_NodeID);
+	WebcfgInfo("g_NodeID fetched from Get_Mqtt_NodeId is %s\n", g_NodeID);
+	client_id = strdup(g_NodeID);
+	WebcfgInfo("client_id is %s\n", client_id);
 	
 	if(client_id !=NULL)
 	{
@@ -114,16 +117,6 @@ bool webcfg_mqtt_init(int status, char *systemreadytime)
 
 		execute_mqtt_script(OPENSYNC_CERT);
 
-		Get_Mqtt_SubTopic( topic);
-		if(topic != NULL && strlen(topic)>0)
-		{
-			WebcfgInfo("The topic is %s\n", topic);
-		}
-		else
-		{
-			WebcfgError("Invalid config, topic is NULL\n");
-			return MOSQ_ERR_INVAL;
-		}
 		Get_Mqtt_Broker(hostname);
 		if(hostname != NULL && strlen(hostname)>0)
 		{
@@ -152,7 +145,14 @@ bool webcfg_mqtt_init(int status, char *systemreadytime)
 
 		Get_Mqtt_Port(PORT);
 		WebcfgInfo("PORT fetched from TR181 is %s\n", PORT);
-		int port = PORT ? atoi(PORT) : MQTT_PORT;
+		if(strlen(PORT) > 0)
+		{
+			port = atoi(PORT);
+		}
+		else
+		{
+			port = MQTT_PORT;
+		}
 		WebcfgInfo("port int %d\n", port);
 
 		struct libmosquitto_tls *tls;
@@ -261,7 +261,7 @@ void on_connect(struct mosquitto *mosq, void *obj, int reason_code)
 
 	if(!subscribeFlag)
 	{
-		Get_Mqtt_SubTopic(topic);
+		snprintf(topic,MAX_MQTT_LEN,"%s%s", MQTT_SUBSCRIBE_TOPIC_PREFIX,g_NodeID);
 		if(topic != NULL && strlen(topic)>0)
 		{
 			WebcfgInfo("subscribe to topic %s\n", topic);
@@ -382,7 +382,11 @@ void publish_notify_mqtt(char *pub_topic, void *payload, ssize_t len, char * des
 	if(pub_topic == NULL)
 	{
 		char publish_topic[256] = { 0 };
-		Get_Mqtt_PublishNotifyTopic( publish_topic);
+		char locationID[256] = { 0 };
+
+		Get_Mqtt_LocationId(locationID);
+		WebcfgInfo("locationID fetched from tr181 is %s\n", locationID);
+		snprintf(publish_topic, MAX_MQTT_LEN, "%s%s/%s", MQTT_PUBLISH_NOTIFY_TOPIC_PREFIX, g_NodeID,locationID);
 		if(strlen(publish_topic)>0)
 		{
 			WebcfgInfo("publish_topic fetched from tr181 is %s\n", publish_topic);
@@ -462,7 +466,10 @@ int triggerBootupSync()
 		{
 			WebcfgInfo("mqttheaderList generated is \n%s len %zu\n", mqttheaderList, strlen(mqttheaderList));
 			char publish_get_topic[256] = { 0 };
-			Get_Mqtt_PublishGetTopic( publish_get_topic);
+			char locationID[256] = { 0 };
+			Get_Mqtt_LocationId(locationID);
+			WebcfgInfo("locationID is %s\n", locationID);
+			snprintf(publish_get_topic, MAX_MQTT_LEN, "%s%s/%s", MQTT_PUBLISH_GET_TOPIC_PREFIX, g_NodeID,locationID);
 			if(strlen(publish_get_topic) >0)
 			{
 				pub_get_topic = strdup(publish_get_topic);
