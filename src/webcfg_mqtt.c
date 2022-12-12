@@ -41,7 +41,7 @@ static char g_deviceId[64]={'\0'};
 //global flag to do bootupsync only once after connect and subscribe callback.
 static int bootupsync = 0;
 static int subscribeFlag = 0;
-//
+
 static char g_systemReadyTime[64]={'\0'};
 static char g_FirmwareVersion[64]={'\0'};
 static char g_bootTime[64]={'\0'};
@@ -52,7 +52,7 @@ static char g_AccountID[64]={'\0'};
 static char *supportedVersion_header=NULL;
 static char *supportedDocs_header=NULL;
 static char *supplementaryDocs_header=NULL;
-//
+
 int get_global_mqtt_connected()
 {
     return g_mqttConnected;
@@ -82,10 +82,8 @@ void convertToUppercase(char* deviceId)
 bool webcfg_mqtt_init(int status, char *systemreadytime)
 {
 	char *client_id , *username = NULL;
-	//char * topic, *hostname = NULL;
 	char topic[256] = { 0 };
 	char hostname[256] = { 0 };
-	char *PORT = NULL;
 	int rc;
 
 	res_init();
@@ -105,9 +103,8 @@ bool webcfg_mqtt_init(int status, char *systemreadytime)
 
 	int clean_session = true;
 
-	//client_id = get_deviceMAC();
-	get_from_file("CID=", &client_id, HOST_FILE_LOCATION);
-	WebcfgInfo("client_id is %s\n", client_id);
+	client_id = get_deviceMAC();
+	WebcfgInfo("client_id fetched from get_deviceMAC is %s\n", client_id);
 	
 	if(client_id !=NULL)
 	{
@@ -137,14 +134,6 @@ bool webcfg_mqtt_init(int status, char *systemreadytime)
 			return MOSQ_ERR_INVAL;
 		}
 
-		//struct mosquitto *mosq;
-		//struct userdata__callback cb_userdata;
-
-		//cb_userdata.topic = topic;
-		//cb_userdata.qos = qos;
-		//cb_userdata.userdata = userdata;
-		//cb_userdata.callback = callback;
-
 		if(client_id !=NULL)
 		{
 			mosq = mosquitto_new(client_id, clean_session, NULL);
@@ -160,58 +149,9 @@ bool webcfg_mqtt_init(int status, char *systemreadytime)
 			return MOSQ_ERR_NOMEM;
 		}
 
-		/*if(username !=NULL)
-		{
-			rc = mosquitto_username_pw_set(mosq, username, "password");
-			if(rc)
-			{
-				WebcfgError("Error setting username %s\n", mosquitto_strerror(rc));
-				mosquitto_destroy(mosq);
-				return rc;
-			}
-		}*/
-
-		get_from_file("PORT=", &PORT, HOST_FILE_LOCATION);
-		WebcfgInfo("hostname is %s and PORT is %s\n", hostname, PORT);
-		int port = PORT ? atoi(PORT) : MQTT_PORT;
-		WebcfgInfo("port int %d\n", port);
-		if(port == 80)
-		{
-			WebcfgInfo("connect to mqtt broker without tls\n");
-			//connect to mqtt broker
-			mosquitto_connect_callback_set(mosq, on_connect);
-			mosquitto_subscribe_callback_set(mosq, on_subscribe);
-			mosquitto_message_callback_set(mosq, on_message);
-			mosquitto_publish_callback_set(mosq, on_publish);
-
-			rc = mosquitto_connect(mosq, hostname, port, KEEPALIVE);
-			WebcfgInfo("mosquitto_connect rc %d\n", rc);
-			if(rc != MOSQ_ERR_SUCCESS)
-			{
-				WebcfgError("mqtt connect Error: %s\n", mosquitto_strerror(rc));
-				mosquitto_destroy(mosq);
-				return rc;
-			}
-			else
-			{
-				WebcfgInfo("mosquitto_connect with port 80 is success\n");
-				set_global_mqttConnected();
-			}
-			//WebcfgInfo("broker connect success. mosquitto_loop_forever\n");
-			//rc = mosquitto_loop_forever(mosq, -1, 1);
-			/* Run the network loop in a background thread, this call returns quickly. */
-			//WebcfgInfo("broker connect success. mosquitto_loop\n");
-			rc = mosquitto_loop_start(mosq);
-			if(rc != MOSQ_ERR_SUCCESS)
-			{
-				mosquitto_destroy(mosq);
-				WebcfgError( "mosquitto_loop_start Error: %s\n", mosquitto_strerror(rc));
-				return 1;
-			}
-			WebcfgInfo("after loop rc is %d\n", rc);
-		}
-		else
-		{
+		int port = MQTT_PORT;
+		WebcfgInfo("hostname is %s and port is %d\n", hostname, port);
+		//int port = PORT ? atoi(PORT) : MQTT_PORT;
 		struct libmosquitto_tls *tls;
 		tls = malloc (sizeof (struct libmosquitto_tls));
 		if(tls)
@@ -292,7 +232,6 @@ bool webcfg_mqtt_init(int status, char *systemreadytime)
 			WebcfgError("Allocation failed\n");
 			return MOSQ_ERR_NOMEM;
 		}
-		}
 	}
 	else
 	{
@@ -307,7 +246,6 @@ bool webcfg_mqtt_init(int status, char *systemreadytime)
 void on_connect(struct mosquitto *mosq, void *obj, int reason_code)
 {
         int rc;
-	//char * topic = NULL;
 	char topic[256] = { 0 };
         WebcfgInfo("on_connect: reason_code %d %s\n", reason_code, mosquitto_connack_string(reason_code));
         if(reason_code != 0)
@@ -423,7 +361,6 @@ void on_publish(struct mosquitto *mosq, void *obj, int mid)
 void publish_notify_mqtt(char *pub_topic, void *payload, ssize_t len, char * dest)
 {
         int rc;
-	//char *pub_topic = NULL;
 	if(dest != NULL)
 	{
 		ssize_t payload_len = 0;
@@ -470,15 +407,8 @@ void publish_notify_mqtt(char *pub_topic, void *payload, ssize_t len, char * des
 	{
 		WebcfgInfo("Publish payload success %d\n", rc);
 	}
-	char *pub_loop_enabled = NULL;
-	get_from_file("PUB_LOOP=", &pub_loop_enabled, HOST_FILE_LOCATION);
-	WebcfgInfo("pub_loop_enabled is %s\n", pub_loop_enabled);
-	if(pub_loop_enabled)
-	{
-		WebcfgInfo("Publish mosquitto_loop\n");
-		mosquitto_loop(mosq, 0, 1);
-		WebcfgInfo("Publish mosquitto_loop done\n");
-	}
+	mosquitto_loop(mosq, 0, 1);
+	WebcfgInfo("Publish mosquitto_loop done\n");
 }
 
 void get_from_file(char *key, char **val, char *filepath)
@@ -592,7 +522,6 @@ int createMqttHeader(char **header_list)
 	if( get_deviceMAC() != NULL && strlen(get_deviceMAC()) !=0 )
 	{
 	       strncpy(g_deviceId, get_deviceMAC(), sizeof(g_deviceId)-1);
-              // get_from_file("CID=", &tmp, HOST_FILE_LOCATION);
 	       WebcfgInfo("g_deviceId fetched is %s\n", g_deviceId);
 	}
 

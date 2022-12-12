@@ -35,7 +35,6 @@
 #include "webcfg_generic.h"
 #include "webcfg_auth.h"
 
-#define HOST_FILE_LOCATION   "/nvram/hostname.txt"
 #define MQTT_CONFIG_FILE     "/tmp/.mqttconfig"
 #define MOSQ_TLS_VERSION     "tlsv1.2"
 #define OPENSYNC_CERT        "/usr/opensync/scripts/managers.init"
