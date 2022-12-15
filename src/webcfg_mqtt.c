@@ -25,6 +25,8 @@
 #include <arpa/nameser.h>
 #include <resolv.h>
 #include <ctype.h>
+#include <pthread.h>
+#include <errno.h>
 #include "webcfg_generic.h"
 #include "webcfg_multipart.h"
 #include "webcfg_mqtt.h"
@@ -54,6 +56,9 @@ static char *supportedVersion_header=NULL;
 static char *supportedDocs_header=NULL;
 static char *supplementaryDocs_header=NULL;
 
+pthread_mutex_t mqtt_retry_mut=PTHREAD_MUTEX_INITIALIZER;
+pthread_cond_t mqtt_retry_con=PTHREAD_COND_INITIALIZER;
+
 int get_global_mqtt_connected()
 {
     return g_mqttConnected;
@@ -79,14 +84,111 @@ void convertToUppercase(char* deviceId)
 	}
 }
 
+void init_mqtt_timer (mqtt_timer_t *timer, int max_count)
+{
+  timer->count = 1;
+  timer->max_count = max_count;
+  timer->delay = 1;
+  clock_gettime (CLOCK_REALTIME, &timer->ts);
+}
+
+unsigned update_mqtt_delay (mqtt_timer_t *timer)
+{
+  if (timer->count < timer->max_count) {
+    timer->count += 1;
+    timer->delay = timer->delay + timer->delay + 1;
+    // 3,7,15,31 ..
+  }
+  return (unsigned) timer->delay;
+}
+
+unsigned mqtt_rand_secs (int random_num, unsigned max_secs)
+{
+  unsigned delay_secs = (unsigned) random_num & max_secs;
+  if (delay_secs < 3)
+    return delay_secs + 3;
+  else
+    return delay_secs;
+}
+
+unsigned mqtt_rand_nsecs (int random_num)
+{
+	/* random _num is in range 0..2147483648 */
+	unsigned n = (unsigned) random_num >> 1;
+	/* n is in range 0..1073741824 */
+	if (n < 1000000000)
+	  return n;
+	return n - 1000000000;
+}
+
+void mqtt_add_timespec (struct timespec *t1, struct timespec *t2)
+{
+	t2->tv_sec += t1->tv_sec;
+	t2->tv_nsec += t1->tv_nsec;
+	if (t2->tv_nsec >= 1000000000) {
+	  t2->tv_sec += 1;
+	  t2->tv_nsec -= 1000000000;
+	}
+}
+
+void mqtt_rand_expiration (int random_num1, int random_num2, mqtt_timer_t *timer, struct timespec *ts)
+{
+	unsigned max_secs = update_mqtt_delay (timer); // 3,7,15,31
+	struct timespec ts_delay = {3, 0};
+
+	if (max_secs > 3) {
+	  ts_delay.tv_sec = mqtt_rand_secs (random_num1, max_secs);
+	  ts_delay.tv_nsec = mqtt_rand_nsecs (random_num2);
+	}
+    WebcfgInfo("Waiting max delay %u mqttRetryTime %ld secs %ld usecs\n",
+      max_secs, ts_delay.tv_sec, ts_delay.tv_nsec/1000);
+
+	/* Add delay to expire time */
+    mqtt_add_timespec (&ts_delay, ts);
+}
+
+/* mqtt_retry
+ *
+ * delays for the number of seconds specified in parameter timer
+ * g_shutdown can break out of the delay.
+ *
+ * returns -1 pthread_cond_timedwait error
+ *  1   shutdown
+ *  0    delay taken
+*/
+static int mqtt_retry(mqtt_timer_t *timer)
+{
+  struct timespec ts;
+  int rtn;
+
+  clock_gettime(CLOCK_REALTIME, &ts);
+
+  mqtt_rand_expiration(random(), random(), timer, &ts);
+
+  pthread_mutex_lock(&mqtt_retry_mut);
+  // The condition variable will only be set if we shut down.
+  rtn = pthread_cond_timedwait(&mqtt_retry_con, &mqtt_retry_mut, &ts);
+  pthread_mutex_unlock(&mqtt_retry_mut);
+
+  if (get_global_shutdown())
+    return MQTT_RETRY_SHUTDOWN;
+  if ((rtn != 0) && (rtn != ETIMEDOUT)) {
+    WebcfgError ("pthread_cond_timedwait error (%d) in mqtt_retry.\n", rtn);
+    return MQTT_RETRY_ERR;
+  }
+
+  return MQTT_DELAY_TAKEN;
+}
+
 //Initialize mqtt library and connect to mqtt broker
 bool webcfg_mqtt_init(int status, char *systemreadytime)
 {
 	char *client_id , *username = NULL;
 	char hostname[256] = { 0 };
-	int rc;
+	int rc = 1;
 	char PORT[32] = { 0 };
 	int port = 0;
+	mqtt_timer_t mqtt_timer;
 
 	res_init();
 	WebcfgInfo("Initializing MQTT library\n");
@@ -200,18 +302,27 @@ bool webcfg_mqtt_init(int status, char *systemreadytime)
 				mosquitto_publish_callback_set(mosq, on_publish);
 
 				WebcfgInfo("port %d\n", port);
-				rc = mosquitto_connect(mosq, hostname, port, KEEPALIVE);
-				WebcfgInfo("mosquitto_connect rc %d\n", rc);
-				if(rc != MOSQ_ERR_SUCCESS)
+
+				init_mqtt_timer(&mqtt_timer, MAX_MQTT_RETRY);
+				while(rc != MOSQ_ERR_SUCCESS)
 				{
-					WebcfgError("mqtt connect Error: %s\n", mosquitto_strerror(rc));
-					mosquitto_destroy(mosq);
-					return rc;
-				}
-				else
-				{
-					WebcfgInfo("mqtt broker connect success %d\n", rc);
-					set_global_mqttConnected();
+					rc = mosquitto_connect(mosq, hostname, port, KEEPALIVE);
+					WebcfgInfo("mosquitto_connect rc %d\n", rc);
+					if(rc != MOSQ_ERR_SUCCESS)
+					{
+
+						WebcfgError("mqtt connect Error: %s\n", mosquitto_strerror(rc));
+						if(mqtt_retry(&mqtt_timer) != MQTT_DELAY_TAKEN)
+						{
+							mosquitto_destroy(mosq);
+							return rc;
+						}
+					}
+					else
+					{
+						WebcfgInfo("mqtt broker connect success %d\n", rc);
+						set_global_mqttConnected();
+					}
 				}
 				/*WebcfgInfo("mosquitto_loop_forever\n");
 				rc = mosquitto_loop_forever(mosq, -1, 1);*/
