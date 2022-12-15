@@ -79,6 +79,15 @@ void convertToUppercase(char* deviceId)
 	}
 }
 
+void checkMqttParamSet()
+{
+	WebcfgInfo("checkMqttParamSet\n");
+	pthread_mutex_lock(get_global_mqtt_mut());
+	pthread_cond_wait(get_global_mqtt_cond(), get_global_mqtt_mut());
+	pthread_mutex_unlock(get_global_mqtt_mut());
+	WebcfgInfo("Received mqtt signal proceed to mqtt init\n");
+}
+
 //Initialize mqtt library and connect to mqtt broker
 bool webcfg_mqtt_init(int status, char *systemreadytime)
 {
@@ -88,6 +97,7 @@ bool webcfg_mqtt_init(int status, char *systemreadytime)
 	char PORT[32] = { 0 };
 	int port = 0;
 
+	checkMqttParamSet();
 	res_init();
 	WebcfgInfo("Initializing MQTT library\n");
 

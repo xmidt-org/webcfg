@@ -39,9 +39,10 @@ static char* locationId =NULL;
 static char* NodeId =NULL;
 static char* Port =NULL;
 static char* broker = NULL;
-/*static char* SubscribeTopic = NULL;
-static char* PublishGetTopic = NULL;
-static char* PublishNotifyTopic = NULL;*/
+static int mqinit = 0;
+pthread_mutex_t mqtt_mut=PTHREAD_MUTEX_INITIALIZER;
+pthread_cond_t mqtt_con=PTHREAD_COND_INITIALIZER;
+pthread_mutex_t mqtt_mut=PTHREAD_MUTEX_INITIALIZER;
 #endif
 
 static bool  RfcVal = false ;
@@ -466,6 +467,25 @@ rbusError_t webcfgFrSetHandler(rbusHandle_t handle, rbusProperty_t prop, rbusSet
 }
 
 #ifdef WEBCONFIG_MQTT_SUPPORT
+void validateForMqttInit()
+{
+	if(mqinit == 0)
+	{
+		if (locationId !=NULL && NodeId !=NULL && broker !=NULL)
+		{
+			WebcfgInfo("All 3 mandatory params locationId, NodeId and broker are set, proceed to mqtt init\n");
+			mqinit ==1;
+			pthread_mutex_lock (&mqtt_mut);
+			pthread_cond_signal(&mqtt_con);
+			pthread_mutex_unlock (&mqtt_mut);
+		}
+		else
+		{
+			WebcfgInfo("All 3 mandatory params locationId, NodeId and broker are not set, waiting..\n");
+		}
+	}
+}
+
 rbusError_t webcfgMqttLocationIdSetHandler(rbusHandle_t handle, rbusProperty_t prop, rbusSetHandlerOptions_t* opts)
 {
 	(void) handle;
@@ -518,6 +538,7 @@ rbusError_t webcfgMqttLocationIdSetHandler(rbusHandle_t handle, rbusProperty_t p
 				{
 					WebcfgInfo("psm_set success ret %d for parameter %s and value %s\n", retPsmSet, paramName, locationId);
 				}
+				validateForMqttInit();
             		}
         	} else {
             		WebcfgError("Unexpected value type for property %s\n", paramName);
@@ -579,6 +600,7 @@ rbusError_t webcfgMqttBrokerSetHandler(rbusHandle_t handle, rbusProperty_t prop,
 			{
 				WebcfgInfo("psm_set success ret %d for parameter %s and value %s\n", retPsmSet, paramName, broker);
 			}
+			validateForMqttInit();
             	}
         } else {
             WebcfgError("Unexpected value type for property %s\n", paramName);
@@ -641,6 +663,7 @@ rbusError_t webcfgMqttNodeIdSetHandler(rbusHandle_t handle, rbusProperty_t prop,
 				{
 					WebcfgInfo("psm_set success ret %d for parameter %s and value %s\n", retPsmSet, paramName, NodeId);
 				}
+				validateForMqttInit();
 			}
 		} else {
 			WebcfgError("Unexpected value type for property %s\n", paramName);
@@ -702,6 +725,7 @@ rbusError_t webcfgMqttPortSetHandler(rbusHandle_t handle, rbusProperty_t prop, r
 				{
 					WebcfgInfo("psm_set success ret %d for parameter %s and value %s\n", retPsmSet, paramName, Port);
 				}
+				validateForMqttInit();
 			}
 		} else {
 			WebcfgError("Unexpected value type for property %s\n", paramName);
@@ -710,191 +734,6 @@ rbusError_t webcfgMqttPortSetHandler(rbusHandle_t handle, rbusProperty_t prop, r
 	}
 	return RBUS_ERROR_SUCCESS;
 }
-
-/*rbusError_t webcfgMqttSubscribeTopicSetHandler(rbusHandle_t handle, rbusProperty_t prop, rbusSetHandlerOptions_t* opts)
-{
-	(void) handle;
-	(void) opts;
-	char const* paramName = rbusProperty_GetName(prop);
-
-	if(strncmp(paramName, WEBCFG_MQTT_SUBSCRIBE_TOPIC_PARAM, maxParamLen) != 0)
-    	{
-        	WebcfgError("Unexpected parameter = %s\n", paramName);
-        	return RBUS_ERROR_ELEMENT_DOES_NOT_EXIST;
-    	}
-
-	rbusError_t retPsmSet = RBUS_ERROR_BUS_ERROR;
-    	WebcfgDebug("Parameter name is %s \n", paramName);
-    	rbusValueType_t type_t;
-    	rbusValue_t paramValue_t = rbusProperty_GetValue(prop);
-    	if(paramValue_t) {
-        	type_t = rbusValue_GetType(paramValue_t);
-    	} else {
-		WebcfgError("Invalid input to set\n");
-        	return RBUS_ERROR_INVALID_INPUT;
-    	}
-
-    	if(strncmp(paramName, WEBCFG_MQTT_SUBSCRIBE_TOPIC_PARAM, maxParamLen) == 0) {
-
-	if (!isRfcEnabled())
-	{
-		WebcfgError("RfcEnable is disabled so, %s SET failed\n",paramName);
-		return RBUS_ERROR_ACCESS_NOT_ALLOWED;
-	}
-        if(type_t == RBUS_STRING) {
-            	char* data = rbusValue_ToString(paramValue_t, NULL, 0);
-            	if(data) {
-                	WebcfgDebug("Call datamodel function  with data %s\n", data);
-
-                	if(SubscribeTopic) {
-                    		free(SubscribeTopic);
-                    		SubscribeTopic = NULL;
-                	}
-                	SubscribeTopic = strdup(data);
-                	free(data);
-			WebcfgDebug("Subscribe Topic after processing %s\n", SubscribeTopic);
-			retPsmSet = rbus_StoreValueIntoDB( WEBCFG_MQTT_SUBSCRIBE_TOPIC_PARAM, SubscribeTopic);
-			if (retPsmSet != RBUS_ERROR_SUCCESS)
-			{
-				WebcfgError("psm_set failed ret %d for parameter %s and value %s\n", retPsmSet, paramName, SubscribeTopic);
-				return retPsmSet;
-			}
-			else
-			{
-				WebcfgInfo("psm_set success ret %d for parameter %s and value %s\n", retPsmSet, paramName, SubscribeTopic);
-			}
-            	}
-        } else {
-            WebcfgError("Unexpected value type for property %s\n", paramName);
-	    return RBUS_ERROR_INVALID_INPUT;
-        }
-    }
-    return RBUS_ERROR_SUCCESS;
-}
-
-rbusError_t webcfgMqttPublicSetTopicSetHandler(rbusHandle_t handle, rbusProperty_t prop, rbusSetHandlerOptions_t* opts)
-{
-	(void) handle;
-	(void) opts;
-	char const* paramName = rbusProperty_GetName(prop);
-
-	if(strncmp(paramName, WEBCFG_PUBLISH_GET_TOPIC_PARAM, maxParamLen) != 0)
-    	{
-        	WebcfgError("Unexpected parameter = %s\n", paramName);
-        	return RBUS_ERROR_ELEMENT_DOES_NOT_EXIST;
-    	}
-
-	rbusError_t retPsmSet = RBUS_ERROR_BUS_ERROR;
-    	WebcfgDebug("Parameter name is %s \n", paramName);
-    	rbusValueType_t type_t;
-    	rbusValue_t paramValue_t = rbusProperty_GetValue(prop);
-    	if(paramValue_t) {
-        	type_t = rbusValue_GetType(paramValue_t);
-    	} else {
-		WebcfgError("Invalid input to set\n");
-        	return RBUS_ERROR_INVALID_INPUT;
-    	}
-
-    if(strncmp(paramName, WEBCFG_PUBLISH_GET_TOPIC_PARAM, maxParamLen) == 0) {
-
-	if (!isRfcEnabled())
-	{
-		WebcfgError("RfcEnable is disabled so, %s SET failed\n",paramName);
-		return RBUS_ERROR_ACCESS_NOT_ALLOWED;
-	}
-        if(type_t == RBUS_STRING) {
-            	char* data = rbusValue_ToString(paramValue_t, NULL, 0);
-            	if(data) {
-                	WebcfgDebug("Call datamodel function  with data %s\n", data);
-
-                	if(PublishGetTopic) {
-                    		free(PublishGetTopic);
-                    		PublishGetTopic = NULL;
-                	}
-                	PublishGetTopic = strdup(data);
-                	free(data);
-			WebcfgDebug("PublishGetTopic after processing %s\n", PublishGetTopic);
-			retPsmSet = rbus_StoreValueIntoDB( WEBCFG_PUBLISH_GET_TOPIC_PARAM, PublishGetTopic);
-			if (retPsmSet != RBUS_ERROR_SUCCESS)
-			{
-				WebcfgError("psm_set failed ret %d for parameter %s and value %s\n", retPsmSet, paramName, PublishGetTopic);
-				return retPsmSet;
-			}
-			else
-			{
-				WebcfgInfo("psm_set success ret %d for parameter %s and value %s\n", retPsmSet, paramName, PublishGetTopic);
-			}
-            	}
-        } else {
-            WebcfgError("Unexpected value type for property %s\n", paramName);
-	    return RBUS_ERROR_INVALID_INPUT;
-        }
-    }
-    return RBUS_ERROR_SUCCESS;
-
-}
-
-rbusError_t webcfgMqttPublishNotifyTopicSetHandler(rbusHandle_t handle, rbusProperty_t prop, rbusSetHandlerOptions_t* opts)
-{
-	(void) handle;
-	(void) opts;
-	char const* paramName = rbusProperty_GetName(prop);
-
-	if(strncmp(paramName, WEBCFG_MQTT_PUBLISH_NOTIFY_TOPIC_PARAM, maxParamLen) != 0)
-	{
-		WebcfgError("Unexpected parameter = %s\n", paramName);
-		return RBUS_ERROR_ELEMENT_DOES_NOT_EXIST;
-	}
-
-	rbusError_t retPsmSet = RBUS_ERROR_BUS_ERROR;
-    WebcfgDebug("Parameter name is %s \n", paramName);
-    rbusValueType_t type_t;
-    rbusValue_t paramValue_t = rbusProperty_GetValue(prop);
-    if(paramValue_t) {
-        type_t = rbusValue_GetType(paramValue_t);
-    } else {
-	WebcfgError("Invalid input to set\n");
-        return RBUS_ERROR_INVALID_INPUT;
-    }
-
-    if(strncmp(paramName, WEBCFG_MQTT_PUBLISH_NOTIFY_TOPIC_PARAM, maxParamLen) == 0) {
-
-	if (!isRfcEnabled())
-	{
-		WebcfgError("RfcEnable is disabled so, %s SET failed\n",paramName);
-		return RBUS_ERROR_ACCESS_NOT_ALLOWED;
-	}
-        if(type_t == RBUS_STRING) {
-		char* data = rbusValue_ToString(paramValue_t, NULL, 0);
-		if(data) {
-			WebcfgDebug("Call datamodel function  with data %s\n", data);
-
-			if(PublishNotifyTopic) {
-				free(PublishNotifyTopic);
-				PublishNotifyTopic = NULL;
-			}
-			PublishNotifyTopic = strdup(data);
-			free(data);
-			WebcfgDebug("PublishNotifyTopic after processing %s\n", PublishNotifyTopic);
-			retPsmSet = rbus_StoreValueIntoDB( WEBCFG_MQTT_PUBLISH_NOTIFY_TOPIC_PARAM, PublishNotifyTopic);
-			if (retPsmSet != RBUS_ERROR_SUCCESS)
-			{
-				WebcfgError("psm_set failed ret %d for parameter %s and value %s\n", retPsmSet, paramName, PublishNotifyTopic);
-				return retPsmSet;
-			}
-			else
-			{
-				WebcfgInfo("psm_set success ret %d for parameter %s and value %s\n", retPsmSet, paramName, PublishNotifyTopic);
-			}
-            	}
-        } else {
-            WebcfgError("Unexpected value type for property %s\n", paramName);
-	    return RBUS_ERROR_INVALID_INPUT;
-        }
-    }
-    return RBUS_ERROR_SUCCESS;
-
-}*/
 #endif
 
 /**
@@ -1486,191 +1325,6 @@ rbusError_t webcfgMqttPortGetHandler(rbusHandle_t handle, rbusProperty_t propert
     }
     return RBUS_ERROR_SUCCESS;
 }
-/*rbusError_t webcfgMqttSubscribeTopicGetHandler(rbusHandle_t handle, rbusProperty_t property, rbusGetHandlerOptions_t* opts)
-{
-
-    (void) handle;
-    (void) opts;
-    char const* propertyName;
-    rbusError_t retPsmGet = RBUS_ERROR_BUS_ERROR;
-
-    propertyName = rbusProperty_GetName(property);
-    if(propertyName) {
-        WebcfgDebug("Property Name is %s \n", propertyName);
-    } else {
-        WebcfgError("Unable to handle get request for property \n");
-        return RBUS_ERROR_INVALID_INPUT;
-	}
-   if(strncmp(propertyName, WEBCFG_MQTT_SUBSCRIBE_TOPIC_PARAM, maxParamLen) == 0)
-   {
-
-	rbusValue_t value;
-        rbusValue_Init(&value);
-
-	if(!isRfcEnabled())
-	{
-		WebcfgError("RfcEnable is disabled so, %s Get from DB failed\n",propertyName);
-		rbusValue_SetString(value, "");
-		rbusProperty_SetValue(property, value);
-		rbusValue_Release(value);
-		return 0;
-	}
-        if(SubscribeTopic){
-            rbusValue_SetString(value, SubscribeTopic);
-	}
-        else{
-		retPsmGet = rbus_GetValueFromDB( WEBCFG_MQTT_SUBSCRIBE_TOPIC_PARAM, &SubscribeTopic );
-		if (retPsmGet != RBUS_ERROR_SUCCESS){
-			WebcfgError("psm_get failed ret %d for parameter %s and value %s\n", retPsmGet, propertyName, SubscribeTopic);
-			if(value)
-			{
-				rbusValue_Release(value);
-			}
-			return retPsmGet;
-		}
-		else{
-			WebcfgInfo("psm_get success ret %d for parameter %s and value %s\n", retPsmGet, propertyName, SubscribeTopic);
-			if(SubscribeTopic)
-			{
-				rbusValue_SetString(value, SubscribeTopic);
-			}
-			else
-			{
-				WebcfgError("Subscribe Toppic is empty\n");
-				rbusValue_SetString(value, "");
-			}
-		}
-	}
-        rbusProperty_SetValue(property, value);
-        rbusValue_Release(value);
-
-    }
-    return RBUS_ERROR_SUCCESS;
-}
-
-rbusError_t webcfgMqttPublishGetTopicGetHandler(rbusHandle_t handle, rbusProperty_t property, rbusGetHandlerOptions_t* opts)
-{
-
-    (void) handle;
-    (void) opts;
-    char const* propertyName;
-    rbusError_t retPsmGet = RBUS_ERROR_BUS_ERROR;
-
-    propertyName = rbusProperty_GetName(property);
-    if(propertyName) {
-        WebcfgDebug("Property Name is %s \n", propertyName);
-    } else {
-        WebcfgError("Unable to handle get request for property \n");
-        return RBUS_ERROR_INVALID_INPUT;
-	}
-   if(strncmp(propertyName, WEBCFG_PUBLISH_GET_TOPIC_PARAM, maxParamLen) == 0)
-   {
-
-	rbusValue_t value;
-        rbusValue_Init(&value);
-
-	if(!isRfcEnabled())
-	{
-		WebcfgError("RfcEnable is disabled so, %s Get from DB failed\n",propertyName);
-		rbusValue_SetString(value, "");
-		rbusProperty_SetValue(property, value);
-		rbusValue_Release(value);
-		return 0;
-	}
-        if(PublishGetTopic){
-            rbusValue_SetString(value, PublishGetTopic);
-	}
-        else{
-		retPsmGet = rbus_GetValueFromDB( WEBCFG_PUBLISH_GET_TOPIC_PARAM, &PublishGetTopic );
-		if (retPsmGet != RBUS_ERROR_SUCCESS){
-			WebcfgError("psm_get failed ret %d for parameter %s and value %s\n", retPsmGet, propertyName, PublishGetTopic);
-                        if(value)
-			{
-				rbusValue_Release(value);
-			}
-			return retPsmGet;
-		}
-		else{
-			WebcfgInfo("psm_get success ret %d for parameter %s and value %s\n", retPsmGet, propertyName, PublishGetTopic);
-			if(PublishGetTopic)
-			{
-				rbusValue_SetString(value, PublishGetTopic);
-			}
-			else
-			{
-				WebcfgError("PublishGetTopic is empty\n");
-				rbusValue_SetString(value, "");
-			}
-		}
-	}
-        rbusProperty_SetValue(property, value);
-        rbusValue_Release(value);
-
-    }
-    return RBUS_ERROR_SUCCESS;
-}
-
-rbusError_t webcfgMqttPublishNotifyTopicGetHandler(rbusHandle_t handle, rbusProperty_t property, rbusGetHandlerOptions_t* opts)
-{
-
-    (void) handle;
-    (void) opts;
-    char const* propertyName;
-    rbusError_t retPsmGet = RBUS_ERROR_BUS_ERROR;
-
-    propertyName = rbusProperty_GetName(property);
-    if(propertyName) {
-        WebcfgDebug("Property Name is %s \n", propertyName);
-    } else {
-        WebcfgError("Unable to handle get request for property \n");
-        return RBUS_ERROR_INVALID_INPUT;
-	}
-   if(strncmp(propertyName, WEBCFG_MQTT_PUBLISH_NOTIFY_TOPIC_PARAM, maxParamLen) == 0)
-   {
-
-	rbusValue_t value;
-        rbusValue_Init(&value);
-
-	if(!isRfcEnabled())
-	{
-		WebcfgError("RfcEnable is disabled so, %s Get from DB failed\n",propertyName);
-		rbusValue_SetString(value, "");
-		rbusProperty_SetValue(property, value);
-		rbusValue_Release(value);
-		return 0;
-	}
-        if(PublishNotifyTopic){
-            rbusValue_SetString(value, PublishNotifyTopic);
-	}
-        else{
-		retPsmGet = rbus_GetValueFromDB( WEBCFG_MQTT_PUBLISH_NOTIFY_TOPIC_PARAM, &PublishNotifyTopic );
-		if (retPsmGet != RBUS_ERROR_SUCCESS){
-			WebcfgError("psm_get failed ret %d for parameter %s and value %s\n", retPsmGet, propertyName, PublishNotifyTopic);
-                        if(value)
-			{	
-				rbusValue_Release(value);
-			}
-			return retPsmGet;
-		}
-		else{
-			WebcfgInfo("psm_get success ret %d for parameter %s and value %s\n", retPsmGet, propertyName, PublishNotifyTopic);
-			if(PublishNotifyTopic)
-			{
-				rbusValue_SetString(value, PublishNotifyTopic);
-			}
-			else
-			{
-				WebcfgError("PublishNotifyTopic is empty\n");
-				rbusValue_SetString(value, "");
-			}
-		}
-	}
-        rbusProperty_SetValue(property, value);
-        rbusValue_Release(value);
-
-    }
-    return RBUS_ERROR_SUCCESS;
-}*/
 #endif
 
 /**
@@ -1917,10 +1571,7 @@ WEBCFG_STATUS regWebConfigDataModel()
 		{WEBCFG_MQTT_LOCATIONID_PARAM, RBUS_ELEMENT_TYPE_PROPERTY, {webcfgMqttLocationIdGetHandler, webcfgMqttLocationIdSetHandler, NULL, NULL, NULL, NULL}},
 		{WEBCFG_MQTT_BROKER_PARAM, RBUS_ELEMENT_TYPE_PROPERTY, {webcfgMqttBrokerGetHandler, webcfgMqttBrokerSetHandler, NULL, NULL, NULL, NULL}},
 		{WEBCFG_MQTT_NODEID_PARAM, RBUS_ELEMENT_TYPE_PROPERTY, {webcfgMqttNodeIdGetHandler, webcfgMqttNodeIdSetHandler, NULL, NULL, NULL, NULL}},
-		{WEBCFG_MQTT_PORT_PARAM, RBUS_ELEMENT_TYPE_PROPERTY, {webcfgMqttPortGetHandler, webcfgMqttPortSetHandler, NULL, NULL, NULL, NULL}},
-		/*{WEBCFG_MQTT_SUBSCRIBE_TOPIC_PARAM, RBUS_ELEMENT_TYPE_PROPERTY, {webcfgMqttSubscribeTopicGetHandler, webcfgMqttSubscribeTopicSetHandler, NULL, NULL, NULL, NULL}},
-		{WEBCFG_PUBLISH_GET_TOPIC_PARAM, RBUS_ELEMENT_TYPE_PROPERTY, {webcfgMqttPublishGetTopicGetHandler, webcfgMqttPublicSetTopicSetHandler, NULL, NULL, NULL, NULL}},
-		{WEBCFG_MQTT_PUBLISH_NOTIFY_TOPIC_PARAM, RBUS_ELEMENT_TYPE_PROPERTY, {webcfgMqttPublishNotifyTopicGetHandler, webcfgMqttPublishNotifyTopicSetHandler, NULL, NULL, NULL, NULL}}*/
+		{WEBCFG_MQTT_PORT_PARAM, RBUS_ELEMENT_TYPE_PROPERTY, {webcfgMqttPortGetHandler, webcfgMqttPortSetHandler, NULL, NULL, NULL, NULL}}
 	};
 
 	ret3 = rbus_regDataElements(rbus_handle, NUM_WEBCFG_ELEMENTS3, dataElements3);
