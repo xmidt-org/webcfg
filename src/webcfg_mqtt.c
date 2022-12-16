@@ -210,7 +210,7 @@ bool webcfg_mqtt_init(int status, char *systemreadytime)
 	int port = 0;
 	mqtt_timer_t mqtt_timer;
 
-	checkMqttParamSet();
+	//checkMqttParamSet();
 	res_init();
 	WebcfgInfo("Initializing MQTT library\n");
 
