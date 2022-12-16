@@ -30,6 +30,7 @@
 #include "webcfg_generic.h"
 #include "webcfg_multipart.h"
 #include "webcfg_mqtt.h"
+#include "webcfg_rbus.h"
 
 void on_connect(struct mosquitto *mosq, void *obj, int reason_code);
 void on_subscribe(struct mosquitto *mosq, void *obj, int mid, int qos_count, const int *granted_qos);

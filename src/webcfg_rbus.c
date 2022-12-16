@@ -42,7 +42,6 @@ static char* broker = NULL;
 static int mqinit = 0;
 pthread_mutex_t mqtt_mut=PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t mqtt_con=PTHREAD_COND_INITIALIZER;
-pthread_mutex_t mqtt_mut=PTHREAD_MUTEX_INITIALIZER;
 #endif
 
 static bool  RfcVal = false ;
@@ -147,6 +146,18 @@ void webpaRbus_Uninit()
 {
     rbus_close(rbus_handle);
 }
+
+#ifdef WEBCONFIG_MQTT_SUPPORT
+pthread_cond_t *get_global_mqtt_cond(void)
+{
+    return &mqtt_con;
+}
+
+pthread_mutex_t *get_global_mqtt_mut(void)
+{
+    return &mqtt_mut;
+}
+#endif
 
 /**
  * Data set handler for parameters owned by Webconfig
@@ -474,7 +485,7 @@ void validateForMqttInit()
 		if (locationId !=NULL && NodeId !=NULL && broker !=NULL)
 		{
 			WebcfgInfo("All 3 mandatory params locationId, NodeId and broker are set, proceed to mqtt init\n");
-			mqinit ==1;
+			mqinit = 1;
 			pthread_mutex_lock (&mqtt_mut);
 			pthread_cond_signal(&mqtt_con);
 			pthread_mutex_unlock (&mqtt_mut);

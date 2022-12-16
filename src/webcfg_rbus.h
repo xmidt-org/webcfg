@@ -133,4 +133,9 @@ webcfgError_t fetchMpBlobData(char *docname, void **blobdata, int *len, uint32_t
 #ifdef WAN_FAILOVER_SUPPORTED
 int subscribeTo_CurrentActiveInterface_Event();
 #endif
+
+#ifdef WEBCONFIG_MQTT_SUPPORT
+pthread_cond_t *get_global_mqtt_cond(void);
+pthread_mutex_t *get_global_mqtt_mut(void);
+#endif
 #endif
