@@ -46,6 +46,7 @@
 
 #ifdef WEBCONFIG_MQTT_SUPPORT
 #define NUM_WEBCFG_ELEMENTS3 4
+void validateForMqttInit();
 #endif
 
 #define WEBCFG_COMPONENT_NAME "webconfig"
@@ -66,9 +67,6 @@
 #define WEBCFG_MQTT_BROKER_PARAM "Device.X_RDK_WebConfig.MQTT.Broker"
 #define WEBCFG_MQTT_NODEID_PARAM "Device.X_RDK_WebConfig.MQTT.NodeId"
 #define WEBCFG_MQTT_PORT_PARAM "Device.X_RDK_WebConfig.MQTT.Port"
-//#define WEBCFG_MQTT_SUBSCRIBE_TOPIC_PARAM "Device.X_RDK_WebConfig.MQTT.SubscribeTopic"
-//#define WEBCFG_PUBLISH_GET_TOPIC_PARAM "Device.X_RDK_WebConfig.MQTT.PublishGetTopic"
-//#define WEBCFG_MQTT_PUBLISH_NOTIFY_TOPIC_PARAM "Device.X_RDK_WebConfig.MQTT.PublishNotifyTopic"
 #endif
 
 #ifdef WAN_FAILOVER_SUPPORTED

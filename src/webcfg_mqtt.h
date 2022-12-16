@@ -66,4 +66,5 @@ void reset_global_mqttConnected();
 void set_global_mqttConnected();
 int createMqttHeader(char **header_list);
 int triggerBootupSync();
+void checkMqttParamSet();
 #endif
