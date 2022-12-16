@@ -360,6 +360,11 @@ void *WebConfigMultipartTask(void *status)
 	pthread_cond_signal (get_global_notify_con());
 	pthread_mutex_unlock (get_global_notify_mut());
 
+#ifdef WEBCONFIG_MQTT_SUPPORT
+	pthread_mutex_lock (get_global_mqtt_retry_mut());
+	pthread_cond_signal (get_global_mqtt_retry_cond());
+	pthread_mutex_unlock (get_global_mqtt_retry_mut());
+#endif
 
 	if(get_global_eventFlag())
 	{

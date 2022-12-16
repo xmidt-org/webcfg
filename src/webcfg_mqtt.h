@@ -67,4 +67,6 @@ void set_global_mqttConnected();
 int createMqttHeader(char **header_list);
 int triggerBootupSync();
 void checkMqttParamSet();
+pthread_mutex_t *get_global_mqtt_retry_mut(void);
+pthread_cond_t *get_global_mqtt_retry_cond(void);
 #endif

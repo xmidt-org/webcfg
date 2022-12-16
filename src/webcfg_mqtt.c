@@ -85,6 +85,16 @@ void convertToUppercase(char* deviceId)
 	}
 }
 
+pthread_cond_t *get_global_mqtt_retry_cond(void)
+{
+    return &mqtt_retry_con;
+}
+
+pthread_mutex_t *get_global_mqtt_retry_mut(void)
+{
+    return &mqtt_retry_mut;
+}
+
 void checkMqttParamSet()
 {
 	WebcfgInfo("checkMqttParamSet\n");
@@ -323,7 +333,7 @@ bool webcfg_mqtt_init(int status, char *systemreadytime)
 					{
 
 						WebcfgError("mqtt connect Error: %s\n", mosquitto_strerror(rc));
-						if(mqtt_retry(&mqtt_timer) != MQTT_DELAY_TAKEN)
+						if((mqtt_retry(&mqtt_timer) != MQTT_DELAY_TAKEN) || (mqtt_retry(&mqtt_timer) != MQTT_RETRY_SHUTDOWN))
 						{
 							mosquitto_destroy(mosq);
 							return rc;
