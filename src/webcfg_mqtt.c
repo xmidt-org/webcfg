@@ -205,7 +205,7 @@ bool webcfg_mqtt_init(int status, char *systemreadytime)
 {
 	char *client_id , *username = NULL;
 	char hostname[256] = { 0 };
-	int rc = 1;
+	int rc;
 	char PORT[32] = { 0 };
 	int port = 0;
 	mqtt_timer_t mqtt_timer;
@@ -325,6 +325,7 @@ bool webcfg_mqtt_init(int status, char *systemreadytime)
 				WebcfgInfo("port %d\n", port);
 
 				init_mqtt_timer(&mqtt_timer, MAX_MQTT_RETRY);
+				rc = 1;    //for resetting purpose
 				while(rc != MOSQ_ERR_SUCCESS)
 				{
 					rc = mosquitto_connect(mosq, hostname, port, KEEPALIVE);
