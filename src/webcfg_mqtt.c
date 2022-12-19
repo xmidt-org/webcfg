@@ -108,8 +108,8 @@ void init_mqtt_timer (mqtt_timer_t *timer, int max_count)
 {
   timer->count = 1;
   timer->max_count = max_count;
-  timer->delay = 1;
-  clock_gettime (CLOCK_REALTIME, &timer->ts);
+  timer->delay = 3;  //7s,15s,31s....
+  clock_gettime (CLOCK_MONOTONIC, &timer->ts);
 }
 
 unsigned update_mqtt_delay (mqtt_timer_t *timer)
@@ -181,7 +181,13 @@ static int mqtt_retry(mqtt_timer_t *timer)
   struct timespec ts;
   int rtn;
 
-  clock_gettime(CLOCK_REALTIME, &ts);
+  pthread_condattr_t mqtt_retry_con_attr;
+
+  pthread_condattr_init (&mqtt_retry_con_attr);
+  pthread_condattr_setclock (&mqtt_retry_con_attr, CLOCK_MONOTONIC);
+  pthread_cond_init (&mqtt_retry_con, &mqtt_retry_con_attr);
+
+  clock_gettime(CLOCK_MONOTONIC, &ts);
 
   mqtt_rand_expiration(random(), random(), timer, &ts);
 
@@ -189,6 +195,8 @@ static int mqtt_retry(mqtt_timer_t *timer)
   // The condition variable will only be set if we shut down.
   rtn = pthread_cond_timedwait(&mqtt_retry_con, &mqtt_retry_mut, &ts);
   pthread_mutex_unlock(&mqtt_retry_mut);
+
+  pthread_condattr_destroy(&mqtt_retry_con_attr);
 
   if (get_global_shutdown())
     return MQTT_RETRY_SHUTDOWN;

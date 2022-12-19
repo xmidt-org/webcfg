@@ -45,7 +45,7 @@
 #define MQTT_PUBLISH_NOTIFY_TOPIC_PREFIX "x/fr/poke/chi/"
 #define MAX_MQTT_LEN  128
 
-#define MAX_MQTT_RETRY 9
+#define MAX_MQTT_RETRY 8
 #define MQTT_RETRY_ERR -1
 #define MQTT_RETRY_SHUTDOWN   1
 #define MQTT_DELAY_TAKEN 0
