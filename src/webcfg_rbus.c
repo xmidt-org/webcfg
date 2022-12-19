@@ -478,7 +478,7 @@ rbusError_t webcfgFrSetHandler(rbusHandle_t handle, rbusProperty_t prop, rbusSet
 }
 
 #ifdef WEBCONFIG_MQTT_SUPPORT
-void validateForMqttInit()
+int validateForMqttInit()
 {
 	if(mqinit == 0)
 	{
@@ -489,12 +489,14 @@ void validateForMqttInit()
 			pthread_mutex_lock (&mqtt_mut);
 			pthread_cond_signal(&mqtt_con);
 			pthread_mutex_unlock (&mqtt_mut);
+			return 0;
 		}
 		else
 		{
 			WebcfgInfo("All 3 mandatory params locationId, NodeId and broker are not set, waiting..\n");
 		}
 	}
+	return 1;
 }
 
 rbusError_t webcfgMqttLocationIdSetHandler(rbusHandle_t handle, rbusProperty_t prop, rbusSetHandlerOptions_t* opts)
@@ -1142,7 +1144,6 @@ rbusError_t webcfgMqttLocationIdGetHandler(rbusHandle_t handle, rbusProperty_t p
 				WebcfgError("locationId is empty\n");
 				rbusValue_SetString(value, "");
 			}
-			validateForMqttInit();
 		}
 	}
         rbusProperty_SetValue(property, value);
@@ -1205,7 +1206,6 @@ rbusError_t webcfgMqttBrokerGetHandler(rbusHandle_t handle, rbusProperty_t prope
 				WebcfgError("Broker is empty\n");
 				rbusValue_SetString(value, "");
 			}
-			validateForMqttInit();
 		}
 	}
         rbusProperty_SetValue(property, value);
@@ -1268,7 +1268,6 @@ rbusError_t webcfgMqttNodeIdGetHandler(rbusHandle_t handle, rbusProperty_t prope
 				WebcfgError("NodeId is empty\n");
 				rbusValue_SetString(value, "");
 			}
-			validateForMqttInit();
 		}
 	}
         rbusProperty_SetValue(property, value);
@@ -1331,7 +1330,6 @@ rbusError_t webcfgMqttPortGetHandler(rbusHandle_t handle, rbusProperty_t propert
 				WebcfgError("Port is empty\n");
 				rbusValue_SetString(value, "");
 			}
-			validateForMqttInit();
 		}
 	}
         rbusProperty_SetValue(property, value);

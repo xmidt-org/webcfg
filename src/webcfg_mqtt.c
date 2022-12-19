@@ -98,10 +98,18 @@ pthread_mutex_t *get_global_mqtt_retry_mut(void)
 void checkMqttParamSet()
 {
 	WebcfgInfo("checkMqttParamSet\n");
-	pthread_mutex_lock(get_global_mqtt_mut());
-	pthread_cond_wait(get_global_mqtt_cond(), get_global_mqtt_mut());
-	pthread_mutex_unlock(get_global_mqtt_mut());
-	WebcfgInfo("Received mqtt signal proceed to mqtt init\n");
+
+	if( !validateForMqttInit())
+	{
+		WebcfgInfo("Validation success for mqtt parameters, proceed to mqtt init\n");
+	}
+	else
+	{
+		pthread_mutex_lock(get_global_mqtt_mut());
+		pthread_cond_wait(get_global_mqtt_cond(), get_global_mqtt_mut());
+		pthread_mutex_unlock(get_global_mqtt_mut());
+		WebcfgInfo("Received mqtt signal proceed to mqtt init\n");
+	}
 }
 
 void init_mqtt_timer (mqtt_timer_t *timer, int max_count)
@@ -218,7 +226,7 @@ bool webcfg_mqtt_init(int status, char *systemreadytime)
 	int port = 0;
 	mqtt_timer_t mqtt_timer;
 
-	//checkMqttParamSet();
+	checkMqttParamSet();
 	res_init();
 	WebcfgInfo("Initializing MQTT library\n");
 

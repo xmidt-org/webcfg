@@ -46,7 +46,6 @@
 
 #ifdef WEBCONFIG_MQTT_SUPPORT
 #define NUM_WEBCFG_ELEMENTS3 4
-void validateForMqttInit();
 #endif
 
 #define WEBCFG_COMPONENT_NAME "webconfig"
@@ -135,6 +134,7 @@ int subscribeTo_CurrentActiveInterface_Event();
 #endif
 
 #ifdef WEBCONFIG_MQTT_SUPPORT
+int validateForMqttInit();
 pthread_cond_t *get_global_mqtt_cond(void);
 pthread_mutex_t *get_global_mqtt_mut(void);
 #endif
