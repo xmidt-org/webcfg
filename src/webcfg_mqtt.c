@@ -350,7 +350,7 @@ bool webcfg_mqtt_init(int status, char *systemreadytime)
 					{
 
 						WebcfgError("mqtt connect Error: %s\n", mosquitto_strerror(rc));
-						if((mqtt_retry(&mqtt_timer) != MQTT_DELAY_TAKEN) || (mqtt_retry(&mqtt_timer) != MQTT_RETRY_SHUTDOWN))
+						if(mqtt_retry(&mqtt_timer) != MQTT_DELAY_TAKEN)
 						{
 							mosquitto_destroy(mosq);
 							return rc;
