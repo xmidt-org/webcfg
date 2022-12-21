@@ -482,14 +482,21 @@ int validateForMqttInit()
 {
 	if(mqinit == 0)
 	{
-		if ((strlen(locationId) != 0) && (strlen(NodeId) != 0) && (strlen(broker) !=0))
+		if (locationId != NULL && NodeId != NULL && broker != NULL)
 		{
-			WebcfgInfo("All 3 mandatory params locationId, NodeId and broker are set, proceed to mqtt init\n");
-			mqinit = 1;
-			pthread_mutex_lock (&mqtt_mut);
-			pthread_cond_signal(&mqtt_con);
-			pthread_mutex_unlock (&mqtt_mut);
-			return 0;
+			if ((strlen(locationId) != 0) && (strlen(NodeId) != 0) && (strlen(broker) !=0))
+			{
+				WebcfgInfo("All 3 mandatory params locationId, NodeId and broker are set, proceed to mqtt init\n");
+				mqinit = 1;
+				pthread_mutex_lock (&mqtt_mut);
+				pthread_cond_signal(&mqtt_con);
+				pthread_mutex_unlock (&mqtt_mut);
+				return 0;
+			}
+			else
+			{
+				WebcfgInfo("All 3 mandatory params locationId, NodeId and broker are not set, waiting..\n");
+			}
 		}
 		else
 		{
@@ -1628,7 +1635,7 @@ WEBCFG_STATUS regWebConfigDataModel()
 			WebcfgInfo("psm_get success ret %d for parameter %s and value %s\n", retPsmGet, WEBCFG_MQTT_LOCATIONID_PARAM, tmpchar);
 			if(tmpchar != NULL)
 			{
-				strcpy(locationId,tmpchar);
+				locationId = strdup(tmpchar);
 				free(tmpchar);
 			}
 		}
@@ -1641,7 +1648,7 @@ WEBCFG_STATUS regWebConfigDataModel()
 			WebcfgInfo("psm_get success ret %d for parameter %s and value %s\n", retPsmGet, WEBCFG_MQTT_BROKER_PARAM, tmpchar);
 			if(tmpchar != NULL)
 			{
-				strcpy(broker,tmpchar);
+				broker = strdup(tmpchar);
 				free(tmpchar);
 			}
 		}
@@ -1654,7 +1661,7 @@ WEBCFG_STATUS regWebConfigDataModel()
 			WebcfgInfo("psm_get success ret %d for parameter %s and value %s\n", retPsmGet, WEBCFG_MQTT_NODEID_PARAM, tmpchar);
 			if(tmpchar != NULL)
 			{
-				strcpy(NodeId,tmpchar);
+				NodeId = strdup(tmpchar);
 				free(tmpchar);
 			}
 		}
@@ -1667,7 +1674,7 @@ WEBCFG_STATUS regWebConfigDataModel()
 			WebcfgInfo("psm_get success ret %d for parameter %s and value %s\n", retPsmGet, WEBCFG_MQTT_PORT_PARAM, tmpchar);
 			if(tmpchar != NULL)
 			{
-				strcpy(Port,tmpchar);
+				Port = strdup(tmpchar);
 				free(tmpchar);
 			}
 		}
