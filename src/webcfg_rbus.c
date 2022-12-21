@@ -482,7 +482,7 @@ int validateForMqttInit()
 {
 	if(mqinit == 0)
 	{
-		if (locationId !=NULL && NodeId !=NULL && broker !=NULL)
+		if ((strlen(locationId) != 0) && (strlen(NodeId) != 0) && (strlen(broker) !=0))
 		{
 			WebcfgInfo("All 3 mandatory params locationId, NodeId and broker are set, proceed to mqtt init\n");
 			mqinit = 1;
