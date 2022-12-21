@@ -1328,7 +1328,7 @@ rbusError_t webcfgMqttPortGetHandler(rbusHandle_t handle, rbusProperty_t propert
 			else
 			{
 				WebcfgError("Port is empty\n");
-				rbusValue_SetString(value, "");
+				rbusValue_SetString(value, "443");
 			}
 		}
 	}
@@ -1617,6 +1617,61 @@ WEBCFG_STATUS regWebConfigDataModel()
 				free(tmpchar);
 			}
 		}
+
+#ifdef WEBCONFIG_MQTT_SUPPORT
+		//To Initialise MQTT params
+		retPsmGet = rbus_GetValueFromDB(WEBCFG_MQTT_LOCATIONID_PARAM, &tmpchar);
+		if (retPsmGet != RBUS_ERROR_SUCCESS){
+			WebcfgError("psm_get failed ret %d for parameter %s and value %s\n", retPsmGet, WEBCFG_MQTT_LOCATIONID_PARAM, tmpchar);
+		}
+		else{
+			WebcfgInfo("psm_get success ret %d for parameter %s and value %s\n", retPsmGet, WEBCFG_MQTT_LOCATIONID_PARAM, tmpchar);
+			if(tmpchar != NULL)
+			{
+				strcpy(locationId,tmpchar);
+				free(tmpchar);
+			}
+		}
+
+		retPsmGet = rbus_GetValueFromDB(WEBCFG_MQTT_BROKER_PARAM, &tmpchar);
+		if (retPsmGet != RBUS_ERROR_SUCCESS){
+			WebcfgError("psm_get failed ret %d for parameter %s and value %s\n", retPsmGet, WEBCFG_MQTT_BROKER_PARAM, tmpchar);
+		}
+		else{
+			WebcfgInfo("psm_get success ret %d for parameter %s and value %s\n", retPsmGet, WEBCFG_MQTT_BROKER_PARAM, tmpchar);
+			if(tmpchar != NULL)
+			{
+				strcpy(broker,tmpchar);
+				free(tmpchar);
+			}
+		}
+
+		retPsmGet = rbus_GetValueFromDB(WEBCFG_MQTT_NODEID_PARAM, &tmpchar);
+		if (retPsmGet != RBUS_ERROR_SUCCESS){
+			WebcfgError("psm_get failed ret %d for parameter %s and value %s\n", retPsmGet, WEBCFG_MQTT_NODEID_PARAM, tmpchar);
+		}
+		else{
+			WebcfgInfo("psm_get success ret %d for parameter %s and value %s\n", retPsmGet, WEBCFG_MQTT_NODEID_PARAM, tmpchar);
+			if(tmpchar != NULL)
+			{
+				strcpy(NodeId,tmpchar);
+				free(tmpchar);
+			}
+		}
+
+		retPsmGet = rbus_GetValueFromDB(WEBCFG_MQTT_PORT_PARAM, &tmpchar);
+		if (retPsmGet != RBUS_ERROR_SUCCESS){
+			WebcfgError("psm_get failed ret %d for parameter %s and value %s\n", retPsmGet, WEBCFG_MQTT_PORT_PARAM, tmpchar);
+		}
+		else{
+			WebcfgInfo("psm_get success ret %d for parameter %s and value %s\n", retPsmGet, WEBCFG_MQTT_PORT_PARAM, tmpchar);
+			if(tmpchar != NULL)
+			{
+				strcpy(Port,tmpchar);
+				free(tmpchar);
+			}
+		}
+#endif
 	}
 	else
 	{
