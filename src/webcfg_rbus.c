@@ -1335,7 +1335,13 @@ rbusError_t webcfgMqttPortGetHandler(rbusHandle_t handle, rbusProperty_t propert
 			else
 			{
 				WebcfgError("Port is empty\n");
-				rbusValue_SetString(value, "443");
+				char * mqtt_port = NULL;
+				snprintf(mqtt_port, MAX_MQTT_LEN, "%d", MQTT_PORT);
+				rbusValue_SetString(value, mqtt_port);
+				if(mqtt_port != NULL)
+				{
+					free(mqtt_port);
+				}
 			}
 		}
 	}
@@ -1627,7 +1633,7 @@ WEBCFG_STATUS regWebConfigDataModel()
 
 #ifdef WEBCONFIG_MQTT_SUPPORT
 		//To Initialise MQTT params
-		retPsmGet = rbus_GetValueFromDB(WEBCFG_MQTT_LOCATIONID_PARAM, &tmpchar);
+		/*retPsmGet = rbus_GetValueFromDB(WEBCFG_MQTT_LOCATIONID_PARAM, &tmpchar);
 		if (retPsmGet != RBUS_ERROR_SUCCESS){
 			WebcfgError("psm_get failed ret %d for parameter %s and value %s\n", retPsmGet, WEBCFG_MQTT_LOCATIONID_PARAM, tmpchar);
 		}
@@ -1677,7 +1683,37 @@ WEBCFG_STATUS regWebConfigDataModel()
 				Port = strdup(tmpchar);
 				free(tmpchar);
 			}
+		}*/
+
+		char tmpLocationId[256]={'\0'};
+		char tmpBroker[256]={'\0'};
+		char tmpNodeId[64]={'\0'};
+		char tmpPort[32]={'\0'};
+
+		Get_Mqtt_LocationId(tmpLocationId);
+		if(tmpLocationId[0] != '\0')
+		{
+			locationId = strdup(tmpLocationId);
 		}
+
+		Get_Mqtt_Broker(tmpBroker);
+		if(tmpBroker[0] != '\0')
+		{
+			broker = strdup(tmpBroker);
+		}
+
+		Get_Mqtt_NodeId(tmpNodeId);
+		if(tmpNodeId[0] != '\0')
+		{
+			NodeId = strdup(tmpNodeId);
+		}
+
+		Get_Mqtt_Port(tmpPort);
+		if(tmpPort[0] != '\0')
+		{
+			Port = strdup(tmpPort);
+		}
+
 #endif
 	}
 	else
