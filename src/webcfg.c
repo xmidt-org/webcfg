@@ -109,9 +109,8 @@ void *WebConfigMultipartTask(void *status)
         int Status = 0;
 	int retry_flag = 0;
 	int maintenance_doc_sync = 0;
-#if !defined(WEBCONFIG_MQTT_SUPPORT)
 	char *syncDoc = NULL;
-#endif
+
 	int value = 0;
 	int wait_flag = 1;
 	int maintenance_count = 0;
@@ -133,9 +132,8 @@ void *WebConfigMultipartTask(void *status)
 	initDB(WEBCFG_DB_FILE);
 
 	//To disable supplementary sync for RDKV platforms
-#if !defined(RDK_PERSISTENT_PATH_VIDEO)
+#if (!defined(RDK_PERSISTENT_PATH_VIDEO) && !defined(WEBCONFIG_MQTT_SUPPORT)) || (defined (WEBCONFIG_HTTP_SUPPORT))
 
-#if !defined(WEBCONFIG_MQTT_SUPPORT)
 	initMaintenanceTimer();
 #endif
 
@@ -147,7 +145,8 @@ void *WebConfigMultipartTask(void *status)
 		processWebcfgEvents();
 		set_global_eventFlag();
 	}
-#endif
+
+#if !defined (WEBCONFIG_MQTT_SUPPORT) || defined (WEBCONFIG_HTTP_SUPPORT)
 	//For Primary sync set flag to 0
 	set_global_supplementarySync(0);
 	WebcfgInfo("Webconfig is ready to process requests. set webcfgReady to true\n");
@@ -155,7 +154,6 @@ void *WebConfigMultipartTask(void *status)
 	set_bootSync(true);
 	processWebconfgSync((int)Status, NULL);
 
-#if !defined(WEBCONFIG_MQTT_SUPPORT)
 	//For supplementary sync set flag to 1
 	set_global_supplementarySync(1);
 
@@ -179,7 +177,6 @@ void *WebConfigMultipartTask(void *status)
 
 	while(1)
 	{
-#if !defined(WEBCONFIG_MQTT_SUPPORT)
 		if(forced_sync)
 		{
 			WebcfgDebug("Triggered Forced sync\n");
@@ -193,7 +190,7 @@ void *WebConfigMultipartTask(void *status)
 			setForceSync("", "", 0);
 			set_global_supplementarySync(0);
 		}
-#endif
+
 		if(!wait_flag)
 		{
 			if(maintenance_doc_sync == 1 && checkMaintenanceTimer() == 1 )
@@ -253,7 +250,7 @@ void *WebConfigMultipartTask(void *status)
 		if ( retry_flag == 0)
 		{
 		//To disable supplementary sync for RDKV platforms
-		#if !defined(RDK_PERSISTENT_PATH_VIDEO) && !defined(WEBCONFIG_MQTT_SUPPORT)
+		#if (!defined(RDK_PERSISTENT_PATH_VIDEO) && !defined(WEBCONFIG_MQTT_SUPPORT)) || (defined (WEBCONFIG_HTTP_SUPPORT))
 			ts.tv_sec += getMaintenanceSyncSeconds(maintenance_count);
 			maintenance_doc_sync = 1;
 			WebcfgInfo("The Maintenance Sync triggers at %s\n", printTime((long long)ts.tv_sec));
@@ -305,7 +302,6 @@ void *WebConfigMultipartTask(void *status)
 				WebcfgDebug("Supplementary Sync Interval %d sec and syncing at %s\n",value,ctime(&t));
 			}
 		}
-#if !defined(WEBCONFIG_MQTT_SUPPORT)
 		else if(!rv && !g_shutdown)
 		{
 			char *ForceSyncDoc = NULL;
@@ -342,7 +338,6 @@ void *WebConfigMultipartTask(void *status)
 
 			WebcfgDebug("forced_sync is %d\n", forced_sync);
 		}
-#endif
 		else if(g_shutdown)
 		{
 			WebcfgInfo("Received signal interrupt to RFC disable. g_shutdown is %d, proceeding to kill webconfig thread\n", g_shutdown);
@@ -365,6 +360,11 @@ void *WebConfigMultipartTask(void *status)
 	pthread_cond_signal (get_global_notify_con());
 	pthread_mutex_unlock (get_global_notify_mut());
 
+#ifdef WEBCONFIG_MQTT_SUPPORT
+	pthread_mutex_lock (get_global_mqtt_retry_mut());
+	pthread_cond_signal (get_global_mqtt_retry_cond());
+	pthread_mutex_unlock (get_global_mqtt_retry_mut());
+#endif
 
 	if(get_global_eventFlag())
 	{
@@ -503,7 +503,6 @@ int get_global_supplementarySync()
 /*----------------------------------------------------------------------------*/
 void processWebconfgSync(int status, char* docname)
 {
-#if !defined WEBCONFIG_MQTT_SUPPORT || defined WEBCONFIG_HTTP_SUPPORT
 	int retry_count=0;
 	int r_count=0;
 	int configRet = -1;
@@ -564,19 +563,14 @@ void processWebconfgSync(int status, char* docname)
 		}
 	}
 	WebcfgDebug("========= End of processWebconfgSync =============\n");
-#else
-	(void)status;
-	(void)docname;
-#endif
+
 	return;
 }
 
 int handlehttpResponse(long response_code, char *webConfigData, int retry_count, char* transaction_uuid, char *ct, size_t dataSize)
 {
 	int first_digit=0;
-#if !defined WEBCONFIG_MQTT_SUPPORT
 	int msgpack_status=0;
-#endif
 	int err = 0;
 	char version[512]={'\0'};
 	uint32_t db_root_version = 0;
@@ -605,7 +599,6 @@ int handlehttpResponse(long response_code, char *webConfigData, int retry_count,
 		if(webConfigData !=NULL && (strlen(webConfigData)>0))
 		{
 			WebcfgDebug("webConfigData fetched successfully\n");
-#if !defined WEBCONFIG_MQTT_SUPPORT
 			WebcfgDebug("parseMultipartDocument\n");
 			msgpack_status = parseMultipartDocument(webConfigData, ct, dataSize, transaction_uuid);
 
@@ -619,11 +612,6 @@ int handlehttpResponse(long response_code, char *webConfigData, int retry_count,
 				WebcfgDebug("root webConfigData processed, check apply status events\n");
 				return 1;
 			}
-#else
-			(void)ct;
-			(void)dataSize;
-			return 1;
-#endif
 		}
 		else
 		{

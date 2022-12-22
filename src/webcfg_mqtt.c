@@ -25,9 +25,12 @@
 #include <arpa/nameser.h>
 #include <resolv.h>
 #include <ctype.h>
+#include <pthread.h>
+#include <errno.h>
 #include "webcfg_generic.h"
 #include "webcfg_multipart.h"
 #include "webcfg_mqtt.h"
+#include "webcfg_rbus.h"
 
 void on_connect(struct mosquitto *mosq, void *obj, int reason_code);
 void on_subscribe(struct mosquitto *mosq, void *obj, int mid, int qos_count, const int *granted_qos);
@@ -41,7 +44,7 @@ static char g_deviceId[64]={'\0'};
 //global flag to do bootupsync only once after connect and subscribe callback.
 static int bootupsync = 0;
 static int subscribeFlag = 0;
-//
+
 static char g_systemReadyTime[64]={'\0'};
 static char g_FirmwareVersion[64]={'\0'};
 static char g_bootTime[64]={'\0'};
@@ -49,10 +52,14 @@ static char g_productClass[64]={'\0'};
 static char g_ModelName[64]={'\0'};
 static char g_PartnerID[64]={'\0'};
 static char g_AccountID[64]={'\0'};
+static char g_NodeID[64] = { 0 };
 static char *supportedVersion_header=NULL;
 static char *supportedDocs_header=NULL;
 static char *supplementaryDocs_header=NULL;
-//
+
+pthread_mutex_t mqtt_retry_mut=PTHREAD_MUTEX_INITIALIZER;
+pthread_cond_t mqtt_retry_con=PTHREAD_COND_INITIALIZER;
+
 int get_global_mqtt_connected()
 {
     return g_mqttConnected;
@@ -78,14 +85,148 @@ void convertToUppercase(char* deviceId)
 	}
 }
 
+pthread_cond_t *get_global_mqtt_retry_cond(void)
+{
+    return &mqtt_retry_con;
+}
+
+pthread_mutex_t *get_global_mqtt_retry_mut(void)
+{
+    return &mqtt_retry_mut;
+}
+
+void checkMqttParamSet()
+{
+	WebcfgInfo("checkMqttParamSet\n");
+
+	if( !validateForMqttInit())
+	{
+		WebcfgInfo("Validation success for mqtt parameters, proceed to mqtt init\n");
+	}
+	else
+	{
+		pthread_mutex_lock(get_global_mqtt_mut());
+		pthread_cond_wait(get_global_mqtt_cond(), get_global_mqtt_mut());
+		pthread_mutex_unlock(get_global_mqtt_mut());
+		WebcfgInfo("Received mqtt signal proceed to mqtt init\n");
+	}
+}
+
+void init_mqtt_timer (mqtt_timer_t *timer, int max_count)
+{
+  timer->count = 1;
+  timer->max_count = max_count;
+  timer->delay = 3;  //7s,15s,31s....
+  clock_gettime (CLOCK_MONOTONIC, &timer->ts);
+}
+
+unsigned update_mqtt_delay (mqtt_timer_t *timer)
+{
+  if (timer->count < timer->max_count) {
+    timer->count += 1;
+    timer->delay = timer->delay + timer->delay + 1;
+    // 3,7,15,31 ..
+  }
+  return (unsigned) timer->delay;
+}
+
+unsigned mqtt_rand_secs (int random_num, unsigned max_secs)
+{
+  unsigned delay_secs = (unsigned) random_num & max_secs;
+  if (delay_secs < 3)
+    return delay_secs + 3;
+  else
+    return delay_secs;
+}
+
+unsigned mqtt_rand_nsecs (int random_num)
+{
+	/* random _num is in range 0..2147483648 */
+	unsigned n = (unsigned) random_num >> 1;
+	/* n is in range 0..1073741824 */
+	if (n < 1000000000)
+	  return n;
+	return n - 1000000000;
+}
+
+void mqtt_add_timespec (struct timespec *t1, struct timespec *t2)
+{
+	t2->tv_sec += t1->tv_sec;
+	t2->tv_nsec += t1->tv_nsec;
+	if (t2->tv_nsec >= 1000000000) {
+	  t2->tv_sec += 1;
+	  t2->tv_nsec -= 1000000000;
+	}
+}
+
+void mqtt_rand_expiration (int random_num1, int random_num2, mqtt_timer_t *timer, struct timespec *ts)
+{
+	unsigned max_secs = update_mqtt_delay (timer); // 3,7,15,31
+	struct timespec ts_delay = {3, 0};
+
+	if (max_secs > 3) {
+	  ts_delay.tv_sec = mqtt_rand_secs (random_num1, max_secs);
+	  ts_delay.tv_nsec = mqtt_rand_nsecs (random_num2);
+	}
+    WebcfgInfo("Waiting max delay %u mqttRetryTime %ld secs %ld usecs\n",
+      max_secs, ts_delay.tv_sec, ts_delay.tv_nsec/1000);
+
+	/* Add delay to expire time */
+    mqtt_add_timespec (&ts_delay, ts);
+}
+
+/* mqtt_retry
+ *
+ * delays for the number of seconds specified in parameter timer
+ * g_shutdown can break out of the delay.
+ *
+ * returns -1 pthread_cond_timedwait error
+ *  1   shutdown
+ *  0    delay taken
+*/
+static int mqtt_retry(mqtt_timer_t *timer)
+{
+  struct timespec ts;
+  int rtn;
+
+  pthread_condattr_t mqtt_retry_con_attr;
+
+  pthread_condattr_init (&mqtt_retry_con_attr);
+  pthread_condattr_setclock (&mqtt_retry_con_attr, CLOCK_MONOTONIC);
+  pthread_cond_init (&mqtt_retry_con, &mqtt_retry_con_attr);
+
+  clock_gettime(CLOCK_MONOTONIC, &ts);
+
+  mqtt_rand_expiration(random(), random(), timer, &ts);
+
+  pthread_mutex_lock(&mqtt_retry_mut);
+  // The condition variable will only be set if we shut down.
+  rtn = pthread_cond_timedwait(&mqtt_retry_con, &mqtt_retry_mut, &ts);
+  pthread_mutex_unlock(&mqtt_retry_mut);
+
+  pthread_condattr_destroy(&mqtt_retry_con_attr);
+
+  if (get_global_shutdown())
+    return MQTT_RETRY_SHUTDOWN;
+  if ((rtn != 0) && (rtn != ETIMEDOUT)) {
+    WebcfgError ("pthread_cond_timedwait error (%d) in mqtt_retry.\n", rtn);
+    return MQTT_RETRY_ERR;
+  }
+
+  return MQTT_DELAY_TAKEN;
+}
+
 //Initialize mqtt library and connect to mqtt broker
 bool webcfg_mqtt_init(int status, char *systemreadytime)
 {
 	char *client_id , *username = NULL;
-	char * topic, *hostname = NULL;
-	char *PORT = NULL;
+	char hostname[256] = { 0 };
 	int rc;
+	char PORT[32] = { 0 };
+	int port = 0;
+	mqtt_timer_t mqtt_timer;
 
+	checkMqttParamSet();
 	res_init();
 	WebcfgInfo("Initializing MQTT library\n");
 
@@ -103,8 +244,9 @@ bool webcfg_mqtt_init(int status, char *systemreadytime)
 
 	int clean_session = true;
 
-	//client_id = get_deviceMAC();
-	get_from_file("CID=", &client_id);
+	Get_Mqtt_NodeId(g_NodeID);
+	WebcfgInfo("g_NodeID fetched from Get_Mqtt_NodeId is %s\n", g_NodeID);
+	client_id = strdup(g_NodeID);
 	WebcfgInfo("client_id is %s\n", client_id);
 	
 	if(client_id !=NULL)
@@ -112,32 +254,18 @@ bool webcfg_mqtt_init(int status, char *systemreadytime)
 		username = client_id;
 		WebcfgInfo("client_id is %s username is %s\n", client_id, username);
 
-		//fetch broker hostname ,topic from file
-		get_from_file("TOPIC=", &topic);
-		get_from_file("HOSTNAME=", &hostname);
-		if(topic != NULL)
-		{
-			WebcfgInfo("The topic is %s\n", topic);
-		}
+		execute_mqtt_script(OPENSYNC_CERT);
 
-		if(hostname != NULL)
+		Get_Mqtt_Broker(hostname);
+		if(hostname != NULL && strlen(hostname)>0)
 		{
 			WebcfgInfo("The hostname is %s\n", hostname);
 		}
-	
-		if(!hostname || !topic)
+		else
 		{
-			WebcfgError("Invalid config hostname or topic is NULL\n");
+			WebcfgError("Invalid config, hostname is NULL\n");
 			return MOSQ_ERR_INVAL;
 		}
-
-		//struct mosquitto *mosq;
-		//struct userdata__callback cb_userdata;
-
-		//cb_userdata.topic = topic;
-		//cb_userdata.qos = qos;
-		//cb_userdata.userdata = userdata;
-		//cb_userdata.callback = callback;
 
 		if(client_id !=NULL)
 		{
@@ -154,58 +282,18 @@ bool webcfg_mqtt_init(int status, char *systemreadytime)
 			return MOSQ_ERR_NOMEM;
 		}
 
-		/*if(username !=NULL)
+		Get_Mqtt_Port(PORT);
+		WebcfgInfo("PORT fetched from TR181 is %s\n", PORT);
+		if(strlen(PORT) > 0)
 		{
-			rc = mosquitto_username_pw_set(mosq, username, "password");
-			if(rc)
-			{
-				WebcfgError("Error setting username %s\n", mosquitto_strerror(rc));
-				mosquitto_destroy(mosq);
-				return rc;
-			}
-		}*/
-
-		get_from_file("PORT=", &PORT);
-		WebcfgInfo("hostname is %s and PORT is %s\n", hostname, PORT);
-		int port = PORT ? atoi(PORT) : MQTT_PORT;
-		WebcfgInfo("port int %d\n", port);
-		if(port == 80)
-		{
-			WebcfgInfo("connect to mqtt broker without tls\n");
-			//connect to mqtt broker
-			mosquitto_connect_callback_set(mosq, on_connect);
-			mosquitto_subscribe_callback_set(mosq, on_subscribe);
-			mosquitto_message_callback_set(mosq, on_message);
-			mosquitto_publish_callback_set(mosq, on_publish);
-
-			rc = mosquitto_connect(mosq, hostname, port, KEEPALIVE);
-			WebcfgInfo("mosquitto_connect rc %d\n", rc);
-			if(rc != MOSQ_ERR_SUCCESS)
-			{
-				WebcfgError("mqtt connect Error: %s\n", mosquitto_strerror(rc));
-				mosquitto_destroy(mosq);
-				return rc;
-			}
-			else
-			{
-				WebcfgInfo("mosquitto_connect with port 80 is success\n");
-				set_global_mqttConnected();
-			}
-			//WebcfgInfo("broker connect success. mosquitto_loop_forever\n");
-			//rc = mosquitto_loop_forever(mosq, -1, 1);
-			/* Run the network loop in a background thread, this call returns quickly. */
-			//WebcfgInfo("broker connect success. mosquitto_loop\n");
-			rc = mosquitto_loop_start(mosq);
-			if(rc != MOSQ_ERR_SUCCESS)
-			{
-				mosquitto_destroy(mosq);
-				WebcfgError( "mosquitto_loop_start Error: %s\n", mosquitto_strerror(rc));
-				return 1;
-			}
-			WebcfgInfo("after loop rc is %d\n", rc);
+			port = atoi(PORT);
 		}
 		else
 		{
+			port = MQTT_PORT;
+		}
+		WebcfgInfo("port int %d\n", port);
+
 		struct libmosquitto_tls *tls;
 		tls = malloc (sizeof (struct libmosquitto_tls));
 		if(tls)
@@ -214,9 +302,9 @@ bool webcfg_mqtt_init(int status, char *systemreadytime)
 
 			char * CAFILE, *CERTFILE , *KEYFILE = NULL;
 
-			get_from_file("CA_FILE_PATH=", &CAFILE);
-			get_from_file("CERT_FILE_PATH=", &CERTFILE);
-			get_from_file("KEY_FILE_PATH=", &KEYFILE);
+			get_from_file("CA_FILE_PATH=", &CAFILE, MQTT_CONFIG_FILE);
+			get_from_file("CERT_FILE_PATH=", &CERTFILE, MQTT_CONFIG_FILE);
+			get_from_file("KEY_FILE_PATH=", &KEYFILE, MQTT_CONFIG_FILE);
 
 			if(CAFILE !=NULL && CERTFILE!=NULL && KEYFILE !=NULL)
 			{
@@ -251,18 +339,28 @@ bool webcfg_mqtt_init(int status, char *systemreadytime)
 				mosquitto_publish_callback_set(mosq, on_publish);
 
 				WebcfgInfo("port %d\n", port);
-				rc = mosquitto_connect(mosq, hostname, port, KEEPALIVE);
-				WebcfgInfo("mosquitto_connect rc %d\n", rc);
-				if(rc != MOSQ_ERR_SUCCESS)
+
+				init_mqtt_timer(&mqtt_timer, MAX_MQTT_RETRY);
+				rc = 1;    //for resetting purpose
+				while(rc != MOSQ_ERR_SUCCESS)
 				{
-					WebcfgError("mqtt connect Error: %s\n", mosquitto_strerror(rc));
-					mosquitto_destroy(mosq);
-					return rc;
-				}
-				else
-				{
-					WebcfgInfo("mqtt broker connect success %d\n", rc);
-					set_global_mqttConnected();
+					rc = mosquitto_connect(mosq, hostname, port, KEEPALIVE);
+					WebcfgInfo("mosquitto_connect rc %d\n", rc);
+					if(rc != MOSQ_ERR_SUCCESS)
+					{
+
+						WebcfgError("mqtt connect Error: %s\n", mosquitto_strerror(rc));
+						if(mqtt_retry(&mqtt_timer) != MQTT_DELAY_TAKEN)
+						{
+							mosquitto_destroy(mosq);
+							return rc;
+						}
+					}
+					else
+					{
+						WebcfgInfo("mqtt broker connect success %d\n", rc);
+						set_global_mqttConnected();
+					}
 				}
 				/*WebcfgInfo("mosquitto_loop_forever\n");
 				rc = mosquitto_loop_forever(mosq, -1, 1);*/
@@ -286,7 +384,6 @@ bool webcfg_mqtt_init(int status, char *systemreadytime)
 			WebcfgError("Allocation failed\n");
 			return MOSQ_ERR_NOMEM;
 		}
-		}
 	}
 	else
 	{
@@ -301,7 +398,7 @@ bool webcfg_mqtt_init(int status, char *systemreadytime)
 void on_connect(struct mosquitto *mosq, void *obj, int reason_code)
 {
         int rc;
-	char * topic = NULL;
+	char topic[256] = { 0 };
         WebcfgInfo("on_connect: reason_code %d %s\n", reason_code, mosquitto_connack_string(reason_code));
         if(reason_code != 0)
 	{
@@ -313,9 +410,8 @@ void on_connect(struct mosquitto *mosq, void *obj, int reason_code)
 
 	if(!subscribeFlag)
 	{
-		get_from_file("TOPIC=", &topic);
-
-		if(topic != NULL)
+		snprintf(topic,MAX_MQTT_LEN,"%s%s", MQTT_SUBSCRIBE_TOPIC_PREFIX,g_NodeID);
+		if(topic != NULL && strlen(topic)>0)
 		{
 			WebcfgInfo("subscribe to topic %s\n", topic);
 		}
@@ -417,7 +513,6 @@ void on_publish(struct mosquitto *mosq, void *obj, int mid)
 void publish_notify_mqtt(char *pub_topic, void *payload, ssize_t len, char * dest)
 {
         int rc;
-	//char *pub_topic = NULL;
 	if(dest != NULL)
 	{
 		ssize_t payload_len = 0;
@@ -435,8 +530,22 @@ void publish_notify_mqtt(char *pub_topic, void *payload, ssize_t len, char * des
 
 	if(pub_topic == NULL)
 	{
-		get_from_file("PUB_TOPIC=", &pub_topic);
-		WebcfgInfo("pub_topic from file is %s\n", pub_topic);
+		char publish_topic[256] = { 0 };
+		char locationID[256] = { 0 };
+
+		Get_Mqtt_LocationId(locationID);
+		WebcfgInfo("locationID fetched from tr181 is %s\n", locationID);
+		snprintf(publish_topic, MAX_MQTT_LEN, "%s%s/%s", MQTT_PUBLISH_NOTIFY_TOPIC_PREFIX, g_NodeID,locationID);
+		if(strlen(publish_topic)>0)
+		{
+			WebcfgInfo("publish_topic fetched from tr181 is %s\n", publish_topic);
+			pub_topic = strdup(publish_topic);
+			WebcfgInfo("pub_topic from file is %s\n", pub_topic);
+		}
+		else
+		{
+			WebcfgError("Failed to fetch publish topic\n");
+		}
 	}
 	else
 	{
@@ -454,20 +563,13 @@ void publish_notify_mqtt(char *pub_topic, void *payload, ssize_t len, char * des
 	{
 		WebcfgInfo("Publish payload success %d\n", rc);
 	}
-	char *pub_loop_enabled = NULL;
-	get_from_file("PUB_LOOP=", &pub_loop_enabled);
-	WebcfgInfo("pub_loop_enabled is %s\n", pub_loop_enabled);
-	if(pub_loop_enabled)
-	{
-		WebcfgInfo("Publish mosquitto_loop\n");
-		mosquitto_loop(mosq, 0, 1);
-		WebcfgInfo("Publish mosquitto_loop done\n");
-	}
+	mosquitto_loop(mosq, 0, 1);
+	WebcfgInfo("Publish mosquitto_loop done\n");
 }
 
-void get_from_file(char *key, char **val)
+void get_from_file(char *key, char **val, char *filepath)
 {
-        FILE *fp = fopen(HOST_FILE_LOCATION, "r");
+        FILE *fp = fopen(filepath, "r");
 
         if (NULL != fp)
         {
@@ -512,10 +614,22 @@ int triggerBootupSync()
 		if(mqttheaderList !=NULL)
 		{
 			WebcfgInfo("mqttheaderList generated is \n%s len %zu\n", mqttheaderList, strlen(mqttheaderList));
-			get_from_file("PUB_GET_TOPIC=", &pub_get_topic);
-			WebcfgInfo("pub_get_topic from file is %s\n", pub_get_topic);
-			publish_notify_mqtt(pub_get_topic, (void*)mqttheaderList, strlen(mqttheaderList), NULL);
-			WebcfgInfo("triggerBootupSync published to topic %s\n", pub_get_topic);
+			char publish_get_topic[256] = { 0 };
+			char locationID[256] = { 0 };
+			Get_Mqtt_LocationId(locationID);
+			WebcfgInfo("locationID is %s\n", locationID);
+			snprintf(publish_get_topic, MAX_MQTT_LEN, "%s%s/%s", MQTT_PUBLISH_GET_TOPIC_PREFIX, g_NodeID,locationID);
+			if(strlen(publish_get_topic) >0)
+			{
+				pub_get_topic = strdup(publish_get_topic);
+				WebcfgInfo("pub_get_topic from tr181 is %s\n", pub_get_topic);
+				publish_notify_mqtt(pub_get_topic, (void*)mqttheaderList, strlen(mqttheaderList), NULL);
+				WebcfgInfo("triggerBootupSync published to topic %s\n", pub_get_topic);
+			}
+			else
+			{
+				WebcfgError("Failed to fetch publish_get_topic\n");
+			}
 		}
 		else
 		{
@@ -566,9 +680,8 @@ int createMqttHeader(char **header_list)
 
 	if( get_deviceMAC() != NULL && strlen(get_deviceMAC()) !=0 )
 	{
-	      strncpy(g_deviceId, get_deviceMAC(), sizeof(g_deviceId)-1);
-              // get_from_file("CID=", &tmp);
-	      WebcfgInfo("g_deviceId fetched is %s\n", g_deviceId);
+	       strncpy(g_deviceId, get_deviceMAC(), sizeof(g_deviceId)-1);
+	       WebcfgInfo("g_deviceId fetched is %s\n", g_deviceId);
 	}
 
 	if(strlen(g_deviceId))

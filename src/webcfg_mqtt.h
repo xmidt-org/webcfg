@@ -33,14 +33,32 @@
 #include "webcfg_auth.h"
 #include "webcfg_db.h"
 #include "webcfg_generic.h"
+#include "webcfg_auth.h"
 
-#define HOST_FILE_LOCATION   "/nvram/hostname.txt"
+#define MQTT_CONFIG_FILE     "/tmp/.mqttconfig"
 #define MOSQ_TLS_VERSION     "tlsv1.2"
+#define OPENSYNC_CERT        "/usr/opensync/scripts/managers.init"
 #define KEEPALIVE       180
 #define MQTT_PORT            443
+#define MQTT_SUBSCRIBE_TOPIC_PREFIX "x/to/"
+#define MQTT_PUBLISH_GET_TOPIC_PREFIX "x/fr/get/chi/"
+#define MQTT_PUBLISH_NOTIFY_TOPIC_PREFIX "x/fr/poke/chi/"
+#define MAX_MQTT_LEN  128
+
+#define MAX_MQTT_RETRY 8
+#define MQTT_RETRY_ERR -1
+#define MQTT_RETRY_SHUTDOWN   1
+#define MQTT_DELAY_TAKEN 0
+
+typedef struct {
+  struct timespec ts;
+  int count;
+  int max_count;
+  int delay;
+} mqtt_timer_t;
 
 bool webcfg_mqtt_init(int status, char *systemreadytime);
-void get_from_file(char *key, char **val);
+void get_from_file(char *key, char **val, char *filepath);
 void publish_notify_mqtt(char *pub_topic, void *payload, ssize_t len, char * dest);
 char * createMqttPubHeader(char * payload, char * dest, ssize_t * payload_len);
 int get_global_mqtt_connected();
@@ -48,4 +66,7 @@ void reset_global_mqttConnected();
 void set_global_mqttConnected();
 int createMqttHeader(char **header_list);
 int triggerBootupSync();
+void checkMqttParamSet();
+pthread_mutex_t *get_global_mqtt_retry_mut(void);
+pthread_cond_t *get_global_mqtt_retry_cond(void);
 #endif
