@@ -1340,7 +1340,7 @@ rbusError_t webcfgMqttPortGetHandler(rbusHandle_t handle, rbusProperty_t propert
 				rbusValue_SetString(value, mqtt_port);
 				if(mqtt_port != NULL)
 				{
-					free(mqtt_port);
+					WEBCFG_FREE(mqtt_port);
 				}
 			}
 		}
