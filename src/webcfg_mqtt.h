@@ -26,6 +26,11 @@
 #include <mosquitto.h>
 #include <openssl/ssl.h>
 #include <time.h>
+#include <wrp-c.h>
+#include <rbus/rbus.h>
+#include <rbus/rbus_object.h>
+#include <rbus/rbus_property.h>
+#include <rbus/rbus_value.h>
 #include "webcfg.h"
 #include "webcfg_log.h"
 #include "webcfg_multipart.h"
@@ -38,16 +43,23 @@
 #define MQTT_CONFIG_FILE     "/tmp/.mqttconfig"
 #define MOSQ_TLS_VERSION     "tlsv1.2"
 #define OPENSYNC_CERT        "/usr/opensync/scripts/managers.init"
-#define KEEPALIVE       180
+#define KEEPALIVE            180
 #define MQTT_PORT            443
+#define MAX_MQTT_LEN         128
+#define NUM_WEBCFG_ELEMENTS3 4
+
 #define MQTT_SUBSCRIBE_TOPIC_PREFIX "x/to/"
 #define MQTT_PUBLISH_GET_TOPIC_PREFIX "x/fr/get/chi/"
 #define MQTT_PUBLISH_NOTIFY_TOPIC_PREFIX "x/fr/poke/chi/"
-#define MAX_MQTT_LEN  128
+
+#define WEBCFG_MQTT_LOCATIONID_PARAM "Device.X_RDK_WebConfig.MQTT.LocationId"
+#define WEBCFG_MQTT_BROKER_PARAM     "Device.X_RDK_WebConfig.MQTT.Broker"
+#define WEBCFG_MQTT_NODEID_PARAM     "Device.X_RDK_WebConfig.MQTT.NodeId"
+#define WEBCFG_MQTT_PORT_PARAM       "Device.X_RDK_WebConfig.MQTT.Port"
 
 #define MAX_MQTT_RETRY 8
 #define MQTT_RETRY_ERR -1
-#define MQTT_RETRY_SHUTDOWN   1
+#define MQTT_RETRY_SHUTDOWN 1
 #define MQTT_DELAY_TAKEN 0
 
 typedef struct {
@@ -69,4 +81,12 @@ int triggerBootupSync();
 void checkMqttParamSet();
 pthread_mutex_t *get_global_mqtt_retry_mut(void);
 pthread_cond_t *get_global_mqtt_retry_cond(void);
+int processPayload(char * data, int dataSize);
+int validateForMqttInit();
+pthread_cond_t *get_global_mqtt_cond(void);
+pthread_mutex_t *get_global_mqtt_mut(void);
+void fetchMqttParamsFromDB();
+int sendNotification_mqtt(char *payload, char *destination, wrp_msg_t *notif_wrp_msg, void *msg_bytes);
+int regWebConfigDataModel_mqtt();
+void execute_mqtt_script(char *name);
 #endif
