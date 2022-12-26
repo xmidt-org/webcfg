@@ -44,6 +44,11 @@ static char g_deviceId[64]={'\0'};
 //global flag to do bootupsync only once after connect and subscribe callback.
 static int bootupsync = 0;
 static int subscribeFlag = 0;
+static char* locationId =NULL;
+static char* NodeId =NULL;
+static char* Port =NULL;
+static char* broker = NULL;
+static int mqinit = 0;
 
 static char g_systemReadyTime[64]={'\0'};
 static char g_FirmwareVersion[64]={'\0'};
@@ -59,6 +64,8 @@ static char *supplementaryDocs_header=NULL;
 
 pthread_mutex_t mqtt_retry_mut=PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t mqtt_retry_con=PTHREAD_COND_INITIALIZER;
+pthread_mutex_t mqtt_mut=PTHREAD_MUTEX_INITIALIZER;
+pthread_cond_t mqtt_con=PTHREAD_COND_INITIALIZER;
 
 int get_global_mqtt_connected()
 {
@@ -93,6 +100,16 @@ pthread_cond_t *get_global_mqtt_retry_cond(void)
 pthread_mutex_t *get_global_mqtt_retry_mut(void)
 {
     return &mqtt_retry_mut;
+}
+
+pthread_cond_t *get_global_mqtt_cond(void)
+{
+    return &mqtt_con;
+}
+
+pthread_mutex_t *get_global_mqtt_mut(void)
+{
+    return &mqtt_mut;
 }
 
 void checkMqttParamSet()
@@ -565,6 +582,104 @@ void publish_notify_mqtt(char *pub_topic, void *payload, ssize_t len, char * des
 	}
 	mosquitto_loop(mosq, 0, 1);
 	WebcfgInfo("Publish mosquitto_loop done\n");
+}
+
+int processPayload(char * data, int dataSize)
+{
+	int mstatus = 0;
+
+	char *transaction_uuid =NULL;
+	char ct[256] = {0};
+
+
+		char * data_body = malloc(sizeof(char) * dataSize+1);
+		memset(data_body, 0, sizeof(char) * dataSize+1);
+		data_body = memcpy(data_body, data, dataSize+1);
+		data_body[dataSize] = '\0';
+		char *ptr_count = data_body;
+		char *ptr1_count = data_body;
+		char *temp = NULL;
+		char *etag_header = NULL;
+		char* version = NULL;
+
+		while((ptr_count - data_body) < dataSize )
+		{
+			ptr_count = memchr(ptr_count, 'C', dataSize - (ptr_count - data_body));
+			if(ptr_count == NULL)
+			{
+				WebcfgError("Content-type header not found\n");
+				break;
+			}
+			if(0 == memcmp(ptr_count, "Content-Type:", strlen("Content-Type:")))
+			{
+				ptr1_count = memchr(ptr_count+1, '\r', dataSize - (ptr_count - data_body));
+				temp = strndup(ptr_count, (ptr1_count-ptr_count));
+				strncpy(ct,temp,(sizeof(ct)-1));
+				break;
+			}
+			ptr_count++;
+		}
+
+		ptr_count = data_body;
+		ptr1_count = data_body;
+		while((ptr_count - data_body) < dataSize )
+		{
+			ptr_count = memchr(ptr_count, 'E', dataSize - (ptr_count - data_body));
+			if(ptr_count == NULL)
+			{
+				WebcfgError("etag_header not found\n");
+				break;
+			}
+			if(0 == memcmp(ptr_count, "Etag:", strlen("Etag:")))
+			{
+				ptr1_count = memchr(ptr_count+1, '\r', dataSize - (ptr_count - data_body));
+				etag_header = strndup(ptr_count, (ptr1_count-ptr_count));
+				if(etag_header !=NULL)
+				{
+					WebcfgInfo("etag header extracted is %s\n", etag_header);
+					//Extract root version from Etag: <value> header.
+					version = strtok(etag_header, ":");
+					if(version !=NULL)
+					{
+						version = strtok(NULL, ":");
+						version++;
+						//g_ETAG should be updated only for primary sync.
+						if(!get_global_supplementarySync())
+						{
+							set_global_ETAG(version);
+							WebcfgInfo("g_ETAG updated in processPayload %s\n", get_global_ETAG());
+						}
+						break;
+					}
+				}
+			}
+			ptr_count++;
+		}
+		free(data_body);
+		free(temp);
+		WEBCFG_FREE(etag_header);
+		transaction_uuid = strdup(generate_trans_uuid());
+		if(data !=NULL)
+		{
+			WebcfgInfo("webConfigData fetched successfully\n");
+			WebcfgDebug("parseMultipartDocument\n");
+			mstatus = parseMultipartDocument(data, ct, (size_t)dataSize, transaction_uuid);
+
+			if(mstatus == WEBCFG_SUCCESS)
+			{
+				WebcfgInfo("webConfigData applied successfully\n");
+			}
+			else
+			{
+				WebcfgDebug("Failed to apply root webConfigData received from server\n");
+			}
+		}
+		else
+		{
+			WEBCFG_FREE(transaction_uuid);
+			WebcfgError("webConfigData is empty, need to retry\n");
+		}
+		return 1;
 }
 
 void get_from_file(char *key, char **val, char *filepath)
@@ -1127,4 +1242,648 @@ char * createMqttPubHeader(char * payload, char * dest, ssize_t * payload_len)
 	WebcfgInfo("mqtt pub_headerlist is \n%s", pub_headerlist);
 	*payload_len = strlen(pub_headerlist);
 	return pub_headerlist;
+}
+
+int validateForMqttInit()
+{
+	if(mqinit == 0)
+	{
+		if (locationId != NULL && NodeId != NULL && broker != NULL)
+		{
+			if ((strlen(locationId) != 0) && (strlen(NodeId) != 0) && (strlen(broker) !=0))
+			{
+				WebcfgInfo("All 3 mandatory params locationId, NodeId and broker are set, proceed to mqtt init\n");
+				mqinit = 1;
+				pthread_mutex_lock (&mqtt_mut);
+				pthread_cond_signal(&mqtt_con);
+				pthread_mutex_unlock (&mqtt_mut);
+				return 0;
+			}
+			else
+			{
+				WebcfgInfo("All 3 mandatory params locationId, NodeId and broker are not set, waiting..\n");
+			}
+		}
+		else
+		{
+			WebcfgInfo("All 3 mandatory params locationId, NodeId and broker are not set, waiting..\n");
+		}
+	}
+	return 1;
+}
+
+void execute_mqtt_script(char *name)
+{
+    FILE* out = NULL, *file = NULL;
+    char token[124] = {'\0'};
+    char command[100] = {'\0'};
+    size_t len = 0;
+
+    if(strlen(name)>0)
+    {
+        file = fopen(name, "r");
+        if(file)
+        {
+            WebcfgInfo("file is found\n");
+            snprintf(command,sizeof(command),"%s mqttcert-fetch", name);
+            out = popen(command, "r");
+            if(out)
+            {
+		WebcfgInfo("Inside out\n");
+                fgets(token, len, out);
+		WebcfgInfo("len is %zu\n", len);
+                pclose(out);
+
+            }
+            fclose(file);
+
+            if(token[0] != '\0')
+            {
+                WebcfgInfo("filepath fetched are %s\n", token);
+            }
+        }
+        else
+        {
+            WebcfgError ("File %s open error\n", name);
+        }
+    }
+}
+void fetchMqttParamsFromDB()
+{
+	char tmpLocationId[256]={'\0'};
+	char tmpBroker[256]={'\0'};
+	char tmpNodeId[64]={'\0'};
+	char tmpPort[32]={'\0'};
+
+	Get_Mqtt_LocationId(tmpLocationId);
+	if(tmpLocationId[0] != '\0')
+	{
+		locationId = strdup(tmpLocationId);
+	}
+
+	Get_Mqtt_Broker(tmpBroker);
+	if(tmpBroker[0] != '\0')
+	{
+		broker = strdup(tmpBroker);
+	}
+
+	Get_Mqtt_NodeId(tmpNodeId);
+	if(tmpNodeId[0] != '\0')
+	{
+		NodeId = strdup(tmpNodeId);
+	}
+
+	Get_Mqtt_Port(tmpPort);
+	if(tmpPort[0] != '\0')
+	{
+		Port = strdup(tmpPort);
+	}
+	WebcfgInfo("Mqtt params fetched from DB, locationId %s broker %s NodeId %s Port %s\n", locationId, broker, NodeId,Port);
+}
+
+int sendNotification_mqtt(char *payload, char *destination, wrp_msg_t *notif_wrp_msg, void *msg_bytes)
+{
+	if(get_global_mqtt_connected())
+	{
+		WebcfgInfo("publish_notify_mqtt with json string payload\n");
+		char *payload_str = strdup(payload);
+		WebcfgInfo("payload_str %s len %zu\n", payload_str, strlen(payload_str));
+		publish_notify_mqtt(NULL, payload_str, strlen(payload_str), destination);
+		//WEBCFG_FREE(payload_str);
+		WebcfgInfo("publish_notify_mqtt done\n");
+		wrp_free_struct (notif_wrp_msg );
+		WebcfgInfo("freed notify wrp msg\n");
+		if(msg_bytes)
+		{
+			WEBCFG_FREE(msg_bytes);
+		}
+		WebcfgInfo("freed msg_bytes\n");
+		return 1;
+	}
+	else
+	{
+		WebcfgError("Failed to publish notification as mqtt broker is not connected\n");
+	}
+	return 0;
+}
+
+rbusError_t webcfgMqttLocationIdSetHandler(rbusHandle_t handle, rbusProperty_t prop, rbusSetHandlerOptions_t* opts)
+{
+	(void) handle;
+	(void) opts;
+	char const* paramName = rbusProperty_GetName(prop);
+
+	if(strncmp(paramName, WEBCFG_MQTT_LOCATIONID_PARAM, maxParamLen) != 0)
+	{
+		WebcfgError("Unexpected parameter = %s\n", paramName);
+		return RBUS_ERROR_ELEMENT_DOES_NOT_EXIST;
+	}
+
+	rbusError_t retPsmSet = RBUS_ERROR_BUS_ERROR;
+	WebcfgDebug("Parameter name is %s \n", paramName);
+	rbusValueType_t type_t;
+	rbusValue_t paramValue_t = rbusProperty_GetValue(prop);
+	if(paramValue_t) {
+		type_t = rbusValue_GetType(paramValue_t);
+	} else {
+		WebcfgError("Invalid input to set\n");
+		return RBUS_ERROR_INVALID_INPUT;
+	}
+
+	if(strncmp(paramName, WEBCFG_MQTT_LOCATIONID_PARAM, maxParamLen) == 0)
+	{
+		if (!isRfcEnabled())
+		{
+			WebcfgError("RfcEnable is disabled so, %s SET failed\n",paramName);
+			return RBUS_ERROR_ACCESS_NOT_ALLOWED;
+		}
+		if(type_t == RBUS_STRING) {
+			char* data = rbusValue_ToString(paramValue_t, NULL, 0);
+			if(data) {
+				WebcfgDebug("Call datamodel function  with data %s\n", data);
+
+				if(locationId) {
+					free(locationId);
+					locationId = NULL;
+				}
+				locationId = strdup(data);
+				free(data);
+				WebcfgDebug("LocationId after processing %s\n", locationId);
+				retPsmSet = rbus_StoreValueIntoDB( WEBCFG_MQTT_LOCATIONID_PARAM, locationId);
+				if (retPsmSet != RBUS_ERROR_SUCCESS)
+				{
+					WebcfgError("psm_set failed ret %d for parameter %s and value %s\n", retPsmSet, paramName, locationId);
+					return retPsmSet;
+				}
+				else
+				{
+					WebcfgInfo("psm_set success ret %d for parameter %s and value %s\n", retPsmSet, paramName, locationId);
+				}
+				validateForMqttInit();
+			}
+		} else {
+			WebcfgError("Unexpected value type for property %s\n", paramName);
+			return RBUS_ERROR_INVALID_INPUT;
+		}
+	}
+	return RBUS_ERROR_SUCCESS;
+}
+
+rbusError_t webcfgMqttBrokerSetHandler(rbusHandle_t handle, rbusProperty_t prop, rbusSetHandlerOptions_t* opts)
+{
+	(void) handle;
+	(void) opts;
+	char const* paramName = rbusProperty_GetName(prop);
+
+	if(strncmp(paramName, WEBCFG_MQTT_BROKER_PARAM, maxParamLen) != 0)
+	{
+		WebcfgError("Unexpected parameter = %s\n", paramName);
+		return RBUS_ERROR_ELEMENT_DOES_NOT_EXIST;
+	}
+
+	rbusError_t retPsmSet = RBUS_ERROR_BUS_ERROR;
+	WebcfgDebug("Parameter name is %s \n", paramName);
+	rbusValueType_t type_t;
+	rbusValue_t paramValue_t = rbusProperty_GetValue(prop);
+	if(paramValue_t) {
+		type_t = rbusValue_GetType(paramValue_t);
+	} else {
+		WebcfgError("Invalid input to set\n");
+		return RBUS_ERROR_INVALID_INPUT;
+	}
+
+	if(strncmp(paramName, WEBCFG_MQTT_BROKER_PARAM, maxParamLen) == 0) {
+
+		if (!isRfcEnabled())
+		{
+			WebcfgError("RfcEnable is disabled so, %s SET failed\n",paramName);
+			return RBUS_ERROR_ACCESS_NOT_ALLOWED;
+		}
+		if(type_t == RBUS_STRING) {
+			char* data = rbusValue_ToString(paramValue_t, NULL, 0);
+			if(data) {
+				WebcfgDebug("Call datamodel function  with data %s\n", data);
+
+				if(broker) {
+					free(broker);
+					broker= NULL;
+				}
+				broker = strdup(data);
+				free(data);
+				WebcfgDebug("Broker after processing %s\n", broker);
+				retPsmSet = rbus_StoreValueIntoDB( WEBCFG_MQTT_BROKER_PARAM, broker);
+				if (retPsmSet != RBUS_ERROR_SUCCESS)
+				{
+					WebcfgError("psm_set failed ret %d for parameter %s and value %s\n", retPsmSet, paramName, broker);
+					return retPsmSet;
+				}
+				else
+				{
+					WebcfgInfo("psm_set success ret %d for parameter %s and value %s\n", retPsmSet, paramName, broker);
+				}
+				validateForMqttInit();
+			}
+		} else {
+			WebcfgError("Unexpected value type for property %s\n", paramName);
+			return RBUS_ERROR_INVALID_INPUT;
+		}
+	}
+	return RBUS_ERROR_SUCCESS;
+}
+
+rbusError_t webcfgMqttNodeIdSetHandler(rbusHandle_t handle, rbusProperty_t prop, rbusSetHandlerOptions_t* opts)
+{
+	(void) handle;
+	(void) opts;
+	char const* paramName = rbusProperty_GetName(prop);
+
+	if(strncmp(paramName, WEBCFG_MQTT_NODEID_PARAM, maxParamLen) != 0)
+	{
+		WebcfgError("Unexpected parameter = %s\n", paramName);
+		return RBUS_ERROR_ELEMENT_DOES_NOT_EXIST;
+	}
+
+	rbusError_t retPsmSet = RBUS_ERROR_BUS_ERROR;
+	WebcfgDebug("Parameter name is %s \n", paramName);
+	rbusValueType_t type_t;
+	rbusValue_t paramValue_t = rbusProperty_GetValue(prop);
+	if(paramValue_t) {
+		type_t = rbusValue_GetType(paramValue_t);
+	} else {
+		WebcfgError("Invalid input to set\n");
+		return RBUS_ERROR_INVALID_INPUT;
+	}
+
+	if(strncmp(paramName, WEBCFG_MQTT_NODEID_PARAM, maxParamLen) == 0)
+	{
+		if (!isRfcEnabled())
+		{
+			WebcfgError("RfcEnable is disabled so, %s SET failed\n",paramName);
+			return RBUS_ERROR_ACCESS_NOT_ALLOWED;
+		}
+		if(type_t == RBUS_STRING) {
+			char* data = rbusValue_ToString(paramValue_t, NULL, 0);
+			if(data) {
+				WebcfgDebug("Call datamodel function  with data %s\n", data);
+
+				if(NodeId) {
+					free(NodeId);
+					NodeId = NULL;
+				}
+				NodeId = strdup(data);
+				free(data);
+				WebcfgDebug("NodeId after processing %s\n", NodeId);
+				retPsmSet = rbus_StoreValueIntoDB( WEBCFG_MQTT_NODEID_PARAM, NodeId);
+				if (retPsmSet != RBUS_ERROR_SUCCESS)
+				{
+					WebcfgError("psm_set failed ret %d for parameter %s and value %s\n", retPsmSet, paramName, NodeId);
+					return retPsmSet;
+				}
+				else
+				{
+					WebcfgInfo("psm_set success ret %d for parameter %s and value %s\n", retPsmSet, paramName, NodeId);
+				}
+				validateForMqttInit();
+			}
+		} else {
+			WebcfgError("Unexpected value type for property %s\n", paramName);
+			return RBUS_ERROR_INVALID_INPUT;
+		}
+	}
+	return RBUS_ERROR_SUCCESS;
+}
+
+rbusError_t webcfgMqttPortSetHandler(rbusHandle_t handle, rbusProperty_t prop, rbusSetHandlerOptions_t* opts)
+{
+	(void) handle;
+	(void) opts;
+	char const* paramName = rbusProperty_GetName(prop);
+
+	if(strncmp(paramName, WEBCFG_MQTT_PORT_PARAM, maxParamLen) != 0)
+	{
+		WebcfgError("Unexpected parameter = %s\n", paramName);
+		return RBUS_ERROR_ELEMENT_DOES_NOT_EXIST;
+	}
+
+	rbusError_t retPsmSet = RBUS_ERROR_BUS_ERROR;
+	WebcfgDebug("Parameter name is %s \n", paramName);
+	rbusValueType_t type_t;
+	rbusValue_t paramValue_t = rbusProperty_GetValue(prop);
+	if(paramValue_t) {
+		type_t = rbusValue_GetType(paramValue_t);
+	} else {
+		WebcfgError("Invalid input to set\n");
+		return RBUS_ERROR_INVALID_INPUT;
+	}
+
+	if(strncmp(paramName, WEBCFG_MQTT_PORT_PARAM, maxParamLen) == 0)
+	{
+		if (!isRfcEnabled())
+		{
+			WebcfgError("RfcEnable is disabled so, %s SET failed\n",paramName);
+			return RBUS_ERROR_ACCESS_NOT_ALLOWED;
+		}
+		if(type_t == RBUS_STRING) {
+			char* data = rbusValue_ToString(paramValue_t, NULL, 0);
+			if(data) {
+				WebcfgDebug("Call datamodel function  with data %s\n", data);
+
+				if(Port) {
+					free(Port);
+					Port = NULL;
+				}
+				Port = strdup(data);
+				free(data);
+				WebcfgDebug("Port after processing %s\n", Port);
+				retPsmSet = rbus_StoreValueIntoDB( WEBCFG_MQTT_PORT_PARAM, Port);
+				if (retPsmSet != RBUS_ERROR_SUCCESS)
+				{
+					WebcfgError("psm_set failed ret %d for parameter %s and value %s\n", retPsmSet, paramName, Port);
+					return retPsmSet;
+				}
+				else
+				{
+					WebcfgInfo("psm_set success ret %d for parameter %s and value %s\n", retPsmSet, paramName, Port);
+				}
+				validateForMqttInit();
+			}
+		} else {
+			WebcfgError("Unexpected value type for property %s\n", paramName);
+			return RBUS_ERROR_INVALID_INPUT;
+		}
+	}
+	return RBUS_ERROR_SUCCESS;
+}
+
+rbusError_t webcfgMqttLocationIdGetHandler(rbusHandle_t handle, rbusProperty_t property, rbusGetHandlerOptions_t* opts)
+{
+
+    (void) handle;
+    (void) opts;
+    char const* propertyName;
+    rbusError_t retPsmGet = RBUS_ERROR_BUS_ERROR;
+
+    propertyName = rbusProperty_GetName(property);
+    if(propertyName) {
+        WebcfgDebug("Property Name is %s \n", propertyName);
+    } else {
+        WebcfgError("Unable to handle get request for property \n");
+        return RBUS_ERROR_INVALID_INPUT;
+	}
+   if(strncmp(propertyName, WEBCFG_MQTT_LOCATIONID_PARAM, maxParamLen) == 0)
+   {
+
+	rbusValue_t value;
+        rbusValue_Init(&value);
+
+	if(!isRfcEnabled())
+	{
+		WebcfgError("RfcEnable is disabled so, %s Get from DB failed\n",propertyName);
+		rbusValue_SetString(value, "");
+		rbusProperty_SetValue(property, value);
+		rbusValue_Release(value);
+		return 0;
+	}
+        if(locationId){
+            rbusValue_SetString(value, locationId);
+	}
+        else{
+		retPsmGet = rbus_GetValueFromDB( WEBCFG_MQTT_LOCATIONID_PARAM, &locationId );
+		if (retPsmGet != RBUS_ERROR_SUCCESS){
+			WebcfgError("psm_get failed ret %d for parameter %s and value %s\n", retPsmGet, propertyName, locationId);
+			if(value)
+			{
+				rbusValue_Release(value);
+			}
+			return retPsmGet;
+		}
+		else{
+			WebcfgInfo("psm_get success ret %d for parameter %s and value %s\n", retPsmGet, propertyName, locationId);
+			if(locationId)
+			{
+				rbusValue_SetString(value, locationId);
+			}
+			else
+			{
+				WebcfgError("locationId is empty\n");
+				rbusValue_SetString(value, "");
+			}
+		}
+	}
+        rbusProperty_SetValue(property, value);
+        rbusValue_Release(value);
+
+    }
+    return RBUS_ERROR_SUCCESS;
+}
+
+rbusError_t webcfgMqttBrokerGetHandler(rbusHandle_t handle, rbusProperty_t property, rbusGetHandlerOptions_t* opts)
+{
+
+    (void) handle;
+    (void) opts;
+    char const* propertyName;
+    rbusError_t retPsmGet = RBUS_ERROR_BUS_ERROR;
+
+    propertyName = rbusProperty_GetName(property);
+    if(propertyName) {
+        WebcfgDebug("Property Name is %s \n", propertyName);
+    } else {
+        WebcfgError("Unable to handle get request for property \n");
+        return RBUS_ERROR_INVALID_INPUT;
+	}
+   if(strncmp(propertyName, WEBCFG_MQTT_BROKER_PARAM, maxParamLen) == 0)
+   {
+
+	rbusValue_t value;
+        rbusValue_Init(&value);
+
+	if(!isRfcEnabled())
+	{
+		WebcfgError("RfcEnable is disabled so, %s Get from DB failed\n",propertyName);
+		rbusValue_SetString(value, "");
+		rbusProperty_SetValue(property, value);
+		rbusValue_Release(value);
+		return 0;
+	}
+        if(broker){
+		rbusValue_SetString(value, broker);
+	}
+        else{
+		retPsmGet = rbus_GetValueFromDB( WEBCFG_MQTT_BROKER_PARAM, &broker );
+		if (retPsmGet != RBUS_ERROR_SUCCESS){
+			WebcfgError("psm_get failed ret %d for parameter %s and value %s\n", retPsmGet, propertyName, broker);
+			if(value)
+			{
+				rbusValue_Release(value);
+			}
+			return retPsmGet;
+		}
+		else{
+			WebcfgInfo("psm_get success ret %d for parameter %s and value %s\n", retPsmGet, propertyName, broker);
+			if(broker)
+			{
+				rbusValue_SetString(value, broker);
+			}
+			else
+			{
+				WebcfgError("Broker is empty\n");
+				rbusValue_SetString(value, "");
+			}
+		}
+	}
+        rbusProperty_SetValue(property, value);
+        rbusValue_Release(value);
+
+    }
+    return RBUS_ERROR_SUCCESS;
+}
+
+rbusError_t webcfgMqttNodeIdGetHandler(rbusHandle_t handle, rbusProperty_t property, rbusGetHandlerOptions_t* opts)
+{
+
+    (void) handle;
+    (void) opts;
+    char const* propertyName;
+    rbusError_t retPsmGet = RBUS_ERROR_BUS_ERROR;
+
+    propertyName = rbusProperty_GetName(property);
+    if(propertyName) {
+        WebcfgDebug("Property Name is %s \n", propertyName);
+    } else {
+        WebcfgError("Unable to handle get request for property \n");
+        return RBUS_ERROR_INVALID_INPUT;
+	}
+   if(strncmp(propertyName, WEBCFG_MQTT_NODEID_PARAM, maxParamLen) == 0)
+   {
+
+	rbusValue_t value;
+        rbusValue_Init(&value);
+
+	if(!isRfcEnabled())
+	{
+		WebcfgError("RfcEnable is disabled so, %s Get from DB failed\n",propertyName);
+		rbusValue_SetString(value, "");
+		rbusProperty_SetValue(property, value);
+		rbusValue_Release(value);
+		return 0;
+	}
+        if(NodeId){
+            rbusValue_SetString(value, NodeId);
+	}
+        else{
+		retPsmGet = rbus_GetValueFromDB( WEBCFG_MQTT_NODEID_PARAM, &NodeId );
+		if (retPsmGet != RBUS_ERROR_SUCCESS){
+			WebcfgError("psm_get failed ret %d for parameter %s and value %s\n", retPsmGet, propertyName, NodeId);
+			if(value)
+			{
+				rbusValue_Release(value);
+			}
+			return retPsmGet;
+		}
+		else{
+			WebcfgInfo("psm_get success ret %d for parameter %s and value %s\n", retPsmGet, propertyName, NodeId);
+			if(NodeId)
+			{
+				rbusValue_SetString(value, NodeId);
+			}
+			else
+			{
+				WebcfgError("NodeId is empty\n");
+				rbusValue_SetString(value, "");
+			}
+		}
+	}
+        rbusProperty_SetValue(property, value);
+        rbusValue_Release(value);
+
+    }
+    return RBUS_ERROR_SUCCESS;
+}
+
+rbusError_t webcfgMqttPortGetHandler(rbusHandle_t handle, rbusProperty_t property, rbusGetHandlerOptions_t* opts)
+{
+
+    (void) handle;
+    (void) opts;
+    char const* propertyName;
+    rbusError_t retPsmGet = RBUS_ERROR_BUS_ERROR;
+
+    propertyName = rbusProperty_GetName(property);
+    if(propertyName) {
+        WebcfgDebug("Property Name is %s \n", propertyName);
+    } else {
+        WebcfgError("Unable to handle get request for property \n");
+        return RBUS_ERROR_INVALID_INPUT;
+	}
+   if(strncmp(propertyName, WEBCFG_MQTT_PORT_PARAM, maxParamLen) == 0)
+   {
+
+	rbusValue_t value;
+        rbusValue_Init(&value);
+
+	if(!isRfcEnabled())
+	{
+		WebcfgError("RfcEnable is disabled so, %s Get from DB failed\n",propertyName);
+		rbusValue_SetString(value, "");
+		rbusProperty_SetValue(property, value);
+		rbusValue_Release(value);
+		return 0;
+	}
+        if(Port){
+            rbusValue_SetString(value, Port);
+	}
+        else{
+		retPsmGet = rbus_GetValueFromDB( WEBCFG_MQTT_PORT_PARAM, &Port );
+		if (retPsmGet != RBUS_ERROR_SUCCESS){
+			WebcfgError("psm_get failed ret %d for parameter %s and value %s\n", retPsmGet, propertyName, Port);
+			if(value)
+			{
+				rbusValue_Release(value);
+			}
+			return retPsmGet;
+		}
+		else{
+			WebcfgInfo("psm_get success ret %d for parameter %s and value %s\n", retPsmGet, propertyName, Port);
+			if(Port)
+			{
+				rbusValue_SetString(value, Port);
+			}
+			else
+			{
+				WebcfgError("Port is empty\n");
+				char * mqtt_port = NULL;
+				snprintf(mqtt_port, MAX_MQTT_LEN, "%d", MQTT_PORT);
+				rbusValue_SetString(value, mqtt_port);
+				if(mqtt_port != NULL)
+				{
+					WEBCFG_FREE(mqtt_port);
+				}
+			}
+		}
+	}
+        rbusProperty_SetValue(property, value);
+        rbusValue_Release(value);
+
+    }
+    return RBUS_ERROR_SUCCESS;
+}
+
+int regWebConfigDataModel_mqtt()
+{
+	rbusError_t ret = RBUS_ERROR_SUCCESS;
+	rbusDataElement_t dataElements3[NUM_WEBCFG_ELEMENTS3] = {
+
+		{WEBCFG_MQTT_LOCATIONID_PARAM, RBUS_ELEMENT_TYPE_PROPERTY, {webcfgMqttLocationIdGetHandler, webcfgMqttLocationIdSetHandler, NULL, NULL, NULL, NULL}},
+		{WEBCFG_MQTT_BROKER_PARAM, RBUS_ELEMENT_TYPE_PROPERTY, {webcfgMqttBrokerGetHandler, webcfgMqttBrokerSetHandler, NULL, NULL, NULL, NULL}},
+		{WEBCFG_MQTT_NODEID_PARAM, RBUS_ELEMENT_TYPE_PROPERTY, {webcfgMqttNodeIdGetHandler, webcfgMqttNodeIdSetHandler, NULL, NULL, NULL, NULL}},
+		{WEBCFG_MQTT_PORT_PARAM, RBUS_ELEMENT_TYPE_PROPERTY, {webcfgMqttPortGetHandler, webcfgMqttPortSetHandler, NULL, NULL, NULL, NULL}}
+	};
+
+	ret = rbus_regDataElements(get_global_rbus_handle(), NUM_WEBCFG_ELEMENTS3, dataElements3);
+	if(ret == RBUS_ERROR_SUCCESS)
+	{
+		fetchMqttParamsFromDB();
+	}
+	return ret;
 }

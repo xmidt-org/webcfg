@@ -86,18 +86,4 @@ void addToMpList(uint32_t etag, char *name_space, char *data, size_t data_size);
 void delete_mp_doc();
 void createCurlHeader( struct curl_slist *list, struct curl_slist **header_list, int status, char ** trans_uuid);
 char *replaceMacWord(const char *s, const char *macW, const char *deviceMACW);
-#ifdef WEBCONFIG_MQTT_SUPPORT
-int processPayload(char * data, int dataSize);
-#endif
-//getter functions to reuse in http and mqtt headers
-/*char *get_supportedVersion_header(void);
-char *get_supportedDocs_header(void);
-char *get_supplementaryDocs_header(void);
-char *get_global_bootTime(void);
-char *get_global_FirmwareVersion(void);
-char *get_global_systemReadyTime(void);
-char *get_global_productClass(void);
-char *get_global_ModelName(void);
-char *get_global_PartnerID(void);
-char *get_global_AccountID(void);*/
 #endif

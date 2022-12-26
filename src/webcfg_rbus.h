@@ -44,10 +44,6 @@
 #define NUM_WEBCFG_ELEMENTS2 3
 #endif
 
-#ifdef WEBCONFIG_MQTT_SUPPORT
-#define NUM_WEBCFG_ELEMENTS3 4
-#endif
-
 #define WEBCFG_COMPONENT_NAME "webconfig"
 #define MAX_PARAMETERNAME_LEN			4096
 #define WEBCFG_EVENT_NAME "webconfigSignal"
@@ -60,13 +56,6 @@
 #define WEBCFG_SUPPORTED_DOCS_PARAM	"Device.X_RDK_WebConfig.SupportedDocs"
 #define WEBCFG_SUPPORTED_VERSION_PARAM	"Device.X_RDK_WebConfig.SupportedSchemaVersion"
 #define WEBCFG_SUPPLEMENTARY_TELEMETRY_PARAM  "Device.X_RDK_WebConfig.SupplementaryServiceUrls.Telemetry"
-
-#ifdef WEBCONFIG_MQTT_SUPPORT
-#define WEBCFG_MQTT_LOCATIONID_PARAM "Device.X_RDK_WebConfig.MQTT.LocationId"
-#define WEBCFG_MQTT_BROKER_PARAM "Device.X_RDK_WebConfig.MQTT.Broker"
-#define WEBCFG_MQTT_NODEID_PARAM "Device.X_RDK_WebConfig.MQTT.NodeId"
-#define WEBCFG_MQTT_PORT_PARAM "Device.X_RDK_WebConfig.MQTT.Port"
-#endif
 
 #ifdef WAN_FAILOVER_SUPPORTED
 #define WEBCFG_INTERFACE_PARAM "Device.X_RDK_WanManager.CurrentActiveInterface"
@@ -131,11 +120,5 @@ void waitForUpstreamEventSubscribe(int wait_time);
 webcfgError_t fetchMpBlobData(char *docname, void **blobdata, int *len, uint32_t *etag);
 #ifdef WAN_FAILOVER_SUPPORTED
 int subscribeTo_CurrentActiveInterface_Event();
-#endif
-
-#ifdef WEBCONFIG_MQTT_SUPPORT
-int validateForMqttInit();
-pthread_cond_t *get_global_mqtt_cond(void);
-pthread_mutex_t *get_global_mqtt_mut(void);
 #endif
 #endif
