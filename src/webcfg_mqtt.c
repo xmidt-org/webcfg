@@ -1322,32 +1322,23 @@ int validateForMqttInit()
 void execute_mqtt_script(char *name)
 {
     FILE* out = NULL, *file = NULL;
-    char token[124] = {'\0'};
     char command[100] = {'\0'};
-    size_t len = 0;
 
     if(strlen(name)>0)
     {
         file = fopen(name, "r");
         if(file)
         {
-            WebcfgInfo("file is found\n");
             snprintf(command,sizeof(command),"%s mqttcert-fetch", name);
             out = popen(command, "r");
             if(out)
             {
-		WebcfgInfo("Inside out\n");
-                fgets(token, len, out);
-		WebcfgInfo("len is %zu\n", len);
+		WebcfgInfo("The Tls cert script executed successfully\n");
                 pclose(out);
 
             }
             fclose(file);
 
-            if(token[0] != '\0')
-            {
-                WebcfgInfo("filepath fetched are %s\n", token);
-            }
         }
         else
         {
