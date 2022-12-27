@@ -269,23 +269,36 @@ bool webcfg_mqtt_init(int status, char *systemreadytime)
 
 	if(client_id !=NULL)
 	{
+
+		Get_Mqtt_Broker(hostname);
+		if(hostname != NULL && strlen(hostname)>0)
+		{
+			WebcfgInfo("The hostname is %s\n", hostname);
+		}
+		else
+		{
+			WebcfgError("Invalid config, hostname is NULL\n");
+			return MOSQ_ERR_INVAL;
+		}
+
+		Get_Mqtt_Port(PORT);
+		WebcfgInfo("PORT fetched from TR181 is %s\n", PORT);
+		if(strlen(PORT) > 0)
+		{
+			port = atoi(PORT);
+		}
+		else
+		{
+			port = MQTT_PORT;
+		}
+		WebcfgInfo("port int %d\n", port);
+
 		while(1)
 		{
 			username = client_id;
 			WebcfgInfo("client_id is %s username is %s\n", client_id, username);
 
 			execute_mqtt_script(OPENSYNC_CERT);
-
-			Get_Mqtt_Broker(hostname);
-			if(hostname != NULL && strlen(hostname)>0)
-			{
-				WebcfgInfo("The hostname is %s\n", hostname);
-			}
-			else
-			{
-				WebcfgError("Invalid config, hostname is NULL\n");
-				return MOSQ_ERR_INVAL;
-			}
 
 			if(client_id !=NULL)
 			{
@@ -301,18 +314,6 @@ bool webcfg_mqtt_init(int status, char *systemreadytime)
 				WebcfgError("Error initializing mosq instance\n");
 				return MOSQ_ERR_NOMEM;
 			}
-
-			Get_Mqtt_Port(PORT);
-			WebcfgInfo("PORT fetched from TR181 is %s\n", PORT);
-			if(strlen(PORT) > 0)
-			{
-				port = atoi(PORT);
-			}
-			else
-			{
-				port = MQTT_PORT;
-			}
-			WebcfgInfo("port int %d\n", port);
 
 			struct libmosquitto_tls *tls;
 			tls = malloc (sizeof (struct libmosquitto_tls));
@@ -341,13 +342,16 @@ bool webcfg_mqtt_init(int status, char *systemreadytime)
 					{
 						WebcfgError("Failed in mosquitto_tls_set %d %s\n", rc, mosquitto_strerror(rc));
 					}
-
-					rc = mosquitto_tls_opts_set(mosq, tls->cert_reqs, tls->tls_version, tls->ciphers);
-					WebcfgInfo("mosquitto_tls_opts_set rc %d\n", rc);
-					if(rc)
+					else
 					{
-						WebcfgError("Failed in mosquitto_tls_opts_set %d %s\n", rc, mosquitto_strerror(rc));
+						rc = mosquitto_tls_opts_set(mosq, tls->cert_reqs, tls->tls_version, tls->ciphers);
+						WebcfgInfo("mosquitto_tls_opts_set rc %d\n", rc);
+						if(rc)
+						{
+							WebcfgError("Failed in mosquitto_tls_opts_set %d %s\n", rc, mosquitto_strerror(rc));
+						}
 					}
+
 				}
 				else
 				{
@@ -378,6 +382,7 @@ bool webcfg_mqtt_init(int status, char *systemreadytime)
 				}
 				else
 				{
+					tls_count = 0;
 					//connect to mqtt broker
 					mosquitto_connect_callback_set(mosq, on_connect);
 					mosquitto_subscribe_callback_set(mosq, on_subscribe);
@@ -394,7 +399,6 @@ bool webcfg_mqtt_init(int status, char *systemreadytime)
 						{
 							rc = mosquitto_connect(mosq, hostname, port, KEEPALIVE);
 							WebcfgInfo("mosquitto_connect rc %d\n", rc);
-							tls_count = 0;
 							if(rc != MOSQ_ERR_SUCCESS)
 							{
 
