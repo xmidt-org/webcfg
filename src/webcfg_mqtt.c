@@ -242,6 +242,7 @@ bool webcfg_mqtt_init(int status, char *systemreadytime)
 	char PORT[32] = { 0 };
 	int port = 0;
 	mqtt_timer_t mqtt_timer;
+	int tls_count = 0;
 
 	checkMqttParamSet();
 	res_init();
@@ -265,142 +266,188 @@ bool webcfg_mqtt_init(int status, char *systemreadytime)
 	WebcfgInfo("g_NodeID fetched from Get_Mqtt_NodeId is %s\n", g_NodeID);
 	client_id = strdup(g_NodeID);
 	WebcfgInfo("client_id is %s\n", client_id);
-	
+
 	if(client_id !=NULL)
 	{
-		username = client_id;
-		WebcfgInfo("client_id is %s username is %s\n", client_id, username);
-
-		execute_mqtt_script(OPENSYNC_CERT);
-
-		Get_Mqtt_Broker(hostname);
-		if(hostname != NULL && strlen(hostname)>0)
+		while(1)
 		{
-			WebcfgInfo("The hostname is %s\n", hostname);
-		}
-		else
-		{
-			WebcfgError("Invalid config, hostname is NULL\n");
-			return MOSQ_ERR_INVAL;
-		}
+			username = client_id;
+			WebcfgInfo("client_id is %s username is %s\n", client_id, username);
 
-		if(client_id !=NULL)
-		{
-			mosq = mosquitto_new(client_id, clean_session, NULL);
-		}
-		else
-		{
-			WebcfgInfo("client_id is NULL, init with clean_session true\n");
-			mosq = mosquitto_new(NULL, true, NULL);
-		}
-		if(!mosq)
-		{
-			WebcfgError("Error initializing mosq instance\n");
-			return MOSQ_ERR_NOMEM;
-		}
+			execute_mqtt_script(OPENSYNC_CERT);
 
-		Get_Mqtt_Port(PORT);
-		WebcfgInfo("PORT fetched from TR181 is %s\n", PORT);
-		if(strlen(PORT) > 0)
-		{
-			port = atoi(PORT);
-		}
-		else
-		{
-			port = MQTT_PORT;
-		}
-		WebcfgInfo("port int %d\n", port);
-
-		struct libmosquitto_tls *tls;
-		tls = malloc (sizeof (struct libmosquitto_tls));
-		if(tls)
-		{
-			memset(tls, 0, sizeof(struct libmosquitto_tls));
-
-			char * CAFILE, *CERTFILE , *KEYFILE = NULL;
-
-			get_from_file("CA_FILE_PATH=", &CAFILE, MQTT_CONFIG_FILE);
-			get_from_file("CERT_FILE_PATH=", &CERTFILE, MQTT_CONFIG_FILE);
-			get_from_file("KEY_FILE_PATH=", &KEYFILE, MQTT_CONFIG_FILE);
-
-			if(CAFILE !=NULL && CERTFILE!=NULL && KEYFILE !=NULL)
+			Get_Mqtt_Broker(hostname);
+			if(hostname != NULL && strlen(hostname)>0)
 			{
-				WebcfgInfo("CAFILE %s, CERTFILE %s, KEYFILE %s MOSQ_TLS_VERSION %s\n", CAFILE, CERTFILE, KEYFILE, MOSQ_TLS_VERSION);
-
-				tls->cafile = CAFILE;
-				tls->certfile = CERTFILE;
-				tls->keyfile = KEYFILE;
-				tls->tls_version = MOSQ_TLS_VERSION;
-
-				rc = mosquitto_tls_set(mosq, tls->cafile, tls->capath, tls->certfile, tls->keyfile, tls->pw_callback);
-				WebcfgInfo("mosquitto_tls_set rc %d\n", rc);
-				if(rc)
-				{
-					WebcfgError("Failed in mosquitto_tls_set %d %s\n", rc, mosquitto_strerror(rc));
-					mosquitto_destroy(mosq);
-					return rc;
-				}
-				rc = mosquitto_tls_opts_set(mosq, tls->cert_reqs, tls->tls_version, tls->ciphers);
-				WebcfgInfo("mosquitto_tls_opts_set rc %d\n", rc);
-				if(rc)
-				{
-					WebcfgError("Failed in mosquitto_tls_opts_set %d %s\n", rc, mosquitto_strerror(rc));
-					mosquitto_destroy(mosq);
-					return rc;
-				}
-
-				//connect to mqtt broker
-				mosquitto_connect_callback_set(mosq, on_connect);
-				mosquitto_subscribe_callback_set(mosq, on_subscribe);
-				mosquitto_message_callback_set(mosq, on_message);
-				mosquitto_publish_callback_set(mosq, on_publish);
-
-				WebcfgInfo("port %d\n", port);
-
-				init_mqtt_timer(&mqtt_timer, MAX_MQTT_RETRY);
-				rc = 1;    //for resetting purpose
-				while(rc != MOSQ_ERR_SUCCESS)
-				{
-					rc = mosquitto_connect(mosq, hostname, port, KEEPALIVE);
-					WebcfgInfo("mosquitto_connect rc %d\n", rc);
-					if(rc != MOSQ_ERR_SUCCESS)
-					{
-
-						WebcfgError("mqtt connect Error: %s\n", mosquitto_strerror(rc));
-						if(mqtt_retry(&mqtt_timer) != MQTT_DELAY_TAKEN)
-						{
-							mosquitto_destroy(mosq);
-							return rc;
-						}
-					}
-					else
-					{
-						WebcfgInfo("mqtt broker connect success %d\n", rc);
-						set_global_mqttConnected();
-					}
-				}
-				/*WebcfgInfo("mosquitto_loop_forever\n");
-				rc = mosquitto_loop_forever(mosq, -1, 1);*/
-				rc = mosquitto_loop_start(mosq);
-				if(rc != MOSQ_ERR_SUCCESS)
-				{
-					mosquitto_destroy(mosq);
-					WebcfgError("mosquitto_loop_start Error: %s\n", mosquitto_strerror(rc));
-					return rc;
-				}
-				WebcfgInfo("after loop rc is %d\n", rc);
+				WebcfgInfo("The hostname is %s\n", hostname);
 			}
 			else
 			{
-				WebcfgError("Failed to get tls cert files\n");
-				return 1;
+				WebcfgError("Invalid config, hostname is NULL\n");
+				return MOSQ_ERR_INVAL;
+			}
+
+			if(client_id !=NULL)
+			{
+				mosq = mosquitto_new(client_id, clean_session, NULL);
+			}
+			else
+			{
+				WebcfgInfo("client_id is NULL, init with clean_session true\n");
+				mosq = mosquitto_new(NULL, true, NULL);
+			}
+			if(!mosq)
+			{
+				WebcfgError("Error initializing mosq instance\n");
+				return MOSQ_ERR_NOMEM;
+			}
+
+			Get_Mqtt_Port(PORT);
+			WebcfgInfo("PORT fetched from TR181 is %s\n", PORT);
+			if(strlen(PORT) > 0)
+			{
+				port = atoi(PORT);
+			}
+			else
+			{
+				port = MQTT_PORT;
+			}
+			WebcfgInfo("port int %d\n", port);
+
+			struct libmosquitto_tls *tls;
+			tls = malloc (sizeof (struct libmosquitto_tls));
+			if(tls)
+			{
+				memset(tls, 0, sizeof(struct libmosquitto_tls));
+
+				char * CAFILE, *CERTFILE , *KEYFILE = NULL;
+
+				get_from_file("CA_FILE_PATH=", &CAFILE, MQTT_CONFIG_FILE);
+				get_from_file("CERT_FILE_PATH=", &CERTFILE, MQTT_CONFIG_FILE);
+				get_from_file("KEY_FILE_PATH=", &KEYFILE, MQTT_CONFIG_FILE);
+
+				if(CAFILE !=NULL && CERTFILE!=NULL && KEYFILE !=NULL)
+				{
+					WebcfgInfo("CAFILE %s, CERTFILE %s, KEYFILE %s MOSQ_TLS_VERSION %s\n", CAFILE, CERTFILE, KEYFILE, MOSQ_TLS_VERSION);
+
+					tls->cafile = CAFILE;
+					tls->certfile = CERTFILE;
+					tls->keyfile = KEYFILE;
+					tls->tls_version = MOSQ_TLS_VERSION;
+
+					rc = mosquitto_tls_set(mosq, tls->cafile, tls->capath, tls->certfile, tls->keyfile, tls->pw_callback);
+					WebcfgInfo("mosquitto_tls_set rc %d\n", rc);
+					if(rc)
+					{
+						WebcfgError("Failed in mosquitto_tls_set %d %s\n", rc, mosquitto_strerror(rc));
+					}
+
+					rc = mosquitto_tls_opts_set(mosq, tls->cert_reqs, tls->tls_version, tls->ciphers);
+					WebcfgInfo("mosquitto_tls_opts_set rc %d\n", rc);
+					if(rc)
+					{
+						WebcfgError("Failed in mosquitto_tls_opts_set %d %s\n", rc, mosquitto_strerror(rc));
+					}
+				}
+				else
+				{
+					WebcfgError("Failed to get tls cert files\n");
+					rc = 1;
+				}
+
+				if(rc != MOSQ_ERR_SUCCESS)
+				{
+					if(tls_count < 3)
+					{
+						sleep(10);
+						WebcfgInfo("Mqtt tls cert Retry %d in progress\n", tls_count+1);
+						mosquitto_destroy(mosq);
+						tls_count++;
+					}
+					else
+					{
+						WebcfgError("Mqtt tls cert retry failed!!!, Abort the process\n");
+
+						mosquitto_destroy(mosq);
+
+						WEBCFG_FREE(CAFILE);
+						WEBCFG_FREE(CERTFILE);
+						WEBCFG_FREE(KEYFILE);
+						abort();
+					}
+				}
+				else
+				{
+					//connect to mqtt broker
+					mosquitto_connect_callback_set(mosq, on_connect);
+					mosquitto_subscribe_callback_set(mosq, on_subscribe);
+					mosquitto_message_callback_set(mosq, on_message);
+					mosquitto_publish_callback_set(mosq, on_publish);
+
+					WebcfgInfo("port %d\n", port);
+
+					init_mqtt_timer(&mqtt_timer, MAX_MQTT_RETRY);
+
+					while(1)
+					{
+						if(rc == MOSQ_ERR_SUCCESS)
+						{
+							rc = mosquitto_connect(mosq, hostname, port, KEEPALIVE);
+							WebcfgInfo("mosquitto_connect rc %d\n", rc);
+							tls_count = 0;
+							if(rc != MOSQ_ERR_SUCCESS)
+							{
+
+								WebcfgError("mqtt connect Error: %s\n", mosquitto_strerror(rc));
+								if(mqtt_retry(&mqtt_timer) != MQTT_DELAY_TAKEN)
+								{
+									mosquitto_destroy(mosq);
+
+									WEBCFG_FREE(CAFILE);
+									WEBCFG_FREE(CERTFILE);
+									WEBCFG_FREE(KEYFILE);
+									return rc;
+								}
+							}
+							else
+							{
+								WebcfgInfo("mqtt broker connect success %d\n", rc);
+								set_global_mqttConnected();
+								break;
+							}
+						}
+					}
+
+					/*WebcfgInfo("mosquitto_loop_forever\n");
+					rc = mosquitto_loop_forever(mosq, -1, 1);*/
+					rc = mosquitto_loop_start(mosq);
+					if(rc != MOSQ_ERR_SUCCESS)
+					{
+						mosquitto_destroy(mosq);
+						WebcfgError("mosquitto_loop_start Error: %s\n", mosquitto_strerror(rc));
+
+						WEBCFG_FREE(CAFILE);
+						WEBCFG_FREE(CERTFILE);
+						WEBCFG_FREE(KEYFILE);
+						return rc;
+					}
+					else
+					{
+						WebcfgInfo("after loop rc is %d\n", rc);
+						break;
+					}
+				}
+				WEBCFG_FREE(CAFILE);
+				WEBCFG_FREE(CERTFILE);
+				WEBCFG_FREE(KEYFILE);
+			}
+			else
+			{
+				WebcfgError("Allocation failed\n");
+				rc = MOSQ_ERR_NOMEM;
 			}
 		}
-		else
-		{
-			WebcfgError("Allocation failed\n");
-			return MOSQ_ERR_NOMEM;
-		}
+
 	}
 	else
 	{
