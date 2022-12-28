@@ -421,10 +421,10 @@ bool webcfg_mqtt_init(int status, char *systemreadytime)
 							}
 						}
 					}
-
+					WebcfgInfo("mosquitto_loop_start disabled.\n");
 					/*WebcfgInfo("mosquitto_loop_forever\n");
 					rc = mosquitto_loop_forever(mosq, -1, 1);*/
-					rc = mosquitto_loop_start(mosq);
+					/*rc = mosquitto_loop_start(mosq);
 					if(rc != MOSQ_ERR_SUCCESS)
 					{
 						mosquitto_destroy(mosq);
@@ -439,7 +439,9 @@ bool webcfg_mqtt_init(int status, char *systemreadytime)
 					{
 						WebcfgInfo("after loop rc is %d\n", rc);
 						break;
-					}
+					}*/
+					WebcfgInfo("connect done, break and proceed.\n");
+					break;
 				}
 				WEBCFG_FREE(CAFILE);
 				WEBCFG_FREE(CERTFILE);
