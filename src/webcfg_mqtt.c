@@ -422,8 +422,8 @@ bool webcfg_mqtt_init(int status, char *systemreadytime)
 						}
 					}
 					WebcfgInfo("mosquitto_loop enabled.\n");
-					WebcfgInfo("mosquitto_loop\n");
-					rc = mosquitto_loop(mosq, -1, 1);
+					WebcfgInfo("mosquitto_loop_forever\n");
+					rc = mosquitto_loop_forever(mosq, -1, 1);
 					//rc = mosquitto_loop_start(mosq);
 					if(rc != MOSQ_ERR_SUCCESS)
 					{
