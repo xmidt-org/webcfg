@@ -260,7 +260,7 @@ bool webcfg_mqtt_init(int status, char *systemreadytime)
 		WebcfgInfo("g_systemReadyTime is %s\n", g_systemReadyTime);
 	}
 
-	int clean_session = true;
+	int clean_session = false;
 
 	Get_Mqtt_NodeId(g_NodeID);
 	WebcfgInfo("g_NodeID fetched from Get_Mqtt_NodeId is %s\n", g_NodeID);
@@ -302,6 +302,7 @@ bool webcfg_mqtt_init(int status, char *systemreadytime)
 
 			if(client_id !=NULL)
 			{
+				WebcfgInfo("init with clean_session false %d\n", clean_session);
 				mosq = mosquitto_new(client_id, clean_session, NULL);
 			}
 			else
@@ -421,7 +422,7 @@ bool webcfg_mqtt_init(int status, char *systemreadytime)
 							}
 						}
 					}
-					WebcfgInfo("mosquitto_loop enabled.\n");
+					/*WebcfgInfo("mosquitto_loop enabled.\n");
 					WebcfgInfo("mosquitto_loop_forever\n");
 					rc = mosquitto_loop_forever(mosq, -1, 1);
 					//rc = mosquitto_loop_start(mosq);
@@ -439,7 +440,7 @@ bool webcfg_mqtt_init(int status, char *systemreadytime)
 					{
 						WebcfgInfo("after loop rc is %d\n", rc);
 						break;
-					}
+					}*/
 				}
 				WEBCFG_FREE(CAFILE);
 				WEBCFG_FREE(CERTFILE);
@@ -451,7 +452,9 @@ bool webcfg_mqtt_init(int status, char *systemreadytime)
 				rc = MOSQ_ERR_NOMEM;
 			}
 		}
-
+		WebcfgInfo("mosquitto_loop outside while with timeout set to 0.\n");
+		rc = mosquitto_loop(mosq, 0, 1);
+		WebcfgInfo("after mosquitto_loop rc is %d\n", rc);
 	}
 	else
 	{
