@@ -451,10 +451,12 @@ bool webcfg_mqtt_init(int status, char *systemreadytime)
 				WebcfgError("Allocation failed\n");
 				rc = MOSQ_ERR_NOMEM;
 			}
+			WebcfgInfo("break from outside while.\n");
+			break;
 		}
-		WebcfgInfo("mosquitto_loop outside while with timeout set to 0.\n");
-		rc = mosquitto_loop(mosq, 0, 1);
-		WebcfgInfo("after mosquitto_loop rc is %d\n", rc);
+		WebcfgInfo("mosquitto_loop_start once after connect.\n");
+		rc = mosquitto_loop_start(mosq);
+		WebcfgInfo("after mosquitto_loop_start rc is %d\n", rc);
 	}
 	else
 	{
