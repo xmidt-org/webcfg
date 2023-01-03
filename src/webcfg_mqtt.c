@@ -398,8 +398,8 @@ bool webcfg_mqtt_init(int status, char *systemreadytime)
 					{
 						if(rc == MOSQ_ERR_SUCCESS)
 						{
-							rc = mosquitto_connect(mosq, hostname, port, KEEPALIVE);
-							WebcfgInfo("mosquitto_connect rc %d\n", rc);
+							rc = mosquitto_connect_async(mosq, hostname, port, KEEPALIVE);
+							WebcfgInfo("mosquitto_connect_async rc %d\n", rc);
 							if(rc != MOSQ_ERR_SUCCESS)
 							{
 
