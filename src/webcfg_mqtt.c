@@ -33,6 +33,7 @@
 #include "webcfg_rbus.h"
 
 void on_connect(struct mosquitto *mosq, void *obj, int reason_code);
+void on_disconnect(struct mosquitto *mosq, void *obj, int reason_code);
 void on_subscribe(struct mosquitto *mosq, void *obj, int mid, int qos_count, const int *granted_qos);
 void on_message(struct mosquitto *mosq, void *obj, const struct mosquitto_message *msg);
 void on_publish(struct mosquitto *mosq, void *obj, int mid);
@@ -386,6 +387,8 @@ bool webcfg_mqtt_init(int status, char *systemreadytime)
 					tls_count = 0;
 					//connect to mqtt broker
 					mosquitto_connect_callback_set(mosq, on_connect);
+					WebcfgInfo("set disconnect callback\n");
+					mosquitto_disconnect_callback_set(mosq, on_disconnect);
 					mosquitto_subscribe_callback_set(mosq, on_subscribe);
 					mosquitto_message_callback_set(mosq, on_message);
 					mosquitto_publish_callback_set(mosq, on_publish);
@@ -398,6 +401,9 @@ bool webcfg_mqtt_init(int status, char *systemreadytime)
 					{
 						if(rc == MOSQ_ERR_SUCCESS)
 						{
+							WebcfgInfo("mosquitto_loop_start before connect.\n");
+							rc = mosquitto_loop_start(mosq);
+							WebcfgInfo("mosquitto_loop_start rc is %d\n", rc);
 							rc = mosquitto_connect_async(mosq, hostname, port, KEEPALIVE);
 							WebcfgInfo("mosquitto_connect_async rc %d\n", rc);
 							if(rc != MOSQ_ERR_SUCCESS)
@@ -454,9 +460,9 @@ bool webcfg_mqtt_init(int status, char *systemreadytime)
 			WebcfgInfo("break from outside while.\n");
 			break;
 		}
-		WebcfgInfo("mosquitto_loop_start once after connect.\n");
+		/*WebcfgInfo("mosquitto_loop_start once after connect.\n");
 		rc = mosquitto_loop_start(mosq);
-		WebcfgInfo("after mosquitto_loop_start rc is %d\n", rc);
+		WebcfgInfo("after mosquitto_loop_start rc is %d\n", rc);*/
 	}
 	else
 	{
@@ -504,7 +510,18 @@ void on_connect(struct mosquitto *mosq, void *obj, int reason_code)
 	}
 }
 
-
+// callback called when the client gets DISCONNECT command from the broker
+void on_disconnect(struct mosquitto *mosq, void *obj, int reason_code)
+{
+        WebcfgInfo("on_disconnect: reason_code %d %s\n", reason_code, mosquitto_reason_string(reason_code));
+        if(reason_code != 0)
+	{
+		WebcfgError("on_disconnect received error\n");
+                //reconnect
+                mosquitto_disconnect(mosq);
+		return;
+        }
+}
 // callback called when the broker sends a SUBACK in response to a SUBSCRIBE.
 void on_subscribe(struct mosquitto *mosq, void *obj, int mid, int qos_count, const int *granted_qos)
 {
