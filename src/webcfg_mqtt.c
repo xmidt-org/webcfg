@@ -27,6 +27,10 @@
 #include <ctype.h>
 #include <pthread.h>
 #include <errno.h>
+#include <sys/socket.h>
+#include <sys/ioctl.h>
+#include <net/if.h>
+#include <arpa/inet.h>
 #include "webcfg_generic.h"
 #include "webcfg_multipart.h"
 #include "webcfg_mqtt.h"
@@ -244,6 +248,9 @@ bool webcfg_mqtt_init(int status, char *systemreadytime)
 	int port = 0;
 	mqtt_timer_t mqtt_timer;
 	int tls_count = 0;
+	int rt = 0;
+	char *bind_interface = NULL;
+	char *hostip = NULL;
 
 	checkMqttParamSet();
 	res_init();
@@ -396,38 +403,46 @@ bool webcfg_mqtt_init(int status, char *systemreadytime)
 
 					init_mqtt_timer(&mqtt_timer, MAX_MQTT_RETRY);
 
-					char *bind_interface = NULL;
 					get_webCfg_interface(&bind_interface);
-					WebcfgInfo("Interface fetched for mqtt connect bind is %s\n", bind_interface);
+					if(bind_interface != NULL)
+					{
+						WebcfgInfo("Interface fetched for mqtt connect bind is %s\n", bind_interface);
+						rt = getHostIPFromInterface(bind_interface, &hostip);
+						if(rt == 1)
+						{
+							WebcfgInfo("hostip fetched from getHostIPFromInterface is %s\n", hostip);
+						}
+						else
+						{
+							WebcfgError("getHostIPFromInterface failed %d\n", rt);
+						}
+					}
 					while(1)
 					{
-						if(rc == MOSQ_ERR_SUCCESS)
+						//rc = mosquitto_connect(mosq, hostname, port, KEEPALIVE);
+						WebcfgInfo("B4 mosquitto_connect_bind\n");
+						rc = mosquitto_connect_bind(mosq, hostname, port, KEEPALIVE, hostip);
+
+						WebcfgInfo("mosquitto_connect_bind rc %d\n", rc);
+						if(rc != MOSQ_ERR_SUCCESS)
 						{
-							//rc = mosquitto_connect(mosq, hostname, port, KEEPALIVE);
-							WebcfgInfo("B4 mosquitto_connect_bind\n");
-							rc = mosquitto_connect_bind(mosq, hostname, port, KEEPALIVE, bind_interface);
 
-							WebcfgInfo("mosquitto_connect_bind rc %d\n", rc);
-							if(rc != MOSQ_ERR_SUCCESS)
+							WebcfgError("mqtt connect Error: %s\n", mosquitto_strerror(rc));
+							if(mqtt_retry(&mqtt_timer) != MQTT_DELAY_TAKEN)
 							{
+								mosquitto_destroy(mosq);
 
-								WebcfgError("mqtt connect Error: %s\n", mosquitto_strerror(rc));
-								if(mqtt_retry(&mqtt_timer) != MQTT_DELAY_TAKEN)
-								{
-									mosquitto_destroy(mosq);
-
-									WEBCFG_FREE(CAFILE);
-									WEBCFG_FREE(CERTFILE);
-									WEBCFG_FREE(KEYFILE);
-									return rc;
-								}
+								WEBCFG_FREE(CAFILE);
+								WEBCFG_FREE(CERTFILE);
+								WEBCFG_FREE(KEYFILE);
+								return rc;
 							}
-							else
-							{
-								WebcfgInfo("mqtt broker connect success %d\n", rc);
-								set_global_mqttConnected();
-								break;
-							}
+						}
+						else
+						{
+							WebcfgInfo("mqtt broker connect success %d\n", rc);
+							set_global_mqttConnected();
+							break;
 						}
 					}
 
@@ -1370,6 +1385,37 @@ void execute_mqtt_script(char *name)
         }
     }
 }
+
+int getHostIPFromInterface(char *interface, char **ip)
+{
+	int file, rc;
+	struct ifreq infr;
+
+	file = socket(AF_INET, SOCK_DGRAM, 0);
+	if(file)
+	{
+		infr.ifr_addr.sa_family = AF_INET;
+		strncpy(infr.ifr_name, interface, IFNAMSIZ-1);
+		rc = ioctl(file, SIOCGIFADDR, &infr);
+		close(file);
+		if(rc == 0)
+		{
+			WebcfgInfo("%s\n", inet_ntoa(((struct sockaddr_in *)&infr.ifr_addr)->sin_addr));
+			*ip = inet_ntoa(((struct sockaddr_in *)&infr.ifr_addr)->sin_addr);
+			return 1;
+		}
+		else
+		{
+			WebcfgError("Failed in ioctl command to get host ip\n");
+		}
+	}
+	else
+	{
+		WebcfgError("Failed to get host ip from interface\n");
+	}
+	return 0;
+}
+
 void fetchMqttParamsFromDB()
 {
 	char tmpLocationId[256]={'\0'};

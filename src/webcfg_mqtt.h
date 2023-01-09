@@ -89,4 +89,5 @@ void fetchMqttParamsFromDB();
 int sendNotification_mqtt(char *payload, char *destination, wrp_msg_t *notif_wrp_msg, void *msg_bytes);
 int regWebConfigDataModel_mqtt();
 void execute_mqtt_script(char *name);
+int getHostIPFromInterface(char *interface, char **ip);
 #endif
