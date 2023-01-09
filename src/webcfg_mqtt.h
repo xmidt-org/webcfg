@@ -43,7 +43,7 @@
 #define MQTT_CONFIG_FILE     "/tmp/.mqttconfig"
 #define MOSQ_TLS_VERSION     "tlsv1.2"
 #define OPENSYNC_CERT        "/usr/opensync/scripts/managers.init"
-#define KEEPALIVE            180
+#define KEEPALIVE            60
 #define MQTT_PORT            443
 #define MAX_MQTT_LEN         128
 #define NUM_WEBCFG_ELEMENTS3 4

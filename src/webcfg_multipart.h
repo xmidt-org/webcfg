@@ -80,6 +80,7 @@ char *get_global_ETAG(void);
 void set_global_interface(char * value);
 char * get_global_interface(void);
 #endif
+void get_webCfg_interface(char **interface);
 pthread_t get_global_process_threadid();
 void delete_multipart();
 int get_multipartdoc_count();

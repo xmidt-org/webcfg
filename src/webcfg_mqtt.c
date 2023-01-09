@@ -261,7 +261,7 @@ bool webcfg_mqtt_init(int status, char *systemreadytime)
 		WebcfgInfo("g_systemReadyTime is %s\n", g_systemReadyTime);
 	}
 
-	int clean_session = false;
+	int clean_session = true;
 
 	Get_Mqtt_NodeId(g_NodeID);
 	WebcfgInfo("g_NodeID fetched from Get_Mqtt_NodeId is %s\n", g_NodeID);
@@ -303,7 +303,6 @@ bool webcfg_mqtt_init(int status, char *systemreadytime)
 
 			if(client_id !=NULL)
 			{
-				WebcfgInfo("init with clean_session false %d\n", clean_session);
 				mosq = mosquitto_new(client_id, clean_session, NULL);
 			}
 			else
@@ -397,15 +396,18 @@ bool webcfg_mqtt_init(int status, char *systemreadytime)
 
 					init_mqtt_timer(&mqtt_timer, MAX_MQTT_RETRY);
 
+					char *bind_interface = NULL;
+					get_webCfg_interface(&bind_interface);
+					WebcfgInfo("Interface fetched for mqtt connect bind is %s\n", bind_interface);
 					while(1)
 					{
 						if(rc == MOSQ_ERR_SUCCESS)
 						{
-							WebcfgInfo("mosquitto_loop_start before connect.\n");
-							rc = mosquitto_loop_start(mosq);
-							WebcfgInfo("mosquitto_loop_start rc is %d\n", rc);
-							rc = mosquitto_connect_async(mosq, hostname, port, KEEPALIVE);
-							WebcfgInfo("mosquitto_connect_async rc %d\n", rc);
+							//rc = mosquitto_connect(mosq, hostname, port, KEEPALIVE);
+							WebcfgInfo("B4 mosquitto_connect_bind\n");
+							rc = mosquitto_connect_bind(mosq, hostname, port, KEEPALIVE, bind_interface);
+
+							WebcfgInfo("mosquitto_connect_bind rc %d\n", rc);
 							if(rc != MOSQ_ERR_SUCCESS)
 							{
 
@@ -428,14 +430,14 @@ bool webcfg_mqtt_init(int status, char *systemreadytime)
 							}
 						}
 					}
-					/*WebcfgInfo("mosquitto_loop enabled.\n");
-					WebcfgInfo("mosquitto_loop_forever\n");
-					rc = mosquitto_loop_forever(mosq, -1, 1);
-					//rc = mosquitto_loop_start(mosq);
+
+					/*WebcfgInfo("mosquitto_loop_forever\n");
+					rc = mosquitto_loop_forever(mosq, -1, 1);*/
+					rc = mosquitto_loop_start(mosq);
 					if(rc != MOSQ_ERR_SUCCESS)
 					{
 						mosquitto_destroy(mosq);
-						WebcfgError("mosquitto_loop Error: %s\n", mosquitto_strerror(rc));
+						WebcfgError("mosquitto_loop_start Error: %s\n", mosquitto_strerror(rc));
 
 						WEBCFG_FREE(CAFILE);
 						WEBCFG_FREE(CERTFILE);
@@ -446,7 +448,7 @@ bool webcfg_mqtt_init(int status, char *systemreadytime)
 					{
 						WebcfgInfo("after loop rc is %d\n", rc);
 						break;
-					}*/
+					}
 				}
 				WEBCFG_FREE(CAFILE);
 				WEBCFG_FREE(CERTFILE);
@@ -457,12 +459,8 @@ bool webcfg_mqtt_init(int status, char *systemreadytime)
 				WebcfgError("Allocation failed\n");
 				rc = MOSQ_ERR_NOMEM;
 			}
-			WebcfgInfo("break from outside while.\n");
-			break;
 		}
-		/*WebcfgInfo("mosquitto_loop_start once after connect.\n");
-		rc = mosquitto_loop_start(mosq);
-		WebcfgInfo("after mosquitto_loop_start rc is %d\n", rc);*/
+
 	}
 	else
 	{
