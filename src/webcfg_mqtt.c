@@ -1459,13 +1459,6 @@ int sendNotification_mqtt(char *payload, char *destination, wrp_msg_t *notif_wrp
 		publish_notify_mqtt(NULL, payload_str, strlen(payload_str), destination);
 		//WEBCFG_FREE(payload_str);
 		WebcfgInfo("publish_notify_mqtt done\n");
-		wrp_free_struct (notif_wrp_msg );
-		WebcfgInfo("freed notify wrp msg\n");
-		if(msg_bytes)
-		{
-			WEBCFG_FREE(msg_bytes);
-		}
-		WebcfgInfo("freed msg_bytes\n");
 		return 1;
 	}
 	else
