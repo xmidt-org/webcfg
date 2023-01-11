@@ -465,9 +465,9 @@ bool webcfg_mqtt_init(int status, char *systemreadytime)
 						break;
 					}
 				}
-				WEBCFG_FREE(CAFILE);
+				/*WEBCFG_FREE(CAFILE);
 				WEBCFG_FREE(CERTFILE);
-				WEBCFG_FREE(KEYFILE);
+				WEBCFG_FREE(KEYFILE);*/
 			}
 			else
 			{
