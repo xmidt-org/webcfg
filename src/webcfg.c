@@ -34,7 +34,7 @@
 #include "webcfg_event.h"
 #include "webcfg_blob.h"
 #include "webcfg_timer.h"
-
+#include "webcfg_rbus.h"
 #ifdef FEATURE_SUPPORT_AKER
 #include "webcfg_aker.h"
 #endif
@@ -71,6 +71,8 @@ pthread_t* g_mpthreadId;
 static int g_testfile = 0;
 #endif
 static int g_supplementarySync = 0;
+static int g_wanrestore_sync = 0;
+static int g_wanrestoresync_start = 0;
 /*----------------------------------------------------------------------------*/
 /*                             Function Prototypes                            */
 /*----------------------------------------------------------------------------*/
@@ -180,6 +182,11 @@ void *WebConfigMultipartTask(void *status)
 			}
 			setForceSync("", "", 0);
 			set_global_supplementarySync(0);
+			if(get_global_wanrestoresync_start())
+			{
+				WebcfgInfo("reset wanrestore_start\n");
+				set_global_wanrestoresync_start(0);
+			}
 		}
 
 		if(!wait_flag)
@@ -261,7 +268,14 @@ void *WebConfigMultipartTask(void *status)
 			WebcfgDebug("The retry triggers at %s\n", printTime((long long)ts.tv_sec));
 		}
 
-		if(retry_flag == 1 || maintenance_doc_sync == 1)
+		if(get_global_wanrestore_sync() == 1)
+		{
+			WebcfgInfo("wanrestore sync detected, trigger force sync with cloud.\n");
+			forced_sync = 1;
+			wait_flag = 1;
+			rv = 0;
+		}
+		else if(retry_flag == 1 || maintenance_doc_sync == 1)
 		{
 			WebcfgDebug("B4 sync_condition pthread_cond_timedwait\n");
 			set_maintenanceSync(false);
@@ -295,6 +309,12 @@ void *WebConfigMultipartTask(void *status)
 		}
 		else if(!rv && !g_shutdown)
 		{
+			if(get_global_wanrestore_sync())
+			{
+				set_global_wanrestore_sync(0);
+				set_global_wanrestoresync_start(1);
+				WebcfgInfo("wanrestore_sync reset to %d and wanrestoresync_start %d\n", get_global_wanrestore_sync(), get_global_wanrestoresync_start());
+			}
 			char *ForceSyncDoc = NULL;
 			char* ForceSyncTransID = NULL;
 
@@ -383,6 +403,8 @@ void *WebConfigMultipartTask(void *status)
 	set_global_retry_timestamp(0);
 	set_retry_timer(0);
 	set_global_supplementarySync(0);
+	set_global_wanrestore_sync(0);
+	set_global_wanrestoresync_start(0);
 #ifdef FEATURE_SUPPORT_AKER
 	set_send_aker_flag(false);
 #endif
@@ -484,6 +506,25 @@ int get_global_supplementarySync()
     return g_supplementarySync;
 }
 
+void set_global_wanrestore_sync(int value)
+{
+    g_wanrestore_sync = value;
+}
+
+int get_global_wanrestore_sync()
+{
+    return g_wanrestore_sync;
+}
+
+void set_global_wanrestoresync_start(int value)
+{
+    g_wanrestoresync_start = value;
+}
+
+int get_global_wanrestoresync_start()
+{
+    return g_wanrestoresync_start;
+}
 /*----------------------------------------------------------------------------*/
 /*                             Internal functions                             */
 /*----------------------------------------------------------------------------*/

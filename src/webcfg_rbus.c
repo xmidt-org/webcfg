@@ -1634,8 +1634,12 @@ int set_rbus_ForceSync(char* pString, int *pStatus)
 		*pStatus = 1;
 		return 0;
 	}
-	else if(strlen(ForceSyncTransID)>0)
+	else if((strlen(ForceSyncTransID)>0) || (get_global_wanrestoresync_start() ==1))
         {
+	    if(get_global_wanrestoresync_start())
+	    {
+		WebcfgInfo("wanrestoresync is in progress, Ignoring this request.\n");
+	    }
             WebcfgInfo("Force sync is already in progress, Ignoring this request.\n");
             *pStatus = 1;
             return 0;
@@ -1796,7 +1800,18 @@ static void eventReceiveHandler(
     }	
     if(newValue !=NULL && oldValue!=NULL && get_global_interface()!=NULL) {
             WebcfgInfo("New Value: %s Old Value: %s New Interface Value: %s\n", rbusValue_GetString(newValue, NULL), rbusValue_GetString(oldValue, NULL), get_global_interface());
-    }    
+
+	if(get_webcfgReady())
+	{
+
+		WebcfgInfo("Trigger force sync with cloud on wan restore\n");
+		trigger_wanrestore_forcesync();
+	}
+	else
+	{
+		WebcfgInfo("wan restore force sync is skipped as webcfg is not ready\n");
+	}
+    }
 }
 
 static void subscribeAsyncHandler(
@@ -1826,5 +1841,18 @@ int subscribeTo_CurrentActiveInterface_Event()
 	      WebcfgError("%s subscribe failed : %d - %s\n", WEBCFG_INTERFACE_PARAM, rc, rbusError_ToString(rc));
       }  
       return rc;
-}      
+}
+
+//Trigger webconfig resync/force sync with cloud on wan restore value change event
+void trigger_wanrestore_forcesync()
+{
+	char *str = NULL;
+	int status = 0;
+
+	str = strdup("root");
+	set_global_wanrestore_sync(1);
+	WebcfgInfo("set wanrestore_sync to %d\n", get_global_wanrestore_sync());
+	set_rbus_ForceSync(str, &status);
+	WebcfgInfo("set_rbus_ForceSync on wan restore done\n");
+}
 #endif
