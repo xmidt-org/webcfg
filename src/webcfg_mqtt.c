@@ -531,7 +531,10 @@ void on_disconnect(struct mosquitto *mosq, void *obj, int reason_code)
 	{
 		WebcfgError("on_disconnect received error\n");
                 //reconnect
-                mosquitto_disconnect(mosq);
+               //mosquitto_disconnect(mosq);
+		//Resetting to trigger sync on wan_restore
+		subscribeFlag = 0;
+		bootupsync = 0;
 		return;
         }
 }
