@@ -518,7 +518,7 @@ WEBCFG_STATUS parseMultipartDocument(void *config_data, char *ct , size_t data_s
 				while(0 != num_of_parts % 2)
 				{
 					ptr_lb1 = memchr(ptr_lb1, '-', data_size - (ptr_lb1 - str_body));
-					if(0 == memcmp(ptr_lb1, last_line_boundary, strlen(last_line_boundary)))
+					if(ptr_lb1!=NULL && 0 == memcmp(ptr_lb1, last_line_boundary, strlen(last_line_boundary)))
 					{
 						index2 = ptr_lb1-str_body;
 						index1 = ptr_lb-str_body;

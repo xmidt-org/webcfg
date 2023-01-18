@@ -915,7 +915,9 @@ int process_webcfgdb( webconfig_db_data_t *wd, msgpack_object *obj )
         size_t entries_count = -1;
 
         entries_count = array->size;
+	pthread_mutex_lock (&webconfig_db_mut);
         webcfgdb_data = NULL;
+	pthread_mutex_unlock (&webconfig_db_mut);
         WebcfgDebug("entries_count %zu\n",entries_count);
         for( i = 0; i < entries_count; i++ )
         {

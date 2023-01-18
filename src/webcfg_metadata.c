@@ -148,7 +148,7 @@ void initWebcfgProperties(char * filename)
 					webcfgStrncpy(sdInfo->rbus_listener, subtoken, sizeof(sdInfo->rbus_listener));
 				}
 				
-				if(sdInfo->rbus_listener != NULL)
+				if(NULL != sdInfo->rbus_listener)
 				{
 					if(strncmp(sdInfo->rbus_listener, "true", strlen("true")) == 0)
 					{
