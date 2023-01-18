@@ -226,8 +226,9 @@ static void get_parodus_url(char **parodus_url, char **client_url)
 	{
 		char str[255] = {'\0'};
 		//TODO:: Use Fgets to fix coverity issue "fscanf" assumes an arbitrarily long string.
-		while(fscanf(fp,"%s", str) != EOF)
+		while(!feof(fp))
 		{
+			fgets(str,255,fp);
 			char *value = NULL;
 			if(NULL != (value = strstr(str, "PARODUS_URL=")))
 			{
