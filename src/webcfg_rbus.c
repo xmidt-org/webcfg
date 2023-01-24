@@ -1634,16 +1634,20 @@ int set_rbus_ForceSync(char* pString, int *pStatus)
 		*pStatus = 1;
 		return 0;
 	}
-	else if((strlen(ForceSyncTransID)>0) || (get_global_wanrestoresync_start() ==1))
+	else if(strlen(ForceSyncTransID)>0)
         {
-	    if(get_global_wanrestoresync_start())
-	    {
-		WebcfgInfo("wanrestoresync is in progress, Ignoring this request.\n");
-	    }
             WebcfgInfo("Force sync is already in progress, Ignoring this request.\n");
             *pStatus = 1;
             return 0;
         }
+	#ifdef WAN_FAILOVER_SUPPORTED
+	else if(get_global_wanrestoresync_start() ==1)
+        {
+            WebcfgInfo("Wanrestoresync is already in progress, Ignoring this request & will retry later.\n");
+            *pStatus = 1;
+            return 0;
+        }
+	#endif
         else
         {
             /* sending signal to initWebConfigMultipartTask to trigger sync */
