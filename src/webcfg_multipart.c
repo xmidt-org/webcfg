@@ -224,6 +224,7 @@ WEBCFG_STATUS webcfg_http_request(char **configData, int r_count, int status, lo
 		if(NULL == data.data)
 		{
 			WebcfgError("Failed to allocate memory.\n");
+			curl_easy_cleanup(curl);
 			return WEBCFG_FAILURE;
 		}
 		data.data[0] = '\0';
@@ -484,7 +485,7 @@ WEBCFG_STATUS parseMultipartDocument(void *config_data, char *ct , size_t data_s
 		int index1=0, index2 =0;
 
 		/* For Subdocs count */
-		while((ptr_count - str_body) < (int)data_size )
+		while(ptr_count!=NULL && (ptr_count - str_body) < (int)data_size )
 		{
 			ptr_count = memchr(ptr_count, '-', data_size - (ptr_count - str_body));
 			if(0 == memcmp(ptr_count, last_line_boundary, strlen(last_line_boundary)))
@@ -502,7 +503,7 @@ WEBCFG_STATUS parseMultipartDocument(void *config_data, char *ct , size_t data_s
 
 		///Subdoc contents are retrieved with boundary as delimiter
 		delete_mp_doc();
-		while((ptr_lb - str_body) < (int)data_size)
+		while(ptr_lb!=NULL && (ptr_lb - str_body) < (int)data_size)
 		{
 			ptr_lb = memchr(ptr_lb, '-', data_size - (ptr_lb - str_body));
 			if(0 == memcmp(ptr_lb, last_line_boundary, strlen(last_line_boundary)))
@@ -515,26 +516,26 @@ WEBCFG_STATUS parseMultipartDocument(void *config_data, char *ct , size_t data_s
 				ptr_lb = ptr_lb+(strlen(line_boundary))-1;
 				ptr_lb1 = ptr_lb+1;
 				num_of_parts = 1;
-				while(0 != num_of_parts % 2)
+				while(ptr_lb1!=NULL && 0 != num_of_parts % 2)
 				{
-					ptr_lb1 = memchr(ptr_lb1, '-', data_size - (ptr_lb1 - str_body));
-					if(ptr_lb1!=NULL && 0 == memcmp(ptr_lb1, last_line_boundary, strlen(last_line_boundary)))
-					{
-						index2 = ptr_lb1-str_body;
-						index1 = ptr_lb-str_body;
-						subdoc_parser(str_body+index1,index2 - index1 - 2);
-						break;
-					}
-					else if(0 == memcmp(ptr_lb1, line_boundary, strlen(line_boundary)))
-					{
-						index2 = ptr_lb1-str_body;
-						index1 = ptr_lb-str_body;
-						subdoc_parser(str_body+index1,index2 - index1 - 2);
-						num_of_parts++;
-						count++;
-					}
-					ptr_lb1 = memchr(ptr_lb1, '\n', data_size - (ptr_lb1 - str_body));
-					ptr_lb1++;
+						ptr_lb1 = memchr(ptr_lb1, '-', data_size - (ptr_lb1 - str_body));
+						if(0 == memcmp(ptr_lb1, last_line_boundary, strlen(last_line_boundary)))
+						{		
+							index2 = ptr_lb1-str_body;
+							index1 = ptr_lb-str_body;
+							subdoc_parser(str_body+index1,index2 - index1 - 2);
+							break;
+						}
+						else if(0 == memcmp(ptr_lb1, line_boundary, strlen(line_boundary)))
+						{
+							index2 = ptr_lb1-str_body;
+							index1 = ptr_lb-str_body;
+							subdoc_parser(str_body+index1,index2 - index1 - 2);
+							num_of_parts++;
+							count++;
+						}
+						ptr_lb1 = memchr(ptr_lb1, '\n', data_size - (ptr_lb1 - str_body));
+						ptr_lb1++;
 				}
 			}
 			ptr_lb = memchr(ptr_lb, '\n', data_size - (ptr_lb - str_body));
@@ -1938,6 +1939,7 @@ void createCurlHeader( struct curl_slist *list, struct curl_slist **header_list,
 		}
 	}
 	*header_list = list;
+	WEBCFG_FREE(transaction_uuid);
 }
 
 char* generate_trans_uuid()
