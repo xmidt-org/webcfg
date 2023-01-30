@@ -71,10 +71,8 @@ pthread_t* g_mpthreadId;
 static int g_testfile = 0;
 #endif
 static int g_supplementarySync = 0;
-#ifdef WAN_FAILOVER_SUPPORTED
-static int g_wanrestore_sync = 0;
-static int g_wanrestoresync_start = 0;
-#endif
+static int g_wanstatus_sync = 0;
+static int g_wanstatussync_start = 0;
 /*----------------------------------------------------------------------------*/
 /*                             Function Prototypes                            */
 /*----------------------------------------------------------------------------*/
@@ -184,13 +182,11 @@ void *WebConfigMultipartTask(void *status)
 			}
 			setForceSync("", "", 0);
 			set_global_supplementarySync(0);
-			#ifdef WAN_FAILOVER_SUPPORTED
-			if(get_global_wanrestoresync_start())
+			if(get_global_wanstatussync_start())
 			{
-				WebcfgInfo("reset wanrestore_start\n");
-				set_global_wanrestoresync_start(0);
+				WebcfgInfo("reset wanstatus_start\n");
+				set_global_wanstatussync_start(0);
 			}
-			#endif
 		}
 
 		if(!wait_flag)
@@ -271,17 +267,14 @@ void *WebConfigMultipartTask(void *status)
 			ts.tv_sec += get_retry_timer();
 			WebcfgDebug("The retry triggers at %s\n", printTime((long long)ts.tv_sec));
 		}
-		#ifdef WAN_FAILOVER_SUPPORTED
-		if(get_global_wanrestore_sync() == 1)
+		if(get_global_wanstatus_sync() == 1)
 		{
-			WebcfgInfo("wanrestore sync detected, trigger force sync with cloud.\n");
+			WebcfgInfo("wanstatus sync detected, trigger force sync with cloud.\n");
 			forced_sync = 1;
 			wait_flag = 1;
 			rv = 0;
 		}
-		else
-		#endif
-		if(retry_flag == 1 || maintenance_doc_sync == 1)
+		else if(retry_flag == 1 || maintenance_doc_sync == 1)
 		{
 			WebcfgDebug("B4 sync_condition pthread_cond_timedwait\n");
 			set_maintenanceSync(false);
@@ -315,14 +308,12 @@ void *WebConfigMultipartTask(void *status)
 		}
 		else if(!rv && !g_shutdown)
 		{
-			#ifdef WAN_FAILOVER_SUPPORTED
-			if(get_global_wanrestore_sync())
+			if(get_global_wanstatus_sync())
 			{
-				set_global_wanrestore_sync(0);
-				set_global_wanrestoresync_start(1);
-				WebcfgInfo("wanrestore_sync reset to %d and wanrestoresync_start %d\n", get_global_wanrestore_sync(), get_global_wanrestoresync_start());
+				set_global_wanstatus_sync(0);
+				set_global_wanstatussync_start(1);
+				WebcfgInfo("wanstatus_sync reset to %d and wanstatussync_start %d\n", get_global_wanstatus_sync(), get_global_wanstatussync_start());
 			}
-			#endif
 			char *ForceSyncDoc = NULL;
 			char* ForceSyncTransID = NULL;
 
@@ -411,10 +402,8 @@ void *WebConfigMultipartTask(void *status)
 	set_global_retry_timestamp(0);
 	set_retry_timer(0);
 	set_global_supplementarySync(0);
-	#ifdef WAN_FAILOVER_SUPPORTED
-	set_global_wanrestore_sync(0);
-	set_global_wanrestoresync_start(0);
-	#endif
+	set_global_wanstatus_sync(0);
+	set_global_wanstatussync_start(0);
 #ifdef FEATURE_SUPPORT_AKER
 	set_send_aker_flag(false);
 #endif
@@ -515,27 +504,25 @@ int get_global_supplementarySync()
 {
     return g_supplementarySync;
 }
-#ifdef WAN_FAILOVER_SUPPORTED
-void set_global_wanrestore_sync(int value)
+void set_global_wanstatus_sync(int value)
 {
-    g_wanrestore_sync = value;
+    g_wanstatus_sync = value;
 }
 
-int get_global_wanrestore_sync()
+int get_global_wanstatus_sync()
 {
-    return g_wanrestore_sync;
+    return g_wanstatus_sync;
 }
 
-void set_global_wanrestoresync_start(int value)
+void set_global_wanstatussync_start(int value)
 {
-    g_wanrestoresync_start = value;
+    g_wanstatussync_start = value;
 }
 
-int get_global_wanrestoresync_start()
+int get_global_wanstatussync_start()
 {
-    return g_wanrestoresync_start;
+    return g_wanstatussync_start;
 }
-#endif
 /*----------------------------------------------------------------------------*/
 /*                             Internal functions                             */
 /*----------------------------------------------------------------------------*/

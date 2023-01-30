@@ -1805,11 +1805,11 @@ void createCurlHeader( struct curl_slist *list, struct curl_slist **header_list,
 		if(uuid_header !=NULL)
 		{
 			#ifdef WAN_FAILOVER_SUPPORTED
-			if(get_global_wanrestoresync_start())
+			if(get_global_wanstatussync_start())
 			{
-				//To add _wanrestore suffixed transaction_id for wanrestore sync
-				snprintf(uuid_header, MAX_BUF_SIZE, "Transaction-ID: %s_wanrestore", transaction_uuid);
-				WebcfgInfo("uuid_header formed for wanfailover sync %s\n", uuid_header);
+				//To add _wanstatus suffixed transaction_id for wanstatus sync
+				snprintf(uuid_header, MAX_BUF_SIZE, "Transaction-ID: %s_wanstatus", transaction_uuid);
+				WebcfgInfo("uuid_header formed for wan status sync %s\n", uuid_header);
 			}
 			else
 			#endif

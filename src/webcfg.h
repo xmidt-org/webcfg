@@ -92,12 +92,10 @@ pthread_mutex_t *get_global_sync_mutex(void);
 pthread_t *get_global_mpThreadId(void);
 int get_global_supplementarySync();
 void set_global_supplementarySync(int value);
-#ifdef WAN_FAILOVER_SUPPORTED
-int get_global_wanrestore_sync();
-void set_global_wanrestore_sync(int value);
-void set_global_wanrestoresync_start(int value);
-int get_global_wanrestoresync_start();
-#endif
+int get_global_wanstatus_sync();
+void set_global_wanstatus_sync(int value);
+void set_global_wanstatussync_start(int value);
+int get_global_wanstatussync_start();
 void initWebConfigMultipartTask(unsigned long status);
 void processWebconfgSync(int Status, char* docname);
 WEBCFG_STATUS webcfg_http_request(char **configData, int r_count, int status, long *code, char **transaction_id,char* contentType, size_t* dataSize, char* docname);

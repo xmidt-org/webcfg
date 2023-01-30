@@ -116,6 +116,6 @@ void waitForUpstreamEventSubscribe(int wait_time);
 webcfgError_t fetchMpBlobData(char *docname, void **blobdata, int *len, uint32_t *etag);
 #ifdef WAN_FAILOVER_SUPPORTED
 int subscribeTo_CurrentActiveInterface_Event();
-void trigger_wanrestore_forcesync();
 #endif
+void trigger_wanstatus_forcesync();
 #endif

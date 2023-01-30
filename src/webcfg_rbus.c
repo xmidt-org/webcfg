@@ -1640,14 +1640,12 @@ int set_rbus_ForceSync(char* pString, int *pStatus)
             *pStatus = 1;
             return 0;
         }
-	#ifdef WAN_FAILOVER_SUPPORTED
-	else if(get_global_wanrestoresync_start() ==1)
+	else if(get_global_wanstatussync_start() ==1)
         {
-            WebcfgInfo("Wanrestoresync is already in progress, Ignoring this request & will retry later.\n");
+            WebcfgInfo("wanstatus sync is already in progress, Ignoring this request & will retry later.\n");
             *pStatus = 1;
             return 0;
         }
-	#endif
         else
         {
             /* sending signal to initWebConfigMultipartTask to trigger sync */
@@ -1808,8 +1806,8 @@ static void eventReceiveHandler(
 	if(get_webcfgReady())
 	{
 
-		WebcfgInfo("Trigger force sync with cloud on wan restore\n");
-		trigger_wanrestore_forcesync();
+		WebcfgInfo("Trigger force sync with cloud on wan restore event\n");
+		trigger_wanstatus_forcesync();
 	}
 	else
 	{
@@ -1846,17 +1844,17 @@ int subscribeTo_CurrentActiveInterface_Event()
       }  
       return rc;
 }
-
-//Trigger webconfig resync/force sync with cloud on wan restore value change event
-void trigger_wanrestore_forcesync()
+#endif
+//Trigger webconfig resync/force sync with cloud on wan restore/ wan start events
+void trigger_wanstatus_forcesync()
 {
 	char *str = NULL;
 	int status = 0;
 
 	str = strdup("root");
-	set_global_wanrestore_sync(1);
-	WebcfgInfo("set wanrestore_sync to %d\n", get_global_wanrestore_sync());
+	set_global_wanstatus_sync(1);
+	WebcfgInfo("set wanstatus_sync to %d\n", get_global_wanstatus_sync());
 	set_rbus_ForceSync(str, &status);
-	WebcfgInfo("set_rbus_ForceSync on wan restore done\n");
+	WebcfgInfo("set_rbus_ForceSync on wan status event done\n");
 }
-#endif
+
