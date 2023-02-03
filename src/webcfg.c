@@ -71,6 +71,8 @@ pthread_t* g_mpthreadId;
 static int g_testfile = 0;
 #endif
 static int g_supplementarySync = 0;
+static int g_webcfg_forcedsync = 0;
+static int g_webcfg_forcedsync_start = 0;
 /*----------------------------------------------------------------------------*/
 /*                             Function Prototypes                            */
 /*----------------------------------------------------------------------------*/
@@ -180,6 +182,11 @@ void *WebConfigMultipartTask(void *status)
 			}
 			setForceSync("", "", 0);
 			set_global_supplementarySync(0);
+			if(get_global_webcfg_forcedsync_start())
+			{
+				WebcfgInfo("reset webcfg_forcedsync\n");
+				set_global_webcfg_forcedsync_start(0);
+			}
 		}
 
 		if(!wait_flag)
@@ -260,8 +267,14 @@ void *WebConfigMultipartTask(void *status)
 			ts.tv_sec += get_retry_timer();
 			WebcfgDebug("The retry triggers at %s\n", printTime((long long)ts.tv_sec));
 		}
-
-		if(retry_flag == 1 || maintenance_doc_sync == 1)
+		if(get_global_webcfg_forcedsync() == 1)
+		{
+			WebcfgInfo("webcfg_forcedsync detected, trigger force sync with cloud.\n");
+			forced_sync = 1;
+			wait_flag = 1;
+			rv = 0;
+		}
+		else if(retry_flag == 1 || maintenance_doc_sync == 1)
 		{
 			WebcfgDebug("B4 sync_condition pthread_cond_timedwait\n");
 			set_maintenanceSync(false);
@@ -295,6 +308,12 @@ void *WebConfigMultipartTask(void *status)
 		}
 		else if(!rv && !g_shutdown)
 		{
+			if(get_global_webcfg_forcedsync())
+			{
+				set_global_webcfg_forcedsync(0);
+				set_global_webcfg_forcedsync_start(1);
+				WebcfgInfo("webcfg_forcedsync reset to %d and webcfg_forcedsync_start %d\n", get_global_webcfg_forcedsync(), get_global_webcfg_forcedsync_start());
+			}
 			char *ForceSyncDoc = NULL;
 			char* ForceSyncTransID = NULL;
 
@@ -383,6 +402,8 @@ void *WebConfigMultipartTask(void *status)
 	set_global_retry_timestamp(0);
 	set_retry_timer(0);
 	set_global_supplementarySync(0);
+	set_global_webcfg_forcedsync(0);
+	set_global_webcfg_forcedsync_start(0);
 #ifdef FEATURE_SUPPORT_AKER
 	set_send_aker_flag(false);
 #endif
@@ -483,7 +504,25 @@ int get_global_supplementarySync()
 {
     return g_supplementarySync;
 }
+void set_global_webcfg_forcedsync(int value)
+{
+    g_webcfg_forcedsync = value;
+}
 
+int get_global_webcfg_forcedsync()
+{
+    return g_webcfg_forcedsync;
+}
+
+void set_global_webcfg_forcedsync_start(int value)
+{
+    g_webcfg_forcedsync_start = value;
+}
+
+int get_global_webcfg_forcedsync_start()
+{
+    return g_webcfg_forcedsync_start;
+}
 /*----------------------------------------------------------------------------*/
 /*                             Internal functions                             */
 /*----------------------------------------------------------------------------*/
