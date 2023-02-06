@@ -830,7 +830,6 @@ webcfgError_t resetSubdocVersion(char *docname)
 	ret_db = updateDBlist(docname, 0, NULL);
 	if(ret_db == WEBCFG_SUCCESS || ret_db == WEBCFG_NO_CHANGE)
 	{
-		webcfgError_t ret_tmp = ERROR_FAILURE;
 		WebcfgInfo("Subdoc - %s, reset from Webconfig DB is success\n", docname);
 		WebcfgInfo("addNewDocEntry to DB file. get_successDocCount %d\n", get_successDocCount());
 		addNewDocEntry(get_successDocCount());
@@ -927,7 +926,7 @@ rbusError_t webcfgSubdocForceResetSetHandler(rbusHandle_t handle, rbusProperty_t
 			int n = 0;
 			webcfgError_t ret = ERROR_FAILURE; 
 			char delim[] = ",";
-			char subdocNames[16][16] = {'\0'};
+			char subdocNames[16][16] = {{'\0'}};
     			strcpy(str,SubdocResetVal);
     			WebcfgInfo("Subdocs need to reset from webconfig DB & tmplist - %s\n",str);
 	                char *ptr = strtok(str, delim);
