@@ -793,34 +793,6 @@ rbusError_t webcfgFrGetHandler(rbusHandle_t handle, rbusProperty_t property, rbu
     return RBUS_ERROR_SUCCESS;
 }
 
-
-webcfgError_t resetSubdocVersionFromTmpList(char *docname)
-{
-	WebcfgInfo("Reset subdoc - %s, version from TmpList\n", docname);
-        webconfig_tmp_data_t *temp = NULL;
-        temp = get_global_tmp_node();
-
-        if(temp == NULL)
-        {
-                WebcfgError("TmpList is NULL\n");
-                return ERROR_FAILURE;
-        }
-
-        while(temp != NULL)
-        {
-                if(strcmp(temp->name, docname) == 0)
-                {
-                        WebcfgInfo("Before reset subdoc name - %s, version - %d\n", temp->name, temp->version);
-                        temp->version = 0;
-                        WebcfgInfo("After reset subdoc name - %s, version - %d\n", temp->name, temp->version);
-                        return ERROR_SUCCESS;
-                }
-                temp = temp->next;
-        }
-        WebcfgError("Subdoc not found\n");
-        return ERROR_ELEMENT_DOES_NOT_EXIST;
-}
-
 webcfgError_t resetSubdocVersion(char *docname)
 {
 	webcfgError_t ret = ERROR_FAILURE;
@@ -833,21 +805,24 @@ webcfgError_t resetSubdocVersion(char *docname)
 		WebcfgInfo("Subdoc - %s, reset from Webconfig DB is success\n", docname);
 		WebcfgInfo("addNewDocEntry to DB file. get_successDocCount %d\n", get_successDocCount());
 		addNewDocEntry(get_successDocCount());
-		webcfgError_t ret_tmp = ERROR_FAILURE;
-		ret_tmp = resetSubdocVersionFromTmpList(docname);
-		if(ret_tmp != ERROR_SUCCESS)
+		webconfig_tmp_data_t * tmp = NULL;
+		tmp = getTmpNode(docname);
+		if(tmp !=NULL)
 		{
-			WebcfgError("Subdoc - %s, reset from tmplist is failed with error code - %d\n", docname, ret);
+			WebcfgInfo("reset tmp list version for %s\n", docname);
+			updateTmpList(tmp, docname, 0, tmp->status, tmp->error_details, tmp->error_code, tmp->trans_id, tmp->retry_count);
 		}
 		else
 		{
-			WebcfgInfo("Subdoc - %s, reset from tmplist is success\n", docname);
+			WebcfgInfo("Tmp list is NULL, so tmp version reset is skipped for %s\n", docname);
 		}
-		ret = ret_tmp;
+		ret = ERROR_SUCCESS;
 	}
 	else 
 	{
-		WebcfgError("Subdoc - %s, reset from webconfig DB is failed with error code - %d\n", docname, ret);
+		WebcfgError("Subdoc - %s, reset from webconfig DB is failed with error code - %d\n", docname, ret_db);
+		WebcfgError("Subdoc not found\n");
+		ret = ERROR_ELEMENT_DOES_NOT_EXIST;
 	}
         return ret;
 }	
