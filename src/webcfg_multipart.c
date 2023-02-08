@@ -78,6 +78,7 @@ static char g_productClass[64]={'\0'};
 static char g_ModelName[64]={'\0'};
 static char g_PartnerID[64]={'\0'};
 static char g_AccountID[64]={'\0'};
+static char g_deviceWanMac[64]={'\0'};
 char g_RebootReason[64]={'\0'};
 static char g_transID[64]={'\0'};
 static char * g_contentLen = NULL;
@@ -1539,6 +1540,7 @@ void createCurlHeader( struct curl_slist *list, struct curl_slist **header_list,
 	char *telemetryVersion_header = NULL;
 	char *PartnerID = NULL, *PartnerID_header = NULL;
 	char *AccountID = NULL, *AccountID_header = NULL;
+	char *DeviceWanMac = NULL, *DeviceWanMac_header = NULL;
 	struct timespec cTime;
 	char currentTime[32];
 	char *currentTime_header=NULL;
@@ -1936,6 +1938,33 @@ void createCurlHeader( struct curl_slist *list, struct curl_slist **header_list,
 		{
 			WebcfgError("Failed to get AccountID\n");
 		}
+
+		if(strlen(g_deviceWanMac) ==0)
+		{
+			DeviceWanMac = get_deviceWanMAC();
+			if(DeviceWanMac !=NULL)
+			{
+			       strncpy(g_deviceWanMac, DeviceWanMac, sizeof(g_deviceWanMac)-1);
+			       WebcfgDebug("g_deviceWanMac fetched is %s\n", g_deviceWanMac);
+			}
+		}
+
+		if(strlen(g_deviceWanMac))
+		{
+			DeviceWanMac_header = (char *) malloc(sizeof(char)*MAX_BUF_SIZE);
+			if(DeviceWanMac_header !=NULL)
+			{
+				snprintf(DeviceWanMac_header, MAX_BUF_SIZE, "X-System-Wan-Mac: %s", g_deviceWanMac);
+				WebcfgInfo("DeviceWanMac_header formed %s\n", DeviceWanMac_header);
+				list = curl_slist_append(list, DeviceWanMac_header);
+				WEBCFG_FREE(DeviceWanMac_header);
+			}
+		}
+		else
+		{
+			WebcfgError("Failed to get DeviceWanMac\n");
+		}
+
 	}
 	*header_list = list;
 }
