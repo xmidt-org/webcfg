@@ -44,7 +44,9 @@
 
 
 #ifdef MULTIPART_UTILITY
-#ifdef DEVICE_EXTENDER
+#ifdef DEVICE_CAMERA
+#define TEST_FILE_LOCATION		"/opt/multipart.bin"
+#elif DEVICE_EXTENDER
 #define TEST_FILE_LOCATION              "/usr/opensync/data/multipart.bin"
 #elif BUILD_YOCTO
 #define TEST_FILE_LOCATION		"/nvram/multipart.bin"

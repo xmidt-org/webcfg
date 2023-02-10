@@ -18,7 +18,11 @@
 #include "signal.h"
 #include <curl/curl.h>
 #ifdef INCLUDE_BREAKPAD
+#ifndef DEVICE_CAMERA
 #include "breakpad_wrapper.h"
+#else
+#include "breakpadwrap.h"
+#endif  //DEVICE_CAMERA
 #endif
 #include "webcfg.h"
 #include "webcfg_log.h"
@@ -50,7 +54,16 @@ int main()
     	struct timespec cTime;
     	char systemReadyTime[32]={'\0'};
 #ifdef INCLUDE_BREAKPAD
+#ifndef DEVICE_CAMERA
     breakpad_ExceptionHandler();
+#else
+    /* breakpad handles the signals SIGSEGV, SIGBUS, SIGFPE, and SIGILL */
+    BreakPadWrapExceptionHandler eh;
+    eh = newBreakPadWrapExceptionHandler();
+    if(NULL != eh) {
+        WebcfgInfo("Breakpad Initialized\n");
+    }
+#endif //DEVICE_CAMERA
 #else
 	signal(SIGTERM, sig_handler);
 	signal(SIGINT, sig_handler);
