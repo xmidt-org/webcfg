@@ -795,7 +795,7 @@ rbusError_t webcfgFrGetHandler(rbusHandle_t handle, rbusProperty_t property, rbu
 
 webcfgError_t checkSubdocInDb(char *docname)
 {
-        WebcfgInfo("Check subdoc - %s, present in webconfig DB\n", docname);
+        WebcfgDebug("Check subdoc - %s, present in webconfig DB\n", docname);
         webconfig_db_data_t *temp = NULL;
         temp = get_global_db_node();
 
@@ -809,7 +809,7 @@ webcfgError_t checkSubdocInDb(char *docname)
         {
                 if(strcmp(temp->name, docname) == 0)
                 {
-                        WebcfgInfo("Subdoc name - %s, is present in webconfig DB\n", temp->name);
+                        WebcfgDebug("Subdoc name - %s, is present in webconfig DB\n", temp->name);
                         return ERROR_SUCCESS;
                 }
                 temp = temp->next;
@@ -846,7 +846,7 @@ webcfgError_t resetSubdocVersion(char *docname)
 	else 
 	{
 		WebcfgError("Subdoc - %s, reset from webconfig DB is failed with error code - %d\n", docname, ret_db);
-		WebcfgError("Subdoc not found\n");
+		WebcfgDebug("Subdoc not found\n");
 		ret = ERROR_ELEMENT_DOES_NOT_EXIST;
 	}
         return ret;
@@ -854,7 +854,7 @@ webcfgError_t resetSubdocVersion(char *docname)
 
 rbusError_t publishSubdocResetEvent(char *subdocName)
 {
-        WebcfgInfo("publishing Event - %s\n", WEBCFG_SUBDOC_FORCERESET_PARAM);
+        WebcfgDebug("publishing Event - %s\n", WEBCFG_SUBDOC_FORCERESET_PARAM);
 	int rc = RBUS_ERROR_SUCCESS;
 
 	char buffer[128] = {'\0'};
@@ -882,6 +882,36 @@ rbusError_t publishSubdocResetEvent(char *subdocName)
 	return rc;
 }
 
+rbusError_t webcfgSubdocForceResetGetHandler(rbusHandle_t handle, rbusProperty_t property, rbusGetHandlerOptions_t* opts) {
+
+    (void) handle;
+    (void) opts;
+    char const* propertyName;
+
+    propertyName = rbusProperty_GetName(property);
+    if(propertyName) {
+        WebcfgInfo("Property Name is %s \n", propertyName);
+    } else {
+        WebcfgError("Unable to handle get request for property \n");
+        return RBUS_ERROR_INVALID_INPUT;
+    }
+    if(strncmp(propertyName, WEBCFG_SUBDOC_FORCERESET_PARAM, maxParamLen) == 0) {
+
+        rbusValue_t value;
+        rbusValue_Init(&value);
+        rbusValue_SetString(value, "");
+        rbusProperty_SetValue(property, value);
+        rbusValue_Release(value);
+
+        if(!isRfcEnabled())
+        {
+                WebcfgError("RfcEnable is disabled so, %s Get from DB failed\n",propertyName);
+                return 0;
+        }
+    }
+    return RBUS_ERROR_SUCCESS;
+}
+
 rbusError_t webcfgSubdocForceResetSetHandler(rbusHandle_t handle, rbusProperty_t prop, rbusSetHandlerOptions_t* opts) {
 
     (void) handle;
@@ -893,7 +923,7 @@ rbusError_t webcfgSubdocForceResetSetHandler(rbusHandle_t handle, rbusProperty_t
         return RBUS_ERROR_ELEMENT_DOES_NOT_EXIST;
     }
 
-    WebcfgInfo("Parameter name is %s \n", paramName);
+    WebcfgDebug("Parameter name is %s \n", paramName);
     rbusValueType_t type_t;
     rbusValue_t paramValue_t = rbusProperty_GetValue(prop);
     if(paramValue_t) {
@@ -946,7 +976,7 @@ rbusError_t webcfgSubdocForceResetSetHandler(rbusHandle_t handle, rbusProperty_t
 
 		if(n>0)
 		{
-			WebcfgInfo("Check all subdocs present in webconfig db\n");
+			WebcfgDebug("Check all subdocs present in webconfig db\n");
                         for(int i=0;i<=n;i++)
 			{
 				ret = checkSubdocInDb(subdocNames[i]);
@@ -976,10 +1006,10 @@ rbusError_t webcfgSubdocForceResetSetHandler(rbusHandle_t handle, rbusProperty_t
 	         }
 		 else
 		 {
-		       WebcfgInfo("Published subdoc reset event %s\n", WEBCFG_SUBDOC_FORCERESET_PARAM);
+		        WebcfgInfo("Published subdoc reset event %s\n", WEBCFG_SUBDOC_FORCERESET_PARAM);
 			WebcfgInfo("trigger forcesync with cloud on subdoc force reset\n");
 			trigger_webcfg_forcedsync();
-			WebcfgInfo("trigger forcesync on subdoc force reset done\n");
+			WebcfgDebug("trigger forcesync on subdoc force reset done\n");
 		 }
             }
 	    else {
@@ -1032,18 +1062,18 @@ rbusError_t resetEventSubHandler(rbusHandle_t handle, rbusEventSubAction_t actio
 		subdoc_reset_event_subscribed = action == RBUS_EVENT_ACTION_SUBSCRIBE ? 1 : 0;
 		if(subdoc_reset_event_subscribed)
 		{
-			WebcfgInfo("WEBCFG_SUBDOC_FORCERESET_PARAM subscribed successfully, status - %d\n", subdoc_reset_event_subscribed);
+			WebcfgDebug("WEBCFG_SUBDOC_FORCERESET_PARAM subscribed successfully, status - %d\n", subdoc_reset_event_subscribed);
 		}
 		else
 		{
-			WebcfgInfo("WEBCFG_SUBDOC_FORCERESET_PARAM unsubscribed, status - %d\n", subdoc_reset_event_subscribed);
+			WebcfgDebug("WEBCFG_SUBDOC_FORCERESET_PARAM unsubscribed, status - %d\n", subdoc_reset_event_subscribed);
 		}
 	}
 	else
 	{
 		WebcfgError("provider: resetEventSubHandler unexpected eventName %s\n", eventName);
 	}
-	WebcfgInfo("resetEventSubHandler: returned success\n");
+	WebcfgDebug("resetEventSubHandler: returned success\n");
 	return RBUS_ERROR_SUCCESS;
 
 }
@@ -1247,7 +1277,7 @@ WEBCFG_STATUS regWebConfigDataModel()
 		{WEBCFG_DATA_PARAM, RBUS_ELEMENT_TYPE_PROPERTY, {webcfgDataGetHandler, webcfgDataSetHandler, NULL, NULL, NULL, NULL}},
 		{WEBCFG_SUPPORTED_DOCS_PARAM, RBUS_ELEMENT_TYPE_PROPERTY, {webcfgSupportedDocsGetHandler, webcfgSupportedDocsSetHandler, NULL, NULL, NULL, NULL}},
 		{WEBCFG_SUPPORTED_VERSION_PARAM, RBUS_ELEMENT_TYPE_PROPERTY, {webcfgSupportedVersionGetHandler, webcfgSupportedVersionSetHandler, NULL, NULL, NULL, NULL}},
-		{WEBCFG_SUBDOC_FORCERESET_PARAM, RBUS_ELEMENT_TYPE_PROPERTY, {NULL, webcfgSubdocForceResetSetHandler, NULL, NULL, resetEventSubHandler, NULL}},
+		{WEBCFG_SUBDOC_FORCERESET_PARAM, RBUS_ELEMENT_TYPE_PROPERTY, {webcfgSubdocForceResetGetHandler, webcfgSubdocForceResetSetHandler, NULL, NULL, resetEventSubHandler, NULL}},
 		{WEBCFG_UPSTREAM_EVENT, RBUS_ELEMENT_TYPE_EVENT, {NULL, NULL, NULL, NULL, eventSubHandler, NULL}},
 		{WEBCFG_UTIL_METHOD, RBUS_ELEMENT_TYPE_METHOD, {NULL, NULL, NULL, NULL, NULL, fetchCachedBlobHandler}}
 	};
