@@ -184,7 +184,7 @@ void *WebConfigMultipartTask(void *status)
 			set_global_supplementarySync(0);
 			if(get_global_webcfg_forcedsync_start())
 			{
-				WebcfgInfo("reset webcfg_forcedsync\n");
+				WebcfgDebug("reset webcfg_forcedsync\n");
 				set_global_webcfg_forcedsync_start(0);
 			}
 		}
@@ -312,7 +312,7 @@ void *WebConfigMultipartTask(void *status)
 			{
 				set_global_webcfg_forcedsync(0);
 				set_global_webcfg_forcedsync_start(1);
-				WebcfgInfo("webcfg_forcedsync reset to %d and webcfg_forcedsync_start %d\n", get_global_webcfg_forcedsync(), get_global_webcfg_forcedsync_start());
+				WebcfgDebug("webcfg_forcedsync reset to %d and webcfg_forcedsync_start %d\n", get_global_webcfg_forcedsync(), get_global_webcfg_forcedsync_start());
 			}
 			char *ForceSyncDoc = NULL;
 			char* ForceSyncTransID = NULL;

@@ -833,13 +833,13 @@ webcfgError_t resetSubdocVersion(char *docname)
 	if(ret_db == WEBCFG_SUCCESS || ret_db == WEBCFG_NO_CHANGE)
 	{
 		WebcfgInfo("Subdoc - %s, reset from Webconfig DB is success\n", docname);
-		WebcfgInfo("addNewDocEntry to DB file. get_successDocCount %d\n", get_successDocCount());
+		WebcfgDebug("addNewDocEntry to DB file. get_successDocCount %d\n", get_successDocCount());
 		addNewDocEntry(get_successDocCount());
 		webconfig_tmp_data_t * tmp = NULL;
 		tmp = getTmpNode(docname);
 		if(tmp !=NULL)
 		{
-			WebcfgInfo("reset tmp list version for %s\n", docname);
+			WebcfgDebug("reset tmp list version for %s\n", docname);
 			updateTmpList(tmp, docname, 0, tmp->status, tmp->error_details, tmp->error_code, tmp->trans_id, tmp->retry_count);
 		}
 		else
@@ -895,7 +895,7 @@ rbusError_t webcfgSubdocForceResetGetHandler(rbusHandle_t handle, rbusProperty_t
 
     propertyName = rbusProperty_GetName(property);
     if(propertyName) {
-        WebcfgInfo("Property Name is %s \n", propertyName);
+        WebcfgDebug("Property Name is %s \n", propertyName);
     } else {
         WebcfgError("Unable to handle get request for property \n");
         return RBUS_ERROR_INVALID_INPUT;
@@ -959,11 +959,11 @@ rbusError_t webcfgSubdocForceResetSetHandler(rbusHandle_t handle, rbusProperty_t
 		WebcfgError("RfcEnable is disabled so, %s SET failed\n",paramName);
 		return RBUS_ERROR_ACCESS_NOT_ALLOWED;
 	}
-	if(!subdoc_reset_event_subscribed)
+	/*if(!subdoc_reset_event_subscribed)
 	{
 		WebcfgError("%s event not subscribed, SET failed\n", WEBCFG_SUBDOC_FORCERESET_PARAM);
 		return RBUS_ERROR_BUS_ERROR;
-	}
+	}*/
         if(type_t == RBUS_STRING) {
             char* data = rbusValue_ToString(paramValue_t, NULL, 0);
             if(data)
@@ -1007,7 +1007,7 @@ rbusError_t webcfgSubdocForceResetSetHandler(rbusHandle_t handle, rbusProperty_t
 		        }
 		        for(int i=0;i<=n;i++)
 		        {
-				WebcfgInfo("Subdoc going to be reset is - %s\n", subdocNames[i]);
+				WebcfgDebug("Subdoc going to be reset is - %s\n", subdocNames[i]);
 				ret = resetSubdocVersion(subdocNames[i]);
 				if(ret != ERROR_SUCCESS)
 				{
@@ -2131,5 +2131,5 @@ void trigger_webcfg_forcedsync()
 	set_global_webcfg_forcedsync(1);
 	WebcfgInfo("set webcfg_forcedsync to %d\n", get_global_webcfg_forcedsync());
 	set_rbus_ForceSync(str, &status);
-	WebcfgInfo("set_rbus_ForceSync done\n");
+	WebcfgDebug("set_rbus_ForceSync done\n");
 }
