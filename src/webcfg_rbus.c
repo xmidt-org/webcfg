@@ -21,11 +21,16 @@
 #include <string.h>
 #include <stdlib.h>
 #include <wdmp-c.h>
+#include <time.h>
 #include "webcfg_rbus.h"
 #include "webcfg_metadata.h"
 #ifdef WAN_FAILOVER_SUPPORTED
 #include "webcfg_multipart.h"
 #endif
+
+time_t start_time;
+int force_reset_call_count=0;
+
 
 static rbusHandle_t rbus_handle;
 
@@ -916,6 +921,20 @@ rbusError_t webcfgSubdocForceResetSetHandler(rbusHandle_t handle, rbusProperty_t
 
     (void) handle;
     (void) opts;
+    if(force_reset_call_count==0)
+    	start_time = time(NULL);
+    if(force_reset_call_count>=MAX_FORCE_RESET_SET_COUNT){
+	time_t current_time=time(NULL);
+	double elapsed_time=difftime(current_time,start_time);
+	if(elapsed_time < MAX_FORCE_RESET_TIME_SECS){
+		WebcfgError("Force reset max call limit is reached for the day, next set can be done after 24 hours");
+		return RBUS_ERROR_OUT_OF_RESOURCES;
+	}
+	else{
+		force_reset_call_count=0;
+		start_time=current_time;
+	}
+    }
     char const* paramName = rbusProperty_GetName(prop);
     if(strncmp(paramName, WEBCFG_SUBDOC_FORCERESET_PARAM, maxParamLen) != 0)
     {
@@ -1022,6 +1041,7 @@ rbusError_t webcfgSubdocForceResetSetHandler(rbusHandle_t handle, rbusProperty_t
 	    return RBUS_ERROR_INVALID_INPUT;
         }
     }
+    ++force_reset_call_count;
      return RBUS_ERROR_SUCCESS;
 }
 
