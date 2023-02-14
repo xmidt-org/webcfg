@@ -39,6 +39,9 @@
 #define maxParamLen 128
 #define NUM_WEBCFG_ELEMENTS 10
 
+#define MAX_FORCE_RESET_SET_COUNT 3
+#define MAX_FORCE_RESET_TIME_SECS 24*60*60
+
 #define WEBCFG_COMPONENT_NAME "webconfig"
 #define MAX_PARAMETERNAME_LEN			4096
 #define WEBCFG_EVENT_NAME "webconfigSignal"
