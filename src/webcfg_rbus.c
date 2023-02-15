@@ -1070,7 +1070,7 @@ rbusError_t resetEventSubHandler(rbusHandle_t handle, rbusEventSubAction_t actio
 	(void)interval;
 	int subdoc_reset_event_subscribed = 0;
 	*autoPublish = false;
-	WebcfgInfo("resetEventSubHandler: action=%s eventName=%s\n", action == RBUS_EVENT_ACTION_SUBSCRIBE ? "subscribe" : "unsubscribe", eventName);
+	WebcfgDebug("resetEventSubHandler: action=%s eventName=%s\n", action == RBUS_EVENT_ACTION_SUBSCRIBE ? "subscribe" : "unsubscribe", eventName);
 
 	if(!strcmp(WEBCFG_SUBDOC_FORCERESET_PARAM, eventName))
 	{
