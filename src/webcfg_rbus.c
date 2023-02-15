@@ -40,7 +40,6 @@ static char* forceSyncVal = NULL ;
 static char* SupportedDocsVal = NULL ;
 static char* SupportedVersionVal = NULL ;
 static char* SupplementaryURLVal = NULL ;
-static char* SubdocResetVal = NULL ;
 static bool isRbus = false ;
 static char* BinDataVal = NULL ;
 static char *paramRFCEnable = "eRT.com.cisco.spvtg.ccsp.webpa.WebConfigRfcEnable";
@@ -920,6 +919,7 @@ rbusError_t webcfgSubdocForceResetSetHandler(rbusHandle_t handle, rbusProperty_t
 
     (void) handle;
     (void) opts;
+    char* SubdocResetVal = NULL ;
     if(force_reset_call_count==0)
     	start_time = time(NULL);
     if(force_reset_call_count>=MAX_FORCE_RESET_SET_COUNT){
