@@ -979,7 +979,7 @@ rbusError_t webcfgSubdocForceResetSetHandler(rbusHandle_t handle, rbusProperty_t
 		webcfgError_t ret = ERROR_FAILURE;
 		char delim[] = ",";
 		char subdocNames[16][16] = {{'\0'}};
-		strcpy(str,SubdocResetVal);
+		strncpy(str, SubdocResetVal, sizeof(str)-1);
 		WebcfgInfo("Subdocs need to reset from webconfig DB & tmplist - %s\n",str);
 		char *ptr = strtok(str, delim);
 		if(ptr != NULL)
@@ -988,7 +988,7 @@ rbusError_t webcfgSubdocForceResetSetHandler(rbusHandle_t handle, rbusProperty_t
                     while(ptr != NULL)
                     {
 		         n++;
-		         strcpy(subdocNames[n], ptr);
+		         strncpy(subdocNames[n], ptr, sizeof(subdocNames[n])-1);
 		         ptr = strtok(NULL, delim);
                     }
 	        }
