@@ -49,7 +49,6 @@ static char ForceSync[256]={'\0'};
 static char ForceSyncTransID[256]={'\0'};
 
 static int subscribed = 0;
-static int subdoc_reset_event_subscribed = 0;
 
 #ifdef WAN_FAILOVER_SUPPORTED
 static void eventReceiveHandler(
@@ -959,11 +958,6 @@ rbusError_t webcfgSubdocForceResetSetHandler(rbusHandle_t handle, rbusProperty_t
 		WebcfgError("RfcEnable is disabled so, %s SET failed\n",paramName);
 		return RBUS_ERROR_ACCESS_NOT_ALLOWED;
 	}
-	/*if(!subdoc_reset_event_subscribed)
-	{
-		WebcfgError("%s event not subscribed, SET failed\n", WEBCFG_SUBDOC_FORCERESET_PARAM);
-		return RBUS_ERROR_BUS_ERROR;
-	}*/
         if(type_t == RBUS_STRING) {
             char* data = rbusValue_ToString(paramValue_t, NULL, 0);
             if(data)
@@ -1074,6 +1068,7 @@ rbusError_t resetEventSubHandler(rbusHandle_t handle, rbusEventSubAction_t actio
 	(void)handle;
 	(void)filter;
 	(void)interval;
+	int subdoc_reset_event_subscribed = 0;
 	*autoPublish = false;
 	WebcfgInfo("resetEventSubHandler: action=%s eventName=%s\n", action == RBUS_EVENT_ACTION_SUBSCRIBE ? "subscribe" : "unsubscribe", eventName);
 
