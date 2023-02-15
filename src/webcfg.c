@@ -71,8 +71,8 @@ pthread_t* g_mpthreadId;
 static int g_testfile = 0;
 #endif
 static int g_supplementarySync = 0;
-static int g_webcfg_forcedsync = 0;
-static int g_webcfg_forcedsync_start = 0;
+static int g_webcfg_forcedsync_needed = 0;
+static int g_webcfg_forcedsync_started = 0;
 /*----------------------------------------------------------------------------*/
 /*                             Function Prototypes                            */
 /*----------------------------------------------------------------------------*/
@@ -182,10 +182,10 @@ void *WebConfigMultipartTask(void *status)
 			}
 			setForceSync("", "", 0);
 			set_global_supplementarySync(0);
-			if(get_global_webcfg_forcedsync_start())
+			if(get_global_webcfg_forcedsync_started())
 			{
-				WebcfgDebug("reset webcfg_forcedsync\n");
-				set_global_webcfg_forcedsync_start(0);
+				WebcfgDebug("reset webcfg_forcedsync_started\n");
+				set_global_webcfg_forcedsync_started(0);
 			}
 		}
 
@@ -267,7 +267,7 @@ void *WebConfigMultipartTask(void *status)
 			ts.tv_sec += get_retry_timer();
 			WebcfgDebug("The retry triggers at %s\n", printTime((long long)ts.tv_sec));
 		}
-		if(get_global_webcfg_forcedsync() == 1)
+		if(get_global_webcfg_forcedsync_needed() == 1)
 		{
 			WebcfgInfo("webcfg_forcedsync detected, trigger force sync with cloud.\n");
 			forced_sync = 1;
@@ -308,11 +308,12 @@ void *WebConfigMultipartTask(void *status)
 		}
 		else if(!rv && !g_shutdown)
 		{
-			if(get_global_webcfg_forcedsync())
+			//webcfg_forcedsync_needed is set initially whenever force sync SET is detected internally & webcfg_forcedsync_started is set when actual sync is started once previous sync is completed.
+			if(get_global_webcfg_forcedsync_needed())
 			{
-				set_global_webcfg_forcedsync(0);
-				set_global_webcfg_forcedsync_start(1);
-				WebcfgDebug("webcfg_forcedsync reset to %d and webcfg_forcedsync_start %d\n", get_global_webcfg_forcedsync(), get_global_webcfg_forcedsync_start());
+				set_global_webcfg_forcedsync_needed(0);
+				set_global_webcfg_forcedsync_started(1);
+				WebcfgDebug("webcfg_forcedsync_needed reset to %d and webcfg_forcedsync_started %d\n", get_global_webcfg_forcedsync_needed(), get_global_webcfg_forcedsync_started());
 			}
 			char *ForceSyncDoc = NULL;
 			char* ForceSyncTransID = NULL;
@@ -405,8 +406,8 @@ void *WebConfigMultipartTask(void *status)
 	set_global_retry_timestamp(0);
 	set_retry_timer(0);
 	set_global_supplementarySync(0);
-	set_global_webcfg_forcedsync(0);
-	set_global_webcfg_forcedsync_start(0);
+	set_global_webcfg_forcedsync_needed(0);
+	set_global_webcfg_forcedsync_started(0);
 #ifdef FEATURE_SUPPORT_AKER
 	set_send_aker_flag(false);
 #endif
@@ -507,24 +508,24 @@ int get_global_supplementarySync()
 {
     return g_supplementarySync;
 }
-void set_global_webcfg_forcedsync(int value)
+void set_global_webcfg_forcedsync_needed(int value)
 {
-    g_webcfg_forcedsync = value;
+    g_webcfg_forcedsync_needed = value;
 }
 
-int get_global_webcfg_forcedsync()
+int get_global_webcfg_forcedsync_needed()
 {
-    return g_webcfg_forcedsync;
+    return g_webcfg_forcedsync_needed;
 }
 
-void set_global_webcfg_forcedsync_start(int value)
+void set_global_webcfg_forcedsync_started(int value)
 {
-    g_webcfg_forcedsync_start = value;
+    g_webcfg_forcedsync_started = value;
 }
 
-int get_global_webcfg_forcedsync_start()
+int get_global_webcfg_forcedsync_started()
 {
-    return g_webcfg_forcedsync_start;
+    return g_webcfg_forcedsync_started;
 }
 /*----------------------------------------------------------------------------*/
 /*                             Internal functions                             */

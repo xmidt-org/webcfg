@@ -1927,9 +1927,9 @@ int set_rbus_ForceSync(char* pString, int *pStatus)
             *pStatus = 1;
             return 0;
         }
-	else if(get_global_webcfg_forcedsync_start() ==1)
+	else if(get_global_webcfg_forcedsync_started() ==1)
         {
-            WebcfgInfo("webcfg_forcedsync is already in progress, Ignoring this request & will retry later.\n");
+            WebcfgInfo("Webcfg forced sync is in progress, Ignoring this request & will retry later.\n");
             *pStatus = 1;
             return 0;
         }
@@ -2121,15 +2121,16 @@ int subscribeTo_CurrentActiveInterface_Event()
       return rc;
 }      
 #endif
-//Trigger force sync with cloud from webconfig client.
+
+/*Trigger force sync with cloud from webconfig client.*/
 void trigger_webcfg_forcedsync()
 {
 	char *str = NULL;
 	int status = 0;
 
 	str = strdup("root");
-	set_global_webcfg_forcedsync(1);
-	WebcfgInfo("set webcfg_forcedsync to %d\n", get_global_webcfg_forcedsync());
+	//webcfg_forcedsync_needed is set initially whenever force sync set is detected, but this does not guarantee the force sync to happen immediately when previous sync is in progress, cloud sync will be retried once previous sync is completed.
+	set_global_webcfg_forcedsync_needed(1);
+	WebcfgInfo("set webcfg_forcedsync_needed to %d\n", get_global_webcfg_forcedsync_needed());
 	set_rbus_ForceSync(str, &status);
-	WebcfgDebug("set_rbus_ForceSync done\n");
 }
