@@ -47,6 +47,11 @@ char* get_deviceMAC()
 	char *device_mac=strdup("b42xxxxxxxxx");
 	return device_mac;
 }
+char* get_deviceWanMAC()
+{
+	char *device_wan_mac=strdup("b42xxxxxxxxx");
+	return device_wan_mac;
+}
 int Get_Webconfig_URL( char *pString)
 {
 	char *webConfigURL =NULL;
