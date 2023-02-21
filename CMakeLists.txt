@@ -95,7 +95,7 @@ add_dependencies(libtrower-base64 trower-base64)
 ExternalProject_Add(wdmp-c
     PREFIX ${CMAKE_CURRENT_BINARY_DIR}/_prefix/wdmp-c
     GIT_REPOSITORY https://github.com/Comcast/wdmp-c.git
-    GIT_TAG "796dddbcfa7686ec63536d950775e79b52ee5c3f"
+    GIT_TAG "f9f687b6b4b10c2b72341e792a64334f0a409848"
     CMAKE_ARGS += -DCMAKE_INSTALL_PREFIX=${INSTALL_DIR}
                   -DBUILD_TESTING=OFF
 )
@@ -118,7 +118,7 @@ add_dependencies(libcimplog cimplog)
 ExternalProject_Add(cJSON
     PREFIX ${PREFIX_DIR}/cJSON
     GIT_REPOSITORY https://github.com/DaveGamble/cJSON.git
-    GIT_TAG "aafb64a1c549b7b927e339df6d35b1d5059dc235"
+    GIT_TAG "39853e5148dad8dc5d32ea2b00943cf4a0c6f120"
     CMAKE_ARGS += -DCMAKE_INSTALL_PREFIX=${INSTALL_DIR}
 )
 add_library(libcJSON STATIC IMPORTED)
