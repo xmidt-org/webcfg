@@ -842,7 +842,7 @@ webcfgError_t resetSubdocVersion(char *docname)
 		}
 		else
 		{
-			WebcfgInfo("Tmp list is NULL, so tmp version reset is skipped for %s\n", docname);
+			WebcfgDebug("Tmp list is NULL, so tmp version reset is skipped for %s\n", docname);
 		}
 		ret = ERROR_SUCCESS;
 	}
@@ -926,7 +926,7 @@ rbusError_t webcfgSubdocForceResetSetHandler(rbusHandle_t handle, rbusProperty_t
 	time_t current_time=time(NULL);
 	double elapsed_time=difftime(current_time,start_time);
 	if(elapsed_time < MAX_FORCE_RESET_TIME_SECS){
-		WebcfgError("Force reset max call limit is reached for the day, next set can be done after 24 hours");
+		WebcfgError("Force reset max call limit is reached for the day, next set can be done after 24 hours\n");
 		return RBUS_ERROR_OUT_OF_RESOURCES;
 	}
 	else{
@@ -962,10 +962,6 @@ rbusError_t webcfgSubdocForceResetSetHandler(rbusHandle_t handle, rbusProperty_t
             char* data = rbusValue_ToString(paramValue_t, NULL, 0);
             if(data)
             {
-                if(SubdocResetVal) {
-                    free(SubdocResetVal);
-                    SubdocResetVal = NULL;
-                }
                 SubdocResetVal = strdup(data);
                 free(data);
 		char str[256] = {'\0'};
@@ -996,6 +992,8 @@ rbusError_t webcfgSubdocForceResetSetHandler(rbusHandle_t handle, rbusProperty_t
 				if(ret != ERROR_SUCCESS)
 				{
 					WebcfgError("subdoc - %s, not present in webconfig db\n", subdocNames[i]);
+					WEBCFG_FREE(SubdocResetVal);
+			                SubdocResetVal=NULL;
 					return RBUS_ERROR_INVALID_INPUT;
 				}
 		        }
@@ -1006,12 +1004,16 @@ rbusError_t webcfgSubdocForceResetSetHandler(rbusHandle_t handle, rbusProperty_t
 				if(ret != ERROR_SUCCESS)
 				{
 					WebcfgError("Reset of subdoc - %s, is failed with errorcode - %d\n", subdocNames[i], ret);
+					WEBCFG_FREE(SubdocResetVal);
+                                        SubdocResetVal=NULL;
 					return RBUS_ERROR_BUS_ERROR;
 				}
 		        }
                 }
 		int rc = RBUS_ERROR_SUCCESS;
                 rc = publishSubdocResetEvent(SubdocResetVal);
+		WEBCFG_FREE(SubdocResetVal);
+		SubdocResetVal=NULL;
 		if(rc != RBUS_ERROR_SUCCESS)
 	        {
 	               WebcfgError("Failed to publish subdoc reset event : %d, %s\n", rc, rbusError_ToString(rc));
@@ -2128,4 +2130,6 @@ void trigger_webcfg_forcedsync()
 	set_global_webcfg_forcedsync_needed(1);
 	WebcfgInfo("set webcfg_forcedsync_needed to %d\n", get_global_webcfg_forcedsync_needed());
 	set_rbus_ForceSync(str, &status);
+	WEBCFG_FREE(str);
+	str=NULL;
 }

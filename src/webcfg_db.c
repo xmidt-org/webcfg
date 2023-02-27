@@ -618,7 +618,7 @@ WEBCFG_STATUS updateDBlist(char *docname, uint32_t version, char* rootstr)
 				}
 				else //To avoid db write due to NULL in webcfgdb->root_string in above condition
 				{
-					WebcfgInfo("webcfgdb->root_string is NULL\n");
+					WebcfgDebug("webcfgdb->root_string is NULL\n");
 					if((webcfgdb->version == version) && (rootstr == NULL))
 					{
 						pthread_mutex_unlock (&webconfig_db_mut);
