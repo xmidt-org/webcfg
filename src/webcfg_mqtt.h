@@ -52,6 +52,8 @@
 #define MQTT_PUBLISH_GET_TOPIC_PREFIX "x/fr/get/chi/"
 #define MQTT_PUBLISH_NOTIFY_TOPIC_PREFIX "x/fr/poke/chi/"
 
+#define WEBCFG_MQTT_DATA_PARAM "Device.X_RDK_WebConfig.MQTT.Data"
+
 #define WEBCFG_MQTT_LOCATIONID_PARAM "Device.X_RDK_WebConfig.MQTT.LocationId"
 #define WEBCFG_MQTT_BROKER_PARAM     "Device.X_RDK_WebConfig.MQTT.Broker"
 #define WEBCFG_MQTT_NODEID_PARAM     "Device.X_RDK_WebConfig.MQTT.NodeId"
@@ -90,4 +92,5 @@ int sendNotification_mqtt(char *payload, char *destination, wrp_msg_t *notif_wrp
 int regWebConfigDataModel_mqtt();
 void execute_mqtt_script(char *name);
 int getHostIPFromInterface(char *interface, char **ip);
+void* processMqttData();
 #endif

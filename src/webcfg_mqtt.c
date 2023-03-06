@@ -42,6 +42,7 @@ void on_subscribe(struct mosquitto *mosq, void *obj, int mid, int qos_count, con
 void on_message(struct mosquitto *mosq, void *obj, const struct mosquitto_message *msg);
 void on_publish(struct mosquitto *mosq, void *obj, int mid);
 
+static pthread_t mqttThreadId = 0;
 static int g_mqttConnected = 0;
 static int systemStatus = 0;
 struct mosquitto *mosq = NULL;
@@ -238,6 +239,118 @@ static int mqtt_retry(mqtt_timer_t *timer)
   return MQTT_DELAY_TAKEN;
 }
 
+void processMqtt()
+{
+	int err = 0;
+	err = pthread_create(&mqttThreadId, NULL, processMqttData, NULL);
+	if (err != 0)
+	{
+		WebcfgError("Error creating processXmidtData thread :[%s]\n", strerror(err));
+	}
+	else
+	{
+		WebcfgInfo("processXmidtData thread created Successfully\n");
+	}
+
+}
+/*
+static void valueChangeHandler(
+    rbusHandle_t handle,
+    rbusEvent_t const* event,
+    rbusEventSubscription_t* subscription)
+{
+    printf("Inside the value change handler\n");
+    rbusValue_t newValue = rbusObject_GetValue(event->data, "value");
+    rbusValue_t oldValue = rbusObject_GetValue(event->data, "oldValue");
+
+    printf("Consumer receiver ValueChange event for param %s\n", event->name);
+
+    if(newValue)
+        printf("  New Value: %s\n", rbusValue_GetString(newValue, NULL));
+
+    if(oldValue)
+        printf("  Old Value: %s\n", rbusValue_GetString(oldValue, NULL));
+
+    printf("  My user data: %s\n", (char*)subscription->userData);
+
+    //PRINT_EVENT(event, subscription);
+
+    (void)handle;
+}
+*/
+
+static void generalEvent1Handler(
+    rbusHandle_t handle,
+    rbusEvent_t const* event,
+    rbusEventSubscription_t* subscription)
+{
+    rbusValue_t someText;
+
+   // PRINT_EVENT(event, subscription);
+
+    someText = rbusObject_GetValue(event->data, "blobdata");
+
+    printf("Consumer receiver General event 1 %s\n", event->name);
+
+    if(someText)
+        printf("  someText: %s\n", rbusValue_GetString(someText, NULL));
+
+    printf("  My user data: %s\n", (char*)subscription->userData);
+
+    (void)handle;
+}
+
+void* processMqttData()
+{
+	WebcfgInfo("Inside processMqttData\n");
+
+	int rc = -1;
+	//void * data = NULL;
+	//int len = 0;
+	rbusHandle_t rbus_handle;
+	//char* dataq[2] = { "My Data 1", "My Data2" };
+
+	rbus_handle = get_global_rbus_handle();
+	if(!rbus_handle)
+	{
+		WebcfgError("processMqttData failed as rbus_handle is empty\n");
+		return NULL;
+	}
+
+	WebcfgInfo("Sleep for 20 sec\n");
+	//sleep(20);
+	/*rbusEventSubscription_t subscriptions[2] = {
+        {WEBCFG_MQTT_DATA_PARAM, NULL, 0, 0, generalEvent1Handler, dataq[0], NULL, NULL, true}
+    };*/
+	//rbusValue_t value;
+	 rc = rbusEvent_Subscribe(rbus_handle, WEBCFG_MQTT_DATA_PARAM, generalEvent1Handler, NULL, 0);
+	printf("After event subscribe \n");
+
+    if(rc != RBUS_ERROR_SUCCESS)
+    {
+        printf("consumer: rbusEvent_Subscribe Param1 failed: %d\n", rc);
+        return NULL;
+    }
+	/*rc = rbus_get(rbus_handle, WEBCFG_MQTT_DATA_PARAM, &value);
+	if(rc != RBUS_ERROR_SUCCESS)
+        {
+		WebcfgError("processMqttData failed with err %d: %s\n", rc, rbusError_ToString(rc));
+		return NULL;
+	}
+	else
+	{
+		WebcfgDebug("processMqttData obtained value is %s\n", (char *)rbusValue_ToString(value, NULL, 0));
+		data = (char *)rbusValue_GetBytes(value, &len);
+		WebcfgDebug("data is %s\n", (char *)data);
+		writeToDBFile("/tmp/sample_blob.bin", (char*) data, len);
+		WebcfgDebug("The len is %d\n", len);
+        }
+	//rbusValue_Release(value);
+
+	processPayload((char *)data, len);*/
+	//rbusEvent_Unsubscribe(rbus_handle, WEBCFG_MQTT_DATA_PARAM);
+	return NULL;
+}
 //Initialize mqtt library and connect to mqtt broker
 bool webcfg_mqtt_init(int status, char *systemreadytime)
 {
@@ -594,9 +707,9 @@ void on_message(struct mosquitto *mosq, void *obj, const struct mosquitto_messag
 			int status = 0;
 			WebcfgInfo("Received dataSize is %d\n", dataSize);
 			WebcfgInfo("write to file /tmp/subscribe_message.bin\n");
-			writeToDBFile("/tmp/subscribe_message.bin",(char *)data,dataSize);
+			writeToDBFile("/tmp/subscribe_message.bin",data,dataSize);
 			WebcfgInfo("write to file done\n");
-			status = processPayload((char *)data, dataSize);
+			status = processPayload(data, dataSize);
 			WebcfgInfo("processPayload status %d\n", status);
 		}
 		else
@@ -675,6 +788,8 @@ void publish_notify_mqtt(char *pub_topic, void *payload, ssize_t len, char * des
 
 int processPayload(char * data, int dataSize)
 {
+	printf("data is %s\n", data);
+	writeToDBFile("/tmp/processpayload.bin", data, dataSize);
 	int mstatus = 0;
 
 	char *transaction_uuid =NULL;
@@ -690,7 +805,7 @@ int processPayload(char * data, int dataSize)
 		char *temp = NULL;
 		char *etag_header = NULL;
 		char* version = NULL;
-
+		printf("ptr_count is %s\n", ptr_count);
 		while((ptr_count - data_body) < dataSize )
 		{
 			ptr_count = memchr(ptr_count, 'C', dataSize - (ptr_count - data_body));
@@ -699,7 +814,9 @@ int processPayload(char * data, int dataSize)
 				WebcfgError("Content-type header not found\n");
 				break;
 			}
-			if(0 == memcmp(ptr_count, "Content-Type:", strlen("Content-Type:")))
+ /*since key name is Content-type in test blob using this for original code base use Content-Type*/
+			//if(0 == memcmp(ptr_count, "Content-type:", strlen("Content-Type:")))
+			if(0 == memcmp(ptr_count, "Content-type:", strlen("Content-type:")))
 			{
 				ptr1_count = memchr(ptr_count+1, '\r', dataSize - (ptr_count - data_body));
 				temp = strndup(ptr_count, (ptr1_count-ptr_count));
