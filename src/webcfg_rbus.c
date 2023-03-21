@@ -2022,7 +2022,10 @@ void sendNotification_rbus(char *payload, char *source, char *destination)
 				rbusValue_t value;
 				rbusObject_t data;
 				rbusValue_Init(&value);
-				rbusValue_SetBytes(value, msg_bytes, msg_len);
+				if(msg_len>=0)
+				{
+					rbusValue_SetBytes(value, msg_bytes, msg_len);
+				}
 				rbusObject_Init(&data, NULL);
 				rbusObject_SetValue(data, "value", value);
 				rbusEvent_t event;
