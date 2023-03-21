@@ -67,9 +67,9 @@ void* helper_convert( const void *buf, size_t len,
 
             /* The outermost wrapper MUST be a map. */
             mp_rv = msgpack_unpack_next( &msg, (const char*) buf, len, &offset );
-	    //msgpack_object obj = msg.data;
-	    //msgpack_object_print(stdout, obj);
-	    //WebcfgDebug("\nMSGPACK_OBJECT_MAP is %d  msg.data.type %d\n", MSGPACK_OBJECT_MAP, msg.data.type);
+	    msgpack_object obj = msg.data;
+	    msgpack_object_print(stdout, obj);
+	    WebcfgDebug("\nMSGPACK_OBJECT_MAP is %d  msg.data.type %d\n", MSGPACK_OBJECT_MAP, msg.data.type);
 
             if( (MSGPACK_UNPACK_SUCCESS == mp_rv) && (0 != offset) &&
                 (MSGPACK_OBJECT_MAP == msg.data.type) )

@@ -1035,7 +1035,8 @@ WEBCFG_STATUS regWebConfigDataModel()
 #endif
 
 #ifdef WEBCONFIG_MQTT_SUPPORT
-	ret3 = regWebConfigDataModel_mqtt();
+	//ret3 = regWebConfigDataModel_mqtt();
+	ret3 = RBUS_ERROR_SUCCESS;
 #endif
 
 	if(ret1 == RBUS_ERROR_SUCCESS && ret2 == RBUS_ERROR_SUCCESS && ret3 == RBUS_ERROR_SUCCESS)

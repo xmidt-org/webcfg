@@ -55,6 +55,7 @@ static char* NodeId =NULL;
 static char* Port =NULL;
 static char* broker = NULL;
 static int mqinit = 0;
+static int webcfg_onconnect_flag = 0;
 
 static char g_systemReadyTime[64]={'\0'};
 static char g_FirmwareVersion[64]={'\0'};
@@ -279,21 +280,128 @@ static void valueChangeHandler(
 }
 */
 
-static void generalEvent1Handler(
+rbusError_t mqttSubscribeInit()
+{
+	rbusError_t ret = RBUS_ERROR_BUS_ERROR;
+	rbusValue_t value;
+        rbusSetOptions_t opts;
+        opts.commit = true;
+
+	rbusHandle_t rbus_handle = get_global_rbus_handle();
+
+	if(!rbus_handle)
+	{
+		WebcfgError("mqttSubscribeInit failed as rbus_handle is empty\n");
+		return ret;
+	}
+
+	rbusValue_Init(&value);
+	rbusValue_SetString(value, "Webconfig");
+
+	if(webcfg_onconnect_flag)
+	{
+		ret = rbus_set(rbus_handle, WEBCFG_MQTT_SUBSCRIBE_PARAM, value, &opts);
+
+		if (ret)
+		{
+			WebcfgError("rbus_set failed:%s\n", rbusError_ToString(ret));
+		}
+		else
+		{
+			WebcfgInfo("rbus_set success\n");
+		}
+	}
+
+	return ret;
+}
+
+static void webcfgOnConnectCallbackHandler(
     rbusHandle_t handle,
     rbusEvent_t const* event,
     rbusEventSubscription_t* subscription)
 {
-    rbusValue_t someText;
+    rbusValue_t incoming_value;
 
    // PRINT_EVENT(event, subscription);
 
-    someText = rbusObject_GetValue(event->data, "blobdata");
+    incoming_value = rbusObject_GetValue(event->data, "value");
 
     printf("Consumer receiver General event 1 %s\n", event->name);
 
-    if(someText)
-        printf("  someText: %s\n", rbusValue_GetString(someText, NULL));
+    if(incoming_value)
+    {
+        char * inVal = (char *)rbusValue_GetString(incoming_value, NULL);
+        printf(" The incoming_value: %s\n", inVal);
+        if(strncmp(inVal, "success", 7) == 0)
+        {
+		webcfg_onconnect_flag = 1;
+		mqttSubscribeInit();
+        }
+    }
+
+    printf("  My user data: %s\n", (char*)subscription->userData);
+
+    (void)handle;
+}
+
+static void webcfgSubscribeCallbackHandler(
+    rbusHandle_t handle,
+    rbusEvent_t const* event,
+    rbusEventSubscription_t* subscription)
+{
+    rbusValue_t incoming_value;
+
+   // PRINT_EVENT(event, subscription);
+
+    incoming_value = rbusObject_GetValue(event->data, "value");
+
+    printf("Consumer receiver General event %s\n", event->name);
+
+    if(incoming_value)
+    {
+        char * inVal = (char *)rbusValue_GetString(incoming_value, NULL);
+        printf(" The incoming_value: %s\n", inVal);
+        if(strncmp(inVal, "success", 7) == 0)
+        {
+		//TODO: Device.X_RDK_MQTT.WebConfigPublishGET
+		printf("The onsubscribe is success\n");
+        }
+    }
+
+    printf("  My user data: %s\n", (char*)subscription->userData);
+
+    (void)handle;
+}
+
+static void webcfgOnMessageCallbackHandler(
+    rbusHandle_t handle,
+    rbusEvent_t const* event,
+    rbusEventSubscription_t* subscription)
+{
+    rbusValue_t incoming_value;
+
+   // PRINT_EVENT(event, subscription);
+
+    incoming_value = rbusObject_GetValue(event->data, "value");
+
+    printf("Consumer receiver General event %s\n", event->name);
+
+    if(incoming_value)
+    {
+	void * data = NULL;
+	int len = 0;
+
+        printf(" The incoming_value: %s\n", rbusValue_GetBytes(incoming_value, NULL));
+
+	data = (char *)rbusValue_GetBytes(incoming_value, &len);
+
+	WebcfgDebug("data is %s\n", (char *)data);
+	writeToDBFile("/tmp/blob_obtained.bin", (char*) data, len);
+	WebcfgDebug("The len is %d\n", len);
+
+	processPayload((char *)data, len);
+
+    }
 
     printf("  My user data: %s\n", (char*)subscription->userData);
 
@@ -305,9 +413,14 @@ void* processMqttData()
 	WebcfgInfo("Inside processMqttData\n");
 
 	int rc = -1;
+	rbusError_t ret = RBUS_ERROR_BUS_ERROR;
+	rbusValue_t value;
+        rbusSetOptions_t opts;
+        opts.commit = true;
+	rbusHandle_t rbus_handle;
+
 	//void * data = NULL;
 	//int len = 0;
-	rbusHandle_t rbus_handle;
 	//char* dataq[2] = { "My Data 1", "My Data2" };
 
 	rbus_handle = get_global_rbus_handle();
@@ -317,20 +430,56 @@ void* processMqttData()
 		return NULL;
 	}
 
-	WebcfgInfo("Sleep for 20 sec\n");
-	//sleep(20);
-	/*rbusEventSubscription_t subscriptions[2] = {
-        {WEBCFG_MQTT_DATA_PARAM, NULL, 0, 0, generalEvent1Handler, dataq[0], NULL, NULL, true}
-    };*/
-	//rbusValue_t value;
-	 rc = rbusEvent_Subscribe(rbus_handle, WEBCFG_MQTT_DATA_PARAM, generalEvent1Handler, NULL, 0);
+	rc = rbusEvent_Subscribe(rbus_handle, WEBCFG_ONCONNECT_CALLBACK, webcfgOnConnectCallbackHandler, NULL, 0);
+
 	printf("After event subscribe \n");
 
-    if(rc != RBUS_ERROR_SUCCESS)
+	if(rc != RBUS_ERROR_SUCCESS)
+	{
+		printf("consumer: rbusEvent_Subscribe for %s failed: %d\n", WEBCFG_ONCONNECT_CALLBACK, rc);
+		return NULL;
+	}
+
+	rc = rbusEvent_Subscribe(rbus_handle, WEBCFG_SUBSCRIBE_CALLBACK, webcfgSubscribeCallbackHandler, NULL, 0);
+
+	printf("After event subscribe \n");
+
+	if(rc != RBUS_ERROR_SUCCESS)
+	{
+		printf("consumer: rbusEvent_Subscribe for %s failed: %d\n", WEBCFG_SUBSCRIBE_CALLBACK, rc);
+		return NULL;
+	}
+
+	rc = rbusEvent_Subscribe(rbus_handle, WEBCFG_ONMESSAGE_CALLBACK, webcfgOnMessageCallbackHandler, NULL, 0);
+
+	printf("After event subscribe \n");
+
+	if(rc != RBUS_ERROR_SUCCESS)
+	{
+		printf("consumer: rbusEvent_Subscribe for %s failed: %d\n", WEBCFG_ONMESSAGE_CALLBACK, rc);
+		return NULL;
+	}
+
+	rbusValue_Init(&value);
+	rbusValue_SetString(value, "Webconfig");
+
+	ret = rbus_set(rbus_handle, WEBCFG_MQTT_CONNECT_PARAM, value, &opts);
+
+	if (ret)
+	{
+		WebcfgError("rbus_set failed:%s\n", rbusError_ToString(ret));
+	}
+	else
+	{
+		WebcfgInfo("rbus_set success\n");
+	}
+
+
+  /*  if(rc != RBUS_ERROR_SUCCESS)
     {
         printf("consumer: rbusEvent_Subscribe Param1 failed: %d\n", rc);
         return NULL;
-    }
+    }*/
 	/*rc = rbus_get(rbus_handle, WEBCFG_MQTT_DATA_PARAM, &value);
 	if(rc != RBUS_ERROR_SUCCESS)
         {
@@ -351,6 +500,7 @@ void* processMqttData()
 	//rbusEvent_Unsubscribe(rbus_handle, WEBCFG_MQTT_DATA_PARAM);
 	return NULL;
 }
+
 //Initialize mqtt library and connect to mqtt broker
 bool webcfg_mqtt_init(int status, char *systemreadytime)
 {

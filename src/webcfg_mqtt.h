@@ -59,6 +59,13 @@
 #define WEBCFG_MQTT_NODEID_PARAM     "Device.X_RDK_WebConfig.MQTT.NodeId"
 #define WEBCFG_MQTT_PORT_PARAM       "Device.X_RDK_WebConfig.MQTT.Port"
 
+#define WEBCFG_MQTT_CONNECT_PARAM    "Device.X_RDK_MQTT.Connect"
+#define WEBCFG_MQTT_SUBSCRIBE_PARAM      "Device.X_RDK_MQTT.Subscribe"
+
+#define WEBCFG_ONCONNECT_CALLBACK    "Device.X_RDK_MQTT.Webconfig.OnConnectCallback"
+#define WEBCFG_SUBSCRIBE_CALLBACK    "Device.X_RDK_ MQTT.Webconfig.OnSubcribeCallback"
+#define WEBCFG_ONMESSAGE_CALLBACK    "Device.X_RDK_MQTT.Webconfig.OnMessageCallback"
+
 #define MAX_MQTT_RETRY 8
 #define MQTT_RETRY_ERR -1
 #define MQTT_RETRY_SHUTDOWN 1
@@ -93,4 +100,5 @@ int regWebConfigDataModel_mqtt();
 void execute_mqtt_script(char *name);
 int getHostIPFromInterface(char *interface, char **ip);
 void* processMqttData();
+void processMqtt();
 #endif

@@ -108,7 +108,7 @@ int main()
 			#ifdef WEBCONFIG_MQTT_SUPPORT
 				WebcfgInfo("Starting webcfg_mqtt_init\n");
 				//webcfg_mqtt_init(systemStatus, systemReadyTime);
-				processMqttData();
+				processMqtt();
 			#endif
 			}
 			else
