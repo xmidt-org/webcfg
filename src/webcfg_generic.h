@@ -47,6 +47,7 @@ char * getAccountID();
 char * getConnClientParamName();
 char * getFirmwareVersion();
 char* get_deviceMAC();
+char* get_deviceWanMAC();
 char * getRebootReason();
 char * getFirmwareUpgradeStartTime();
 char * getFirmwareUpgradeEndTime();

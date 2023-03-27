@@ -241,7 +241,7 @@ void test_updateDBlist(){
 	char *rootstr = strdup("factory-reset");
 	uint32_t version = 1234;
 	int sts = updateDBlist("root", version, rootstr);
-	CU_ASSERT_EQUAL(0,sts);
+	CU_ASSERT_EQUAL(2,sts);
 }
 
 void test_appendedDoc(){

@@ -48,6 +48,7 @@ char *__attribute__((weak)) getRebootReason(void);
 char *__attribute__((weak)) getConnClientParamName(void);
 char *__attribute__((weak)) getFirmwareVersion(void);
 char *__attribute__((weak)) get_deviceMAC(void);
+char *__attribute__((weak)) get_deviceWanMAC(void);
 char *__attribute__((weak)) getFirmwareUpgradeStartTime(void);
 char *__attribute__((weak)) getFirmwareUpgradeEndTime(void);
 #endif
@@ -134,6 +135,11 @@ char *getFirmwareVersion(void)
 }
 
 char* get_deviceMAC(void)
+{
+	return NULL;
+}
+
+char* get_deviceWanMAC(void)
 {
 	return NULL;
 }
