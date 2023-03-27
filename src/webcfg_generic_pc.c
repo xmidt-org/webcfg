@@ -151,7 +151,7 @@ char *getFirmwareUpgradeEndTime(void)
 
 char *get_global_systemReadyTime(void)
 {
-    return NULL;
+    return global_systemReadyTime;
 }
 
 void set_global_systemReadyTime(char* systemReadyTime)
