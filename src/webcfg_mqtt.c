@@ -783,7 +783,7 @@ static void webcfgOnMessageCallbackHandler(
 	processPayload((char *)data, len);
 
     }
-    printf("My user data: %s\n", (char*)subscription->userData);
+    printf("webcfgOnMessageCallbackHandler My user data: %s\n", (char*)subscription->userData);
     (void)handle;
 }
 
@@ -935,6 +935,37 @@ char * createMqttPubHeader(char * payload, char * dest, ssize_t * payload_len)
 	return pub_headerlist;
 }
 
+rbusError_t setPublishNotification(char *publishNotifyVal)
+{
+	rbusError_t ret = RBUS_ERROR_BUS_ERROR;
+	rbusValue_t value;
+        rbusSetOptions_t opts;
+        opts.commit = true;
+
+	rbusHandle_t rbus_handle = get_global_rbus_handle();
+
+	if(!rbus_handle)
+	{
+		WebcfgError("setPublishNotification failed as rbus_handle is empty\n");
+		return ret;
+	}
+
+	rbusValue_Init(&value);
+	rbusValue_SetString(value, publishNotifyVal);
+
+	ret = rbus_set(rbus_handle, WEBCFG_MQTT_PublishNOTIFY_PARAM, value, &opts);
+
+	if (ret)
+	{
+		WebcfgError("rbus_set for setPublishNotification failed:%s\n", rbusError_ToString(ret));
+	}
+	else
+	{
+		WebcfgInfo("rbus_set for setPublishNotification success\n");
+	}
+	return ret;
+}
+
 void publish_notify_mqtt(char *pub_topic, void *payload, ssize_t len, char * dest)
 {
        int rc;
@@ -979,18 +1010,18 @@ void publish_notify_mqtt(char *pub_topic, void *payload, ssize_t len, char * des
 	WebcfgInfo("Payload published is \n%s\n", (char*)payload);
 	//writeToDBFile("/tmp/payload.bin", (char *)payload, len);
        // rc = mosquitto_publish(mosq, NULL, pub_topic, len, payload, 2, false);
-       rc = 0;
-	WebcfgInfo("Publish rc %d\n", rc);
-        if(rc != MOSQ_ERR_SUCCESS)
+       rc = setPublishNotification(payload);
+	WebcfgInfo("setPublishNotification rc %d\n", rc);
+        if(rc != 0)
 	{
-                WebcfgError("Error publishing: %s\n", mosquitto_strerror(rc));
+                WebcfgError("Error publishing\n");
         }
 	else
 	{
 		WebcfgInfo("Publish payload success %d\n", rc);
 	}
 	//mosquitto_loop(mosq, 0, 1);
-	WebcfgInfo("Publish mosquitto_loop done\n");
+	WebcfgInfo("Publish notify done\n");
 }
 
 int sendNotification_mqtt(char *payload, char *destination, wrp_msg_t *notif_wrp_msg, void *msg_bytes)
