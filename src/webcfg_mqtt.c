@@ -45,7 +45,6 @@ static char g_productClass[64]={'\0'};
 static char g_ModelName[64]={'\0'};
 static char g_PartnerID[64]={'\0'};
 static char g_AccountID[64]={'\0'};
-static char g_NodeID[64] = { 0 };
 static char *supportedVersion_header=NULL;
 static char *supportedDocs_header=NULL;
 static char *supplementaryDocs_header=NULL;
@@ -761,6 +760,7 @@ static void webcfgOnMessageCallbackHandler(
     rbusEvent_t const* event,
     rbusEventSubscription_t* subscription)
 {
+    (void)handle;
     rbusValue_t incoming_value;
 
     incoming_value = rbusObject_GetValue(event->data, "value");
@@ -771,20 +771,22 @@ static void webcfgOnMessageCallbackHandler(
     {
 	void * data = NULL;
 	int len = 0;
+	char *temp_data = NULL;
 
         printf("on message incoming_value: %s\n", rbusValue_GetBytes(incoming_value, NULL));
 
 	data = (char *)rbusValue_GetBytes(incoming_value, &len);
+	temp_data = malloc(sizeof(char) * len + 1);
+	temp_data = memcpy(temp_data, data, len + 1);
 
-	WebcfgDebug("data is %s\n", (char *)data);
-	writeToDBFile("/tmp/blob_obtained.bin", (char*) data, len);
+	WebcfgDebug("data is %s\n", temp_data);
+	writeToDBFile("/tmp/blob_obtained.bin", temp_data, len);
 	WebcfgDebug("Received msg len is %d\n", len);
 
-	processPayload((char *)data, len);
+	processPayload((char *)temp_data, len);
 
     }
     printf("webcfgOnMessageCallbackHandler My user data: %s\n", (char*)subscription->userData);
-    (void)handle;
 }
 
 int processPayload(char * data, int dataSize)
@@ -966,7 +968,7 @@ rbusError_t setPublishNotification(char *publishNotifyVal)
 	return ret;
 }
 
-void publish_notify_mqtt(char *pub_topic, void *payload, ssize_t len, char * dest)
+void publish_notify_mqtt(void *payload, ssize_t len, char * dest)
 {
        int rc;
 	if(dest != NULL)
@@ -983,45 +985,15 @@ void publish_notify_mqtt(char *pub_topic, void *payload, ssize_t len, char * des
 			WEBCFG_FREE(pub_payload);
 		}
 	}
-
-	if(pub_topic == NULL)
-	{
-		char publish_topic[256] = { 0 };
-		char locationID[256] = { 0 };
-
-		Get_Mqtt_LocationId(locationID);
-		WebcfgInfo("locationID fetched from tr181 is %s\n", locationID);
-		snprintf(publish_topic, MAX_MQTT_LEN, "%s%s/%s", MQTT_PUBLISH_NOTIFY_TOPIC_PREFIX, g_NodeID,locationID);
-		if(strlen(publish_topic)>0)
-		{
-			WebcfgInfo("publish_topic fetched from tr181 is %s\n", publish_topic);
-			pub_topic = strdup(publish_topic);
-			WebcfgInfo("pub_topic from file is %s\n", pub_topic);
-		}
-		else
-		{
-			WebcfgError("Failed to fetch publish topic\n");
-		}
-	}
-	else
-	{
-		WebcfgInfo("pub_topic is %s\n", pub_topic);
-	}
-	WebcfgInfo("Payload published is \n%s\n", (char*)payload);
-	//writeToDBFile("/tmp/payload.bin", (char *)payload, len);
-       // rc = mosquitto_publish(mosq, NULL, pub_topic, len, payload, 2, false);
        rc = setPublishNotification(payload);
-	WebcfgInfo("setPublishNotification rc %d\n", rc);
         if(rc != 0)
 	{
-                WebcfgError("Error publishing\n");
+                WebcfgError("setPublishNotification failed, rc %d\n", rc);
         }
 	else
 	{
 		WebcfgInfo("Publish payload success %d\n", rc);
 	}
-	//mosquitto_loop(mosq, 0, 1);
-	WebcfgInfo("Publish notify done\n");
 }
 
 int sendNotification_mqtt(char *payload, char *destination, wrp_msg_t *notif_wrp_msg, void *msg_bytes)
@@ -1031,7 +1003,7 @@ int sendNotification_mqtt(char *payload, char *destination, wrp_msg_t *notif_wrp
 		WebcfgInfo("publish_notify_mqtt with json string payload\n");
 		char *payload_str = strdup(payload);
 		WebcfgInfo("payload_str %s len %zu\n", payload_str, strlen(payload_str));
-		publish_notify_mqtt(NULL, payload_str, strlen(payload_str), destination);
+		publish_notify_mqtt(payload_str, strlen(payload_str), destination);
 		//WEBCFG_FREE(payload_str);
 		WebcfgInfo("publish_notify_mqtt done\n");
 		return 1;

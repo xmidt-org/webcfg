@@ -51,7 +51,7 @@
 #define WEBCFG_SUBSCRIBE_CALLBACK    "Device.X_RDK_ MQTT.Webconfig.OnSubcribeCallback"
 #define WEBCFG_ONMESSAGE_CALLBACK    "Device.X_RDK_MQTT.Webconfig.OnMessageCallback"
 
-void publish_notify_mqtt(char *pub_topic, void *payload, ssize_t len, char * dest);
+void publish_notify_mqtt(void *payload, ssize_t len, char * dest);
 char * createMqttPubHeader(char * payload, char * dest, ssize_t * payload_len);
 int createMqttHeader(char **header_list);
 int triggerBootupSync();
