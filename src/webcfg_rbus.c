@@ -2043,6 +2043,12 @@ void sendNotification_rbus(char *payload, char *source, char *destination)
 			{
 				WebcfgInfo("sendNotification_mqtt . ret %d\n", ret);
 			}
+			wrp_free_struct (notif_wrp_msg );
+                        if(msg_bytes)
+			{
+				WEBCFG_FREE(msg_bytes);
+			}
+			return ;
 		#endif
 			// 30s wait interval for subscription 	
 			if(!subscribed)
