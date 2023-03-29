@@ -23,7 +23,6 @@
 #include <stdio.h>
 #include <stdbool.h>
 #include <uuid/uuid.h>
-#include <mosquitto.h>
 #include <time.h>
 #include <wrp-c.h>
 #include <rbus/rbus.h>

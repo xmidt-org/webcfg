@@ -54,12 +54,6 @@ endif (FEATURE_SUPPORT_AKER)
 
 if (WEBCONFIG_BIN_SUPPORT)
 
-if (WEBCONFIG_MQTT_SUPPORT)
-
-include_directories(${INCLUDE_DIR}/mosquitto)
-
-endif (WEBCONFIG_MQTT_SUPPORT)
-
 include_directories(${INCLUDE_DIR}/rbus
 		    ${INCLUDE_DIR}/rtmessage
 )
@@ -196,19 +190,6 @@ add_dependencies(liblibparodus libparodus)
 endif (FEATURE_SUPPORT_AKER)
 
 if (WEBCONFIG_BIN_SUPPORT)
-
-if (WEBCONFIG_MQTT_SUPPORT)
-# mosquitto external dependency
-#-------------------------------------------------------------------------------
-ExternalProject_Add(mosquitto
-    PREFIX ${CMAKE_CURRENT_BINARY_DIR}/_prefix/mosquitto
-    GIT_REPOSITORY https://github.com/eclipse/mosquitto.git
-    GIT_TAG "master"
-    CMAKE_ARGS += -DCMAKE_INSTALL_PREFIX=${INSTALL_DIR} -DWITH_CJSON=no -DWITH_BROKER=ON
-)
-add_library(libmosquitto STATIC SHARED IMPORTED)
-add_dependencies(libmosquitto mosquitto)
-endif (WEBCONFIG_MQTT_SUPPORT)
 
 # rbus external dependency
 #-------------------------------------------------------------------------------

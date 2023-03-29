@@ -93,10 +93,6 @@ if (FEATURE_SUPPORT_AKER)
 set(COMMON_LIBS ${COMMON_LIBS} -llibparodus)
 endif(FEATURE_SUPPORT_AKER)
 
-if (WEBCONFIG_MQTT_SUPPORT)
-set(COMMON_LIBS ${COMMON_LIBS} -lmosquitto)
-endif (WEBCONFIG_MQTT_SUPPORT)
-
 target_link_libraries (webconfig ${CMAKE_THREAD_LIBS_INIT} ${COMMON_LIBS})
 install (TARGETS webconfig DESTINATION bin)
 endif()
