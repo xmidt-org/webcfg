@@ -89,27 +89,27 @@ void* WebconfigMqttTask(void *status)
 		return NULL;
 	}
 
-	printf("rbus event subscribe to mqtt connect callback\n");
+	WebcfgInfo("rbus event subscribe to mqtt connect callback\n");
 	rc = rbusEvent_Subscribe(rbus_handle, WEBCFG_ONCONNECT_CALLBACK, webcfgOnConnectCallbackHandler, NULL, 0);
 	if(rc != RBUS_ERROR_SUCCESS)
 	{
-		printf("consumer: rbusEvent_Subscribe for %s failed: %d\n", WEBCFG_ONCONNECT_CALLBACK, rc);
+		WebcfgError("consumer: rbusEvent_Subscribe for %s failed: %d\n", WEBCFG_ONCONNECT_CALLBACK, rc);
 		return NULL;
 	}
 
-	printf("rbus event subscribe to mqtt subscribe callback\n");
+	WebcfgInfo("rbus event subscribe to mqtt subscribe callback\n");
 	rc = rbusEvent_Subscribe(rbus_handle, WEBCFG_SUBSCRIBE_CALLBACK, webcfgSubscribeCallbackHandler, NULL, 0);
 	if(rc != RBUS_ERROR_SUCCESS)
 	{
-		printf("consumer: rbusEvent_Subscribe for %s failed: %d\n", WEBCFG_SUBSCRIBE_CALLBACK, rc);
+		WebcfgError("consumer: rbusEvent_Subscribe for %s failed: %d\n", WEBCFG_SUBSCRIBE_CALLBACK, rc);
 		return NULL;
 	}
 
-	printf("rbus event subscribe to mqtt message callback\n");
+	WebcfgInfo("rbus event subscribe to mqtt message callback\n");
 	rc = rbusEvent_Subscribe(rbus_handle, WEBCFG_ONMESSAGE_CALLBACK, webcfgOnMessageCallbackHandler, NULL, 0);
 	if(rc != RBUS_ERROR_SUCCESS)
 	{
-		printf("consumer: rbusEvent_Subscribe for %s failed: %d\n", WEBCFG_ONMESSAGE_CALLBACK, rc);
+		WebcfgError("consumer: rbusEvent_Subscribe for %s failed: %d\n", WEBCFG_ONMESSAGE_CALLBACK, rc);
 		return NULL;
 	}
 
@@ -127,7 +127,7 @@ int setMqttConnectRequest()
         opts.commit = true;
 	rbusValue_Init(&value);
 	rbusValue_SetString(value, "Webconfig");
-	printf("SET mqtt connect request to mqtt connection manager\n");
+	WebcfgDebug("SET mqtt connect request to mqtt connection manager\n");
 	rbusError_t ret = rbus_set(get_global_rbus_handle(), WEBCFG_MQTT_CONNECT_PARAM, value, &opts);
 
 	if (ret)
@@ -150,24 +150,23 @@ static void webcfgOnConnectCallbackHandler(
 
     incoming_value = rbusObject_GetValue(event->data, "value");
 
-    printf("Received on connect callback event %s\n", event->name);
+    WebcfgInfo("Received on connect callback event %s\n", event->name);
 
     if(incoming_value)
     {
         char * inVal = (char *)rbusValue_GetString(incoming_value, NULL);
-        printf("connect callback value: %s\n", inVal);
+        WebcfgDebug("connect callback value: %s\n", inVal);
         if(strncmp(inVal, "success", 7) == 0)
         {
 		webcfg_onconnect_flag = 1;
 		if(!subscribeFlag)
 		{
-			printf("set mqtt subscribe request to mqtt CM\n");
+			WebcfgInfo("set mqtt subscribe request to mqtt CM\n");
 			mqttSubscribeInit();
 		}
         }
     }
 
-    printf("My user data: %s\n", (char*)subscription->userData);
     (void)handle;
 }
 
@@ -215,12 +214,12 @@ static void webcfgSubscribeCallbackHandler(
 
     incoming_value = rbusObject_GetValue(event->data, "value");
 
-    printf("Received on subscribe callback event %s\n", event->name);
+    WebcfgInfo("Received on subscribe callback event %s\n", event->name);
 
     if(incoming_value)
     {
         char * inVal = (char *)rbusValue_GetString(incoming_value, NULL);
-        printf("subscribe callback incoming_value: %s\n", inVal);
+        WebcfgDebug("subscribe callback incoming_value: %s\n", inVal);
         if(strncmp(inVal, "success", 7) == 0)
         {
 		subscribeFlag = 1;
@@ -241,7 +240,6 @@ static void webcfgSubscribeCallbackHandler(
 		}
 	}
     }
-    printf("My user data: %s\n", (char*)subscription->userData);
     (void)handle;
 }
 
@@ -252,7 +250,6 @@ int triggerBootupSync()
 
 	if(mqttheaderList != NULL)
 	{
-		WebcfgInfo("B4 createMqttHeader\n");
 		createMqttHeader(&mqttheaderList);
 		if(mqttheaderList !=NULL)
 		{
@@ -271,7 +268,6 @@ int triggerBootupSync()
 		WebcfgError("Failed to allocate mqttheaderList\n");
 		return 0;
 	}
-	WebcfgInfo("triggerBootupSync end\n");
 	return 1;
 }
 
@@ -765,7 +761,7 @@ static void webcfgOnMessageCallbackHandler(
 
     incoming_value = rbusObject_GetValue(event->data, "value");
 
-    printf("Received on message callback event %s\n", event->name);
+    WebcfgInfo("Received on message callback event %s\n", event->name);
 
     if(incoming_value)
     {
@@ -773,26 +769,23 @@ static void webcfgOnMessageCallbackHandler(
 	int len = 0;
 	char *temp_data = NULL;
 
-        printf("on message incoming_value: %s\n", rbusValue_GetBytes(incoming_value, NULL));
+        WebcfgDebug("on message incoming_value: %s\n", rbusValue_GetBytes(incoming_value, NULL));
 
 	data = (char *)rbusValue_GetBytes(incoming_value, &len);
 	temp_data = malloc(sizeof(char) * len + 1);
 	temp_data = memcpy(temp_data, data, len + 1);
 
 	WebcfgDebug("data is %s\n", temp_data);
-	writeToDBFile("/tmp/blob_obtained.bin", temp_data, len);
+	//writeToDBFile("/tmp/blob_obtained.bin", temp_data, len);
 	WebcfgDebug("Received msg len is %d\n", len);
 
 	processPayload((char *)temp_data, len);
 
     }
-    printf("webcfgOnMessageCallbackHandler My user data: %s\n", (char*)subscription->userData);
 }
 
 int processPayload(char * data, int dataSize)
 {
-	printf("data is %s\n", data);
-	writeToDBFile("/tmp/processpayload.bin", data, dataSize);
 	int mstatus = 0;
 
 	char *transaction_uuid =NULL;
@@ -808,7 +801,7 @@ int processPayload(char * data, int dataSize)
 		char *temp = NULL;
 		char *etag_header = NULL;
 		char* version = NULL;
-		printf("ptr_count is %s\n", ptr_count);
+		WebcfgDebug("ptr_count is %s\n", ptr_count);
 		while((ptr_count - data_body) < dataSize )
 		{
 			ptr_count = memchr(ptr_count, 'C', dataSize - (ptr_count - data_body));
