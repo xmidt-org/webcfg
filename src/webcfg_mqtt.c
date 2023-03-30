@@ -811,8 +811,7 @@ int processPayload(char * data, int dataSize)
 				break;
 			}
  /*since key name is Content-type in test blob using this for original code base use Content-Type*/
-			//if(0 == memcmp(ptr_count, "Content-type:", strlen("Content-Type:")))
-			if(0 == memcmp(ptr_count, "Content-type:", strlen("Content-type:")))
+			if(0 == memcmp(ptr_count, "Content-Type:", strlen("Content-Type:")))
 			{
 				ptr1_count = memchr(ptr_count+1, '\r', dataSize - (ptr_count - data_body));
 				temp = strndup(ptr_count, (ptr1_count-ptr_count));
