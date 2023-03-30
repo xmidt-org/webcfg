@@ -47,8 +47,9 @@
 #define WEBCFG_MQTT_PublishNOTIFY_PARAM   "Device.X_RDK_MQTT.WebConfig.PublishNotification"
 
 #define WEBCFG_ONCONNECT_CALLBACK    "Device.X_RDK_MQTT.Webconfig.OnConnectCallback"
-#define WEBCFG_SUBSCRIBE_CALLBACK    "Device.X_RDK_ MQTT.Webconfig.OnSubcribeCallback"
+#define WEBCFG_SUBSCRIBE_CALLBACK    "Device.X_RDK_MQTT.Webconfig.OnSubcribeCallback"
 #define WEBCFG_ONMESSAGE_CALLBACK    "Device.X_RDK_MQTT.Webconfig.OnMessageCallback"
+#define WEBCFG_ONPUBLISH_CALLBACK    "Device.X_RDK_MQTT.Webconfig.OnPublishCallback"
 
 void publish_notify_mqtt(void *payload, ssize_t len, char * dest);
 char * createMqttPubHeader(char * payload, char * dest, ssize_t * payload_len);
