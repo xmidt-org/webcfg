@@ -89,6 +89,7 @@ int main()
 #endif
 	if(isRbusEnabled())
 	{
+		registerRbusLogger();
 		WebcfgDebug("RBUS mode. webconfigRbusInit\n");
 		webconfigRbusInit(WEBCFG_COMPONENT_NAME);
 		regWebConfigDataModel();

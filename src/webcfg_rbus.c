@@ -2171,3 +2171,34 @@ void trigger_webcfg_forcedsync()
 	WEBCFG_FREE(str);
 	str=NULL;
 }
+
+/* Enables rbus ERROR level logs in webconfig. Modify RBUS_LOG_ERROR check if more debug logs are needed from rbus. */
+void rbus_log_handler(
+    rbusLogLevel level,
+    const char* file,
+    int line,
+    int threadId,
+    char* message)
+{
+    WebcfgDebug("threadId %d\n", threadId);
+    const char* slevel = "";
+
+    if(level < RBUS_LOG_ERROR)
+        return;
+
+    switch(level)
+    {
+	    case RBUS_LOG_DEBUG:    slevel = "DEBUG";   break;
+	    case RBUS_LOG_INFO:     slevel = "INFO";    break;
+	    case RBUS_LOG_WARN:     slevel = "WARN";    break;
+	    case RBUS_LOG_ERROR:    slevel = "ERROR";   break;
+	    case RBUS_LOG_FATAL:    slevel = "FATAL";   break;
+    }
+    WebcfgInfo("%5s %s:%d -- %s\n", slevel, file, line, message);
+}
+
+void registerRbusLogger()
+{
+	rbus_registerLogHandler(rbus_log_handler);
+	WebcfgDebug("Registered rbus log handler\n");
+}
