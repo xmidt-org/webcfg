@@ -41,6 +41,8 @@
 #define MAX_MQTT_LEN         128
 #define MQTT_PUBLISH_NOTIFY_TOPIC_PREFIX "x/fr/poke/chi/"
 
+#define MQTTCM_COMPONENT_NAME             "mqttCM"
+
 #define WEBCFG_MQTT_CONNECT_PARAM         "Device.X_RDK_MQTT.Connect"
 #define WEBCFG_MQTT_SUBSCRIBE_PARAM       "Device.X_RDK_MQTT.Subscribe"
 #define WEBCFG_MQTT_PublishGET_PARAM      "Device.X_RDK_MQTT.Webconfig.PublishGET"

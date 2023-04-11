@@ -66,6 +66,8 @@ static void webcfgOnPublishCallbackHandler(
     rbusEvent_t const* event,
     rbusEventSubscription_t* subscription);
 
+int mqttComponentCheck();
+
 void initWebconfigMqttTask(unsigned long status)
 {
 	int err = 0;
@@ -87,10 +89,17 @@ void* WebconfigMqttTask(void *status)
 	systemStatus = (unsigned long)status;
 	WebcfgInfo("WebconfigMqttTask\n");
 	rbus_handle = get_global_rbus_handle();
+
 	if(!rbus_handle)
 	{
 		WebcfgError("WebconfigMqttTask failed as rbus_handle is empty\n");
 		return NULL;
+	}
+
+	while(mqttComponentCheck() == 1)
+	{
+		WebcfgInfo("Waiting for mqttCM component\n");
+		sleep(5);
 	}
 
 	WebcfgInfo("rbus event subscribe to mqtt connect callback\n");
@@ -130,6 +139,52 @@ void* WebconfigMqttTask(void *status)
 		setMqttConnectRequest();
 	}
 	return NULL;
+}
+
+int mqttComponentCheck()
+{
+	rbusError_t rc = RBUS_ERROR_SUCCESS;
+	rbusHandle_t rbus_handle;
+
+	int i, compCount = 0;
+	char **pCompName;
+	char const* pElementNames[1] = {0};
+
+	pElementNames[0] = strdup(MQTTCM_COMPONENT_NAME);
+
+	rbus_handle = get_global_rbus_handle();
+
+	if(!rbus_handle)
+	{
+		WebcfgError("mqttComponentCheck failed as rbus_handle is empty\n");
+		return 1;
+	}
+
+	rc = rbus_discoverComponentName (rbus_handle, 1, pElementNames, &compCount, &pCompName);
+
+	if(RBUS_ERROR_SUCCESS == rc)
+	{
+		if(compCount)
+		{
+			for (i = 0; i < compCount; i++)
+			{
+				WebcfgInfo ("%s component is found. Proceeding further..\n", pCompName[i]);
+				free(pCompName[i]);
+			}
+			free(pCompName);
+		}
+		else
+		{
+			WebcfgError("mqttCM component is not found\n");
+			return 1;
+		}
+	}
+	else
+	{
+		WebcfgError("Failed to discover components. Error Code = %d\n", rc);
+		return 1;
+	}
+	return 0;
 }
 
 int setMqttConnectRequest()
