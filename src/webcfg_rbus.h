@@ -37,7 +37,12 @@
 
 #define buffLen 1024
 #define maxParamLen 128
-#define NUM_WEBCFG_ELEMENTS 10
+
+#define NUM_WEBCFG_ELEMENTS1 7
+
+#if !defined (WEBCONFIG_MQTT_SUPPORT) || defined (WEBCONFIG_HTTP_SUPPORT)
+#define NUM_WEBCFG_ELEMENTS2 3
+#endif
 
 #define MAX_FORCE_RESET_SET_COUNT 3
 #define MAX_FORCE_RESET_TIME_SECS 24*60*60

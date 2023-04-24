@@ -65,6 +65,12 @@ void __attribute__((weak)) setAttributes(param_t *attArr, const unsigned int par
 int __attribute__((weak)) rbus_GetValueFromDB( char* paramName, char** paramValue);
 int __attribute__((weak)) rbus_StoreValueIntoDB(char *paramName, char *value);
 int __attribute__((weak)) rbus_waitUntilSystemReady();
+#ifdef WEBCONFIG_MQTT_SUPPORT
+int __attribute__((weak)) Get_Mqtt_LocationId( char *pString);
+int __attribute__((weak)) Get_Mqtt_NodeId( char *pString);
+int __attribute__((weak)) Get_Mqtt_Broker( char *pString);
+int __attribute__((weak)) Get_Mqtt_Port( char *pString);
+#endif
 /*----------------------------------------------------------------------------*/
 /*                             External Functions                             */
 /*----------------------------------------------------------------------------*/
@@ -151,7 +157,7 @@ char *getFirmwareUpgradeEndTime(void)
 
 char *get_global_systemReadyTime(void)
 {
-    return NULL;
+    return global_systemReadyTime;
 }
 
 void set_global_systemReadyTime(char* systemReadyTime)
@@ -230,8 +236,32 @@ int Set_Supplementary_URL( char *name, char *pString)
     UNUSED(pString);
     return 0;
 }
-
-
+#ifdef WEBCONFIG_MQTT_SUPPORT
+int Get_Mqtt_LocationId( char *pString)
+{
+    WebcfgDebug("Inside Get_Mqtt_LocationId weak function.\n");
+    UNUSED(pString);
+    return 0;
+}
+int Get_Mqtt_NodeId( char *pString)
+{
+    WebcfgDebug("Inside Get_Mqtt_NodeId weak function.\n");
+    UNUSED(pString);
+    return 0;
+}
+int Get_Mqtt_Broker( char *pString)
+{
+    WebcfgDebug("Inside Get_Mqtt_Broker weak function.\n");
+    UNUSED(pString);
+    return 0;
+}
+int Get_Mqtt_Port( char *pString)
+{
+    WebcfgDebug("Inside Get_Mqtt_Port weak function.\n");
+    UNUSED(pString);
+    return 0;
+}
+#endif
 void setValues(const param_t paramVal[], const unsigned int paramCount, const int setType, char *transactionId, money_trace_spans *timeSpan, WDMP_STATUS *retStatus, int *ccspStatus)
 {
 #ifdef WEBCONFIG_BIN_SUPPORT

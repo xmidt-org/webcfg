@@ -1,6 +1,7 @@
 #ifndef _WEBCONFIG_LOG_H_
 #define _WEBCONFIG_LOG_H_
 
+#include <stdio.h>
 #include <stddef.h>
 #include <stdlib.h>
 #include <stdint.h>

@@ -20,6 +20,7 @@
 #include <errno.h>
 #include <math.h>
 #include <string.h>
+#include <sys/time.h>
 #include "webcfg.h"
 #include "webcfg_multipart.h"
 #include "webcfg_notify.h"

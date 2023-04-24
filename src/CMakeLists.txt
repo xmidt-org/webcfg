@@ -16,6 +16,15 @@ set(PROJ_WEBCFG webcfg)
 
 if (WEBCONFIG_BIN_SUPPORT)
 add_definitions(-DWEBCONFIG_BIN_SUPPORT)
+
+if (WEBCONFIG_MQTT_SUPPORT)
+add_definitions(-DWEBCONFIG_MQTT_SUPPORT)
+endif (WEBCONFIG_MQTT_SUPPORT)
+
+if (WEBCONFIG_HTTP_SUPPORT)
+add_definitions(-DWEBCONFIG_HTTP_SUPPORT)
+endif (WEBCONFIG_HTTP_SUPPORT)
+
 endif (WEBCONFIG_BIN_SUPPORT)
 
 if (FEATURE_SUPPORT_AKER)
@@ -60,9 +69,19 @@ endif()
 if (WEBCONFIG_BIN_SUPPORT)
 set(HEADERS ${HEADERS} webcfg_rbus.h)
 set(SOURCES ${SOURCES} main.c webcfg_rbus.c)
+
+if (WEBCONFIG_MQTT_SUPPORT)
+set(HEADERS ${HEADERS} webcfg_mqtt.h)
+set(SOURCES ${SOURCES} webcfg_mqtt.c)
+endif (WEBCONFIG_MQTT_SUPPORT)
+
 add_executable(webconfig ${SOURCES} ${HEADERS})
 set_property(TARGET webconfig PROPERTY C_STANDARD 99)
-set(COMMON_LIBS -lwrp-c -lpthread -lwdmp-c -lmsgpackc -ltrower-base64 -lm -lcjson -lrt -luuid -lcurl -lrbus)
+set(COMMON_LIBS -lwrp-c -lpthread -lwdmp-c -lmsgpackc -ltrower-base64 -lm -lcjson -lrt -luuid -lrbus)
+
+if ((NOT WEBCONFIG_MQTT_SUPPORT) OR (WEBCONFIG_HTTP_SUPPORT))
+set(COMMON_LIBS ${COMMON_LIBS} -lcurl)
+endif()
 
 if (NOT DEVICE_EXTENDER)
 set(COMMON_LIBS ${COMMON_LIBS} -lcimplog)

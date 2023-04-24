@@ -1,0 +1,67 @@
+/*
+ * If not stated otherwise in this file or this component's Licenses.txt file the
+ * following copyright and licenses apply:
+ *
+ * Copyright 2023 RDK Management
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+*/
+
+#ifndef _WEBCFG_MQTT_H_
+#define _WEBCFG_MQTT_H_
+
+#include <stdio.h>
+#include <stdbool.h>
+#include <uuid/uuid.h>
+#include <time.h>
+#include <wrp-c.h>
+#include <rbus/rbus.h>
+#include <rbus/rbus_object.h>
+#include <rbus/rbus_property.h>
+#include <rbus/rbus_value.h>
+#include "webcfg.h"
+#include "webcfg_log.h"
+#include "webcfg_multipart.h"
+#include "webcfg_metadata.h"
+#include "webcfg_auth.h"
+#include "webcfg_db.h"
+#include "webcfg_generic.h"
+#include "webcfg_auth.h"
+
+#define MAX_MQTT_LEN         128
+#define MQTT_PUBLISH_NOTIFY_TOPIC_PREFIX "x/fr/poke/chi/"
+
+#define MQTTCM_COMPONENT_NAME             "mqttCM"
+
+#define WEBCFG_MQTT_CONNECT_PARAM         "Device.X_RDK_MQTT.Connect"
+#define WEBCFG_MQTT_SUBSCRIBE_PARAM       "Device.X_RDK_MQTT.Subscribe"
+#define WEBCFG_MQTT_PublishGET_PARAM      "Device.X_RDK_MQTT.Webconfig.PublishGET"
+#define WEBCFG_MQTT_PublishNOTIFY_PARAM   "Device.X_RDK_MQTT.WebConfig.PublishNotification"
+
+#define WEBCFG_ONCONNECT_CALLBACK    "Device.X_RDK_MQTT.Webconfig.OnConnectCallback"
+#define WEBCFG_SUBSCRIBE_CALLBACK    "Device.X_RDK_MQTT.Webconfig.OnSubcribeCallback"
+#define WEBCFG_ONMESSAGE_CALLBACK    "Device.X_RDK_MQTT.Webconfig.OnMessageCallback"
+#define WEBCFG_ONPUBLISH_CALLBACK    "Device.X_RDK_MQTT.Webconfig.OnPublishCallback"
+
+void publish_notify_mqtt(void *payload, ssize_t len, char * dest);
+char * createMqttPubHeader(char * payload, char * dest, ssize_t * payload_len);
+int createMqttHeader(char **header_list);
+int triggerBootupSync();
+int processPayload(char * data, int dataSize);
+int sendNotification_mqtt(char *payload, char *destination, wrp_msg_t *notif_wrp_msg, void *msg_bytes);
+void* WebconfigMqttTask(void *status);
+void initWebconfigMqttTask(unsigned long status);
+rbusError_t setBootupSyncHeader(char *publishGetVal);
+rbusError_t mqttSubscribeInit();
+int setMqttConnectRequest();
+#endif

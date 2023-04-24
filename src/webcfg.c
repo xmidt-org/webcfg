@@ -35,6 +35,10 @@
 #include "webcfg_blob.h"
 #include "webcfg_timer.h"
 
+#ifdef WEBCONFIG_MQTT_SUPPORT
+#include "webcfg_mqtt.h"
+#endif
+
 #ifdef FEATURE_SUPPORT_AKER
 #include "webcfg_aker.h"
 #endif
@@ -110,6 +114,7 @@ void *WebConfigMultipartTask(void *status)
 	int retry_flag = 0;
 	int maintenance_doc_sync = 0;
 	char *syncDoc = NULL;
+
 	int value = 0;
 	int wait_flag = 1;
 	int maintenance_count = 0;
@@ -131,8 +136,10 @@ void *WebConfigMultipartTask(void *status)
 	initDB(WEBCFG_DB_FILE);
 
 	//To disable supplementary sync for RDKV platforms
-#if !defined(RDK_PERSISTENT_PATH_VIDEO)
+#if (!defined(RDK_PERSISTENT_PATH_VIDEO) && !defined(WEBCONFIG_MQTT_SUPPORT)) || (defined (WEBCONFIG_HTTP_SUPPORT))
+
 	initMaintenanceTimer();
+#endif
 
 	//The event handler intialisation is disabled in RDKV platforms as blob type is not applicable
 	if(get_global_eventFlag() == 0)
@@ -142,7 +149,8 @@ void *WebConfigMultipartTask(void *status)
 		processWebcfgEvents();
 		set_global_eventFlag();
 	}
-#endif
+
+#if !defined (WEBCONFIG_MQTT_SUPPORT) || defined (WEBCONFIG_HTTP_SUPPORT)
 	//For Primary sync set flag to 0
 	set_global_supplementarySync(0);
 	WebcfgInfo("Webconfig is ready to process requests. set webcfgReady to true\n");
@@ -168,6 +176,7 @@ void *WebConfigMultipartTask(void *status)
 
 	//Resetting the supplementary sync
 	set_global_supplementarySync(0);
+#endif
 	set_bootSync(false);
 
 	while(1)
@@ -250,7 +259,7 @@ void *WebConfigMultipartTask(void *status)
 		if ( retry_flag == 0)
 		{
 		//To disable supplementary sync for RDKV platforms
-		#if !defined(RDK_PERSISTENT_PATH_VIDEO)
+		#if (!defined(RDK_PERSISTENT_PATH_VIDEO) && !defined(WEBCONFIG_MQTT_SUPPORT)) || (defined (WEBCONFIG_HTTP_SUPPORT))
 			ts.tv_sec += getMaintenanceSyncSeconds(maintenance_count);
 			maintenance_doc_sync = 1;
 			WebcfgInfo("The Maintenance Sync triggers at %s\n", printTime((long long)ts.tv_sec));
@@ -376,6 +385,11 @@ void *WebConfigMultipartTask(void *status)
 	pthread_cond_signal (get_global_notify_con());
 	pthread_mutex_unlock (get_global_notify_mut());
 
+/*#ifdef WEBCONFIG_MQTT_SUPPORT
+	pthread_mutex_lock (get_global_mqtt_retry_mut());
+	pthread_cond_signal (get_global_mqtt_retry_cond());
+	pthread_mutex_unlock (get_global_mqtt_retry_mut());
+#endif*/ //TODO: do we need this cond signal .check this
 
 	if(get_global_eventFlag())
 	{
@@ -555,6 +569,14 @@ void processWebconfgSync(int status, char* docname)
 		}
 		#endif
 
+		/*if(get_global_supplementarySync() == 0)
+		{
+			WebcfgInfo("webcfg_mqtt_init\n");
+			webcfg_mqtt_init();
+			WebcfgInfo("webcfg_mqtt_init done.\n");
+		}
+		return;*/
+
 		if(retry_count >3)
 		{
 			WebcfgInfo("Webcfg curl retry to server has reached max limit. Exiting.\n");
@@ -586,6 +608,7 @@ void processWebconfgSync(int status, char* docname)
 		}
 	}
 	WebcfgDebug("========= End of processWebconfgSync =============\n");
+
 	return;
 }
 

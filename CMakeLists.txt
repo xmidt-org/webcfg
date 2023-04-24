@@ -53,6 +53,7 @@ include_directories(${INCLUDE_DIR}/nanomsg
 endif (FEATURE_SUPPORT_AKER)
 
 if (WEBCONFIG_BIN_SUPPORT)
+
 include_directories(${INCLUDE_DIR}/rbus
 		    ${INCLUDE_DIR}/rtmessage
 )
@@ -124,6 +125,7 @@ ExternalProject_Add(cJSON
 add_library(libcJSON STATIC IMPORTED)
 add_dependencies(libcJSON cJSON)
 
+if ((NOT WEBCONFIG_MQTT_SUPPORT) OR (WEBCONFIG_HTTP_SUPPORT))
 # curl external dependency
 #-------------------------------------------------------------------------------
 ExternalProject_Add(curl
@@ -134,6 +136,7 @@ ExternalProject_Add(curl
 )
 add_library(libcurl STATIC SHARED IMPORTED)
 add_dependencies(libcurl curl)
+endif()
 #find_library( LIB_CURL,
 #              NAMES curl
 #              PATHS /usr/lib64 )
@@ -187,6 +190,7 @@ add_dependencies(liblibparodus libparodus)
 endif (FEATURE_SUPPORT_AKER)
 
 if (WEBCONFIG_BIN_SUPPORT)
+
 # rbus external dependency
 #-------------------------------------------------------------------------------
 ExternalProject_Add(rbus
