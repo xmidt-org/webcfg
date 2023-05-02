@@ -165,13 +165,24 @@ int checkMaintenanceTimer()
 
 	long long cur_time = 0;
 	long cur_time_in_sec = 0;
+	char * timeOffset = NULL;
+	long tmOffset = 0;
 
 	clock_gettime(CLOCK_REALTIME, &rt);
-	cur_time = rt.tv_sec;
+
+	timeOffset = getTimeOffset();
+
+	if( timeOffset != NULL)
+	{
+		tmOffset = atol(timeOffset);
+		WebcfgInfo("The offset calculated in checkMaintenanceTimer is %ld\n", tmOffset);
+	}
+
+	cur_time = rt.tv_sec + tmOffset;
 	cur_time_in_sec = getTimeInSeconds(cur_time);
 
-	WebcfgDebug("The current time in checkMaintenanceTimer is %lld at %s\n",cur_time, printTime(cur_time));
-	WebcfgDebug("The random timer in checkMaintenanceTimer is %ld\n",get_global_maintenance_time());
+	WebcfgInfo("The current time in checkMaintenanceTimer is %lld at %s\n",cur_time, printTime(cur_time));
+	WebcfgInfo("The random timer in checkMaintenanceTimer is %ld\n",get_global_maintenance_time());
 
 	if(cur_time_in_sec >= get_global_maintenance_time())
 	{
@@ -190,15 +201,26 @@ int getMaintenanceSyncSeconds(int maintenance_count)
 	long current_time_in_sec = 0;
 	long sec_to_12 = 0;
 	long long current_time = 0;
+	char * timeOffset = NULL;
+	long tmOffset = 0;
+
 	clock_gettime(CLOCK_REALTIME, &ct);
 
-	current_time = ct.tv_sec;
+	timeOffset = getTimeOffset();
+
+	if( timeOffset != NULL)
+	{
+		tmOffset = atol(timeOffset);
+		WebcfgInfo("The offset calculated in getMaintenanceSyncSeconds is %ld\n", tmOffset);
+	}
+
+	current_time = ct.tv_sec + tmOffset;
 	current_time_in_sec = getTimeInSeconds(current_time);
 
 	maintenance_secs =  get_global_maintenance_time() - current_time_in_sec;
 
-	WebcfgDebug("The current time in maintenanceSyncSeconds is %lld at %s\n",current_time, printTime(current_time));
-	WebcfgDebug("The random timer in maintenanceSyncSeconds is %ld\n",get_global_maintenance_time());
+	WebcfgInfo("The current time in maintenanceSyncSeconds is %lld at %s\n",current_time, printTime(current_time));
+	WebcfgInfo("The random timer in maintenanceSyncSeconds is %ld\n",get_global_maintenance_time());
 
 	// to shift maintenance sync to next day when already sync happened
 	if (maintenance_secs < 0 || maintenance_count == 1 )
