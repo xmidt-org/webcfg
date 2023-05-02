@@ -1599,7 +1599,7 @@ void getValues_rbus(const char *paramName[], const unsigned int paramCount, int 
 
 	for(cnt = 0; cnt < paramCount; cnt++)
 	{
-		WebcfgDebug("rbus_getExt paramName[%d] : %s paramCount %d\n",cnt,paramName[cnt], paramCount);
+		WebcfgInfo("rbus_getExt paramName[%d] : %s paramCount %d\n",cnt,paramName[cnt], paramCount);
 	}
 
 	WebcfgDebug("setValues_rbus index %d\n", index);
