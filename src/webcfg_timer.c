@@ -153,7 +153,7 @@ void initMaintenanceTimer()
 		time_val = time_val + 86400;         //To set a time in next day
 	}
 
-	WebcfgDebug("The value of maintenance_time_val is %ld\n",time_val);
+	WebcfgInfo("The value of maintenance_time_val is %ld\n",time_val);
 	set_global_maintenance_time(time_val);
 
 }
@@ -229,7 +229,7 @@ int getMaintenanceSyncSeconds(int maintenance_count)
 		maintenance_secs = sec_to_12 + get_global_maintenance_time();//Adding with Maintenance wait time for nextday trigger
 	}
 
-	WebcfgDebug("The maintenance Seconds is %ld\n", maintenance_secs);
+	WebcfgInfo("The maintenance Seconds is %ld\n", maintenance_secs);
 
 	return maintenance_secs;
 }
