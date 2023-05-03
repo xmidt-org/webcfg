@@ -153,7 +153,7 @@ void initMaintenanceTimer()
 		time_val = time_val + 86400;         //To set a time in next day
 	}
 
-	WebcfgInfo("The value of maintenance_time_val is %ld\n",time_val);
+	WebcfgDebug("The value of maintenance_time_val is %ld\n",time_val);
 	set_global_maintenance_time(time_val);
 
 }
@@ -175,14 +175,14 @@ int checkMaintenanceTimer()
 	if( timeOffset != NULL)
 	{
 		tmOffset = atol(timeOffset);
-		WebcfgInfo("The offset calculated in checkMaintenanceTimer is %ld\n", tmOffset);
+		WebcfgDebug("The offset calculated in checkMaintenanceTimer is %ld\n", tmOffset);
 	}
 
 	cur_time = rt.tv_sec + tmOffset;
 	cur_time_in_sec = getTimeInSeconds(cur_time);
 
-	WebcfgInfo("The current time in checkMaintenanceTimer is %lld at %s\n",cur_time, printTime(cur_time));
-	WebcfgInfo("The random timer in checkMaintenanceTimer is %ld\n",get_global_maintenance_time());
+	WebcfgDebug("The current time in checkMaintenanceTimer is %lld at %s\n",cur_time, printTime(cur_time));
+	WebcfgDebug("The random timer in checkMaintenanceTimer is %ld\n",get_global_maintenance_time());
 
 	if(cur_time_in_sec >= get_global_maintenance_time())
 	{
@@ -211,7 +211,7 @@ int getMaintenanceSyncSeconds(int maintenance_count)
 	if( timeOffset != NULL)
 	{
 		tmOffset = atol(timeOffset);
-		WebcfgInfo("The offset calculated in getMaintenanceSyncSeconds is %ld\n", tmOffset);
+		WebcfgDebug("The offset calculated in getMaintenanceSyncSeconds is %ld\n", tmOffset);
 	}
 
 	current_time = ct.tv_sec + tmOffset;
@@ -219,8 +219,8 @@ int getMaintenanceSyncSeconds(int maintenance_count)
 
 	maintenance_secs =  get_global_maintenance_time() - current_time_in_sec;
 
-	WebcfgInfo("The current time in maintenanceSyncSeconds is %lld at %s\n",current_time, printTime(current_time));
-	WebcfgInfo("The random timer in maintenanceSyncSeconds is %ld\n",get_global_maintenance_time());
+	WebcfgDebug("The current time in maintenanceSyncSeconds is %lld at %s\n",current_time, printTime(current_time));
+	WebcfgDebug("The random timer in maintenanceSyncSeconds is %ld\n",get_global_maintenance_time());
 
 	// to shift maintenance sync to next day when already sync happened
 	if (maintenance_secs < 0 || maintenance_count == 1 )
@@ -229,7 +229,7 @@ int getMaintenanceSyncSeconds(int maintenance_count)
 		maintenance_secs = sec_to_12 + get_global_maintenance_time();//Adding with Maintenance wait time for nextday trigger
 	}
 
-	WebcfgInfo("The maintenance Seconds is %ld\n", maintenance_secs);
+	WebcfgDebug("The maintenance Seconds is %ld\n", maintenance_secs);
 
 	return maintenance_secs;
 }
