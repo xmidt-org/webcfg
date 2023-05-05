@@ -2036,9 +2036,6 @@ void sendNotification_rbus(char *payload, char *source, char *destination)
 			}
 
 			msg_len = wrp_struct_to (notif_wrp_msg, WRP_BYTES, &msg_bytes);
-<<<<<<< HEAD
-			if(msg_len>=0)
-=======
 
 		#ifdef WEBCONFIG_MQTT_SUPPORT
 			int ret = sendNotification_mqtt(payload, destination, notif_wrp_msg, msg_bytes);
@@ -2059,7 +2056,6 @@ void sendNotification_rbus(char *payload, char *source, char *destination)
 				waitForUpstreamEventSubscribe(30);
 	    		}
 			if(subscribed)
->>>>>>> upstream/mosq_connect
 			{
 				// 30s wait interval for subscription 	
 				if(!subscribed)
