@@ -165,18 +165,12 @@ int checkMaintenanceTimer()
 
 	long long cur_time = 0;
 	long cur_time_in_sec = 0;
-	char * timeOffset = NULL;
 	long tmOffset = 0;
 
 	clock_gettime(CLOCK_REALTIME, &rt);
 
-	timeOffset = getTimeOffset();
-
-	if( timeOffset != NULL)
-	{
-		tmOffset = atol(timeOffset);
-		WebcfgDebug("The offset calculated in checkMaintenanceTimer is %ld\n", tmOffset);
-	}
+	tmOffset = getTimeOffset();
+	WebcfgDebug("The offset obtained from getTimeOffset in checkMaintenanceTimer is %ld\n", tmOffset);
 
 	cur_time = rt.tv_sec + tmOffset;
 	cur_time_in_sec = getTimeInSeconds(cur_time);
@@ -201,18 +195,12 @@ int getMaintenanceSyncSeconds(int maintenance_count)
 	long current_time_in_sec = 0;
 	long sec_to_12 = 0;
 	long long current_time = 0;
-	char * timeOffset = NULL;
 	long tmOffset = 0;
 
 	clock_gettime(CLOCK_REALTIME, &ct);
 
-	timeOffset = getTimeOffset();
-
-	if( timeOffset != NULL)
-	{
-		tmOffset = atol(timeOffset);
-		WebcfgDebug("The offset calculated in getMaintenanceSyncSeconds is %ld\n", tmOffset);
-	}
+	tmOffset = getTimeOffset();
+	WebcfgDebug("The offset obtained from getTimeOffset in getMaintenanceSyncSeconds is %ld\n", tmOffset);
 
 	current_time = ct.tv_sec + tmOffset;
 	current_time_in_sec = getTimeInSeconds(current_time);
