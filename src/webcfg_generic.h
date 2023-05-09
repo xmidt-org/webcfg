@@ -50,7 +50,7 @@ char* get_deviceMAC();
 char * getRebootReason();
 char * getFirmwareUpgradeStartTime();
 char * getFirmwareUpgradeEndTime();
-char *getTimeOffset();
+long getTimeOffset();
 /* Getter function to return systemReadyTime in UTC format */
 char *get_global_systemReadyTime();
 void set_global_systemReadyTime(char* systemReadyTime);

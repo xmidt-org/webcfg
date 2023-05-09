@@ -250,16 +250,9 @@ void *WebConfigMultipartTask(void *status)
 		//To disable supplementary sync for RDKV platforms
 		#if !defined(RDK_PERSISTENT_PATH_VIDEO)
 
-			char * timeOffset = NULL;
 			long tmOffset = 0;
-
-			timeOffset = getTimeOffset();
-
-			if( timeOffset != NULL)
-			{
-				tmOffset = atol(timeOffset);
-				WebcfgDebug("The offset calculated in main loop is %ld\n", tmOffset);
-			}
+			tmOffset = getTimeOffset();
+			WebcfgDebug("The offset obtained from getTimeOffset is %ld\n", tmOffset);
 
 			WebcfgDebug("Before setting offset in main loop %s\n", printTime((long long)ts.tv_sec));
 			ts.tv_sec += getMaintenanceSyncSeconds(maintenance_count);
