@@ -51,7 +51,7 @@ char *__attribute__((weak)) get_deviceMAC(void);
 char *__attribute__((weak)) get_deviceWanMAC(void);
 char *__attribute__((weak)) getFirmwareUpgradeStartTime(void);
 char *__attribute__((weak)) getFirmwareUpgradeEndTime(void);
-char *__attribute__((weak)) getTimeOffset(void);
+long __attribute__((weak)) getTimeOffset(void);
 #endif
 char *__attribute__((weak)) get_global_systemReadyTime(void);
 int __attribute__((weak)) setForceSync(char* pString, char *transactionId,int *session_status);
@@ -149,9 +149,9 @@ char *getFirmwareUpgradeEndTime(void)
     return NULL;
 }
 
-char *getTimeOffset(void)
+long getTimeOffset(void)
 {
-    return NULL;
+    return 0;
 }
 #endif
 
