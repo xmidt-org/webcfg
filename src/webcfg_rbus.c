@@ -2057,32 +2057,44 @@ void sendNotification_rbus(char *payload, char *source, char *destination)
 	    		}
 			if(subscribed)
 			{
-				rbusValue_t value;
-				rbusObject_t data;
-				rbusValue_Init(&value);
-				rbusValue_SetBytes(value, msg_bytes, msg_len);
-				rbusObject_Init(&data, NULL);
-				rbusObject_SetValue(data, "value", value);
-				rbusEvent_t event;
-				event.name = WEBCFG_UPSTREAM_EVENT;
-				event.data = data;
-				event.type = RBUS_EVENT_GENERAL;
-				rc = rbusEvent_Publish(rbus_handle, &event);
-				rbusValue_Release(value);
-				rbusObject_Release(data);
-				if(rc != RBUS_ERROR_SUCCESS)
-					WebcfgError("Failed to send Notification : %d, %s\n", rc, rbusError_ToString(rc));
+				// 30s wait interval for subscription 	
+				if(!subscribed)
+				{
+					waitForUpstreamEventSubscribe(30);
+				}
+				if(subscribed)
+				{
+					rbusValue_t value;
+					rbusObject_t data;
+					rbusValue_Init(&value);
+					rbusValue_SetBytes(value, msg_bytes, msg_len);
+					rbusObject_Init(&data, NULL);
+					rbusObject_SetValue(data, "value", value);
+					rbusEvent_t event;
+					event.name = WEBCFG_UPSTREAM_EVENT;
+					event.data = data;
+					event.type = RBUS_EVENT_GENERAL;
+					rc = rbusEvent_Publish(rbus_handle, &event);
+					rbusValue_Release(value);
+					rbusObject_Release(data);
+					if(rc != RBUS_ERROR_SUCCESS)
+						WebcfgError("Failed to send Notification : %d, %s\n", rc, rbusError_ToString(rc));
+					else
+						WebcfgInfo("Notification successfully sent to %s\n", WEBCFG_UPSTREAM_EVENT);
+				}
 				else
-					WebcfgInfo("Notification successfully sent to %s\n", WEBCFG_UPSTREAM_EVENT);
-			}
-			else
-				WebcfgError("Failed to send Notification as no subscription\n");
-
-			wrp_free_struct (notif_wrp_msg );
+					WebcfgError("Failed to send Notification as no subscription\n");
+	
+				wrp_free_struct (notif_wrp_msg );
                         
-                        if(msg_bytes)
-			{
-				WEBCFG_FREE(msg_bytes);
+        	                if(msg_bytes)
+				{
+					WEBCFG_FREE(msg_bytes);
+				}
+			}
+			else{
+				WebcfgError("msg_len is less than 0\n");
+                                wrp_free_struct (notif_wrp_msg );
 			}
 		}
 	}
