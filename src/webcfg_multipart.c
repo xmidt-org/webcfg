@@ -70,7 +70,7 @@ struct token_data {
 /*----------------------------------------------------------------------------*/
 static char g_ETAG[64]={'\0'};
 char webpa_aut_token[4096]={'\0'};
-#if !defined (WEBCONFIG_MQTT_SUPPORT) || defined (WEBCONFIG_HTTP_SUPPORT)
+#if !defined (WEBCONFIG_MQTT_SUPPORT) || defined (WEBCONFIG_HTTP_SUPPORT) || defined (WAN_FAILOVER_SUPPORTED)
 static char g_interface[32]={'\0'};
 #endif
 char g_systemReadyTime[64]={'\0'};
