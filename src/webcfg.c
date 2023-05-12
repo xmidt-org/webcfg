@@ -254,12 +254,12 @@ void *WebConfigMultipartTask(void *status)
 
 			long tmOffset = 0;
 			tmOffset = getTimeOffset();
-			WebcfgDebug("The offset obtained from getTimeOffset is %ld\n", tmOffset);
+			WebcfgInfo("The offset obtained from getTimeOffset is %ld\n", tmOffset);
 
 			WebcfgDebug("Before setting offset in main loop %s\n", printTime((long long)ts.tv_sec));
 			ts.tv_sec += getMaintenanceSyncSeconds(maintenance_count);
 			maintenance_doc_sync = 1;
-			WebcfgInfo("The Maintenance Sync triggers at %s\n", printTime(((long long)ts.tv_sec) + (tmOffset)));
+			WebcfgInfo("The Maintenance Sync triggers at %s LTime\n", printTime(((long long)ts.tv_sec) + (tmOffset)));
 		#else
 			maintenance_doc_sync = 0;
 			maintenance_count = 0;
