@@ -388,7 +388,7 @@ rbusError_t setBootupSyncHeader(char *publishGetVal)
 	rbusObject_SetValue(inParams, "0", value);
 	rbusValue_Release(value);
 
-	ret = rbusMethod_Invoke(rbus_handle, WEBCFG_MQTT_PublishGET_PARAM, inParams, &outParams);
+	ret = rbusMethod_Invoke(rbus_handle, WEBCFG_MQTT_PUBLISH_PARAM, inParams, &outParams);
 
 	rbusObject_Release(inParams);
 
@@ -1093,7 +1093,7 @@ rbusError_t setPublishNotification(char *publishNotifyVal)
 	rbusObject_SetValue(inParams, "0", value);
 	rbusValue_Release(value);
 
-	ret = rbusMethod_Invoke(rbus_handle, WEBCFG_MQTT_PublishGET_PARAM, inParams, &outParams);
+	ret = rbusMethod_Invoke(rbus_handle, WEBCFG_MQTT_PUBLISH_PARAM, inParams, &outParams);
 	rbusObject_Release(inParams);
 
 	if (ret)

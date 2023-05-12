@@ -46,8 +46,7 @@
 
 #define WEBCFG_MQTT_CONNECT_PARAM         "Device.X_RDK_MQTT.Connect"
 #define WEBCFG_MQTT_SUBSCRIBE_PARAM       "Device.X_RDK_MQTT.Subscribe"
-#define WEBCFG_MQTT_PublishGET_PARAM      "Device.X_RDK_MQTT.Webconfig.PublishGET"
-#define WEBCFG_MQTT_PublishNOTIFY_PARAM   "Device.X_RDK_MQTT.WebConfig.PublishNotification"
+#define WEBCFG_MQTT_PUBLISH_PARAM         "Device.X_RDK_MQTT.Publish"
 
 #define WEBCFG_ONCONNECT_CALLBACK    "Device.X_RDK_MQTT.Webconfig.OnConnectCallback"
 #define WEBCFG_SUBSCRIBE_CALLBACK    "Device.X_RDK_MQTT.Webconfig.OnSubcribeCallback"
