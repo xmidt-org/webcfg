@@ -2180,7 +2180,7 @@ void rbus_log_handler(
     int threadId,
     char* message)
 {
-    WebcfgDebug("threadId %d\n", threadId);
+    //WebcfgDebug("threadId %d\n", threadId);
     const char* slevel = "";
 
     if(level < RBUS_LOG_ERROR)
