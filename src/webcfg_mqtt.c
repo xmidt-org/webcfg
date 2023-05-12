@@ -62,8 +62,6 @@ static void webcfgOnPublishCallbackHandler(
     rbusEvent_t const* event,
     rbusEventSubscription_t* subscription);
 
-int mqttComponentCheck();
-
 void initWebconfigMqttTask(unsigned long status)
 {
 	int err = 0;
@@ -97,10 +95,38 @@ void* WebconfigMqttTask(void *status)
 		return NULL;
 	}
 
-	while(mqttComponentCheck() == 1)
+	//Retry Backoff count shall start at c=2 & calculate 2^c - 1.
+	int c =2;
+        max_retry_sleep = (int) pow(2, backoff_max_time) -1;
+        WebcfgInfo("max_retry_sleep is %d\n", max_retry_sleep );
+
+	while(1)
 	{
-		WebcfgInfo("Waiting for mqttCM component\n");
-		sleep(5);
+		if(backoffRetryTime < max_retry_sleep)
+		{
+			backoffRetryTime = (int) pow(2, c) -1;
+		}
+
+		WebcfgInfo("New backoffRetryTime value calculated as %d seconds\n", backoffRetryTime);
+		connStatus = getMqttCMConnStatus();
+		if(connStatus)
+		{
+			WebcfgInfo("MQTTCM broker is connected, proceed to subscribe\n");
+			break;
+		}
+		else
+		{
+			WebcfgError("MQTTCM broker is not connected, waiting..\n");
+			sleep(backoffRetryTime);
+			c++;
+
+			if(backoffRetryTime == max_retry_sleep)
+			{
+				c = 2;
+				backoffRetryTime = 0;
+				WebcfgInfo("backoffRetryTime reached max value, reseting to initial value\n");
+			}
+		}
 	}
 
 	WebcfgInfo("rbus event subscribe to mqtt subscribe callback\n");
@@ -126,93 +152,14 @@ void* WebconfigMqttTask(void *status)
 		WebcfgError("consumer: rbusEvent_Subscribe for %s failed: %d\n", WEBCFG_ONPUBLISH_CALLBACK, rc);
 		return NULL;
 	}
-
-	//Retry Backoff count shall start at c=2 & calculate 2^c - 1.
-	int c =2;
-        max_retry_sleep = (int) pow(2, backoff_max_time) -1;
-        WebcfgInfo("max_retry_sleep is %d\n", max_retry_sleep );
-
-	while(1)
+	webcfg_onconnect_flag = 1;
+	if(!subscribeFlag)
 	{
-		if(backoffRetryTime < max_retry_sleep)
-		{
-			backoffRetryTime = (int) pow(2, c) -1;
-		}
-
-		WebcfgInfo("New backoffRetryTime value calculated as %d seconds\n", backoffRetryTime);
-		connStatus = getMqttCMConnStatus();
-		if(connStatus)
-		{
-			WebcfgInfo("MQTTCM broker is connected, proceed to subscribe\n");
-			webcfg_onconnect_flag = 1;
-			if(!subscribeFlag)
-			{
-				WebcfgInfo("set mqtt subscribe request to mqtt CM\n");
-				mqttSubscribeInit();
-			}
-			break;
-		}
-		else
-		{
-			WebcfgError("MQTTCM broker is not connected, waiting..\n");
-			sleep(backoffRetryTime);
-			c++;
-
-			if(backoffRetryTime == max_retry_sleep)
-			{
-				c = 2;
-				backoffRetryTime = 0;
-				WebcfgInfo("backoffRetryTime reached max value, reseting to initial value\n");
-			}
-		}
+		WebcfgInfo("set mqtt subscribe request to mqtt CM\n");
+		mqttSubscribeInit();
 	}
+
 	return NULL;
-}
-
-int mqttComponentCheck()
-{
-	rbusError_t rc = RBUS_ERROR_SUCCESS;
-	rbusHandle_t rbus_handle;
-
-	int i, compCount = 0;
-	char **pCompName;
-	char const* pElementNames[1] = {0};
-
-	pElementNames[0] = strdup(MQTTCM_COMPONENT_NAME);
-
-	rbus_handle = get_global_rbus_handle();
-
-	if(!rbus_handle)
-	{
-		WebcfgError("mqttComponentCheck failed as rbus_handle is empty\n");
-		return 1;
-	}
-
-	rc = rbus_discoverComponentName (rbus_handle, 1, pElementNames, &compCount, &pCompName);
-
-	if(RBUS_ERROR_SUCCESS == rc)
-	{
-		if(compCount)
-		{
-			for (i = 0; i < compCount; i++)
-			{
-				WebcfgInfo ("%s component is found. Proceeding further..\n", pCompName[i]);
-				free(pCompName[i]);
-			}
-			free(pCompName);
-		}
-		else
-		{
-			WebcfgError("mqttCM component is not found\n");
-			return 1;
-		}
-	}
-	else
-	{
-		WebcfgError("Failed to discover components. Error Code = %d\n", rc);
-		return 1;
-	}
-	return 0;
 }
 
 //To fetch mqttcm broker connection status at bootup.
