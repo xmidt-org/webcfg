@@ -259,7 +259,8 @@ void *WebConfigMultipartTask(void *status)
 			WebcfgDebug("Before setting offset in main loop %s\n", printTime((long long)ts.tv_sec));
 			ts.tv_sec += getMaintenanceSyncSeconds(maintenance_count);
 			maintenance_doc_sync = 1;
-			WebcfgInfo("The Maintenance Sync triggers at %s LTime\n", printTime(((long long)ts.tv_sec) + (tmOffset)));
+			WebcfgInfo("The Maintenance Sync triggers at %s in LTime\n", printTime(((long long)ts.tv_sec) + (tmOffset)));
+			WebcfgInfo("Maintenance sync start time in UTC is %s\n", printTime((long long)ts.tv_sec));
 		#else
 			maintenance_doc_sync = 0;
 			maintenance_count = 0;
