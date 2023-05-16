@@ -24,6 +24,7 @@
 #include <stdbool.h>
 #include <uuid/uuid.h>
 #include <time.h>
+#include <math.h>
 #include <wrp-c.h>
 #include <rbus/rbus.h>
 #include <rbus/rbus_object.h>
@@ -42,10 +43,10 @@
 #define MQTT_PUBLISH_GET_TOPIC_PREFIX "x/fr/get/chi/"
 #define MQTT_PUBLISH_NOTIFY_TOPIC_PREFIX "x/fr/poke/chi/"
 
-#define MQTTCM_COMPONENT_NAME             "mqttCM"
+#define MQTTCM_COMPONENT_NAME             "mqttConnManager"
 
-#define WEBCFG_MQTT_CONNECT_PARAM         "Device.X_RDK_MQTT.Connect"
-#define WEBCFG_MQTT_SUBSCRIBE_PARAM       "Device.X_RDK_MQTT.Subscribe"
+#define MQTT_CONNSTATUS_PARAM	    "Device.X_RDK_MQTT.ConnectionStatus"
+#define MQTT_SUBSCRIBE_PARAM       "Device.X_RDK_MQTT.Subscribe"
 #define WEBCFG_MQTT_PUBLISH_PARAM         "Device.X_RDK_MQTT.Publish"
 
 #define WEBCFG_ONCONNECT_CALLBACK    "Device.X_RDK_MQTT.Webconfig.OnConnectCallback"
@@ -63,5 +64,5 @@ void* WebconfigMqttTask(void *status);
 void initWebconfigMqttTask(unsigned long status);
 rbusError_t setBootupSyncHeader(char *publishGetVal);
 rbusError_t mqttSubscribeInit();
-int setMqttConnectRequest();
+int getMqttCMConnStatus();
 #endif
