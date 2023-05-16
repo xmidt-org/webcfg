@@ -47,6 +47,7 @@ char *__attribute__((weak)) getConnClientParamName(void);
 char *__attribute__((weak)) getFirmwareVersion(void);
 char *__attribute__((weak)) get_deviceMAC(void);
 char *__attribute__((weak)) get_deviceWanMAC(void);
+long __attribute__((weak)) getTimeOffset(void);
 char *__attribute__((weak)) getFirmwareUpgradeStartTime(void);
 char *__attribute__((weak)) getFirmwareUpgradeEndTime(void);
 char *__attribute__((weak)) get_global_systemReadyTime(void);
@@ -68,6 +69,11 @@ int __attribute__((weak)) rbus_waitUntilSystemReady();
 /*----------------------------------------------------------------------------*/
 /*                             External Functions                             */
 /*----------------------------------------------------------------------------*/
+
+long getTimeOffset(void)
+{
+    return 0;
+}
 
 char *getDeviceBootTime(void)
 {
