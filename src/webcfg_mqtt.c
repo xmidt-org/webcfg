@@ -330,18 +330,18 @@ rbusError_t setBootupSyncHeader(char *publishGetVal)
 	rbusObject_Init(&inParams, NULL);
 	
 	rbusValue_Init(&value);
-	rbusValue_SetString(value, "payload");
-	rbusObject_SetValue(inParams, publishGetVal, value);
+	rbusValue_SetString(value, publishGetVal);
+	rbusObject_SetValue(inParams, "payload", value);
 	rbusValue_Release(value);
 
 	rbusValue_Init(&value);
-	rbusValue_SetString(value, "topic");
-	rbusObject_SetValue(inParams, publish_get_topic, value);
+	rbusValue_SetString(value, publish_get_topic);
+	rbusObject_SetValue(inParams, "topic", value);
 	rbusValue_Release(value);
 
 	rbusValue_Init(&value);
-	rbusValue_SetString(value, "qos");
-	rbusObject_SetValue(inParams, "0", value);
+	rbusValue_SetString(value, "0");
+	rbusObject_SetValue(inParams, "qos", value);
 	rbusValue_Release(value);
 
 	ret = rbusMethod_Invoke(rbus_handle, WEBCFG_MQTT_PUBLISH_PARAM, inParams, &outParams);
@@ -1035,18 +1035,18 @@ rbusError_t setPublishNotification(char *publishNotifyVal)
 	rbusObject_Init(&inParams, NULL);
 
 	rbusValue_Init(&value);
-	rbusValue_SetString(value, "payload");
-	rbusObject_SetValue(inParams, publishNotifyVal, value);
+	rbusValue_SetString(value, publishNotifyVal);
+	rbusObject_SetValue(inParams, "payload", value);
 	rbusValue_Release(value);
 
 	rbusValue_Init(&value);
-	rbusValue_SetString(value, "topic");
-	rbusObject_SetValue(inParams, publish_get_topic, value);
+	rbusValue_SetString(value, publish_get_topic);
+	rbusObject_SetValue(inParams, "topic", value);
 	rbusValue_Release(value);
 
 	rbusValue_Init(&value);
-	rbusValue_SetString(value, "qos");
-	rbusObject_SetValue(inParams, "0", value);
+	rbusValue_SetString(value, "0");
+	rbusObject_SetValue(inParams, "qos", value);
 	rbusValue_Release(value);
 
 	ret = rbusMethod_Invoke(rbus_handle, WEBCFG_MQTT_PUBLISH_PARAM, inParams, &outParams);
