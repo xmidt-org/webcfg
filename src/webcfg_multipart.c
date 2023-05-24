@@ -205,6 +205,7 @@ WEBCFG_STATUS webcfg_http_request(char **configData, int r_count, int status, lo
 	char *ct = NULL;
 	char *webConfigURL = NULL;
 	char *transID = NULL;
+	char *subdoclist = NULL;
 	char docList[512] = {'\0'};
 	char configURL[256] = { 0 };
 	char c[] = "{mac}";
@@ -229,11 +230,16 @@ WEBCFG_STATUS webcfg_http_request(char **configData, int r_count, int status, lo
 			return WEBCFG_FAILURE;
 		}
 		data.data[0] = '\0';
-		createCurlHeader(list, &headers_list, status, &transID);
+		createCurlHeader(list, &headers_list, status, &transID, &subdoclist);
 		if(transID !=NULL)
 		{
 			*transaction_id = strdup(transID);
 			WEBCFG_FREE(transID);
+		}
+		if(subdoclist !=NULL)
+		{
+			strcpy(docList, subdoclist);
+			WEBCFG_FREE(subdoclist);
 		}
 		WebcfgInfo("The get_global_supplementarySync() is %d\n", get_global_supplementarySync());
 		if(get_global_supplementarySync() == 0)
@@ -288,17 +294,14 @@ WEBCFG_STATUS webcfg_http_request(char **configData, int r_count, int status, lo
 
 		if(!get_global_supplementarySync())
 		{
-			//Update query param in the URL based on the existing doc names from db
-			getConfigDocList(docList);
-		}
-
-		if(strlen(docList) > 0)
-		{
-			WebcfgInfo("docList is %s\n", docList);
-			snprintf(syncURL, MAX_BUF_SIZE, "%s?group_id=%s", webConfigURL, docList);
-			WEBCFG_FREE(webConfigURL);
-			WebcfgDebug("syncURL is %s\n", syncURL);
-			webConfigURL =strdup( syncURL);
+			if(strlen(docList) > 0)
+			{
+				WebcfgDebug("docList is %s\n", docList);
+				snprintf(syncURL, MAX_BUF_SIZE, "%s?group_id=%s", webConfigURL, docList);
+				WEBCFG_FREE(webConfigURL);
+				WebcfgDebug("syncURL is %s\n", syncURL);
+				webConfigURL =strdup( syncURL);
+			}
 		}
 
 		if(webConfigURL !=NULL)
@@ -1306,36 +1309,6 @@ int readFromFile(char *filename, char **data, int *len)
 	return 1;
 }
 
-/* Traverse through db list to get docnames of all docs with root.
-e.g. root,ble,lan,mesh,moca. */
-void getConfigDocList(char *docList)
-{
-	char *docList_tmp = NULL;
-	webconfig_db_data_t *temp = NULL;
-	temp = get_global_db_node();
-
-	if( NULL != temp)
-	{
-		sprintf(docList, "%s", "root");
-		WebcfgDebug("docList is %s\n", docList);
-
-		while (NULL != temp)
-		{
-			if( temp->name != NULL)
-			{
-				if( strcmp(temp->name,"root") !=0 )
-				{
-					docList_tmp = strdup(docList);
-					sprintf(docList, "%s,%s",docList_tmp, temp->name);
-					WEBCFG_FREE(docList_tmp);
-				}
-			}
-			temp= temp->next;
-		}
-		WebcfgDebug("Final docList is %s len %zu\n", docList, strlen(docList));
-	}
-}
-
 void getRootDocVersionFromDBCache(uint32_t *rt_version, char **rt_string, int *subdoclist)
 {
 	webconfig_db_data_t *temp = NULL;
@@ -1460,13 +1433,16 @@ void derive_root_doc_version_string(char **rootVersion, uint32_t *root_ver, int 
 	}
 }
 
-/* Traverse through db list to get versions of all docs with root.
+/* Traverse through db list to get versions and doclist of all docs with root.
 e.g. IF-NONE-MATCH: 123,44317,66317,77317 where 123 is root version.
+e.g. root,ble,lan,mesh,moca
 Currently versionsList length is fixed to 512 which can support up to 45 docs.
-This can be increased if required. */
-void refreshConfigVersionList(char *versionsList, int http_status)
+This can be increased if required.
+VersionList and docList are fetched at once from DB to fix version and docList mismatch when DB is updated.*/
+void refreshConfigVersionList(char *versionsList, int http_status, char *docsList)
 {
 	char *versionsList_tmp = NULL;
+	char *docsList_tmp = NULL;
 	char *root_str = NULL;
 	uint32_t root_version = 0;
 	WEBCFG_STATUS retStatus = WEBCFG_SUCCESS;
@@ -1501,6 +1477,9 @@ void refreshConfigVersionList(char *versionsList, int http_status)
 		}
 		WebcfgInfo("versionsList is %s\n", versionsList);
 
+		sprintf(docsList, "%s", "root");
+		WebcfgDebug("docsList is %s\n", docsList);
+
 		while (NULL != temp)
 		{
 			if( temp->name != NULL)
@@ -1510,11 +1489,16 @@ void refreshConfigVersionList(char *versionsList, int http_status)
 					versionsList_tmp = strdup(versionsList);
 					sprintf(versionsList, "%s,%lu",versionsList_tmp,(long)temp->version);
 					WEBCFG_FREE(versionsList_tmp);
+					//Fetch docsList and version together to fix docs & version mismatch from DB
+					docsList_tmp = strdup(docsList);
+					sprintf(docsList, "%s,%s",docsList_tmp, temp->name);
+					WEBCFG_FREE(docsList_tmp);
 				}
 			}
 			temp= temp->next;
 		}
 		WebcfgDebug("Final versionsList is %s len %zu\n", versionsList, strlen(versionsList));
+		WebcfgDebug("Final docsList is %s len %zu\n", docsList, strlen(docsList));
 	}
 }
 
@@ -1524,7 +1508,7 @@ void refreshConfigVersionList(char *versionsList, int http_status)
  * @param[out] trans_uuid for sync
  * @param[out] header_list output curl header list
 */
-void createCurlHeader( struct curl_slist *list, struct curl_slist **header_list, int status, char ** trans_uuid)
+void createCurlHeader( struct curl_slist *list, struct curl_slist **header_list, int status, char ** trans_uuid, char **subdocList)
 {
 	char *version_header = NULL;
 	char *auth_header = NULL;
@@ -1548,6 +1532,7 @@ void createCurlHeader( struct curl_slist *list, struct curl_slist **header_list,
 	char *uuid_header = NULL;
 	char *transaction_uuid = NULL;
 	char version[512]={'\0'};
+	char docList[512]={'\0'};
 	char* syncTransID = NULL;
 	char* ForceSyncDoc = NULL;
 	size_t supported_doc_size = 0;
@@ -1573,9 +1558,11 @@ void createCurlHeader( struct curl_slist *list, struct curl_slist **header_list,
 		version_header = (char *) malloc(sizeof(char)*MAX_BUF_SIZE);
 		if(version_header !=NULL)
 		{
-			refreshConfigVersionList(version, 0);
+			refreshConfigVersionList(version, 0, docList);
 			snprintf(version_header, MAX_BUF_SIZE, "IF-NONE-MATCH:%s", ((strlen(version)!=0) ? version : "0"));
 			WebcfgInfo("version_header formed %s\n", version_header);
+			WebcfgInfo("docList fetched %s\n", docList);
+			*subdocList = strdup(docList);
 			list = curl_slist_append(list, version_header);
 			WEBCFG_FREE(version_header);
 		}
