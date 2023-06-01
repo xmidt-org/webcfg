@@ -2183,8 +2183,8 @@ void rbus_log_handler(
     //WebcfgDebug("threadId %d\n", threadId);
     const char* slevel = "";
 
-    if(level < RBUS_LOG_ERROR)
-        return;
+    /*if(level < RBUS_LOG_ERROR)
+        return;*/
 
     switch(level)
     {
