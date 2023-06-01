@@ -298,8 +298,12 @@ rbusError_t setBootupSyncHeader(char *publishGetVal)
 {
 	rbusError_t ret = RBUS_ERROR_BUS_ERROR;
 	rbusValue_t value;
-        rbusSetOptions_t opts;
-        opts.commit = true;
+	rbusObject_t inParams;
+	rbusObject_t outParams;
+	char locationID[256] = { 0 };
+	char publish_get_topic[256] = { 0 };
+	Get_Mqtt_LocationId(locationID);
+	static char g_ClientID[64] = { 0 };
 
 	rbusHandle_t rbus_handle = get_global_rbus_handle();
 
@@ -309,14 +313,38 @@ rbusError_t setBootupSyncHeader(char *publishGetVal)
 		return ret;
 	}
 
+	if( Get_Mqtt_ClientId() != NULL && strlen(Get_Mqtt_ClientId()) !=0 )
+	{
+	      strncpy(g_ClientID, Get_Mqtt_ClientId(), sizeof(g_ClientID)-1);
+	      WebcfgInfo("g_ClientID fetched from Get_Mqtt_ClientId is %s\n", g_ClientID);
+	}
+	
+	snprintf(publish_get_topic, MAX_MQTT_LEN, "%s%s/%s", MQTT_PUBLISH_GET_TOPIC_PREFIX, g_ClientID,locationID);
+
+	rbusObject_Init(&inParams, NULL);
+	
 	rbusValue_Init(&value);
 	rbusValue_SetString(value, publishGetVal);
+	rbusObject_SetValue(inParams, "payload", value);
+	rbusValue_Release(value);
 
-	ret = rbus_set(rbus_handle, WEBCFG_MQTT_PublishGET_PARAM, value, &opts);
+	rbusValue_Init(&value);
+	rbusValue_SetString(value, publish_get_topic);
+	rbusObject_SetValue(inParams, "topic", value);
+	rbusValue_Release(value);
+
+	rbusValue_Init(&value);
+	rbusValue_SetString(value, "0");
+	rbusObject_SetValue(inParams, "qos", value);
+	rbusValue_Release(value);
+
+	ret = rbusMethod_Invoke(rbus_handle, WEBCFG_MQTT_PUBLISH_PARAM, inParams, &outParams);
+
+	rbusObject_Release(inParams);
 
 	if (ret)
 	{
-		WebcfgError("rbus_set for setBootupSyncHeader failed:%s\n", rbusError_ToString(ret));
+		WebcfgError("rbusMethod_Invoke for setBootupSyncHeader failed:%s\n", rbusError_ToString(ret));
 	}
 	else
 	{
@@ -976,8 +1004,12 @@ rbusError_t setPublishNotification(char *publishNotifyVal)
 {
 	rbusError_t ret = RBUS_ERROR_BUS_ERROR;
 	rbusValue_t value;
-        rbusSetOptions_t opts;
-        opts.commit = true;
+	rbusObject_t inParams;
+	rbusObject_t outParams;
+	char locationID[256] = { 0 };
+	char publish_get_topic[256] = { 0 };
+	Get_Mqtt_LocationId(locationID);
+	static char g_ClientID[64] = { 0 };
 
 	rbusHandle_t rbus_handle = get_global_rbus_handle();
 
@@ -987,18 +1019,40 @@ rbusError_t setPublishNotification(char *publishNotifyVal)
 		return ret;
 	}
 
+	if( Get_Mqtt_ClientId() != NULL && strlen(Get_Mqtt_ClientId()) !=0 )
+	{
+		strncpy(g_ClientID, Get_Mqtt_ClientId(), sizeof(g_ClientID)-1);
+		WebcfgInfo("g_ClientID fetched from Get_Mqtt_ClientId is %s\n", g_ClientID);
+	}
+
+	snprintf(publish_get_topic, MAX_MQTT_LEN, "%s%s/%s", MQTT_PUBLISH_NOTIFY_TOPIC_PREFIX, g_ClientID,locationID);
+	rbusObject_Init(&inParams, NULL);
+
 	rbusValue_Init(&value);
 	rbusValue_SetString(value, publishNotifyVal);
+	rbusObject_SetValue(inParams, "payload", value);
+	rbusValue_Release(value);
 
-	ret = rbus_set(rbus_handle, WEBCFG_MQTT_PublishNOTIFY_PARAM, value, &opts);
+	rbusValue_Init(&value);
+	rbusValue_SetString(value, publish_get_topic);
+	rbusObject_SetValue(inParams, "topic", value);
+	rbusValue_Release(value);
+
+	rbusValue_Init(&value);
+	rbusValue_SetString(value, "0");
+	rbusObject_SetValue(inParams, "qos", value);
+	rbusValue_Release(value);
+
+	ret = rbusMethod_Invoke(rbus_handle, WEBCFG_MQTT_PUBLISH_PARAM, inParams, &outParams);
+	rbusObject_Release(inParams);
 
 	if (ret)
 	{
-		WebcfgError("rbus_set for setPublishNotification failed:%s\n", rbusError_ToString(ret));
+		WebcfgError("rbusMethod_Invoke for setPublishNotification failed:%s\n", rbusError_ToString(ret));
 	}
 	else
 	{
-		WebcfgInfo("rbus_set for setPublishNotification success\n");
+		WebcfgInfo("rbusMethod_Invoke for setPublishNotification success\n");
 	}
 	return ret;
 }

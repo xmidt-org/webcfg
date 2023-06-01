@@ -40,14 +40,14 @@
 #include "webcfg_auth.h"
 
 #define MAX_MQTT_LEN         128
+#define MQTT_PUBLISH_GET_TOPIC_PREFIX "x/fr/get/chi/"
 #define MQTT_PUBLISH_NOTIFY_TOPIC_PREFIX "x/fr/poke/chi/"
 
 #define MQTTCM_COMPONENT_NAME             "mqttConnManager"
 
 #define MQTT_CONNSTATUS_PARAM	    "Device.X_RDK_MQTT.ConnectionStatus"
 #define MQTT_SUBSCRIBE_PARAM       "Device.X_RDK_MQTT.Subscribe"
-#define WEBCFG_MQTT_PublishGET_PARAM      "Device.X_RDK_MQTT.Webconfig.PublishGET"
-#define WEBCFG_MQTT_PublishNOTIFY_PARAM   "Device.X_RDK_MQTT.WebConfig.PublishNotification"
+#define WEBCFG_MQTT_PUBLISH_PARAM         "Device.X_RDK_MQTT.Publish"
 
 #define WEBCFG_SUBSCRIBE_CALLBACK    "Device.X_RDK_MQTT.Webconfig.OnSubcribeCallback"
 #define WEBCFG_ONMESSAGE_CALLBACK    "Device.X_RDK_MQTT.Webconfig.OnMessageCallback"
