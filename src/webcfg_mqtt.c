@@ -294,12 +294,6 @@ int triggerBootupSync()
 	return 1;
 }
 
-char * get_clientId()
-{
-    WebcfgDebug("Inside get_clientId weak function.\n");
-    return "";
-}
-
 rbusError_t setBootupSyncHeader(char *publishGetVal)
 {
 	rbusError_t ret = RBUS_ERROR_BUS_ERROR;
@@ -319,10 +313,10 @@ rbusError_t setBootupSyncHeader(char *publishGetVal)
 		return ret;
 	}
 
-	if( get_clientId() != NULL && strlen(get_clientId()) !=0 )
+	if( Get_Mqtt_ClientId() != NULL && strlen(Get_Mqtt_ClientId()) !=0 )
 	{
-	      strncpy(g_ClientID, get_clientId(), sizeof(g_ClientID)-1);
-	      WebcfgInfo("g_ClientID fetched from get_clientId is %s\n", g_ClientID);
+	      strncpy(g_ClientID, Get_Mqtt_ClientId(), sizeof(g_ClientID)-1);
+	      WebcfgInfo("g_ClientID fetched from Get_Mqtt_ClientId is %s\n", g_ClientID);
 	}
 	
 	snprintf(publish_get_topic, MAX_MQTT_LEN, "%s%s/%s", MQTT_PUBLISH_GET_TOPIC_PREFIX, g_ClientID,locationID);
@@ -1025,10 +1019,10 @@ rbusError_t setPublishNotification(char *publishNotifyVal)
 		return ret;
 	}
 
-	if( get_clientId() != NULL && strlen(get_clientId()) !=0 )
+	if( Get_Mqtt_ClientId() != NULL && strlen(Get_Mqtt_ClientId()) !=0 )
 	{
-		strncpy(g_ClientID, get_clientId(), sizeof(g_ClientID)-1);
-		WebcfgInfo("g_ClientID fetched from get_clientId is %s\n", g_ClientID);
+		strncpy(g_ClientID, Get_Mqtt_ClientId(), sizeof(g_ClientID)-1);
+		WebcfgInfo("g_ClientID fetched from Get_Mqtt_ClientId is %s\n", g_ClientID);
 	}
 
 	snprintf(publish_get_topic, MAX_MQTT_LEN, "%s%s/%s", MQTT_PUBLISH_NOTIFY_TOPIC_PREFIX, g_ClientID,locationID);
