@@ -61,6 +61,7 @@ static void webcfgOnPublishCallbackHandler(
     rbusHandle_t handle,
     rbusEvent_t const* event,
     rbusEventSubscription_t* subscription);
+void * processPayloadTask(void *tmp);
 
 void initWebconfigMqttTask(unsigned long status)
 {
@@ -802,37 +803,82 @@ int createMqttHeader(char **header_list)
 	return 0;
 }
 
+//new thread created for processPayload 
+void * processPayloadTask(void *tmp)
+{
+	if(tmp != NULL)
+	{
+		msg_t *msg = NULL;
+		msg = (msg_t *) tmp;
+		int len=0;
+		void * data = NULL;
+		data = msg->data;
+		len = msg->len;
+
+		processPayload((char *)data, len);
+	}
+	else
+	{
+		WebcfgError("tmp data is NULL\n");
+	}
+
+	return NULL;
+}
+
 static void webcfgOnMessageCallbackHandler(
     rbusHandle_t handle,
     rbusEvent_t const* event,
     rbusEventSubscription_t* subscription)
 {
-    (void)handle;
+    msg_t *msg=NULL;
     rbusValue_t incoming_value;
 
     incoming_value = rbusObject_GetValue(event->data, "value");
 
     WebcfgInfo("Received on message callback event %s\n", event->name);
 
-    if(incoming_value)
-    {
-	void * data = NULL;
+    if(incoming_value != NULL)
+    {	
+	int err = 0;
+	pthread_t threadId;
+	char *data = NULL;
 	int len = 0;
 	char *temp_data = NULL;
-
-        WebcfgDebug("on message incoming_value: %s\n", rbusValue_GetBytes(incoming_value, NULL));
+	
+	WebcfgDebug("on message incoming_value: %s\n", rbusValue_GetBytes(incoming_value, NULL));
 
 	data = (char *)rbusValue_GetBytes(incoming_value, &len);
 	temp_data = malloc(sizeof(char) * len + 1);
 	temp_data = memcpy(temp_data, data, len + 1);
 
-	WebcfgDebug("data is %s\n", temp_data);
-	//writeToDBFile("/tmp/blob_obtained.bin", temp_data, len);
-	WebcfgDebug("Received msg len is %d\n", len);
+	msg = (msg_t *)malloc(sizeof(msg_t));
+	if(msg != NULL)
+	{
+		memset(msg,0,sizeof(msg_t));
+		msg->data = temp_data;
+		msg->len = len;
 
-	processPayload((char *)temp_data, len);
+		WebcfgDebug("data is %s\n", temp_data);
+		//writeToDBFile("/tmp/blob_obtained.bin", temp_data, len);
+		WebcfgDebug("Received msg len is %d\n", len);
+
+		err = pthread_create(&threadId, NULL, processPayloadTask, (void *) msg);
+		if (err != 0) 
+		{
+			WebcfgError("Error creating WebConfig processPayload thread :[%s]\n", strerror(err));
+		}
+		else
+		{
+			WebcfgInfo("WebConfig processPayload Thread created Successfully.\n");
+		}
+	}
+	else
+	{
+		WebcfgError("Failed in memory allocation for msg\n");
+	}
 
     }
+    (void)handle;
 }
 
 static void webcfgOnPublishCallbackHandler(

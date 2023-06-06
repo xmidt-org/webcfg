@@ -53,6 +53,12 @@
 #define WEBCFG_ONMESSAGE_CALLBACK    "Device.X_RDK_MQTT.Webconfig.OnMessageCallback"
 #define WEBCFG_ONPUBLISH_CALLBACK    "Device.X_RDK_MQTT.Webconfig.OnPublishCallback"
 
+typedef struct
+{
+	void *data;
+	int len;
+}msg_t;
+
 void publish_notify_mqtt(void *payload, ssize_t len, char * dest);
 char * createMqttPubHeader(char * payload, char * dest, ssize_t * payload_len);
 int createMqttHeader(char **header_list);
