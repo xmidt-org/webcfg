@@ -602,6 +602,7 @@ int handlehttpResponse(long response_code, char *webConfigData, int retry_count,
 	int msgpack_status=0;
 	int err = 0;
 	char version[512]={'\0'};
+	char docList[512]={'\0'};
 	uint32_t db_root_version = 0;
 	char *db_root_string = NULL;
 	int subdocList = 0;
@@ -650,7 +651,7 @@ int handlehttpResponse(long response_code, char *webConfigData, int retry_count,
 			if((contentLength !=NULL) && (strcmp(contentLength, "0") == 0))
 			{
 				WebcfgInfo("webConfigData content length is 0\n");
-				refreshConfigVersionList(version, response_code);
+				refreshConfigVersionList(version, response_code, docList);
 				WEBCFG_FREE(contentLength);
 				set_global_contentLen(NULL);
 				WEBCFG_FREE(transaction_uuid);
@@ -709,7 +710,7 @@ int handlehttpResponse(long response_code, char *webConfigData, int retry_count,
 		if (response_code == 404)
 		{
 			//To set POST-NONE root version when 404
-			refreshConfigVersionList(version, response_code);
+			refreshConfigVersionList(version, response_code, docList);
 		}
 		getRootDocVersionFromDBCache(&db_root_version, &db_root_string, &subdocList);
 		addWebConfgNotifyMsg(NULL, db_root_version, NULL, NULL, transaction_uuid, 0, "status", 0, db_root_string, response_code);
