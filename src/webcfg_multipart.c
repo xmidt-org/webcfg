@@ -238,7 +238,7 @@ WEBCFG_STATUS webcfg_http_request(char **configData, int r_count, int status, lo
 		}
 		if(subdoclist !=NULL)
 		{
-			strcpy(docList, subdoclist);
+			strncpy(docList, subdoclist, sizeof(docList)-1);
 			WEBCFG_FREE(subdoclist);
 		}
 		WebcfgInfo("The get_global_supplementarySync() is %d\n", get_global_supplementarySync());
@@ -1477,7 +1477,7 @@ void refreshConfigVersionList(char *versionsList, int http_status, char *docsLis
 		}
 		WebcfgInfo("versionsList is %s\n", versionsList);
 
-		sprintf(docsList, "%s", "root");
+		snprintf(docsList, 512, "%s", "root");
 		WebcfgDebug("docsList is %s\n", docsList);
 
 		while (NULL != temp)
@@ -1491,7 +1491,7 @@ void refreshConfigVersionList(char *versionsList, int http_status, char *docsLis
 					WEBCFG_FREE(versionsList_tmp);
 					//Fetch docsList and version together to fix docs & version mismatch from DB
 					docsList_tmp = strdup(docsList);
-					sprintf(docsList, "%s,%s",docsList_tmp, temp->name);
+					snprintf(docsList, 512, "%s,%s",docsList_tmp, temp->name);
 					WEBCFG_FREE(docsList_tmp);
 				}
 			}
