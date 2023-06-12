@@ -1927,6 +1927,12 @@ int set_rbus_ForceSync(char* pString, int *pStatus)
 	else if(get_global_webcfg_forcedsync_started() ==1)
         {
             WebcfgInfo("Webcfg forced sync is in progress, Ignoring this request & will retry later.\n");
+	    *pStatus = 1;
+	    return 0;
+	}
+	else if(get_global_wanstatussync_start() ==1)
+        {
+            WebcfgInfo("wanstatus sync is already in progress, Ignoring this request & will retry later.\n");
             *pStatus = 1;
             return 0;
         }
@@ -2092,7 +2098,18 @@ static void eventReceiveHandler(
     }	
     if(newValue !=NULL && oldValue!=NULL && get_global_interface()!=NULL) {
             WebcfgInfo("New Value: %s Old Value: %s New Interface Value: %s\n", rbusValue_GetString(newValue, NULL), rbusValue_GetString(oldValue, NULL), get_global_interface());
-    }    
+
+	if(get_webcfgReady())
+	{
+
+		WebcfgInfo("Trigger force sync with cloud on wan restore event\n");
+		trigger_wanstatus_forcesync();
+	}
+	else
+	{
+		WebcfgInfo("wan restore force sync is skipped as webcfg is not ready\n");
+	}
+    }
 }
 
 static void subscribeAsyncHandler(
@@ -2122,14 +2139,14 @@ int subscribeTo_CurrentActiveInterface_Event()
 	      WebcfgError("%s subscribe failed : %d - %s\n", WEBCFG_INTERFACE_PARAM, rc, rbusError_ToString(rc));
       }  
       return rc;
-}      
+}
 #endif
 
 /*Trigger force sync with cloud from webconfig client.*/
 void trigger_webcfg_forcedsync()
 {
 	char *str = NULL;
-	int status = 0;
+	int status = 0;	
 
 	str = strdup("root");
 	//webcfg_forcedsync_needed is set initially whenever force sync set is detected, but this does not guarantee the force sync to happen immediately when previous sync is in progress, cloud sync will be retried once previous sync is completed.
@@ -2138,6 +2155,19 @@ void trigger_webcfg_forcedsync()
 	set_rbus_ForceSync(str, &status);
 	WEBCFG_FREE(str);
 	str=NULL;
+}
+
+//Trigger webconfig resync/force sync with cloud on wan restore/ wan start events
+void trigger_wanstatus_forcesync()
+{
+	char *str = NULL;
+	int status = 0;
+
+	str = strdup("root");
+	set_global_wanstatus_sync(1);
+	WebcfgInfo("set wanstatus_sync to %d\n", get_global_wanstatus_sync());
+	set_rbus_ForceSync(str, &status);
+	WebcfgInfo("set_rbus_ForceSync on wan status event done\n");
 }
 
 /* Enables rbus ERROR level logs in webconfig. Modify RBUS_LOG_ERROR check if more debug logs are needed from rbus. */
@@ -2169,3 +2199,11 @@ void registerRbusLogger()
 	rbus_registerLogHandler(rbus_log_handler);
 	WebcfgDebug("Registered rbus log handler\n");
 }
+=======
+	set_global_wanstatus_sync(1);
+	WebcfgInfo("set wanstatus_sync to %d\n", get_global_wanstatus_sync());
+	set_rbus_ForceSync(str, &status);
+	WebcfgInfo("set_rbus_ForceSync on wan status event done\n");
+}
+
+>>>>>>> upstream/wan_restore

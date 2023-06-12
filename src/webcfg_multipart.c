@@ -1795,8 +1795,19 @@ void createCurlHeader( struct curl_slist *list, struct curl_slist **header_list,
 		uuid_header = (char *) malloc(sizeof(char)*MAX_BUF_SIZE);
 		if(uuid_header !=NULL)
 		{
-			snprintf(uuid_header, MAX_BUF_SIZE, "Transaction-ID: %s", transaction_uuid);
-			WebcfgInfo("uuid_header formed %s\n", uuid_header);
+			#ifdef WAN_FAILOVER_SUPPORTED
+			if(get_global_wanstatussync_start())
+			{
+				//To add _wanstatus suffixed transaction_id for wanstatus sync
+				snprintf(uuid_header, MAX_BUF_SIZE, "Transaction-ID: %s_wanstatus", transaction_uuid);
+				WebcfgInfo("uuid_header formed for wan status sync %s\n", uuid_header);
+			}
+			else
+			#endif
+			{
+				snprintf(uuid_header, MAX_BUF_SIZE, "Transaction-ID: %s", transaction_uuid);
+				WebcfgInfo("uuid_header formed %s\n", uuid_header);
+			}
 			list = curl_slist_append(list, uuid_header);
 			*trans_uuid = strdup(transaction_uuid);
 			WEBCFG_FREE(uuid_header);

@@ -121,4 +121,5 @@ webcfgError_t fetchMpBlobData(char *docname, void **blobdata, int *len, uint32_t
 #ifdef WAN_FAILOVER_SUPPORTED
 int subscribeTo_CurrentActiveInterface_Event();
 #endif
+void trigger_wanstatus_forcesync();
 #endif
