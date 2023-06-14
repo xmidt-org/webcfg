@@ -34,7 +34,6 @@
 #include "webcfg_event.h"
 #include "webcfg_blob.h"
 #include "webcfg_timer.h"
-#include "webcfg_rbus.h"
 #ifdef FEATURE_SUPPORT_AKER
 #include "webcfg_aker.h"
 #endif
@@ -75,8 +74,6 @@ static int g_testfile = 0;
 static int g_supplementarySync = 0;
 static int g_webcfg_forcedsync_needed = 0;
 static int g_webcfg_forcedsync_started = 0;
-static int g_wanstatus_sync = 0;
-static int g_wanstatussync_start = 0;
 /*----------------------------------------------------------------------------*/
 /*                             Function Prototypes                            */
 /*----------------------------------------------------------------------------*/
@@ -191,11 +188,6 @@ void *WebConfigMultipartTask(void *status)
 				WebcfgDebug("reset webcfg_forcedsync_started\n");
 				set_global_webcfg_forcedsync_started(0);
 			}
-			if(get_global_wanstatussync_start())
-			{
-				WebcfgInfo("reset wanstatus_start\n");
-				set_global_wanstatussync_start(0);
-			}
 		}
 
 		if(!wait_flag)
@@ -287,14 +279,6 @@ void *WebConfigMultipartTask(void *status)
 		{
 			WebcfgInfo("webcfg_forcedsync detected, trigger force sync with cloud.\n");
 			forced_sync = 1;
-                        wait_flag = 1;
-                        rv = 0;
-		}
-		if(get_global_wanstatus_sync() == 1)
-		{
-			WebcfgInfo("wanstatus sync detected, trigger force sync with cloud.\n");
->>>>>>> upstream/wan_restore
-			forced_sync = 1;
 			wait_flag = 1;
 			rv = 0;
 		}
@@ -338,12 +322,6 @@ void *WebConfigMultipartTask(void *status)
 				set_global_webcfg_forcedsync_needed(0);
 				set_global_webcfg_forcedsync_started(1);
 				WebcfgDebug("webcfg_forcedsync_needed reset to %d and webcfg_forcedsync_started %d\n", get_global_webcfg_forcedsync_needed(), get_global_webcfg_forcedsync_started());
-			}
-			if(get_global_wanstatus_sync())
-			{
-				set_global_wanstatus_sync(0);
-				set_global_wanstatussync_start(1);
-				WebcfgInfo("wanstatus_sync reset to %d and wanstatussync_start %d\n", get_global_wanstatus_sync(), get_global_wanstatussync_start());
 			}
 			char *ForceSyncDoc = NULL;
 			char* ForceSyncTransID = NULL;
@@ -438,8 +416,6 @@ void *WebConfigMultipartTask(void *status)
 	set_global_supplementarySync(0);
 	set_global_webcfg_forcedsync_needed(0);
 	set_global_webcfg_forcedsync_started(0);
-	set_global_wanstatus_sync(0);
-	set_global_wanstatussync_start(0);
 #ifdef FEATURE_SUPPORT_AKER
 	set_send_aker_flag(false);
 #endif
@@ -558,27 +534,6 @@ void set_global_webcfg_forcedsync_started(int value)
 int get_global_webcfg_forcedsync_started()
 {
     return g_webcfg_forcedsync_started;
-}
-
-void set_global_wanstatus_sync(int value)
-{
-    g_wanstatus_sync = value;
-}
-
-int get_global_wanstatus_sync()
-{
-    return g_wanstatus_sync;
-}
-
-void set_global_wanstatussync_start(int value)
-{
-    g_wanstatussync_start = value;
-}
-
-int get_global_wanstatussync_start()
-{
-    return g_wanstatussync_start;
->>>>>>> upstream/wan_restore
 }
 /*----------------------------------------------------------------------------*/
 /*                             Internal functions                             */

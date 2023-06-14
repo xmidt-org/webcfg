@@ -96,11 +96,6 @@ int get_global_webcfg_forcedsync_needed();
 void set_global_webcfg_forcedsync_needed(int value);
 void set_global_webcfg_forcedsync_started(int value);
 int get_global_webcfg_forcedsync_started();
-int get_global_wanstatus_sync();
-void set_global_wanstatus_sync(int value);
-void set_global_wanstatussync_start(int value);
-int get_global_wanstatussync_start();
->>>>>>> upstream/wan_restore
 void initWebConfigMultipartTask(unsigned long status);
 void processWebconfgSync(int Status, char* docname);
 WEBCFG_STATUS webcfg_http_request(char **configData, int r_count, int status, long *code, char **transaction_id,char* contentType, size_t* dataSize, char* docname);
