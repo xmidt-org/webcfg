@@ -79,6 +79,7 @@ void initWebconfigMqttTask(unsigned long status)
 
 void* WebconfigMqttTask(void *status)
 {
+	pthread_detach(pthread_self());
 	int rc = -1;
 	rbusHandle_t rbus_handle;
 	int connStatus = 0;
@@ -198,8 +199,10 @@ rbusError_t mqttSubscribeInit()
 {
 	rbusError_t ret = RBUS_ERROR_BUS_ERROR;
 	rbusValue_t value;
-        rbusSetOptions_t opts;
-        opts.commit = true;
+	rbusObject_t inParams;
+	rbusObject_t outParams;
+	char subscribe_topic[256] = { 0 };
+	static char clientID[64] = { 0 };
 
 	rbusHandle_t rbus_handle = get_global_rbus_handle();
 
@@ -209,22 +212,41 @@ rbusError_t mqttSubscribeInit()
 		return ret;
 	}
 
+	if( Get_Mqtt_ClientId() != NULL && strlen(Get_Mqtt_ClientId()) !=0 )
+	{
+	      strncpy(clientID, Get_Mqtt_ClientId(), sizeof(clientID)-1);
+	      WebcfgInfo("clientID fetched from Get_Mqtt_ClientId is %s\n", clientID);
+	}
+
+	snprintf(subscribe_topic, MAX_MQTT_LEN, "%s%s", MQTT_SUBSCRIBE_TOPIC, clientID);
+
+	rbusObject_Init(&inParams, NULL);
+
 	rbusValue_Init(&value);
 	rbusValue_SetString(value, "Webconfig");
+	rbusObject_SetValue(inParams, "compname", value);
+	rbusValue_Release(value);
+
+	rbusValue_Init(&value);
+	rbusValue_SetString(value, subscribe_topic);
+	rbusObject_SetValue(inParams, "topic", value);
+	rbusValue_Release(value);
 
 	if(webcfg_onconnect_flag)
 	{
-		ret = rbus_set(rbus_handle, MQTT_SUBSCRIBE_PARAM, value, &opts);
+		ret = rbusMethod_Invoke(rbus_handle, MQTT_SUBSCRIBE_PARAM, inParams, &outParams);
 
 		if (ret)
 		{
-			WebcfgError("rbus_set for subscribe to topic failed: %s\n", rbusError_ToString(ret));
+			WebcfgError("rbusMethod_Invoke for subscribe to topic failed: %s\n", rbusError_ToString(ret));
 		}
 		else
 		{
-			WebcfgInfo("rbus_set for subscribe to topic success\n");
+			WebcfgInfo("rbusMethod_Invoke for subscribe to topic success\n");
 		}
 	}
+
+	rbusObject_Release(inParams);
 
 	return ret;
 }
@@ -806,6 +828,7 @@ int createMqttHeader(char **header_list)
 //new thread created for processPayload 
 void * processPayloadTask(void *tmp)
 {
+	pthread_detach(pthread_self());
 	if(tmp != NULL)
 	{
 		msg_t *msg = NULL;
