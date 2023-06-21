@@ -2102,7 +2102,7 @@ static void subscribeAsyncHandler(
 int subscribeTo_CurrentActiveInterface_Event()
 {
       int rc = RBUS_ERROR_SUCCESS;
-      WebcfgDebug("Subscribing to %s Event\n", WEBCFG_INTERFACE_PARAM);
+      WebcfgInfo("Subscribing to %s Event\n", WEBCFG_INTERFACE_PARAM);
       rc = rbusEvent_SubscribeAsync (
         rbus_handle,
         WEBCFG_INTERFACE_PARAM,
