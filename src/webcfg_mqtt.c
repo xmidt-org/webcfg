@@ -212,10 +212,12 @@ rbusError_t mqttSubscribeInit()
 		return ret;
 	}
 
-	if( Get_Mqtt_ClientId() != NULL && strlen(Get_Mqtt_ClientId()) !=0 )
+	char* temp_clientID = strdup(Get_Mqtt_ClientId());
+	if( temp_clientID != NULL && strlen(temp_clientID) !=0 )
 	{
-	      strncpy(clientID, Get_Mqtt_ClientId(), sizeof(clientID)-1);
+	      strncpy(clientID, temp_clientID, sizeof(clientID)-1);
 	      WebcfgInfo("clientID fetched from Get_Mqtt_ClientId is %s\n", clientID);
+              WEBCFG_FREE(temp_clientID);
 	}
 
 	snprintf(subscribe_topic, MAX_MQTT_LEN, "%s%s", MQTT_SUBSCRIBE_TOPIC, clientID);
