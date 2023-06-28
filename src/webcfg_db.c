@@ -279,22 +279,22 @@ void webcfgdbblob_destroy( blob_struct_t *bd )
         size_t i;
         for( i = 0; i < bd->entries_count; i++ ) {
             if( NULL != bd->entries[i].name ) {
-                free( bd->entries[i].name );
+                WEBCFG_FREE( bd->entries[i].name );
             }
             if( NULL != bd->entries[i].status ) {
-                free( bd->entries[i].status );
+                WEBCFG_FREE( bd->entries[i].status );
             }
 	    if( NULL != bd->entries[i].error_details ) {
-                free( bd->entries[i].error_details );
+                WEBCFG_FREE( bd->entries[i].error_details );
             }
 	    if( NULL != bd->entries[i].root_string ) {
-                free( bd->entries[i].root_string );
+                WEBCFG_FREE( bd->entries[i].root_string );
             }
         }
         if( NULL != bd->entries ) {
-            free( bd->entries );
+            WEBCFG_FREE( bd->entries );
         }
-        free( bd );
+        WEBCFG_FREE( bd );
     }
 }
 
@@ -757,7 +757,7 @@ void delete_tmp_list()
         temp = head;
 	head = head->next;
 	WebcfgDebug("Delete node--> temp->name %s temp->version %lu temp->status %s temp->isSupplementarySync %d temp->error_details %s temp->error_code %lu temp->trans_id %lu temp->retry_count %d temp->cloud_trans_id %s\n",temp->name, (long)temp->version, temp->status, temp->isSupplementarySync, temp->error_details, (long)temp->error_code, (long)temp->trans_id, temp->retry_count, temp->cloud_trans_id);
-	free(temp);
+	WEBCFG_FREE(temp);
 	temp = NULL;
     }
 	pthread_mutex_lock (&webconfig_tmp_data_mut);

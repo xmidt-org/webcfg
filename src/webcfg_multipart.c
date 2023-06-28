@@ -620,7 +620,6 @@ WEBCFG_STATUS processMsgpackSubdoc(char *transaction_id)
 	{
 		strncpy(g_transID, transaction_id, sizeof(g_transID)-1);
 		WebcfgDebug("g_transID is %s\n", g_transID);
-		WEBCFG_FREE(transaction_id);
 	}
         
 	WebcfgDebug("Add mp entries to tmp list\n");
@@ -1095,7 +1094,7 @@ size_t writer_callback_fn(void *buffer, size_t size, size_t nmemb, void *datain)
         data->data = tmp;
     } else {
         if(data->data) {
-            free(data->data);
+            WEBCFG_FREE(data->data);
         }
         WebcfgError("Failed to allocate memory for data\n");
         return 0;
@@ -2004,7 +2003,7 @@ void delete_multipart()
 		temp = head;
 		head = head->next;
 		WebcfgDebug("Deleted mp node: temp->name_space:%s\n", temp->name_space);
-		free(temp);
+		WEBCFG_FREE(temp);
 		temp = NULL;
 	}
 	pthread_mutex_lock (&multipart_t_mut);
@@ -2302,14 +2301,14 @@ void reqParam_destroy( int paramCnt, param_t *reqObj )
 		{
 			if(reqObj[i].name)
 			{
-				free(reqObj[i].name);
+				WEBCFG_FREE(reqObj[i].name);
 			}
 			if(reqObj[i].value)
 			{
-				free(reqObj[i].value);
+				WEBCFG_FREE(reqObj[i].value);
 			}
 		}
-		free(reqObj);
+		WEBCFG_FREE(reqObj);
 	}
 }
 

@@ -23,7 +23,7 @@
 #include "webcfg.h"
 #include <wdmp-c.h>
 
-#define WEBCFG_FREE(__x__) if(__x__ != NULL) { free((void*)(__x__)); __x__ = NULL;} else {printf("Trying to free null pointer\n");}
+#define WEBCFG_FREE(__x__) if(__x__ != NULL) { free((void*)(__x__)); __x__ = NULL;} else {WebcfgInfo("Trying to free null pointer\n");}
 
 #define ATOMIC_SET_WEBCONFIG	    3
 #define MAX_VALUE_LEN		128

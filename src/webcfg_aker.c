@@ -625,21 +625,21 @@ static void free_crud_message(wrp_msg_t *msg)
 	{
 		if(msg->u.crud.source)
 		{
-			free(msg->u.crud.source);
+			WEBCFG_FREE(msg->u.crud.source);
 		}
 		if(msg->u.crud.dest)
 		{
-			free(msg->u.crud.dest);
+			WEBCFG_FREE(msg->u.crud.dest);
 		}
 		if(msg->u.crud.transaction_uuid)
 		{
-			free(msg->u.crud.transaction_uuid);
+			WEBCFG_FREE(msg->u.crud.transaction_uuid);
 		}
 		if(msg->u.crud.content_type)
 		{
-			free(msg->u.crud.content_type);
+			WEBCFG_FREE(msg->u.crud.content_type);
 		}
-		free(msg);
+		WEBCFG_FREE(msg);
 	}
 }
 

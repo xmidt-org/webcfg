@@ -34,7 +34,7 @@
 #define DEVICE_PROPS_FILE       "/tmp/device.properties"
 #endif
 
-#define WEBCFG_FREE(__x__) if(__x__ != NULL) { free((void*)(__x__)); __x__ = NULL;} else {printf("Trying to free null pointer\n");}
+#define WEBCFG_FREE(__x__) if(__x__ != NULL) { free((void*)(__x__)); __x__ = NULL;} else {WebcfgInfo("Trying to free null pointer\n");}
 #ifndef TEST
 #define FOREVER()   1
 #else

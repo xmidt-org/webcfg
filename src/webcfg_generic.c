@@ -165,8 +165,7 @@ void set_global_systemReadyTime(char* systemReadyTime)
 {
     if(global_systemReadyTime != NULL)
     {
-	free(global_systemReadyTime);
-	global_systemReadyTime = NULL;
+		WEBCFG_FREE(global_systemReadyTime);
     }
     global_systemReadyTime = strdup(systemReadyTime);
 }

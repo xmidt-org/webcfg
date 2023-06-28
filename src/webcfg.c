@@ -844,8 +844,8 @@ int testUtility()
 			}
 			ptr_count++;
 		}
-		free(data_body);
-		free(temp);
+		WEBCFG_FREE(data_body);
+		WEBCFG_FREE(temp);
 		WEBCFG_FREE(etag_header);
 		transaction_uuid = strdup(generate_trans_uuid());
 		if(data !=NULL)

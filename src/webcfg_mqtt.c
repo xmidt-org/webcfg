@@ -186,6 +186,7 @@ int getMqttCMConnStatus()
 		{
 			WebcfgError("mqttcm connect status is NULL\n");
 		}
+		rbusValue_Release(value);
         }
         else
         {
@@ -225,7 +226,7 @@ rbusError_t mqttSubscribeInit()
 			WebcfgInfo("rbus_set for subscribe to topic success\n");
 		}
 	}
-
+	rbusValue_Release(value);
 	return ret;
 }
 
@@ -280,10 +281,12 @@ int triggerBootupSync()
 			WebcfgInfo("mqttheaderList generated is \n%s len %zu\n", mqttheaderList, strlen(mqttheaderList));
 			setBootupSyncHeader(mqttheaderList);
 			WebcfgInfo("setBootupSyncHeader done\n");
+			WEBCFG_FREE(mqttheaderList);
 		}
 		else
 		{
 			WebcfgError("Failed to generate mqttheaderList\n");
+			WEBCFG_FREE(mqttheaderList);
 			return 0;
 		}
 	}
@@ -342,7 +345,7 @@ rbusError_t setBootupSyncHeader(char *publishGetVal)
 	ret = rbusMethod_Invoke(rbus_handle, WEBCFG_MQTT_PUBLISH_PARAM, inParams, &outParams);
 
 	rbusObject_Release(inParams);
-
+    rbusObject_Release(outParams);
 	if (ret)
 	{
 		WebcfgError("rbusMethod_Invoke for setBootupSyncHeader failed:%s\n", rbusError_ToString(ret));
@@ -411,9 +414,7 @@ int createMqttHeader(char **header_list)
 		{
 			convertToUppercase(g_deviceId);
 			snprintf(deviceId_header, MAX_BUF_SIZE, "Device-Id: %s", g_deviceId);
-			//snprintf(deviceId_header, MAX_BUF_SIZE, "Mac: %s", tmp);
 			WebcfgInfo("deviceId_header formed %s\n", deviceId_header);
-			//WEBCFG_FREE(deviceId_header);
 		}
 	}
 	else
@@ -432,7 +433,6 @@ int createMqttHeader(char **header_list)
 		{
 			snprintf(doc_header, MAX_BUF_SIZE, "\r\nDoc-Name:%s", ((strlen(docList)!=0) ? docList : "NULL"));
 			WebcfgInfo("doc_header formed %s\n", doc_header);
-			//WEBCFG_FREE(doc_header);
 		}
 	}
 	if(!get_global_supplementarySync())
@@ -443,7 +443,6 @@ int createMqttHeader(char **header_list)
 			refreshConfigVersionList(version, 0);
 			snprintf(version_header, MAX_BUF_SIZE, "\r\nIF-NONE-MATCH:%s", ((strlen(version)!=0) ? version : "0"));
 			WebcfgInfo("version_header formed %s\n", version_header);
-			//WEBCFG_FREE(version_header);
 		}
 	}
 	accept_header = (char *) malloc(sizeof(char)*MAX_BUF_SIZE);
@@ -457,7 +456,6 @@ int createMqttHeader(char **header_list)
 	{
 		snprintf(schema_header, MAX_BUF_SIZE, "\r\nSchema-Version: %s", "v2.0");
 		WebcfgInfo("schema_header formed %s\n", schema_header);
-		//WEBCFG_FREE(schema_header);
 	}
 
 	if(!get_global_supplementarySync())
@@ -552,7 +550,6 @@ int createMqttHeader(char **header_list)
 		{
 			snprintf(bootTime_header, MAX_BUF_SIZE, "\r\nX-System-Boot-Time: %s", g_bootTime);
 			WebcfgInfo("bootTime_header formed %s\n", bootTime_header);
-			//WEBCFG_FREE(bootTime_header);
 		}
 	}
 	else
@@ -578,7 +575,6 @@ int createMqttHeader(char **header_list)
 		{
 			snprintf(FwVersion_header, MAX_BUF_SIZE, "\r\nX-System-Firmware-Version: %s", g_FirmwareVersion);
 			WebcfgInfo("FwVersion_header formed %s\n", FwVersion_header);
-			//WEBCFG_FREE(FwVersion_header);
 		}
 	}
 	else
@@ -598,7 +594,6 @@ int createMqttHeader(char **header_list)
 			snprintf(status_header, MAX_BUF_SIZE, "\r\nX-System-Status: %s", "Operational");
 		}
 		WebcfgInfo("status_header formed %s\n", status_header);
-		//WEBCFG_FREE(status_header);
 	}
 
 	memset(currentTime, 0, sizeof(currentTime));
@@ -609,7 +604,6 @@ int createMqttHeader(char **header_list)
 	{
 		snprintf(currentTime_header, MAX_BUF_SIZE, "\r\nX-System-Current-Time: %s", currentTime);
 		WebcfgInfo("currentTime_header formed %s\n", currentTime_header);
-		//WEBCFG_FREE(currentTime_header);
 	}
 
         if(strlen(g_systemReadyTime) ==0)
@@ -620,7 +614,6 @@ int createMqttHeader(char **header_list)
                 {
                        strncpy(g_systemReadyTime, systemReadyTime, sizeof(g_systemReadyTime)-1);
                        WebcfgInfo("g_systemReadyTime fetched is %s\n", g_systemReadyTime);
-                       //WEBCFG_FREE(systemReadyTime);
                 }
         }
 
@@ -631,7 +624,6 @@ int createMqttHeader(char **header_list)
                 {
 			snprintf(systemReadyTime_header, MAX_BUF_SIZE, "\r\nX-System-Ready-Time: %s", g_systemReadyTime);
 	                WebcfgInfo("systemReadyTime_header formed %s\n", systemReadyTime_header);
-	                //WEBCFG_FREE(systemReadyTime_header);
                 }
         }
         else
@@ -651,9 +643,6 @@ int createMqttHeader(char **header_list)
 		{
 			snprintf(uuid_header, MAX_BUF_SIZE, "\r\nTransaction-ID: %s", transaction_uuid);
 			WebcfgInfo("uuid_header formed %s\n", uuid_header);
-			//char *trans_uuid = strdup(transaction_uuid);
-			//WEBCFG_FREE(transaction_uuid);
-			//WEBCFG_FREE(uuid_header);
 		}
 	}
 	else
@@ -679,7 +668,6 @@ int createMqttHeader(char **header_list)
 		{
 			snprintf(productClass_header, MAX_BUF_SIZE, "\r\nX-System-Product-Class: %s", g_productClass);
 			WebcfgInfo("productClass_header formed %s\n", productClass_header);
-			//WEBCFG_FREE(productClass_header);
 		}
 	}
 	else
@@ -705,7 +693,6 @@ int createMqttHeader(char **header_list)
 		{
 			snprintf(ModelName_header, MAX_BUF_SIZE, "\r\nX-System-Model-Name: %s", g_ModelName);
 			WebcfgInfo("ModelName_header formed %s\n", ModelName_header);
-			//WEBCFG_FREE(ModelName_header);
 		}
 	}
 	else
@@ -731,7 +718,6 @@ int createMqttHeader(char **header_list)
 		{
 			snprintf(PartnerID_header, MAX_BUF_SIZE, "\r\nX-System-PartnerID: %s", g_PartnerID);
 			WebcfgInfo("PartnerID_header formed %s\n", PartnerID_header);
-			//WEBCFG_FREE(PartnerID_header);
 		}
 	}
 	else
@@ -759,7 +745,6 @@ int createMqttHeader(char **header_list)
 		{
 			snprintf(telemetryVersion_header, MAX_BUF_SIZE, "\r\nX-System-Telemetry-Profile-Version: %s", "2.0");
 			WebcfgInfo("telemetryVersion_header formed %s\n", telemetryVersion_header);
-			//WEBCFG_FREE(telemetryVersion_header);
 		}
 
 		if(strlen(g_AccountID) ==0)
@@ -780,7 +765,6 @@ int createMqttHeader(char **header_list)
 			{
 				snprintf(AccountID_header, MAX_BUF_SIZE, "\r\nX-System-AccountID: %s", g_AccountID);
 				WebcfgInfo("AccountID_header formed %s\n", AccountID_header);
-				//WEBCFG_FREE(AccountID_header);
 			}
 		}
 		else
@@ -800,6 +784,23 @@ int createMqttHeader(char **header_list)
 	}
 	writeToDBFile("/tmp/header_list.txt", *header_list, strlen(*header_list));
 	WebcfgDebug("mqtt header_list is \n%s\n", *header_list);
+	WEBCFG_FREE(contentlen_header);
+	WEBCFG_FREE(contenttype_header);
+	WEBCFG_FREE(PartnerID_header);
+	WEBCFG_FREE(ModelName_header);
+	WEBCFG_FREE(productClass_header);
+	WEBCFG_FREE(uuid_header);
+	WEBCFG_FREE(systemReadyTime_header);
+	WEBCFG_FREE(currentTime_header);
+	WEBCFG_FREE(status_header);
+	WEBCFG_FREE(FwVersion_header);
+	WEBCFG_FREE(bootTime_header);
+	WEBCFG_FREE(schema_header);
+	WEBCFG_FREE(accept_header);
+	WEBCFG_FREE(version_header);
+	WEBCFG_FREE(doc_header);
+	WEBCFG_FREE(deviceId_header);
+	WEBCFG_FREE(transaction_uuid);
 	return 0;
 }
 
@@ -973,10 +974,10 @@ int processPayload(char * data, int dataSize)
 			}
 			ptr_count++;
 		}
-		free(data_body);
-		free(temp);
+		WEBCFG_FREE(data_body);
+		WEBCFG_FREE(temp);
 		WEBCFG_FREE(etag_header);
-		transaction_uuid = strdup(generate_trans_uuid());
+		transaction_uuid = generate_trans_uuid();
 		if(data !=NULL)
 		{
 			WebcfgInfo("webConfigData fetched successfully\n");
@@ -994,9 +995,9 @@ int processPayload(char * data, int dataSize)
 		}
 		else
 		{
-			WEBCFG_FREE(transaction_uuid);
 			WebcfgError("webConfigData is empty, need to retry\n");
 		}
+		WEBCFG_FREE(transaction_uuid);
 		return 1;
 }
 
@@ -1043,6 +1044,9 @@ char * createMqttPubHeader(char * payload, char * dest, ssize_t * payload_len)
 	}
 	WebcfgInfo("mqtt pub_headerlist is \n%s", pub_headerlist);
 	*payload_len = strlen(pub_headerlist);
+	WEBCFG_FREE(content_length);
+	WEBCFG_FREE(content_type);
+	WEBCFG_FREE(destination);
 	return pub_headerlist;
 }
 
@@ -1091,7 +1095,7 @@ rbusError_t setPublishNotification(char *publishNotifyVal)
 
 	ret = rbusMethod_Invoke(rbus_handle, WEBCFG_MQTT_PUBLISH_PARAM, inParams, &outParams);
 	rbusObject_Release(inParams);
-
+	rbusObject_Release(outParams);
 	if (ret)
 	{
 		WebcfgError("rbusMethod_Invoke for setPublishNotification failed:%s\n", rbusError_ToString(ret));
@@ -1114,7 +1118,6 @@ void publish_notify_mqtt(void *payload, ssize_t len, char * dest)
 		{
 			len = payload_len;
 			WEBCFG_FREE(payload);
-			payload = (char *) malloc(sizeof(char) * 1024);
 			payload = strdup(pub_payload);
 
 			WEBCFG_FREE(pub_payload);
@@ -1129,6 +1132,7 @@ void publish_notify_mqtt(void *payload, ssize_t len, char * dest)
 	{
 		WebcfgInfo("Publish payload success %d\n", rc);
 	}
+	WEBCFG_FREE(payload);
 }
 
 int sendNotification_mqtt(char *payload, char *destination, wrp_msg_t *notif_wrp_msg, void *msg_bytes)

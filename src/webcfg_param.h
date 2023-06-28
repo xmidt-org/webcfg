@@ -18,7 +18,7 @@
 
 #include <stdint.h>
 #include <stdlib.h>
-
+#define WEBCFG_FREE(__x__) if(__x__ != NULL) { free((void*)(__x__)); __x__ = NULL;} else {WebcfgInfo("Trying to free null pointer\n");}
 typedef struct
 {
     char *name;
