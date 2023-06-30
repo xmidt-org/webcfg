@@ -140,17 +140,25 @@ void *WebConfigMultipartTask(void *status)
 
 	initMaintenanceTimer();
 #endif
+<<<<<<< HEAD
 
 	//The event handler intialisation is disabled in RDKV platforms as blob type is not applicable
+=======
+	
+>>>>>>> 6fdccfe20b849aac6eb7309c538e6bcc7f5cb1d9
 	if(get_global_eventFlag() == 0)
 	{
-		WebcfgInfo("Starting initEventHandlingTask\n");
-		initEventHandlingTask();
-		processWebcfgEvents();
-		set_global_eventFlag();
+        	WebcfgInfo("Starting initEventHandlingTask\n");
+        	initEventHandlingTask();
+        	processWebcfgEvents();
+        	set_global_eventFlag();
 	}
+<<<<<<< HEAD
 
 #if !defined (WEBCONFIG_MQTT_SUPPORT) || defined (WEBCONFIG_HTTP_SUPPORT)
+=======
+	
+>>>>>>> 6fdccfe20b849aac6eb7309c538e6bcc7f5cb1d9
 	//For Primary sync set flag to 0
 	set_global_supplementarySync(0);
 	WebcfgInfo("Webconfig is ready to process requests. set webcfgReady to true\n");
@@ -259,10 +267,21 @@ void *WebConfigMultipartTask(void *status)
 		if ( retry_flag == 0)
 		{
 		//To disable supplementary sync for RDKV platforms
+<<<<<<< HEAD
 		#if (!defined(RDK_PERSISTENT_PATH_VIDEO) && !defined(WEBCONFIG_MQTT_SUPPORT)) || (defined (WEBCONFIG_HTTP_SUPPORT))
+=======
+		#if !defined(RDK_PERSISTENT_PATH_VIDEO)
+
+			long tmOffset = 0;
+			tmOffset = getTimeOffset();
+			WebcfgInfo("The offset obtained from getTimeOffset is %ld\n", tmOffset);
+
+			WebcfgDebug("Before setting offset in main loop %s\n", printTime((long long)ts.tv_sec));
+>>>>>>> 6fdccfe20b849aac6eb7309c538e6bcc7f5cb1d9
 			ts.tv_sec += getMaintenanceSyncSeconds(maintenance_count);
 			maintenance_doc_sync = 1;
-			WebcfgInfo("The Maintenance Sync triggers at %s\n", printTime((long long)ts.tv_sec));
+			WebcfgInfo("The Maintenance Sync triggers at %s in LTime\n", printTime(((long long)ts.tv_sec) + (tmOffset)));
+			WebcfgInfo("Maintenance sync start time in UTC is %s\n", printTime((long long)ts.tv_sec));
 		#else
 			maintenance_doc_sync = 0;
 			maintenance_count = 0;
@@ -618,6 +637,7 @@ int handlehttpResponse(long response_code, char *webConfigData, int retry_count,
 	int msgpack_status=0;
 	int err = 0;
 	char version[512]={'\0'};
+	char docList[512]={'\0'};
 	uint32_t db_root_version = 0;
 	char *db_root_string = NULL;
 	int subdocList = 0;
@@ -666,7 +686,7 @@ int handlehttpResponse(long response_code, char *webConfigData, int retry_count,
 			if((contentLength !=NULL) && (strcmp(contentLength, "0") == 0))
 			{
 				WebcfgInfo("webConfigData content length is 0\n");
-				refreshConfigVersionList(version, response_code);
+				refreshConfigVersionList(version, response_code, docList);
 				WEBCFG_FREE(contentLength);
 				set_global_contentLen(NULL);
 				WEBCFG_FREE(transaction_uuid);
@@ -725,7 +745,7 @@ int handlehttpResponse(long response_code, char *webConfigData, int retry_count,
 		if (response_code == 404)
 		{
 			//To set POST-NONE root version when 404
-			refreshConfigVersionList(version, response_code);
+			refreshConfigVersionList(version, response_code, docList);
 		}
 		getRootDocVersionFromDBCache(&db_root_version, &db_root_string, &subdocList);
 		addWebConfgNotifyMsg(NULL, db_root_version, NULL, NULL, transaction_uuid, 0, "status", 0, db_root_string, response_code);

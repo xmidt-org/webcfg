@@ -23,8 +23,6 @@
 #include "webcfg.h"
 #include <wdmp-c.h>
 
-#define WEBCFG_FREE(__x__) if(__x__ != NULL) { free((void*)(__x__)); __x__ = NULL;} else {WebcfgInfo("Trying to free null pointer\n");}
-
 #define ATOMIC_SET_WEBCONFIG	    3
 #define MAX_VALUE_LEN		128
 
@@ -50,7 +48,6 @@ typedef struct multipartdocs
 
 int readFromFile(char *filename, char **data, int *len);
 WEBCFG_STATUS parseMultipartDocument(void *config_data, char *ct , size_t data_size, char* trans_uuid);
-void getConfigDocList(char *docList);
 void print_tmp_doc_list(size_t mp_count);
 void loadInitURLFromFile(char **url);
 uint32_t get_global_root();
@@ -66,7 +63,7 @@ void set_global_mp(multipartdocs_t *new);
 void reqParam_destroy( int paramCnt, param_t *reqObj );
 void failedDocsRetry();
 WEBCFG_STATUS validate_request_param(param_t *reqParam, int paramCount);
-void refreshConfigVersionList(char *versionsList, int http_status);
+void refreshConfigVersionList(char *versionsList, int http_status, char *docsList);
 char * get_global_contentLen(void);
 void set_global_contentLen(char * value);
 void getRootDocVersionFromDBCache(uint32_t *rt_version, char **rt_string, int *subdoclist);
@@ -87,8 +84,12 @@ int get_multipartdoc_count();
 WEBCFG_STATUS deleteFromMpList(char* doc_name);
 void addToMpList(uint32_t etag, char *name_space, char *data, size_t data_size);
 void delete_mp_doc();
+<<<<<<< HEAD
 #if !defined WEBCONFIG_MQTT_SUPPORT || defined WEBCONFIG_HTTP_SUPPORT
 void createCurlHeader( struct curl_slist *list, struct curl_slist **header_list, int status, char ** trans_uuid);
 #endif
+=======
+void createCurlHeader( struct curl_slist *list, struct curl_slist **header_list, int status, char ** trans_uuid,char **subdocList);
+>>>>>>> 6fdccfe20b849aac6eb7309c538e6bcc7f5cb1d9
 char *replaceMacWord(const char *s, const char *macW, const char *deviceMACW);
 #endif
