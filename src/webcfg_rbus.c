@@ -236,10 +236,11 @@ rbusError_t webcfgUrlSetHandler(rbusHandle_t handle, rbusProperty_t prop, rbusSe
                 WebcfgDebug("Call datamodel function  with data %s\n", data);
 
                 if(URLVal) {
-                    WEBCFG_FREE(URLVal);
+                    free(URLVal);
+                    URLVal = NULL;
                 }
                 URLVal = strdup(data);
-                WEBCFG_FREE(data);
+                free(data);
 		WebcfgDebug("URLVal after processing %s\n", URLVal);
 		retPsmSet = rbus_StoreValueIntoDB( WEBCFG_URL_PARAM, URLVal );
 		if (retPsmSet != RBUS_ERROR_SUCCESS)
@@ -350,11 +351,11 @@ rbusError_t webcfgTelemetrySetHandler(rbusHandle_t handle, rbusProperty_t prop, 
                 WebcfgDebug("Call datamodel function  with data %s\n", data);
 
                 if(SupplementaryURLVal) {
-                    WEBCFG_FREE(SupplementaryURLVal);
+                    free(SupplementaryURLVal);
                     SupplementaryURLVal = NULL;
                 }
                 SupplementaryURLVal = strdup(data);
-                WEBCFG_FREE(data);
+                free(data);
 		WebcfgDebug("SupplementaryURLVal after processing %s\n", SupplementaryURLVal);
 		retPsmSet = rbus_StoreValueIntoDB( WEBCFG_SUPPLEMENTARY_TELEMETRY_PARAM, SupplementaryURLVal );
 		if (retPsmSet != RBUS_ERROR_SUCCESS)
@@ -423,7 +424,7 @@ rbusError_t webcfgFrSetHandler(rbusHandle_t handle, rbusProperty_t prop, rbusSet
 		}
 
                 if (forceSyncVal){
-                    WEBCFG_FREE(forceSyncVal);
+                    free(forceSyncVal);
                     forceSyncVal = NULL;
                 }
 		int session_status = 0;
@@ -502,7 +503,7 @@ rbusError_t webcfgRfcGetHandler(rbusHandle_t handle, rbusProperty_t property, rb
 			{
 				RfcVal = true;
 			}
-			WEBCFG_FREE(tmpchar);
+			free(tmpchar);
 		}
 		WebcfgDebug("RfcVal fetched %d\n", RfcVal);
 	}
@@ -967,7 +968,7 @@ rbusError_t webcfgSubdocForceResetSetHandler(rbusHandle_t handle, rbusProperty_t
             if(data)
             {
                 SubdocResetVal = strdup(data);
-                WEBCFG_FREE(data);
+                free(data);
 		char str[256] = {'\0'};
 		int n = 0;
 		webcfgError_t ret = ERROR_FAILURE;
@@ -1146,7 +1147,7 @@ void setFetchCachedBlobErrCode(rbusObject_t outParams, webcfgError_t errorCode)
 
 		if(errorString != NULL)
 		{
-			WEBCFG_FREE(errorString);
+			free(errorString);
 		}
 	}
 
@@ -1346,7 +1347,7 @@ WEBCFG_STATUS regWebConfigDataModel()
 				{
 					RfcVal = true;
 				}
-				WEBCFG_FREE(tmpchar);
+				free(tmpchar);
 			}
 		}
 	}

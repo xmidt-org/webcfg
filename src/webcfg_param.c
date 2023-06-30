@@ -68,16 +68,16 @@ void webcfgparam_destroy( webcfgparam_t *pm )
         size_t i;
         for( i = 0; i < pm->entries_count; i++ ) {
             if( NULL != pm->entries[i].name ) {
-                WEBCFG_FREE( pm->entries[i].name );
+                free( pm->entries[i].name );
             }
 	    if( NULL != pm->entries[i].value ) {
-                WEBCFG_FREE( pm->entries[i].value );
+                free( pm->entries[i].value );
             }
         }
         if( NULL != pm->entries ) {
-            WEBCFG_FREE( pm->entries );
+            free( pm->entries );
         }
-        WEBCFG_FREE( pm );
+        free( pm );
     }
 }
 

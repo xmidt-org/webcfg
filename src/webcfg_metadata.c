@@ -465,7 +465,7 @@ void delete_supplementary_list()
 		temp = head;
 		head = head->next;
 		WebcfgDebug("Deleted node: temp->name:%s\n", temp->name);
-		WEBCFG_FREE(temp);
+		free(temp);
 		temp = NULL;
 	}
 	g_spInfoHead = NULL;

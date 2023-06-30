@@ -49,6 +49,7 @@ static char *supportedVersion_header=NULL;
 static char *supportedDocs_header=NULL;
 static char *supplementaryDocs_header=NULL;
 
+static void freeMqttHeaders(char *contentlen_header, char *contenttype_header, char *PartnerID_header, char *ModelName_header, char *productClass_header, char *uuid_header, char *systemReadyTime_header, char *currentTime_header, char *status_header, char *FwVersion_header, char *bootTime_header, char *schema_header, char *accept_header, char *version_header, char *doc_header, char *deviceId_header, char *transaction_uuid);
 static void webcfgSubscribeCallbackHandler(
     rbusHandle_t handle,
     rbusEvent_t const* event,
@@ -79,6 +80,7 @@ void initWebconfigMqttTask(unsigned long status)
 
 void* WebconfigMqttTask(void *status)
 {
+	pthread_detach(pthread_self());
 	int rc = -1;
 	rbusHandle_t rbus_handle;
 	int connStatus = 0;
@@ -199,8 +201,10 @@ rbusError_t mqttSubscribeInit()
 {
 	rbusError_t ret = RBUS_ERROR_BUS_ERROR;
 	rbusValue_t value;
-        rbusSetOptions_t opts;
-        opts.commit = true;
+	rbusObject_t inParams;
+	rbusObject_t outParams;
+	char subscribe_topic[256] = { 0 };
+	static char clientID[64] = { 0 };
 
 	rbusHandle_t rbus_handle = get_global_rbus_handle();
 
@@ -210,23 +214,50 @@ rbusError_t mqttSubscribeInit()
 		return ret;
 	}
 
+	char* temp_clientID = strdup(Get_Mqtt_ClientId());
+	if( temp_clientID != NULL && strlen(temp_clientID) !=0 )
+	{
+	      strncpy(clientID, temp_clientID, sizeof(clientID)-1);
+	      WebcfgInfo("clientID fetched from Get_Mqtt_ClientId is %s\n", clientID);
+              WEBCFG_FREE(temp_clientID);
+	}
+	else
+	{
+		WebcfgError("clientID fetched from Get_Mqtt_ClientId is Invalid\n");
+		return RBUS_ERROR_BUS_ERROR;
+	}
+
+	snprintf(subscribe_topic, MAX_MQTT_LEN, "%s%s", MQTT_SUBSCRIBE_TOPIC, clientID);
+
+	rbusObject_Init(&inParams, NULL);
+
 	rbusValue_Init(&value);
 	rbusValue_SetString(value, "Webconfig");
+	rbusObject_SetValue(inParams, "compname", value);
+	rbusValue_Release(value);
+
+	rbusValue_Init(&value);
+	rbusValue_SetString(value, subscribe_topic);
+	rbusObject_SetValue(inParams, "topic", value);
+	rbusValue_Release(value);
 
 	if(webcfg_onconnect_flag)
 	{
-		ret = rbus_set(rbus_handle, MQTT_SUBSCRIBE_PARAM, value, &opts);
+		ret = rbusMethod_Invoke(rbus_handle, MQTT_SUBSCRIBE_PARAM, inParams, &outParams);
 
 		if (ret)
 		{
-			WebcfgError("rbus_set for subscribe to topic failed: %s\n", rbusError_ToString(ret));
+			WebcfgError("rbusMethod_Invoke for subscribe to topic failed: %s\n", rbusError_ToString(ret));
 		}
 		else
 		{
-			WebcfgInfo("rbus_set for subscribe to topic success\n");
+		        rbusObject_Release(outParams);
+			WebcfgInfo("rbusMethod_Invoke for subscribe to topic success\n");
 		}
 	}
-	rbusValue_Release(value);
+
+	rbusObject_Release(inParams);
+
 	return ret;
 }
 
@@ -345,13 +376,14 @@ rbusError_t setBootupSyncHeader(char *publishGetVal)
 	ret = rbusMethod_Invoke(rbus_handle, WEBCFG_MQTT_PUBLISH_PARAM, inParams, &outParams);
 
 	rbusObject_Release(inParams);
-    rbusObject_Release(outParams);
+
 	if (ret)
 	{
 		WebcfgError("rbusMethod_Invoke for setBootupSyncHeader failed:%s\n", rbusError_ToString(ret));
 	}
 	else
 	{
+	        rbusObject_Release(outParams);
 		WebcfgInfo("rbus_set for setPublishGET success\n");
 	}
 	bootupsync = 1;
@@ -784,6 +816,11 @@ int createMqttHeader(char **header_list)
 	}
 	writeToDBFile("/tmp/header_list.txt", *header_list, strlen(*header_list));
 	WebcfgDebug("mqtt header_list is \n%s\n", *header_list);
+    freeMqttHeaders(contentlen_header,contenttype_header,PartnerID_header,ModelName_header,productClass_header,uuid_header,systemReadyTime_header,currentTime_header,status_header,FwVersion_header,bootTime_header,schema_header,accept_header,version_header,doc_header,deviceId_header,transaction_uuid);
+	return 0;
+}
+static void freeMqttHeaders(char *contentlen_header, char *contenttype_header, char *PartnerID_header, char *ModelName_header, char *productClass_header, char *uuid_header, char *systemReadyTime_header, char *currentTime_header, char *status_header, char *FwVersion_header, char *bootTime_header, char *schema_header, char *accept_header, char *version_header, char *doc_header, char *deviceId_header, char *transaction_uuid)
+{
 	WEBCFG_FREE(contentlen_header);
 	WEBCFG_FREE(contenttype_header);
 	WEBCFG_FREE(PartnerID_header);
@@ -801,12 +838,11 @@ int createMqttHeader(char **header_list)
 	WEBCFG_FREE(doc_header);
 	WEBCFG_FREE(deviceId_header);
 	WEBCFG_FREE(transaction_uuid);
-	return 0;
 }
-
 //new thread created for processPayload 
 void * processPayloadTask(void *tmp)
 {
+	pthread_detach(pthread_self());
 	if(tmp != NULL)
 	{
 		msg_t *msg = NULL;
@@ -1095,13 +1131,14 @@ rbusError_t setPublishNotification(char *publishNotifyVal)
 
 	ret = rbusMethod_Invoke(rbus_handle, WEBCFG_MQTT_PUBLISH_PARAM, inParams, &outParams);
 	rbusObject_Release(inParams);
-	rbusObject_Release(outParams);
+
 	if (ret)
 	{
 		WebcfgError("rbusMethod_Invoke for setPublishNotification failed:%s\n", rbusError_ToString(ret));
 	}
 	else
 	{
+	        rbusObject_Release(outParams);
 		WebcfgInfo("rbusMethod_Invoke for setPublishNotification success\n");
 	}
 	return ret;
