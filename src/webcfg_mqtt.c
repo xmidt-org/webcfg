@@ -219,6 +219,11 @@ rbusError_t mqttSubscribeInit()
 	      WebcfgInfo("clientID fetched from Get_Mqtt_ClientId is %s\n", clientID);
               WEBCFG_FREE(temp_clientID);
 	}
+	else
+	{
+		WebcfgError("clientID fetched from Get_Mqtt_ClientId is Invalid\n");
+		return RBUS_ERROR_BUS_ERROR;
+	}
 
 	snprintf(subscribe_topic, MAX_MQTT_LEN, "%s%s", MQTT_SUBSCRIBE_TOPIC, clientID);
 
