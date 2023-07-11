@@ -280,7 +280,8 @@ static void webcfgSubscribeCallbackHandler(
 		if(!bootupsync)
 		{
 			WebcfgInfo("mqtt is connected and subscribed to topic, trigger bootup sync to cloud.\n");
-			int ret = triggerBootupSync();
+			//int ret = triggerBootupSync();
+			int ret = 1;
 			if(ret)
 			{
 				WebcfgInfo("Triggered bootup sync via mqtt\n");
