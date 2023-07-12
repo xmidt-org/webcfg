@@ -2061,7 +2061,7 @@ void waitForUpstreamEventSubscribe(int wait_time)
 {
 	int count=0;
 	if(!subscribed)
-		WebcfgError("Waiting for %s event subscription for %ds\n", WEBCFG_UPSTREAM_EVENT, wait_time);
+		WebcfgInfo("Waiting for %s event subscription for %ds\n", WEBCFG_UPSTREAM_EVENT, wait_time);
 	while(!subscribed)
 	{
 		sleep(5);
