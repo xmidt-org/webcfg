@@ -40,7 +40,7 @@
 
 #define NUM_WEBCFG_ELEMENTS1 7
 
-#if !defined (FEATURE_SUPPORT_MQTTCM) || defined (WEBCONFIG_HTTP_SUPPORT)
+#if !defined (FEATURE_SUPPORT_MQTTCM)
 #define NUM_WEBCFG_ELEMENTS2 3
 #endif
 

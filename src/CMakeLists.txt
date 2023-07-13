@@ -21,10 +21,6 @@ if (FEATURE_SUPPORT_MQTTCM)
 add_definitions(-DFEATURE_SUPPORT_MQTTCM)
 endif (FEATURE_SUPPORT_MQTTCM)
 
-if (WEBCONFIG_HTTP_SUPPORT)
-add_definitions(-DWEBCONFIG_HTTP_SUPPORT)
-endif (WEBCONFIG_HTTP_SUPPORT)
-
 endif (WEBCONFIG_BIN_SUPPORT)
 
 if (FEATURE_SUPPORT_AKER)
@@ -79,7 +75,7 @@ add_executable(webconfig ${SOURCES} ${HEADERS})
 set_property(TARGET webconfig PROPERTY C_STANDARD 99)
 set(COMMON_LIBS -lwrp-c -lpthread -lwdmp-c -lmsgpackc -ltrower-base64 -lm -lcjson -lrt -luuid -lrbus)
 
-if ((NOT FEATURE_SUPPORT_MQTTCM) OR (WEBCONFIG_HTTP_SUPPORT))
+if (NOT FEATURE_SUPPORT_MQTTCM)
 set(COMMON_LIBS ${COMMON_LIBS} -lcurl)
 endif()
 

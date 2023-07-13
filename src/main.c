@@ -84,7 +84,7 @@ int main()
 #endif
 	WebcfgInfo("********** Starting component: %s **********\n ", WEBCFG_COMPONENT_NAME);
 	webcfg_drop_root_privilege();
-#if !defined (FEATURE_SUPPORT_MQTTCM) || defined (WEBCONFIG_HTTP_SUPPORT)
+#if !defined (FEATURE_SUPPORT_MQTTCM)
 	curl_global_init(CURL_GLOBAL_DEFAULT);
 #endif
 	if(isRbusEnabled())
@@ -146,7 +146,7 @@ int main()
 	pthread_cond_wait(&webcfg_con, &webcfg_mut);
 	WebcfgDebug("pthread_mutex_unlock webcfg_mut\n");
 	pthread_mutex_unlock (&webcfg_mut);
-#if !defined (FEATURE_SUPPORT_MQTTCM) || defined (WEBCONFIG_HTTP_SUPPORT)
+#if !defined (FEATURE_SUPPORT_MQTTCM)
 	curl_global_cleanup();
 #endif
 	WebcfgInfo("Exiting webconfig main thread!!\n");

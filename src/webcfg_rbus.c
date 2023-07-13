@@ -1281,7 +1281,6 @@ WEBCFG_STATUS regWebConfigDataModel()
 {
 	rbusError_t ret1 = RBUS_ERROR_SUCCESS;
 	rbusError_t ret2 = RBUS_ERROR_SUCCESS;
-	rbusError_t ret3 = RBUS_ERROR_SUCCESS;
 
 	rbusError_t retPsmGet = RBUS_ERROR_BUS_ERROR;
 	WEBCFG_STATUS status = WEBCFG_SUCCESS;
@@ -1307,7 +1306,7 @@ WEBCFG_STATUS regWebConfigDataModel()
 
 	ret1 = rbus_regDataElements(rbus_handle, NUM_WEBCFG_ELEMENTS1, dataElements1);
 
-#if !defined (FEATURE_SUPPORT_MQTTCM) || defined (WEBCONFIG_HTTP_SUPPORT)
+#if !defined (FEATURE_SUPPORT_MQTTCM)
 	rbusDataElement_t dataElements2[NUM_WEBCFG_ELEMENTS2] = {
 
 		{WEBCFG_URL_PARAM, RBUS_ELEMENT_TYPE_PROPERTY, {webcfgUrlGetHandler, webcfgUrlSetHandler, NULL, NULL, NULL, NULL}},
@@ -1318,12 +1317,7 @@ WEBCFG_STATUS regWebConfigDataModel()
 	ret2 = rbus_regDataElements(rbus_handle, NUM_WEBCFG_ELEMENTS2, dataElements2);
 #endif
 
-#ifdef FEATURE_SUPPORT_MQTTCM
-	//ret3 = regWebConfigDataModel_mqtt();
-	ret3 = RBUS_ERROR_SUCCESS;
-#endif
-
-	if(ret1 == RBUS_ERROR_SUCCESS && ret2 == RBUS_ERROR_SUCCESS && ret3 == RBUS_ERROR_SUCCESS)
+	if(ret1 == RBUS_ERROR_SUCCESS && ret2 == RBUS_ERROR_SUCCESS)
 	{
 		WebcfgDebug("Registered data element %s with rbus \n ", WEBCFG_RFC_PARAM);
 

@@ -70,7 +70,7 @@ struct token_data {
 /*----------------------------------------------------------------------------*/
 static char g_ETAG[64]={'\0'};
 char webpa_aut_token[4096]={'\0'};
-#if !defined (FEATURE_SUPPORT_MQTTCM) || defined (WEBCONFIG_HTTP_SUPPORT) || defined (WAN_FAILOVER_SUPPORTED)
+#if !defined (FEATURE_SUPPORT_MQTTCM) || defined (WAN_FAILOVER_SUPPORTED)
 static char g_interface[32]={'\0'};
 #endif
 char g_systemReadyTime[64]={'\0'};
@@ -198,7 +198,7 @@ WEBCFG_STATUS checkAkerDoc();
 */
 WEBCFG_STATUS webcfg_http_request(char **configData, int r_count, int status, long *code, char **transaction_id, char* contentType, size_t *dataSize, char* docname)
 {
-#if !defined (FEATURE_SUPPORT_MQTTCM) || defined (WEBCONFIG_HTTP_SUPPORT)
+#if !defined (FEATURE_SUPPORT_MQTTCM)
 	CURL *curl;
 	CURLcode res;
 	CURLcode time_res;
@@ -1529,7 +1529,7 @@ void refreshConfigVersionList(char *versionsList, int http_status)
  * @param[out] trans_uuid for sync
  * @param[out] header_list output curl header list
 */
-#if !defined FEATURE_SUPPORT_MQTTCM || defined WEBCONFIG_HTTP_SUPPORT
+#if !defined FEATURE_SUPPORT_MQTTCM
 void createCurlHeader( struct curl_slist *list, struct curl_slist **header_list, int status, char ** trans_uuid)
 {
 	char *version_header = NULL;
