@@ -89,6 +89,9 @@ int main()
 		WebcfgDebug("RBUS mode. webconfigRbusInit\n");
 		webconfigRbusInit(WEBCFG_COMPONENT_NAME);
 		regWebConfigDataModel();
+		#ifdef WAN_FAILOVER_SUPPORTED
+		subscribeTo_CurrentActiveInterface_Event();
+		#endif
 		systemStatus = rbus_waitUntilSystemReady();
 		WebcfgDebug("rbus_waitUntilSystemReady systemStatus is %d\n", systemStatus);
     		getCurrent_Time(&cTime);
@@ -99,9 +102,6 @@ int main()
 		WanEventHandler();
 		// wait for upstream subscriber for 5mins
 		waitForUpstreamEventSubscribe(300);
-		#ifdef WAN_FAILOVER_SUPPORTED
-		subscribeTo_CurrentActiveInterface_Event();
-		#endif
 		ret = rbus_GetValueFromDB( PARAM_RFC_ENABLE, &strValue );
 		if (ret == 0)
 		{

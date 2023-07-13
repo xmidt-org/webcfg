@@ -1926,7 +1926,7 @@ int set_rbus_ForceSync(char* pString, int *pStatus)
         }
 	else if(get_global_webcfg_forcedsync_started() ==1)
         {
-			WebcfgInfo("Webcfg forced sync is in progress, Ignoring this request & will retry later.\n");
+            WebcfgInfo("Webcfg forced sync is in progress, Ignoring this request & will retry later.\n");
             *pStatus = 1;
             return 0;
         }
@@ -2061,7 +2061,7 @@ void waitForUpstreamEventSubscribe(int wait_time)
 {
 	int count=0;
 	if(!subscribed)
-		WebcfgError("Waiting for %s event subscription for %ds\n", WEBCFG_UPSTREAM_EVENT, wait_time);
+		WebcfgInfo("Waiting for %s event subscription for %ds\n", WEBCFG_UPSTREAM_EVENT, wait_time);
 	while(!subscribed)
 	{
 		sleep(5);
@@ -2119,7 +2119,7 @@ static void subscribeAsyncHandler(
 int subscribeTo_CurrentActiveInterface_Event()
 {
       int rc = RBUS_ERROR_SUCCESS;
-      WebcfgDebug("Subscribing to %s Event\n", WEBCFG_INTERFACE_PARAM);
+      WebcfgInfo("Subscribing to %s Event\n", WEBCFG_INTERFACE_PARAM);
       rc = rbusEvent_SubscribeAsync (
         rbus_handle,
         WEBCFG_INTERFACE_PARAM,
