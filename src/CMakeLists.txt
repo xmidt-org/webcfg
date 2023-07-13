@@ -18,6 +18,10 @@ if (WEBCONFIG_BIN_SUPPORT)
 add_definitions(-DWEBCONFIG_BIN_SUPPORT)
 endif (WEBCONFIG_BIN_SUPPORT)
 
+if (WAN_FAILOVER_SUPPORTED)
+add_definitions(-DWAN_FAILOVER_SUPPORTED)
+endif (WAN_FAILOVER_SUPPORTED)
+
 if (FEATURE_SUPPORT_AKER)
 add_definitions(-DFEATURE_SUPPORT_AKER)
 endif (FEATURE_SUPPORT_AKER)
@@ -28,9 +32,14 @@ else()
 message(STATUS "WEBCONFIG_BIN_SUPPORT is not supported")
 endif (WEBCONFIG_BIN_SUPPORT)
 
+if (WAN_FAILOVER_SUPPORTED)
+message(STATUS "WAN_FAILOVER_SUPPORTED is supported")
+else()
+message(STATUS "WAN_FAILOVER_SUPPORTED is not supported")
+endif (WAN_FAILOVER_SUPPORTED)
 
-set(HEADERS webcfg.h webcfg_param.h webcfg_pack.h webcfg_multipart.h webcfg_auth.h webcfg_notify.h webcfg_generic.h webcfg_db.h webcfg_log.h webcfg_blob.h webcfg_event.h webcfg_metadata.h webcfg_timer.h webcfg_privilege.h)
-set(SOURCES webcfg_helpers.c webcfg.c webcfg_param.c webcfg_pack.c webcfg_multipart.c webcfg_auth.c webcfg_notify.c webcfg_db.c webcfg_blob.c webcfg_event.c webcfg_metadata.c webcfg_timer.c webcfg_privilege.c)
+set(HEADERS webcfg.h webcfg_param.h webcfg_pack.h webcfg_multipart.h webcfg_auth.h webcfg_notify.h webcfg_generic.h webcfg_db.h webcfg_log.h webcfg_blob.h webcfg_event.h webcfg_metadata.h webcfg_timer.h webcfg_privilege.h webcfg_wanhandle.h)
+set(SOURCES webcfg_helpers.c webcfg.c webcfg_param.c webcfg_pack.c webcfg_multipart.c webcfg_auth.c webcfg_notify.c webcfg_db.c webcfg_blob.c webcfg_event.c webcfg_metadata.c webcfg_timer.c webcfg_privilege.c webcfg_wanhandle.c)
 
 if (FEATURE_SUPPORT_AKER)
 set(HEADERS ${HEADERS} webcfg_aker.h)

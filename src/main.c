@@ -28,6 +28,7 @@
 #include "webcfg_log.h"
 #include "webcfg_generic.h"
 #include "webcfg_rbus.h"
+#include "webcfg_wanhandle.h"
 #include "webcfg_privilege.h"
 #include <unistd.h>
 #include <pthread.h>
@@ -97,6 +98,8 @@ int main()
     		snprintf(systemReadyTime, sizeof(systemReadyTime),"%d", (int)cTime.tv_sec);
     		WebcfgInfo("systemReadyTime is %s\n", systemReadyTime);
 		set_global_systemReadyTime(systemReadyTime);
+		WebcfgInfo("Registering WanEventHandler sysevents\n");
+		WanEventHandler();
 		// wait for upstream subscriber for 5mins
 		waitForUpstreamEventSubscribe(300);
 		ret = rbus_GetValueFromDB( PARAM_RFC_ENABLE, &strValue );

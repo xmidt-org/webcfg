@@ -34,7 +34,6 @@
 #include "webcfg_event.h"
 #include "webcfg_blob.h"
 #include "webcfg_timer.h"
-
 #ifdef FEATURE_SUPPORT_AKER
 #include "webcfg_aker.h"
 #endif
