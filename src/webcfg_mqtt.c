@@ -280,8 +280,7 @@ static void webcfgSubscribeCallbackHandler(
 		if(!bootupsync)
 		{
 			WebcfgInfo("mqtt is connected and subscribed to topic, trigger bootup sync to cloud.\n");
-			//int ret = triggerBootupSync();
-			int ret = 1;
+			int ret = triggerBootupSync();
 			if(ret)
 			{
 				WebcfgInfo("Triggered bootup sync via mqtt\n");
@@ -943,6 +942,7 @@ int handleMqttResponse(int response_code, char *contentLength, char* transaction
 	if(response_code == 304)
 	{
 		WebcfgInfo("webConfig is in sync with cloud. response_code:%d\n", response_code);
+		WebcfgInfo("db_root_version is %d and db_root_string is %s\n", db_root_version, db_root_string);
 		getRootDocVersionFromDBCache(&db_root_version, &db_root_string, &subdocList);
 		addWebConfgNotifyMsg(NULL, db_root_version, NULL, NULL, transaction_uuid, 0, "status", 0, db_root_string, response_code);
 		if(db_root_string !=NULL)
@@ -957,7 +957,8 @@ int handleMqttResponse(int response_code, char *contentLength, char* transaction
 		//After factory reset when server sends 200 with empty config, set POST-NONE root version
 		if((contentLength !=NULL) && (strcmp(contentLength, "0") == 0))
 		{
-			WebcfgInfo("webConfigData content length is 0\n");
+			WebcfgInfo("webConfigData content length is %s\n", contentLength);
+			WebcfgInfo("version is %s \n", version);
 			refreshConfigVersionList(version, response_code);
 			set_global_contentLen(NULL);
 			WEBCFG_FREE(transaction_uuid);
@@ -966,11 +967,13 @@ int handleMqttResponse(int response_code, char *contentLength, char* transaction
 		else
 		{
 			WebcfgDebug("webConfig is not in sync with cloud. response_code:%d\n", response_code);
+			return 0;
 		}
 	}
 	else if(response_code == 204)
 	{
 		WebcfgInfo("No configuration available for this device. response_code:%d\n", response_code);
+		WebcfgInfo("db_root_version is %d and db_root_string is %s\n", db_root_version, db_root_string);
 		getRootDocVersionFromDBCache(&db_root_version, &db_root_string, &subdocList);
 		addWebConfgNotifyMsg(NULL, db_root_version, NULL, NULL, transaction_uuid, 0, "status", 0, db_root_string, response_code);
 		if(db_root_string !=NULL)
@@ -983,6 +986,7 @@ int handleMqttResponse(int response_code, char *contentLength, char* transaction
 	else if(response_code == 429)
 	{
 		WebcfgInfo("No action required from client. response_code:%d\n", response_code);
+		WebcfgInfo("db_root_version is %d and db_root_string is %s\n", db_root_version, db_root_string);
 		getRootDocVersionFromDBCache(&db_root_version, &db_root_string, &subdocList);
 		addWebConfgNotifyMsg(NULL, db_root_version, NULL, NULL, transaction_uuid, 0, "status", 0, db_root_string, response_code);
 		if(db_root_string !=NULL)
@@ -1001,6 +1005,7 @@ int handleMqttResponse(int response_code, char *contentLength, char* transaction
 			//To set POST-NONE root version when 404
 			refreshConfigVersionList(version, response_code);
 		}
+		WebcfgInfo("db_root_version is %d and db_root_string is %s\n", db_root_version, db_root_string);
 		getRootDocVersionFromDBCache(&db_root_version, &db_root_string, &subdocList);
 		addWebConfgNotifyMsg(NULL, db_root_version, NULL, NULL, transaction_uuid, 0, "status", 0, db_root_string, response_code);
 		if(db_root_string !=NULL)
@@ -1013,7 +1018,7 @@ int handleMqttResponse(int response_code, char *contentLength, char* transaction
 	else //5xx & all other errors
 	{
 		WebcfgError("Error code returned, need to do curl retry to server. response_code:%d\n", response_code);
-		
+		WebcfgInfo("db_root_version is %d and db_root_string is %s\n", db_root_version, db_root_string);
 		getRootDocVersionFromDBCache(&db_root_version, &db_root_string, &subdocList);
 		addWebConfgNotifyMsg(NULL, db_root_version, NULL, NULL, transaction_uuid, 0, "status", 0, db_root_string, response_code);
 		if(db_root_string !=NULL)
@@ -1022,7 +1027,7 @@ int handleMqttResponse(int response_code, char *contentLength, char* transaction
 		}
 		WEBCFG_FREE(transaction_uuid);
 	}
-	return 0;
+	return 1;
 }
 
 int processPayload(char * data, int dataSize)
@@ -1059,7 +1064,7 @@ int processPayload(char * data, int dataSize)
 		{
 			ptr1_count = memchr(ptr_count+1, '\r', dataSize - (ptr_count - data_body));
 			res_header = strndup(ptr_count, (ptr1_count-ptr_count));
-			if(res_header !=NULL)
+			if(res_header != NULL)
 			{
 				//Extract HTTP response code using space as delimiter
 				res_code = strtok(res_header, " ");
@@ -1158,7 +1163,7 @@ int processPayload(char * data, int dataSize)
 				{
 					contentLengthString = strtok(NULL, ":");
 					contentLengthString++;
-					WebcfgInfo("contentlength extracted is-%s\n", contentLengthString);
+					WebcfgInfo("contentlength extracted is %s\n", contentLengthString);
 					break;
 				}
 			}
@@ -1171,11 +1176,10 @@ int processPayload(char * data, int dataSize)
 	WEBCFG_FREE(etag_header);
 	transaction_uuid = strdup(generate_trans_uuid());
 
+	WebcfgInfo("contentlength extracted is %s\n", contentLengthString);
 	if(handleMqttResponse(response_code, contentLengthString, transaction_uuid) == 1)
 	{
 		WEBCFG_FREE(data);
-		WEBCFG_FREE(transaction_uuid);
-		WEBCFG_FREE(contentLengthString);
 		return 1;
 	}
 
