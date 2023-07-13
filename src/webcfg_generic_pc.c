@@ -65,7 +65,7 @@ void __attribute__((weak)) setAttributes(param_t *attArr, const unsigned int par
 int __attribute__((weak)) rbus_GetValueFromDB( char* paramName, char** paramValue);
 int __attribute__((weak)) rbus_StoreValueIntoDB(char *paramName, char *value);
 int __attribute__((weak)) rbus_waitUntilSystemReady();
-#ifdef WEBCONFIG_MQTT_SUPPORT
+#ifdef FEATURE_SUPPORT_MQTTCM
 int __attribute__((weak)) Get_Mqtt_LocationId( char *pString);
 int __attribute__((weak)) Get_Mqtt_NodeId( char *pString);
 int __attribute__((weak)) Get_Mqtt_Broker( char *pString);
@@ -237,7 +237,7 @@ int Set_Supplementary_URL( char *name, char *pString)
     UNUSED(pString);
     return 0;
 }
-#ifdef WEBCONFIG_MQTT_SUPPORT
+#ifdef FEATURE_SUPPORT_MQTTCM
 int Get_Mqtt_LocationId( char *pString)
 {
     WebcfgDebug("Inside Get_Mqtt_LocationId weak function.\n");

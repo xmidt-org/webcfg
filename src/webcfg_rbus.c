@@ -24,7 +24,7 @@
 #include <time.h>
 #include "webcfg_rbus.h"
 
-#ifdef WEBCONFIG_MQTT_SUPPORT
+#ifdef FEATURE_SUPPORT_MQTTCM
 #include "webcfg_mqtt.h"
 #endif
 
@@ -1307,7 +1307,7 @@ WEBCFG_STATUS regWebConfigDataModel()
 
 	ret1 = rbus_regDataElements(rbus_handle, NUM_WEBCFG_ELEMENTS1, dataElements1);
 
-#if !defined (WEBCONFIG_MQTT_SUPPORT) || defined (WEBCONFIG_HTTP_SUPPORT)
+#if !defined (FEATURE_SUPPORT_MQTTCM) || defined (WEBCONFIG_HTTP_SUPPORT)
 	rbusDataElement_t dataElements2[NUM_WEBCFG_ELEMENTS2] = {
 
 		{WEBCFG_URL_PARAM, RBUS_ELEMENT_TYPE_PROPERTY, {webcfgUrlGetHandler, webcfgUrlSetHandler, NULL, NULL, NULL, NULL}},
@@ -1318,7 +1318,7 @@ WEBCFG_STATUS regWebConfigDataModel()
 	ret2 = rbus_regDataElements(rbus_handle, NUM_WEBCFG_ELEMENTS2, dataElements2);
 #endif
 
-#ifdef WEBCONFIG_MQTT_SUPPORT
+#ifdef FEATURE_SUPPORT_MQTTCM
 	//ret3 = regWebConfigDataModel_mqtt();
 	ret3 = RBUS_ERROR_SUCCESS;
 #endif
@@ -2037,7 +2037,7 @@ void sendNotification_rbus(char *payload, char *source, char *destination)
 
 			msg_len = wrp_struct_to (notif_wrp_msg, WRP_BYTES, &msg_bytes);
 
-		#ifdef WEBCONFIG_MQTT_SUPPORT
+		#ifdef FEATURE_SUPPORT_MQTTCM
 			int ret = sendNotification_mqtt(payload, destination, notif_wrp_msg, msg_bytes);
 			if (ret)
 			{

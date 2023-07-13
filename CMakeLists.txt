@@ -125,7 +125,7 @@ ExternalProject_Add(cJSON
 add_library(libcJSON STATIC IMPORTED)
 add_dependencies(libcJSON cJSON)
 
-if ((NOT WEBCONFIG_MQTT_SUPPORT) OR (WEBCONFIG_HTTP_SUPPORT))
+if ((NOT FEATURE_SUPPORT_MQTTCM) OR (WEBCONFIG_HTTP_SUPPORT))
 # curl external dependency
 #-------------------------------------------------------------------------------
 ExternalProject_Add(curl
