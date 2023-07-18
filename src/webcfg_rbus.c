@@ -1795,6 +1795,9 @@ int set_rbus_RfcEnable(bool bValue)
 			if(get_global_mpThreadId() == NULL)
 			{
 				initWebConfigMultipartTask(0);
+				#ifdef WEBCONFIG_MQTT_SUPPORT
+					initWebconfigMqttTask(0);
+				#endif
 			}
 			else
 			{
