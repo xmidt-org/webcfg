@@ -163,15 +163,15 @@ void* WebconfigMqttTask(void *status)
 		WebcfgInfo("set mqtt subscribe request to mqtt CM\n");
 		mqttSubscribeInit();
 	}
+	
 	pthread_cond_wait(&mqtt_sync_condition, &mqtt_sync_mutex);
-	pthread_mutex_unlock (&mqtt_sync_mutex);
 	webcfg_onconnect_flag = 0;
+	
 	WebcfgInfo("rbus event Unsubscribe to mqtt subscribed callback\n");
 	rc = rbusEvent_Unsubscribe(rbus_handle, WEBCFG_SUBSCRIBE_CALLBACK);
 	if(rc != RBUS_ERROR_SUCCESS)
 	{
 		WebcfgError("consumer: rbusEvent_Unsubscribe for %s failed: %d\n", WEBCFG_SUBSCRIBE_CALLBACK, rc);
-		return NULL;
 	}
 
 	WebcfgInfo("rbus event Unsubscribe to mqtt message callback\n");
@@ -179,7 +179,6 @@ void* WebconfigMqttTask(void *status)
 	if(rc != RBUS_ERROR_SUCCESS)
 	{
 		WebcfgError("consumer: rbusEvent_Unsubscribe for %s failed: %d\n", WEBCFG_ONMESSAGE_CALLBACK, rc);
-		return NULL;
 	}
 
 	WebcfgInfo("rbus event Unsubscribe to mqtt publish callback\n");
@@ -187,8 +186,9 @@ void* WebconfigMqttTask(void *status)
 	if(rc != RBUS_ERROR_SUCCESS)
 	{
 		WebcfgError("consumer: rbusEvent_Unsubscribe for %s failed: %d\n", WEBCFG_ONPUBLISH_CALLBACK, rc);
-		return NULL;
-	}	
+	}
+	
+	pthread_mutex_unlock (&mqtt_sync_mutex);	
 	return NULL;
 }
 
