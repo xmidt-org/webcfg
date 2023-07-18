@@ -71,4 +71,5 @@ void initWebconfigMqttTask(unsigned long status);
 rbusError_t setBootupSyncHeader(char *publishGetVal);
 rbusError_t mqttSubscribeInit();
 int getMqttCMConnStatus();
+pthread_cond_t *get_global_mqtt_sync_condition(void);
 #endif
