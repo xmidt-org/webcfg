@@ -187,6 +187,7 @@ int getMqttCMConnStatus()
 		{
 			WebcfgError("mqttcm connect status is NULL\n");
 		}
+		rbusValue_Release(value);
         }
         else
         {
@@ -250,6 +251,7 @@ rbusError_t mqttSubscribeInit()
 		else
 		{
 			WebcfgInfo("rbusMethod_Invoke for subscribe to topic success\n");
+			rbusObject_Release(outParams);
 		}
 	}
 
@@ -309,10 +311,12 @@ int triggerBootupSync()
 			WebcfgInfo("mqttheaderList generated is \n%s len %zu\n", mqttheaderList, strlen(mqttheaderList));
 			setBootupSyncHeader(mqttheaderList);
 			WebcfgInfo("setBootupSyncHeader done\n");
+			WEBCFG_FREE(mqttheaderList);
 		}
 		else
 		{
 			WebcfgError("Failed to generate mqttheaderList\n");
+			WEBCFG_FREE(mqttheaderList);
 			return 0;
 		}
 	}
@@ -378,7 +382,8 @@ rbusError_t setBootupSyncHeader(char *publishGetVal)
 	}
 	else
 	{
-		WebcfgInfo("rbus_set for setPublishGET success\n");
+		WebcfgInfo("rbusMethod_Invoke for setBootupSyncHeader success\n");
+		rbusObject_Release(outParams);
 	}
 	bootupsync = 1;
 	return ret;
@@ -440,9 +445,11 @@ int createMqttHeader(char **header_list)
 		{
 			convertToUppercase(g_deviceId);
 			snprintf(deviceId_header, MAX_BUF_SIZE, "Device-Id: %s", g_deviceId);
-			//snprintf(deviceId_header, MAX_BUF_SIZE, "Mac: %s", tmp);
 			WebcfgInfo("deviceId_header formed %s\n", deviceId_header);
-			//WEBCFG_FREE(deviceId_header);
+		}
+		else
+		{
+			WebcfgError("Failed in memory allocation for deviceId_header\n");
 		}
 	}
 	else
@@ -461,7 +468,10 @@ int createMqttHeader(char **header_list)
 		{
 			snprintf(doc_header, MAX_BUF_SIZE, "\r\nDoc-Name:%s", ((strlen(docList)!=0) ? docList : "NULL"));
 			WebcfgInfo("doc_header formed %s\n", doc_header);
-			//WEBCFG_FREE(doc_header);
+		}
+		else
+		{
+			WebcfgError("Failed in memory allocation for doc_header\n");
 		}
 	}
 	if(!get_global_supplementarySync())
@@ -472,7 +482,10 @@ int createMqttHeader(char **header_list)
 			refreshConfigVersionList(version, 0);
 			snprintf(version_header, MAX_BUF_SIZE, "\r\nIF-NONE-MATCH:%s", ((strlen(version)!=0) ? version : "0"));
 			WebcfgInfo("version_header formed %s\n", version_header);
-			//WEBCFG_FREE(version_header);
+		}
+		else
+		{
+			WebcfgError("Failed in memory allocation for version_header\n");
 		}
 	}
 	accept_header = (char *) malloc(sizeof(char)*MAX_BUF_SIZE);
@@ -480,13 +493,20 @@ int createMqttHeader(char **header_list)
 	{
 		snprintf(accept_header, MAX_BUF_SIZE, "\r\nAccept: application/msgpack");
 	}
+	else
+	{
+		WebcfgError("Failed in memory allocation for accept_header\n");		
+	}
 
 	schema_header = (char *) malloc(sizeof(char)*MAX_BUF_SIZE);
 	if(schema_header !=NULL)
 	{
 		snprintf(schema_header, MAX_BUF_SIZE, "\r\nSchema-Version: %s", "v2.0");
 		WebcfgInfo("schema_header formed %s\n", schema_header);
-		//WEBCFG_FREE(schema_header);
+	}
+	else
+	{
+		WebcfgError("Failed in memory allocation for schema_header\n");	
 	}
 
 	if(!get_global_supplementarySync())
@@ -499,10 +519,17 @@ int createMqttHeader(char **header_list)
 			{
 				supported_version_size = strlen(supportedVersion)+strlen("X-System-Schema-Version: ");
 				supportedVersion_header = (char *) malloc(supported_version_size+1);
-				memset(supportedVersion_header,0,supported_version_size+1);
-				WebcfgDebug("supportedVersion fetched is %s\n", supportedVersion);
-				snprintf(supportedVersion_header, supported_version_size+1, "\r\nX-System-Schema-Version: %s", supportedVersion);
-				WebcfgInfo("supportedVersion_header formed %s\n", supportedVersion_header);
+				if(supportedVersion_header != NULL)
+				{
+					memset(supportedVersion_header,0,supported_version_size+1);
+					WebcfgDebug("supportedVersion fetched is %s\n", supportedVersion);
+					snprintf(supportedVersion_header, supported_version_size+1, "\r\nX-System-Schema-Version: %s", supportedVersion);
+					WebcfgInfo("supportedVersion_header formed %s\n", supportedVersion_header);
+				}
+				else
+				{
+					WebcfgError("Failed in memory allocation for supportedVersion_header\n");	
+				}
 			}
 			else
 			{
@@ -522,10 +549,17 @@ int createMqttHeader(char **header_list)
 			{
 				supported_doc_size = strlen(supportedDocs)+strlen("X-System-Supported-Docs: ");
 				supportedDocs_header = (char *) malloc(supported_doc_size+1);
-				memset(supportedDocs_header,0,supported_doc_size+1);
-				WebcfgDebug("supportedDocs fetched is %s\n", supportedDocs);
-				snprintf(supportedDocs_header, supported_doc_size+1, "\r\nX-System-Supported-Docs: %s", supportedDocs);
-				WebcfgInfo("supportedDocs_header formed %s\n", supportedDocs_header);
+				if(supportedDocs_header != NULL)
+				{
+					memset(supportedDocs_header,0,supported_doc_size+1);
+					WebcfgDebug("supportedDocs fetched is %s\n", supportedDocs);
+					snprintf(supportedDocs_header, supported_doc_size+1, "\r\nX-System-Supported-Docs: %s", supportedDocs);
+					WebcfgInfo("supportedDocs_header formed %s\n", supportedDocs_header);
+				}
+				else
+				{
+					WebcfgError("Failed in memory allocation for supportedDocs_header\n");	
+				}
 			}
 			else
 			{
@@ -547,10 +581,17 @@ int createMqttHeader(char **header_list)
 			{
 				supplementary_docs_size = strlen(supplementaryDocs)+strlen("X-System-SupplementaryService-Sync: ");
 				supplementaryDocs_header = (char *) malloc(supplementary_docs_size+1);
-				memset(supplementaryDocs_header,0,supplementary_docs_size+1);
-				WebcfgDebug("supplementaryDocs fetched is %s\n", supplementaryDocs);
-				snprintf(supplementaryDocs_header, supplementary_docs_size+1, "\r\nX-System-SupplementaryService-Sync: %s", supplementaryDocs);
-				WebcfgInfo("supplementaryDocs_header formed %s\n", supplementaryDocs_header);
+				if(supplementaryDocs_header != NULL)
+				{
+					memset(supplementaryDocs_header,0,supplementary_docs_size+1);
+					WebcfgDebug("supplementaryDocs fetched is %s\n", supplementaryDocs);
+					snprintf(supplementaryDocs_header, supplementary_docs_size+1, "\r\nX-System-SupplementaryService-Sync: %s", supplementaryDocs);
+					WebcfgInfo("supplementaryDocs_header formed %s\n", supplementaryDocs_header);
+				}
+				else
+				{
+					WebcfgError("Failed in memory allocation for supplementaryDocs_header\n");	
+				}	
 			}
 			else
 			{
@@ -581,7 +622,10 @@ int createMqttHeader(char **header_list)
 		{
 			snprintf(bootTime_header, MAX_BUF_SIZE, "\r\nX-System-Boot-Time: %s", g_bootTime);
 			WebcfgInfo("bootTime_header formed %s\n", bootTime_header);
-			//WEBCFG_FREE(bootTime_header);
+		}
+		else
+		{
+			WebcfgError("Failed in memory allocation for bootTime_header\n");
 		}
 	}
 	else
@@ -607,7 +651,10 @@ int createMqttHeader(char **header_list)
 		{
 			snprintf(FwVersion_header, MAX_BUF_SIZE, "\r\nX-System-Firmware-Version: %s", g_FirmwareVersion);
 			WebcfgInfo("FwVersion_header formed %s\n", FwVersion_header);
-			//WEBCFG_FREE(FwVersion_header);
+		}
+		else
+		{
+			WebcfgError("Failed in memory allocation for FwVersion_header\n");
 		}
 	}
 	else
@@ -627,7 +674,10 @@ int createMqttHeader(char **header_list)
 			snprintf(status_header, MAX_BUF_SIZE, "\r\nX-System-Status: %s", "Operational");
 		}
 		WebcfgInfo("status_header formed %s\n", status_header);
-		//WEBCFG_FREE(status_header);
+	}
+	else
+	{
+		WebcfgError("Failed in memory allocation for status_header\n");
 	}
 
 	memset(currentTime, 0, sizeof(currentTime));
@@ -638,7 +688,10 @@ int createMqttHeader(char **header_list)
 	{
 		snprintf(currentTime_header, MAX_BUF_SIZE, "\r\nX-System-Current-Time: %s", currentTime);
 		WebcfgInfo("currentTime_header formed %s\n", currentTime_header);
-		//WEBCFG_FREE(currentTime_header);
+	}
+	else
+	{
+		WebcfgError("Failed in memory allocation for currentTime_header\n");	
 	}
 
         if(strlen(g_systemReadyTime) ==0)
@@ -649,7 +702,6 @@ int createMqttHeader(char **header_list)
                 {
                        strncpy(g_systemReadyTime, systemReadyTime, sizeof(g_systemReadyTime)-1);
                        WebcfgInfo("g_systemReadyTime fetched is %s\n", g_systemReadyTime);
-                       //WEBCFG_FREE(systemReadyTime);
                 }
         }
 
@@ -660,8 +712,11 @@ int createMqttHeader(char **header_list)
                 {
 			snprintf(systemReadyTime_header, MAX_BUF_SIZE, "\r\nX-System-Ready-Time: %s", g_systemReadyTime);
 	                WebcfgInfo("systemReadyTime_header formed %s\n", systemReadyTime_header);
-	                //WEBCFG_FREE(systemReadyTime_header);
                 }
+				else
+				{
+					WebcfgError("Failed in memory allocation for systemReadyTime_header\n");
+				}
         }
         else
         {
@@ -680,9 +735,10 @@ int createMqttHeader(char **header_list)
 		{
 			snprintf(uuid_header, MAX_BUF_SIZE, "\r\nTransaction-ID: %s", transaction_uuid);
 			WebcfgInfo("uuid_header formed %s\n", uuid_header);
-			//char *trans_uuid = strdup(transaction_uuid);
-			//WEBCFG_FREE(transaction_uuid);
-			//WEBCFG_FREE(uuid_header);
+		}
+		else
+		{
+			WebcfgError("Failed in memory allocation for uuid_header\n");
 		}
 	}
 	else
@@ -708,7 +764,10 @@ int createMqttHeader(char **header_list)
 		{
 			snprintf(productClass_header, MAX_BUF_SIZE, "\r\nX-System-Product-Class: %s", g_productClass);
 			WebcfgInfo("productClass_header formed %s\n", productClass_header);
-			//WEBCFG_FREE(productClass_header);
+		}
+		else
+		{
+			WebcfgError("Failed in memory allocation for productClass_header\n");
 		}
 	}
 	else
@@ -734,7 +793,10 @@ int createMqttHeader(char **header_list)
 		{
 			snprintf(ModelName_header, MAX_BUF_SIZE, "\r\nX-System-Model-Name: %s", g_ModelName);
 			WebcfgInfo("ModelName_header formed %s\n", ModelName_header);
-			//WEBCFG_FREE(ModelName_header);
+		}
+		else
+		{
+			WebcfgError("Failed in memory allocation for ModelName_header\n");
 		}
 	}
 	else
@@ -760,7 +822,10 @@ int createMqttHeader(char **header_list)
 		{
 			snprintf(PartnerID_header, MAX_BUF_SIZE, "\r\nX-System-PartnerID: %s", g_PartnerID);
 			WebcfgInfo("PartnerID_header formed %s\n", PartnerID_header);
-			//WEBCFG_FREE(PartnerID_header);
+		}
+		else
+		{
+			WebcfgError("Failed in memory allocation for PartnerID_header\n");
 		}
 	}
 	else
@@ -774,11 +839,19 @@ int createMqttHeader(char **header_list)
 		snprintf(contenttype_header, MAX_BUF_SIZE, "\r\nContent-type: application/json");
 		WebcfgInfo("contenttype_header formed %s\n", contenttype_header);
 	}
+	else
+	{
+		WebcfgError("Failed in memory allocation for contenttype_header\n");
+	}
 	contentlen_header = (char *) malloc(sizeof(char)*MAX_BUF_SIZE);
 	if(contentlen_header !=NULL)
 	{
 		snprintf(contentlen_header, MAX_BUF_SIZE, "\r\nContent-length: 0");
 		WebcfgInfo("contentlen_header formed %s\n", contentlen_header);
+	}
+	else
+	{
+		WebcfgError("Failed in memory allocation for contentlen_header\n");
 	}
 	//Addtional headers for telemetry sync
 	if(get_global_supplementarySync())
@@ -788,8 +861,11 @@ int createMqttHeader(char **header_list)
 		{
 			snprintf(telemetryVersion_header, MAX_BUF_SIZE, "\r\nX-System-Telemetry-Profile-Version: %s", "2.0");
 			WebcfgInfo("telemetryVersion_header formed %s\n", telemetryVersion_header);
-			//WEBCFG_FREE(telemetryVersion_header);
 		}
+		else
+		{
+			WebcfgError("Failed in memory allocation for telemetryVersion_header\n");
+		}		
 
 		if(strlen(g_AccountID) ==0)
 		{
@@ -809,8 +885,11 @@ int createMqttHeader(char **header_list)
 			{
 				snprintf(AccountID_header, MAX_BUF_SIZE, "\r\nX-System-AccountID: %s", g_AccountID);
 				WebcfgInfo("AccountID_header formed %s\n", AccountID_header);
-				//WEBCFG_FREE(AccountID_header);
 			}
+			else
+			{
+				WebcfgError("Failed in memory allocation for AccountID_header\n");
+			}				
 		}
 		else
 		{
@@ -829,7 +908,29 @@ int createMqttHeader(char **header_list)
 	}
 	writeToDBFile("/tmp/header_list.txt", *header_list, strlen(*header_list));
 	WebcfgDebug("mqtt header_list is \n%s\n", *header_list);
+	freeMqttHeaders(contentlen_header,contenttype_header,PartnerID_header,ModelName_header,productClass_header,uuid_header,systemReadyTime_header,currentTime_header,status_header,FwVersion_header,bootTime_header,schema_header,accept_header,version_header,doc_header,deviceId_header,transaction_uuid);
 	return 0;
+}
+
+void freeMqttHeaders(char *contentlen_header, char *contenttype_header, char *PartnerID_header, char *ModelName_header, char *productClass_header, char *uuid_header, char *systemReadyTime_header, char *currentTime_header, char *status_header, char *FwVersion_header, char *bootTime_header, char *schema_header, char *accept_header, char *version_header, char *doc_header, char *deviceId_header, char *transaction_uuid)
+{
+	WEBCFG_FREE(contentlen_header);
+	WEBCFG_FREE(contenttype_header);
+	WEBCFG_FREE(PartnerID_header);
+	WEBCFG_FREE(ModelName_header);
+	WEBCFG_FREE(productClass_header);
+	WEBCFG_FREE(uuid_header);
+	WEBCFG_FREE(systemReadyTime_header);
+	WEBCFG_FREE(currentTime_header);
+	WEBCFG_FREE(status_header);
+	WEBCFG_FREE(FwVersion_header);
+	WEBCFG_FREE(bootTime_header);
+	WEBCFG_FREE(schema_header);
+	WEBCFG_FREE(accept_header);
+	WEBCFG_FREE(version_header);
+	WEBCFG_FREE(doc_header);
+	WEBCFG_FREE(deviceId_header);
+	WEBCFG_FREE(transaction_uuid);
 }
 
 //new thread created for processPayload 
@@ -846,6 +947,7 @@ void * processPayloadTask(void *tmp)
 		len = msg->len;
 
 		processPayload((char *)data, len);
+		WEBCFG_FREE(tmp);
 	}
 	else
 	{
@@ -879,8 +981,14 @@ static void webcfgOnMessageCallbackHandler(
 
 	data = (char *)rbusValue_GetBytes(incoming_value, &len);
 	temp_data = malloc(sizeof(char) * len + 1);
-	temp_data = memcpy(temp_data, data, len + 1);
-
+	if(temp_data != NULL)
+	{
+		temp_data = memcpy(temp_data, data, len + 1);
+	}
+	else
+	{
+		WebcfgError("Failed in memory allocation for temp_data\n");	
+	}
 	msg = (msg_t *)malloc(sizeof(msg_t));
 	if(msg != NULL)
 	{
@@ -889,7 +997,6 @@ static void webcfgOnMessageCallbackHandler(
 		msg->len = len;
 
 		WebcfgDebug("data is %s\n", temp_data);
-		//writeToDBFile("/tmp/blob_obtained.bin", temp_data, len);
 		WebcfgDebug("Received msg len is %d\n", len);
 
 		err = pthread_create(&threadId, NULL, processPayloadTask, (void *) msg);
@@ -940,6 +1047,10 @@ int processPayload(char * data, int dataSize)
 
 
 		char * data_body = malloc(sizeof(char) * dataSize+1);
+		if(data_body == NULL)
+		{
+			WebcfgError("Failed in memory allocation for data_body\n");			
+		}		
 		memset(data_body, 0, sizeof(char) * dataSize+1);
 		data_body = memcpy(data_body, data, dataSize+1);
 		data_body[dataSize] = '\0';
@@ -1003,10 +1114,10 @@ int processPayload(char * data, int dataSize)
 			}
 			ptr_count++;
 		}
-		free(data_body);
-		free(temp);
+		WEBCFG_FREE(data_body);
+		WEBCFG_FREE(temp);
 		WEBCFG_FREE(etag_header);
-		transaction_uuid = strdup(generate_trans_uuid());
+		transaction_uuid = generate_trans_uuid();
 		if(data !=NULL)
 		{
 			WebcfgInfo("webConfigData fetched successfully\n");
@@ -1051,6 +1162,10 @@ char * createMqttPubHeader(char * payload, char * dest, ssize_t * payload_len)
 					snprintf(destination, MAX_BUF_SIZE, "Destination: %s", dest);
 					WebcfgInfo("destination formed %s\n", destination);
 				}
+				else
+				{
+					WebcfgError("Failed in memory allocation for destination\n");					
+				}
 			}
 
 			content_type = (char *) malloc(sizeof(char)*MAX_BUF_SIZE);
@@ -1059,6 +1174,10 @@ char * createMqttPubHeader(char * payload, char * dest, ssize_t * payload_len)
 				snprintf(content_type, MAX_BUF_SIZE, "\r\nContent-type: application/json");
 				WebcfgInfo("content_type formed %s\n", content_type);
 			}
+			else
+			{
+				WebcfgError("Failed in memory allocation for content_type\n");				
+			}
 
 			content_length = (char *) malloc(sizeof(char)*MAX_BUF_SIZE);
 			if(content_length !=NULL)
@@ -1066,13 +1185,24 @@ char * createMqttPubHeader(char * payload, char * dest, ssize_t * payload_len)
 				snprintf(content_length, MAX_BUF_SIZE, "\r\nContent-length: %zu", strlen(payload));
 				WebcfgInfo("content_length formed %s\n", content_length);
 			}
+			else
+			{
+				WebcfgError("Failed in memory allocation for content_length\n");
+			}
 
 			WebcfgInfo("Framing publish notification header\n");
 			snprintf(pub_headerlist, 1024, "%s%s%s\r\n\r\n%s\r\n", (destination!=NULL)?destination:"", (content_type!=NULL)?content_type:"", (content_length!=NULL)?content_length:"",(payload!=NULL)?payload:"");
 	    }
+		WebcfgInfo("mqtt pub_headerlist is \n%s", pub_headerlist);
+		*payload_len = strlen(pub_headerlist);
+		WEBCFG_FREE(content_length);
+		WEBCFG_FREE(content_type);
+		WEBCFG_FREE(destination);
 	}
-	WebcfgInfo("mqtt pub_headerlist is \n%s", pub_headerlist);
-	*payload_len = strlen(pub_headerlist);
+	else
+	{
+		WebcfgError("Failed in memory allocation for pub_headerlist\n");
+	}	
 	return pub_headerlist;
 }
 
@@ -1129,35 +1259,31 @@ rbusError_t setPublishNotification(char *publishNotifyVal)
 	else
 	{
 		WebcfgInfo("rbusMethod_Invoke for setPublishNotification success\n");
+		rbusObject_Release(outParams);
 	}
 	return ret;
 }
 
 void publish_notify_mqtt(void *payload, ssize_t len, char * dest)
 {
-       int rc;
+    int rc;
 	if(dest != NULL)
 	{
 		ssize_t payload_len = 0;
 		char * pub_payload = createMqttPubHeader(payload, dest, &payload_len);
 		if(pub_payload != NULL)
 		{
-			len = payload_len;
-			WEBCFG_FREE(payload);
-			payload = (char *) malloc(sizeof(char) * 1024);
-			payload = strdup(pub_payload);
-
+			rc = setPublishNotification(pub_payload);
+			if(rc != 0)
+			{
+					WebcfgError("setPublishNotification failed, rc %d\n", rc);
+			}
+			else
+			{
+				WebcfgInfo("Publish payload success %d\n", rc);
+			}
 			WEBCFG_FREE(pub_payload);
 		}
-	}
-       rc = setPublishNotification(payload);
-        if(rc != 0)
-	{
-                WebcfgError("setPublishNotification failed, rc %d\n", rc);
-        }
-	else
-	{
-		WebcfgInfo("Publish payload success %d\n", rc);
 	}
 }
 
@@ -1169,7 +1295,7 @@ int sendNotification_mqtt(char *payload, char *destination, wrp_msg_t *notif_wrp
 		char *payload_str = strdup(payload);
 		WebcfgInfo("payload_str %s len %zu\n", payload_str, strlen(payload_str));
 		publish_notify_mqtt(payload_str, strlen(payload_str), destination);
-		//WEBCFG_FREE(payload_str);
+		WEBCFG_FREE(payload_str);
 		WebcfgInfo("publish_notify_mqtt done\n");
 		return 1;
 	}
