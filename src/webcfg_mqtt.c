@@ -30,6 +30,8 @@
 #include "webcfg_rbus.h"
 #include "webcfg_notify.h"
 
+pthread_cond_t mqtt_sync_condition=PTHREAD_COND_INITIALIZER;
+pthread_mutex_t mqtt_sync_mutex=PTHREAD_MUTEX_INITIALIZER;
 static pthread_t mqttThreadId = 0;
 static int systemStatus = 0;
 static char g_deviceId[64]={'\0'};
@@ -80,6 +82,7 @@ void initWebconfigMqttTask(unsigned long status)
 void* WebconfigMqttTask(void *status)
 {
 	pthread_detach(pthread_self());
+	pthread_mutex_lock (&mqtt_sync_mutex);
 	int rc = -1;
 	rbusHandle_t rbus_handle;
 	int connStatus = 0;
@@ -160,7 +163,32 @@ void* WebconfigMqttTask(void *status)
 		WebcfgInfo("set mqtt subscribe request to mqtt CM\n");
 		mqttSubscribeInit();
 	}
+	
+	pthread_cond_wait(&mqtt_sync_condition, &mqtt_sync_mutex);
+	webcfg_onconnect_flag = 0;
+	
+	WebcfgInfo("rbus event Unsubscribe to mqtt subscribed callback\n");
+	rc = rbusEvent_Unsubscribe(rbus_handle, WEBCFG_SUBSCRIBE_CALLBACK);
+	if(rc != RBUS_ERROR_SUCCESS)
+	{
+		WebcfgError("consumer: rbusEvent_Unsubscribe for %s failed: %d\n", WEBCFG_SUBSCRIBE_CALLBACK, rc);
+	}
 
+	WebcfgInfo("rbus event Unsubscribe to mqtt message callback\n");
+	rc = rbusEvent_Unsubscribe(rbus_handle, WEBCFG_ONMESSAGE_CALLBACK);
+	if(rc != RBUS_ERROR_SUCCESS)
+	{
+		WebcfgError("consumer: rbusEvent_Unsubscribe for %s failed: %d\n", WEBCFG_ONMESSAGE_CALLBACK, rc);
+	}
+
+	WebcfgInfo("rbus event Unsubscribe to mqtt publish callback\n");
+	rc = rbusEvent_Unsubscribe(rbus_handle, WEBCFG_ONPUBLISH_CALLBACK);
+	if(rc != RBUS_ERROR_SUCCESS)
+	{
+		WebcfgError("consumer: rbusEvent_Unsubscribe for %s failed: %d\n", WEBCFG_ONPUBLISH_CALLBACK, rc);
+	}
+	
+	pthread_mutex_unlock (&mqtt_sync_mutex);	
 	return NULL;
 }
 

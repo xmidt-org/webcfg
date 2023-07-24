@@ -1795,6 +1795,9 @@ int set_rbus_RfcEnable(bool bValue)
 			if(get_global_mpThreadId() == NULL)
 			{
 				initWebConfigMultipartTask(0);
+				#ifdef WEBCONFIG_MQTT_SUPPORT
+					initWebconfigMqttTask(0);
+				#endif
 			}
 			else
 			{
@@ -1813,6 +1816,9 @@ int set_rbus_RfcEnable(bool bValue)
 			set_global_shutdown(true);
 			pthread_cond_signal(get_global_sync_condition());
 			pthread_mutex_unlock(get_global_sync_mutex());
+                        #ifdef WEBCONFIG_MQTT_SUPPORT		
+				pthread_cond_signal(get_global_mqtt_sync_condition());
+			#endif		
 		}
 	}
 	retPsmSet = rbus_StoreValueIntoDB( paramRFCEnable, buf );
