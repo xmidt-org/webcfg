@@ -1333,4 +1333,7 @@ int sendNotification_mqtt(char *payload, char *destination, wrp_msg_t *notif_wrp
 	}
 	return 0;
 }
-
+pthread_cond_t *get_global_mqtt_sync_condition(void)
+{
+    return &mqtt_sync_condition;
+}
