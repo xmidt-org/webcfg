@@ -71,4 +71,6 @@ void initWebconfigMqttTask(unsigned long status);
 rbusError_t setBootupSyncHeader(char *publishGetVal);
 rbusError_t mqttSubscribeInit();
 int getMqttCMConnStatus();
+void freeMqttHeaders(char *contentlen_header, char *contenttype_header, char *PartnerID_header, char *ModelName_header, char *productClass_header, char *uuid_header, char *systemReadyTime_header, char *currentTime_header, char *status_header, char *FwVersion_header, char *bootTime_header, char *schema_header, char *accept_header, char *version_header, char *doc_header, char *deviceId_header, char *transaction_uuid);
+pthread_cond_t *get_global_mqtt_sync_condition(void);
 #endif
