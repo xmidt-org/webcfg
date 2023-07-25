@@ -1077,7 +1077,7 @@ int handleMqttResponse(int response_code, char *contentLength, char* transaction
 	if(response_code == 304)
 	{
 		WebcfgInfo("webConfig is in sync with cloud. response_code:%d\n", response_code);
-		WebcfgInfo("db_root_version is %d and db_root_string is %s\n", db_root_version, db_root_string);
+		WebcfgDebug("db_root_version is %d and db_root_string is %s\n", db_root_version, db_root_string);
 		getRootDocVersionFromDBCache(&db_root_version, &db_root_string, &subdocList);
 		addWebConfgNotifyMsg(NULL, db_root_version, NULL, NULL, transaction_uuid, 0, "status", 0, db_root_string, response_code);
 		if(db_root_string !=NULL)
@@ -1093,7 +1093,7 @@ int handleMqttResponse(int response_code, char *contentLength, char* transaction
 		if((contentLength !=NULL) && (strcmp(contentLength, "0") == 0))
 		{
 			WebcfgInfo("webConfigData content length is %s\n", contentLength);
-			WebcfgInfo("version is %s \n", version);
+			WebcfgDebug("version is %s \n", version);
 			refreshConfigVersionList(version, response_code);
 			set_global_contentLen(NULL);
 			WEBCFG_FREE(transaction_uuid);
@@ -1108,7 +1108,7 @@ int handleMqttResponse(int response_code, char *contentLength, char* transaction
 	else if(response_code == 204)
 	{
 		WebcfgInfo("No configuration available for this device. response_code:%d\n", response_code);
-		WebcfgInfo("db_root_version is %d and db_root_string is %s\n", db_root_version, db_root_string);
+		WebcfgDebug("db_root_version is %d and db_root_string is %s\n", db_root_version, db_root_string);
 		getRootDocVersionFromDBCache(&db_root_version, &db_root_string, &subdocList);
 		addWebConfgNotifyMsg(NULL, db_root_version, NULL, NULL, transaction_uuid, 0, "status", 0, db_root_string, response_code);
 		if(db_root_string !=NULL)
@@ -1121,7 +1121,7 @@ int handleMqttResponse(int response_code, char *contentLength, char* transaction
 	else if(response_code == 429)
 	{
 		WebcfgInfo("No action required from client. response_code:%d\n", response_code);
-		WebcfgInfo("db_root_version is %d and db_root_string is %s\n", db_root_version, db_root_string);
+		WebcfgDebug("db_root_version is %d and db_root_string is %s\n", db_root_version, db_root_string);
 		getRootDocVersionFromDBCache(&db_root_version, &db_root_string, &subdocList);
 		addWebConfgNotifyMsg(NULL, db_root_version, NULL, NULL, transaction_uuid, 0, "status", 0, db_root_string, response_code);
 		if(db_root_string !=NULL)
@@ -1140,7 +1140,7 @@ int handleMqttResponse(int response_code, char *contentLength, char* transaction
 			//To set POST-NONE root version when 404
 			refreshConfigVersionList(version, response_code);
 		}
-		WebcfgInfo("db_root_version is %d and db_root_string is %s\n", db_root_version, db_root_string);
+		WebcfgDebug("db_root_version is %d and db_root_string is %s\n", db_root_version, db_root_string);
 		getRootDocVersionFromDBCache(&db_root_version, &db_root_string, &subdocList);
 		addWebConfgNotifyMsg(NULL, db_root_version, NULL, NULL, transaction_uuid, 0, "status", 0, db_root_string, response_code);
 		if(db_root_string !=NULL)
@@ -1153,7 +1153,7 @@ int handleMqttResponse(int response_code, char *contentLength, char* transaction
 	else //5xx & all other errors
 	{
 		WebcfgError("Error code returned, need to do curl retry to server. response_code:%d\n", response_code);
-		WebcfgInfo("db_root_version is %d and db_root_string is %s\n", db_root_version, db_root_string);
+		WebcfgDebug("db_root_version is %d and db_root_string is %s\n", db_root_version, db_root_string);
 		getRootDocVersionFromDBCache(&db_root_version, &db_root_string, &subdocList);
 		addWebConfgNotifyMsg(NULL, db_root_version, NULL, NULL, transaction_uuid, 0, "status", 0, db_root_string, response_code);
 		if(db_root_string !=NULL)
@@ -1171,179 +1171,180 @@ int processPayload(char * data, int dataSize)
 
 	char *transaction_uuid =NULL;
 	char ct[256] = {0};
+	char * data_body = malloc(sizeof(char) * dataSize+1);
 
+	if(data_body == NULL)
+	{
+		WebcfgError("Failed in memory allocation for data_body\n");
+		return 1;
+	}
 
-		char * data_body = malloc(sizeof(char) * dataSize+1);
-		if(data_body == NULL)
+	memset(data_body, 0, sizeof(char) * dataSize+1);
+	data_body = memcpy(data_body, data, dataSize+1);
+	data_body[dataSize] = '\0';
+	char *ptr_count = data_body;
+	char *ptr1_count = data_body;
+	char *temp = NULL;
+	char *etag_header = NULL;
+	char* version = NULL;
+	char* res_header = NULL;
+	char* res_code = NULL;
+	char* contentLengthString = NULL;
+	char* contentlength_header = NULL;
+	int response_code = 0;
+	WebcfgDebug("ptr_count is %s\n", ptr_count);
+
+	while((ptr_count - data_body) < dataSize )
+	{
+		ptr_count = memchr(ptr_count, 'H', dataSize - (ptr_count - data_body));
+		if(ptr_count == NULL)
 		{
-			WebcfgError("Failed in memory allocation for data_body\n");			
-		}		
-		memset(data_body, 0, sizeof(char) * dataSize+1);
-		data_body = memcpy(data_body, data, dataSize+1);
-		data_body[dataSize] = '\0';
-		char *ptr_count = data_body;
-		char *ptr1_count = data_body;
-		char *temp = NULL;
-		char *etag_header = NULL;
-		char* version = NULL;
-		char* res_header = NULL;
-		char* res_code = NULL;
-		char* contentLengthString = NULL;
-		char* contentlength_header = NULL;
-		int response_code = 0;
-		WebcfgDebug("ptr_count is %s\n", ptr_count);
-
-		while((ptr_count - data_body) < dataSize )
+			WebcfgError("HTTP response code not found\n");
+			break;
+		}
+		if(0 == memcmp(ptr_count, "HTTP", strlen("HTTP")))
 		{
-			ptr_count = memchr(ptr_count, 'H', dataSize - (ptr_count - data_body));
-			if(ptr_count == NULL)
+			ptr1_count = memchr(ptr_count+1, '\r', dataSize - (ptr_count - data_body));
+			res_header = strndup(ptr_count, (ptr1_count-ptr_count));
+			if(res_header != NULL)
 			{
-				WebcfgError("HTTP response code not found\n");
-				break;
-			}
-			if(0 == memcmp(ptr_count, "HTTP", strlen("HTTP")))
-			{
-				ptr1_count = memchr(ptr_count+1, '\r', dataSize - (ptr_count - data_body));
-				res_header = strndup(ptr_count, (ptr1_count-ptr_count));
-				if(res_header != NULL)
+				//Extract HTTP response code using space as delimiter
+				res_code = strtok(res_header, " ");
+				if(res_code !=NULL)
 				{
-					//Extract HTTP response code using space as delimiter
-					res_code = strtok(res_header, " ");
-					if(res_code !=NULL)
+					res_code = strtok(NULL, " ");
+					WebcfgInfo("response code extracted is %s\n", res_code);
+					if(res_code != NULL)
 					{
-						res_code = strtok(NULL, " ");
-						WebcfgInfo("response code extracted is %s\n", res_code);
-						if(res_code != NULL)
-						{
-							response_code = atoi(res_code);
-						}
-						res_code++;
-						break;
+						response_code = atoi(res_code);
 					}
+					res_code++;
+					break;
 				}
 			}
-			ptr_count++;
 		}
+		ptr_count++;
+	}
 
-		while((ptr_count - data_body) < dataSize )
+	while((ptr_count - data_body) < dataSize )
+	{
+		ptr_count = memchr(ptr_count, 'C', dataSize - (ptr_count - data_body));
+		if(ptr_count == NULL)
 		{
-			ptr_count = memchr(ptr_count, 'C', dataSize - (ptr_count - data_body));
-			if(ptr_count == NULL)
-			{
-				WebcfgError("Content-type header not found\n");
-				break;
-			}
- /*since key name is Content-type in test blob using this for original code base use Content-Type*/
-			if(0 == memcmp(ptr_count, "Content-Type:", strlen("Content-Type:")))
-			{
-				ptr1_count = memchr(ptr_count+1, '\r', dataSize - (ptr_count - data_body));
-				temp = strndup(ptr_count, (ptr1_count-ptr_count));
-				strncpy(ct,temp,(sizeof(ct)-1));
-				break;
-			}
-			ptr_count++;
+			WebcfgError("Content-type header not found\n");
+			break;
 		}
-
-		ptr_count = data_body;
-		ptr1_count = data_body;
-		while((ptr_count - data_body) < dataSize )
+/*since key name is Content-type in test blob using this for original code base use Content-Type*/
+		if(0 == memcmp(ptr_count, "Content-Type:", strlen("Content-Type:")))
 		{
-			ptr_count = memchr(ptr_count, 'E', dataSize - (ptr_count - data_body));
-			if(ptr_count == NULL)
+			ptr1_count = memchr(ptr_count+1, '\r', dataSize - (ptr_count - data_body));
+			temp = strndup(ptr_count, (ptr1_count-ptr_count));
+			strncpy(ct,temp,(sizeof(ct)-1));
+			break;
+		}
+		ptr_count++;
+	}
+
+	ptr_count = data_body;
+	ptr1_count = data_body;
+	while((ptr_count - data_body) < dataSize )
+	{
+		ptr_count = memchr(ptr_count, 'E', dataSize - (ptr_count - data_body));
+		if(ptr_count == NULL)
+		{
+			WebcfgError("etag_header not found\n");
+			break;
+		}
+		if(0 == memcmp(ptr_count, "Etag:", strlen("Etag:")))
+		{
+			ptr1_count = memchr(ptr_count+1, '\r', dataSize - (ptr_count - data_body));
+			etag_header = strndup(ptr_count, (ptr1_count-ptr_count));
+			if(etag_header !=NULL)
 			{
-				WebcfgError("etag_header not found\n");
-				break;
-			}
-			if(0 == memcmp(ptr_count, "Etag:", strlen("Etag:")))
-			{
-				ptr1_count = memchr(ptr_count+1, '\r', dataSize - (ptr_count - data_body));
-				etag_header = strndup(ptr_count, (ptr1_count-ptr_count));
-				if(etag_header !=NULL)
+				WebcfgInfo("etag header extracted is %s\n", etag_header);
+				//Extract root version from Etag: <value> header.
+				version = strtok(etag_header, ":");
+				if(version !=NULL)
 				{
-					WebcfgInfo("etag header extracted is %s\n", etag_header);
-					//Extract root version from Etag: <value> header.
-					version = strtok(etag_header, ":");
-					if(version !=NULL)
+					version = strtok(NULL, ":");
+					version++;
+					//g_ETAG should be updated only for primary sync.
+					if(!get_global_supplementarySync())
 					{
-						version = strtok(NULL, ":");
-						version++;
-						//g_ETAG should be updated only for primary sync.
-						if(!get_global_supplementarySync())
-						{
-							set_global_ETAG(version);
-							WebcfgInfo("g_ETAG updated in processPayload %s\n", get_global_ETAG());
-						}
-						break;
+						set_global_ETAG(version);
+						WebcfgInfo("g_ETAG updated in processPayload %s\n", get_global_ETAG());
 					}
+					break;
 				}
 			}
-			ptr_count++;
 		}
+		ptr_count++;
+	}
 
-		ptr_count = data_body;
-		ptr1_count = data_body;
-		while((ptr_count - data_body) < dataSize )
+	ptr_count = data_body;
+	ptr1_count = data_body;
+	while((ptr_count - data_body) < dataSize )
+	{
+		ptr_count = memchr(ptr_count, 'C', dataSize - (ptr_count - data_body));
+		if(ptr_count == NULL)
 		{
-			ptr_count = memchr(ptr_count, 'C', dataSize - (ptr_count - data_body));
-			if(ptr_count == NULL)
+			WebcfgError("Content-Length not found\n");
+			break;
+		}
+		if(0 == memcmp(ptr_count, "Content-Length:", strlen("Content-Length:")))
+		{
+			ptr1_count = memchr(ptr_count+1, '\r', dataSize - (ptr_count - data_body));
+			contentlength_header = strndup(ptr_count, (ptr1_count-ptr_count));
+			if(contentlength_header !=NULL)
 			{
-				WebcfgError("Content-Length not found\n");
-				break;
-			}
-			if(0 == memcmp(ptr_count, "Content-Length:", strlen("Content-Length:")))
-			{
-				ptr1_count = memchr(ptr_count+1, '\r', dataSize - (ptr_count - data_body));
-				contentlength_header = strndup(ptr_count, (ptr1_count-ptr_count));
-				if(contentlength_header !=NULL)
+				//Extract content length from Content-Length: <value> header.
+				contentLengthString = strtok(contentlength_header, ":");
+				if(contentLengthString !=NULL)
 				{
-					//Extract content length from Content-Length: <value> header.
-					contentLengthString = strtok(contentlength_header, ":");
-					if(contentLengthString !=NULL)
-					{
-						contentLengthString = strtok(NULL, ":");
-						contentLengthString++;
-						WebcfgInfo("contentlength extracted is %s\n", contentLengthString);
-						break;
-					}
+					contentLengthString = strtok(NULL, ":");
+					contentLengthString++;
+					WebcfgInfo("contentlength extracted is %s\n", contentLengthString);
+					break;
 				}
 			}
-			ptr_count++;
 		}
+		ptr_count++;
+	}
 
-		WEBCFG_FREE(data_body);
-		WEBCFG_FREE(temp);
-		WEBCFG_FREE(etag_header);
-		transaction_uuid = strdup(generate_trans_uuid());
+	WEBCFG_FREE(data_body);
+	WEBCFG_FREE(temp);
+	WEBCFG_FREE(etag_header);
+	transaction_uuid = generate_trans_uuid();
 
-		WebcfgInfo("contentlength extracted is %s\n", contentLengthString);
-		if(handleMqttResponse(response_code, contentLengthString, transaction_uuid) == 1)
+	WebcfgInfo("contentlength extracted is %s\n", contentLengthString);
+	if(handleMqttResponse(response_code, contentLengthString, transaction_uuid) == 1)
+	{
+		WEBCFG_FREE(data);
+		return 1;
+	}
+
+	if(data !=NULL)
+	{
+		WebcfgInfo("webConfigData fetched successfully\n");
+		WebcfgInfo("webConfig is not in sync with cloud. response_code:%d\n", response_code);
+		WebcfgDebug("parseMultipartDocument\n");
+		mstatus = parseMultipartDocument(data, ct, (size_t)dataSize, transaction_uuid);
+
+		if(mstatus == WEBCFG_SUCCESS)
 		{
-			WEBCFG_FREE(data);
-			return 1;
-		}
-
-		if(data !=NULL)
-		{
-			WebcfgInfo("webConfigData fetched successfully\n");
-			WebcfgInfo("webConfig is not in sync with cloud. response_code:%d\n", response_code);
-			WebcfgDebug("parseMultipartDocument\n");
-			mstatus = parseMultipartDocument(data, ct, (size_t)dataSize, transaction_uuid);
-
-			if(mstatus == WEBCFG_SUCCESS)
-			{
-				WebcfgInfo("webConfigData applied successfully\n");
-			}
-			else
-			{
-				WebcfgDebug("Failed to apply root webConfigData received from server\n");
-			}
+			WebcfgInfo("webConfigData applied successfully\n");
 		}
 		else
 		{
-			WEBCFG_FREE(transaction_uuid);
-			WebcfgError("webConfigData is empty, need to retry\n");
+			WebcfgDebug("Failed to apply root webConfigData received from server\n");
 		}
-		return 1;
+	}
+	else
+	{
+		WEBCFG_FREE(transaction_uuid);
+		WebcfgError("webConfigData is empty, need to retry\n");
+	}
+	return 1;
 }
 
 char * createMqttPubHeader(char * payload, char * dest, ssize_t * payload_len)

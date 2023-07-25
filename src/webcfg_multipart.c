@@ -620,7 +620,7 @@ WEBCFG_STATUS processMsgpackSubdoc(char *transaction_id)
 	{
 		strncpy(g_transID, transaction_id, sizeof(g_transID)-1);
 		WebcfgDebug("g_transID is %s\n", g_transID);
-		//WEBCFG_FREE(transaction_id);
+		WEBCFG_FREE(transaction_id);
 	}
         
 	WebcfgDebug("Add mp entries to tmp list\n");
