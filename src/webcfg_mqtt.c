@@ -254,12 +254,12 @@ rbusError_t mqttSubscribeInit()
 		return RBUS_ERROR_BUS_ERROR;
 	}
 
-	snprintf(subscribe_topic, MAX_MQTT_LEN, "%s%s", MQTT_SUBSCRIBE_TOPIC, clientID);
+	snprintf(subscribe_topic, MAX_MQTT_LEN, "%s%s/%s", MQTT_SUBSCRIBE_TOPIC, clientID, WEBCFG_MODULE_NAME);
 
 	rbusObject_Init(&inParams, NULL);
 
 	rbusValue_Init(&value);
-	rbusValue_SetString(value, "Webconfig");
+	rbusValue_SetString(value, WEBCFG_MODULE_NAME);
 	rbusObject_SetValue(inParams, "compname", value);
 	rbusValue_Release(value);
 
@@ -381,7 +381,7 @@ rbusError_t setBootupSyncHeader(char *publishGetVal)
 	      WebcfgInfo("g_ClientID fetched from Get_Mqtt_ClientId is %s\n", g_ClientID);
 	}
 	
-	snprintf(publish_get_topic, MAX_MQTT_LEN, "%s%s/%s", MQTT_PUBLISH_GET_TOPIC_PREFIX, g_ClientID,locationID);
+	snprintf(publish_get_topic, MAX_MQTT_LEN, "%s%s/%s/%s/get", MQTT_PUBLISH_TOPIC_PREFIX, g_ClientID, locationID, WEBCFG_MODULE_NAME);
 
 	rbusObject_Init(&inParams, NULL);
 	
@@ -1437,7 +1437,8 @@ rbusError_t setPublishNotification(char *publishNotifyVal)
 		WebcfgInfo("g_ClientID fetched from Get_Mqtt_ClientId is %s\n", g_ClientID);
 	}
 
-	snprintf(publish_get_topic, MAX_MQTT_LEN, "%s%s/%s", MQTT_PUBLISH_NOTIFY_TOPIC_PREFIX, g_ClientID,locationID);
+	snprintf(publish_get_topic, MAX_MQTT_LEN, "%s%s/%s/%s/poke", MQTT_PUBLISH_TOPIC_PREFIX, g_ClientID, locationID, WEBCFG_MODULE_NAME);
+
 	rbusObject_Init(&inParams, NULL);
 
 	rbusValue_Init(&value);
