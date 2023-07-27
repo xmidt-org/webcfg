@@ -24,7 +24,7 @@
 #include <time.h>
 #include "webcfg_rbus.h"
 
-#ifdef WEBCONFIG_MQTT_SUPPORT
+#ifdef FEATURE_SUPPORT_MQTTCM
 #include "webcfg_mqtt.h"
 #endif
 
@@ -1281,7 +1281,6 @@ WEBCFG_STATUS regWebConfigDataModel()
 {
 	rbusError_t ret1 = RBUS_ERROR_SUCCESS;
 	rbusError_t ret2 = RBUS_ERROR_SUCCESS;
-	rbusError_t ret3 = RBUS_ERROR_SUCCESS;
 
 	rbusError_t retPsmGet = RBUS_ERROR_BUS_ERROR;
 	WEBCFG_STATUS status = WEBCFG_SUCCESS;
@@ -1307,7 +1306,7 @@ WEBCFG_STATUS regWebConfigDataModel()
 
 	ret1 = rbus_regDataElements(rbus_handle, NUM_WEBCFG_ELEMENTS1, dataElements1);
 
-#if !defined (WEBCONFIG_MQTT_SUPPORT) || defined (WEBCONFIG_HTTP_SUPPORT)
+#if !defined (FEATURE_SUPPORT_MQTTCM)
 	rbusDataElement_t dataElements2[NUM_WEBCFG_ELEMENTS2] = {
 
 		{WEBCFG_URL_PARAM, RBUS_ELEMENT_TYPE_PROPERTY, {webcfgUrlGetHandler, webcfgUrlSetHandler, NULL, NULL, NULL, NULL}},
@@ -1318,12 +1317,7 @@ WEBCFG_STATUS regWebConfigDataModel()
 	ret2 = rbus_regDataElements(rbus_handle, NUM_WEBCFG_ELEMENTS2, dataElements2);
 #endif
 
-#ifdef WEBCONFIG_MQTT_SUPPORT
-	//ret3 = regWebConfigDataModel_mqtt();
-	ret3 = RBUS_ERROR_SUCCESS;
-#endif
-
-	if(ret1 == RBUS_ERROR_SUCCESS && ret2 == RBUS_ERROR_SUCCESS && ret3 == RBUS_ERROR_SUCCESS)
+	if(ret1 == RBUS_ERROR_SUCCESS && ret2 == RBUS_ERROR_SUCCESS)
 	{
 		WebcfgDebug("Registered data element %s with rbus \n ", WEBCFG_RFC_PARAM);
 
@@ -1795,7 +1789,7 @@ int set_rbus_RfcEnable(bool bValue)
 			if(get_global_mpThreadId() == NULL)
 			{
 				initWebConfigMultipartTask(0);
-				#ifdef WEBCONFIG_MQTT_SUPPORT
+				#ifdef FEATURE_SUPPORT_MQTTCM
 					initWebconfigMqttTask(0);
 				#endif
 			}
@@ -1816,7 +1810,7 @@ int set_rbus_RfcEnable(bool bValue)
 			set_global_shutdown(true);
 			pthread_cond_signal(get_global_sync_condition());
 			pthread_mutex_unlock(get_global_sync_mutex());
-                        #ifdef WEBCONFIG_MQTT_SUPPORT		
+                        #ifdef FEATURE_SUPPORT_MQTTCM
 				pthread_cond_signal(get_global_mqtt_sync_condition());
 			#endif		
 		}
@@ -2043,7 +2037,7 @@ void sendNotification_rbus(char *payload, char *source, char *destination)
 
 			msg_len = wrp_struct_to (notif_wrp_msg, WRP_BYTES, &msg_bytes);
 
-		#ifdef WEBCONFIG_MQTT_SUPPORT
+		#ifdef FEATURE_SUPPORT_MQTTCM
 			int ret = sendNotification_mqtt(payload, destination, notif_wrp_msg, msg_bytes);
 			if (ret)
 			{

@@ -32,7 +32,7 @@
 #include <unistd.h>
 #include <pthread.h>
 
-#ifdef WEBCONFIG_MQTT_SUPPORT
+#ifdef FEATURE_SUPPORT_MQTTCM
 #include "webcfg_mqtt.h"
 #endif
 /*----------------------------------------------------------------------------*/
@@ -84,7 +84,7 @@ int main()
 #endif
 	WebcfgInfo("********** Starting component: %s **********\n ", WEBCFG_COMPONENT_NAME);
 	webcfg_drop_root_privilege();
-#if !defined (WEBCONFIG_MQTT_SUPPORT) || defined (WEBCONFIG_HTTP_SUPPORT)
+#if !defined (FEATURE_SUPPORT_MQTTCM)
 	curl_global_init(CURL_GLOBAL_DEFAULT);
 #endif
 	if(isRbusEnabled())
@@ -119,7 +119,7 @@ int main()
 			{
 				WebcfgInfo("WebConfig Rfc is enabled, starting initWebConfigMultipartTask.\n");
 				initWebConfigMultipartTask((unsigned long) systemStatus);
-			#ifdef WEBCONFIG_MQTT_SUPPORT
+			#ifdef FEATURE_SUPPORT_MQTTCM
 				WebcfgInfo("Starting initWebconfigMqttTask\n");
 				initWebconfigMqttTask((unsigned long) systemStatus);
 			#else
@@ -146,7 +146,7 @@ int main()
 	pthread_cond_wait(&webcfg_con, &webcfg_mut);
 	WebcfgDebug("pthread_mutex_unlock webcfg_mut\n");
 	pthread_mutex_unlock (&webcfg_mut);
-#if !defined (WEBCONFIG_MQTT_SUPPORT) || defined (WEBCONFIG_HTTP_SUPPORT)
+#if !defined (FEATURE_SUPPORT_MQTTCM)
 	curl_global_cleanup();
 #endif
 	WebcfgInfo("Exiting webconfig main thread!!\n");

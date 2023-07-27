@@ -35,7 +35,7 @@
 #include "webcfg_blob.h"
 #include "webcfg_timer.h"
 
-#ifdef WEBCONFIG_MQTT_SUPPORT
+#ifdef FEATURE_SUPPORT_MQTTCM
 #include "webcfg_mqtt.h"
 #endif
 
@@ -136,7 +136,7 @@ void *WebConfigMultipartTask(void *status)
 	initDB(WEBCFG_DB_FILE);
 
 	//To disable supplementary sync for RDKV platforms
-#if (!defined(RDK_PERSISTENT_PATH_VIDEO) && !defined(WEBCONFIG_MQTT_SUPPORT)) || (defined (WEBCONFIG_HTTP_SUPPORT))
+#if (!defined(RDK_PERSISTENT_PATH_VIDEO) && !defined(FEATURE_SUPPORT_MQTTCM))
 
 	initMaintenanceTimer();
 #endif
@@ -150,7 +150,7 @@ void *WebConfigMultipartTask(void *status)
 		set_global_eventFlag();
 	}
 
-#if !defined (WEBCONFIG_MQTT_SUPPORT) || defined (WEBCONFIG_HTTP_SUPPORT)
+#if !defined (FEATURE_SUPPORT_MQTTCM)
 	//For Primary sync set flag to 0
 	set_global_supplementarySync(0);
 	WebcfgInfo("Webconfig is ready to process requests. set webcfgReady to true\n");
@@ -259,7 +259,7 @@ void *WebConfigMultipartTask(void *status)
 		if ( retry_flag == 0)
 		{
 		//To disable supplementary sync for RDKV platforms
-		#if (!defined(RDK_PERSISTENT_PATH_VIDEO) && !defined(WEBCONFIG_MQTT_SUPPORT)) || (defined (WEBCONFIG_HTTP_SUPPORT))
+		#if (!defined(RDK_PERSISTENT_PATH_VIDEO) && !defined(FEATURE_SUPPORT_MQTTCM))
 			ts.tv_sec += getMaintenanceSyncSeconds(maintenance_count);
 			maintenance_doc_sync = 1;
 			WebcfgInfo("The Maintenance Sync triggers at %s\n", printTime((long long)ts.tv_sec));
@@ -385,7 +385,7 @@ void *WebConfigMultipartTask(void *status)
 	pthread_cond_signal (get_global_notify_con());
 	pthread_mutex_unlock (get_global_notify_mut());
 
-/*#ifdef WEBCONFIG_MQTT_SUPPORT
+/*#ifdef FEATURE_SUPPORT_MQTTCM
 	pthread_mutex_lock (get_global_mqtt_retry_mut());
 	pthread_cond_signal (get_global_mqtt_retry_cond());
 	pthread_mutex_unlock (get_global_mqtt_retry_mut());

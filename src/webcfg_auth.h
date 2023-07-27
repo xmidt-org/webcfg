@@ -17,7 +17,7 @@
 #define WEBCFGAUTH_H
 
 #include <stdint.h>
-#if !defined WEBCONFIG_MQTT_SUPPORT || defined WEBCONFIG_HTTP_SUPPORT
+#if !defined FEATURE_SUPPORT_MQTTCM
 #include <curl/curl.h>
 #endif
 #include "webcfg_log.h"

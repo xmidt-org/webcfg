@@ -62,7 +62,7 @@ int Get_Webconfig_URL( char *pString);
 int Set_Webconfig_URL( char *pString);
 int Get_Supplementary_URL( char *name, char *pString);
 int Set_Supplementary_URL( char *name, char *pString);
-#ifdef WEBCONFIG_MQTT_SUPPORT
+#ifdef FEATURE_SUPPORT_MQTTCM
 int Get_Mqtt_LocationId( char *pString);
 int Get_Mqtt_NodeId( char *pString);
 int Get_Mqtt_Broker( char *pString);
