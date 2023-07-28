@@ -2093,7 +2093,7 @@ void waitForUpstreamEventSubscribe(int wait_time)
 {
 	int count=0;
 	if(!subscribed)
-		WebcfgError("Waiting for %s event subscription for %ds\n", WEBCFG_UPSTREAM_EVENT, wait_time);
+		WebcfgInfo("Waiting for %s event subscription for %ds\n", WEBCFG_UPSTREAM_EVENT, wait_time);
 	while(!subscribed)
 	{
 		sleep(5);
@@ -2124,7 +2124,16 @@ static void eventReceiveHandler(
     }	
     if(newValue !=NULL && oldValue!=NULL && get_global_interface()!=NULL) {
             WebcfgInfo("New Value: %s Old Value: %s New Interface Value: %s\n", rbusValue_GetString(newValue, NULL), rbusValue_GetString(oldValue, NULL), get_global_interface());
-    }    
+	if(get_webcfgReady())
+	{
+		WebcfgInfo("Trigger force sync with cloud on wan restore event\n");
+		trigger_webcfg_forcedsync();
+	}
+	else
+	{
+		WebcfgInfo("wan restore force sync is skipped as webcfg is not ready\n");
+	}
+    }
 }
 
 static void subscribeAsyncHandler(
@@ -2142,7 +2151,7 @@ static void subscribeAsyncHandler(
 int subscribeTo_CurrentActiveInterface_Event()
 {
       int rc = RBUS_ERROR_SUCCESS;
-      WebcfgDebug("Subscribing to %s Event\n", WEBCFG_INTERFACE_PARAM);
+      WebcfgInfo("Subscribing to %s Event\n", WEBCFG_INTERFACE_PARAM);
       rc = rbusEvent_SubscribeAsync (
         rbus_handle,
         WEBCFG_INTERFACE_PARAM,
@@ -2154,7 +2163,7 @@ int subscribeTo_CurrentActiveInterface_Event()
 	      WebcfgError("%s subscribe failed : %d - %s\n", WEBCFG_INTERFACE_PARAM, rc, rbusError_ToString(rc));
       }  
       return rc;
-}      
+}
 #endif
 
 /*Trigger force sync with cloud from webconfig client.*/
@@ -2180,7 +2189,7 @@ void rbus_log_handler(
     int threadId,
     char* message)
 {
-    //WebcfgDebug("threadId %d\n", threadId);
+    WebcfgDebug("threadId %d\n", threadId);
     const char* slevel = "";
 
     if(level < RBUS_LOG_ERROR)

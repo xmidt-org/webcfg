@@ -28,6 +28,7 @@
 #include "webcfg_log.h"
 #include "webcfg_generic.h"
 #include "webcfg_rbus.h"
+#include "webcfg_wanhandle.h"
 #include "webcfg_privilege.h"
 #include <unistd.h>
 #include <pthread.h>
@@ -93,17 +94,19 @@ int main()
 		WebcfgDebug("RBUS mode. webconfigRbusInit\n");
 		webconfigRbusInit(WEBCFG_COMPONENT_NAME);
 		regWebConfigDataModel();
+		#ifdef WAN_FAILOVER_SUPPORTED
+		subscribeTo_CurrentActiveInterface_Event();
+		#endif
 		systemStatus = rbus_waitUntilSystemReady();
 		WebcfgDebug("rbus_waitUntilSystemReady systemStatus is %d\n", systemStatus);
     		getCurrent_Time(&cTime);
     		snprintf(systemReadyTime, sizeof(systemReadyTime),"%d", (int)cTime.tv_sec);
     		WebcfgInfo("systemReadyTime is %s\n", systemReadyTime);
 		set_global_systemReadyTime(systemReadyTime);
+		WebcfgInfo("Registering WanEventHandler sysevents\n");
+		WanEventHandler();
 		// wait for upstream subscriber for 5mins
 		waitForUpstreamEventSubscribe(300);
-		#ifdef WAN_FAILOVER_SUPPORTED
-		subscribeTo_CurrentActiveInterface_Event();
-		#endif
 		ret = rbus_GetValueFromDB( PARAM_RFC_ENABLE, &strValue );
 		if (ret == 0)
 		{

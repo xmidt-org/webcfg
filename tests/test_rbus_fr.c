@@ -73,7 +73,6 @@ int get_global_supplementarySync()
 	return 0;
 }
 
-
 int Get_Supplementary_URL( char *name, char *pString)
 {
     UNUSED(name);

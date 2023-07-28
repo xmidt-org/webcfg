@@ -50,7 +50,6 @@ typedef struct multipartdocs
 
 int readFromFile(char *filename, char **data, int *len);
 WEBCFG_STATUS parseMultipartDocument(void *config_data, char *ct , size_t data_size, char* trans_uuid);
-void getConfigDocList(char *docList);
 void print_tmp_doc_list(size_t mp_count);
 void loadInitURLFromFile(char **url);
 uint32_t get_global_root();
@@ -66,7 +65,7 @@ void set_global_mp(multipartdocs_t *new);
 void reqParam_destroy( int paramCnt, param_t *reqObj );
 void failedDocsRetry();
 WEBCFG_STATUS validate_request_param(param_t *reqParam, int paramCount);
-void refreshConfigVersionList(char *versionsList, int http_status);
+void refreshConfigVersionList(char *versionsList, int http_status, char *docsList);
 char * get_global_contentLen(void);
 void set_global_contentLen(char * value);
 void getRootDocVersionFromDBCache(uint32_t *rt_version, char **rt_string, int *subdoclist);
@@ -80,7 +79,6 @@ char *get_global_ETAG(void);
 void set_global_interface(char * value);
 char * get_global_interface(void);
 #endif
-void get_webCfg_interface(char **interface);
 pthread_t get_global_process_threadid();
 void delete_multipart();
 int get_multipartdoc_count();
@@ -88,7 +86,7 @@ WEBCFG_STATUS deleteFromMpList(char* doc_name);
 void addToMpList(uint32_t etag, char *name_space, char *data, size_t data_size);
 void delete_mp_doc();
 #if !defined FEATURE_SUPPORT_MQTTCM
-void createCurlHeader( struct curl_slist *list, struct curl_slist **header_list, int status, char ** trans_uuid);
+void createCurlHeader( struct curl_slist *list, struct curl_slist **header_list, int status, char ** trans_uuid,char **subdocList);
 #endif
 char *replaceMacWord(const char *s, const char *macW, const char *deviceMACW);
 #endif

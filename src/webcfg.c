@@ -114,7 +114,6 @@ void *WebConfigMultipartTask(void *status)
 	int retry_flag = 0;
 	int maintenance_doc_sync = 0;
 	char *syncDoc = NULL;
-
 	int value = 0;
 	int wait_flag = 1;
 	int maintenance_count = 0;
@@ -260,9 +259,15 @@ void *WebConfigMultipartTask(void *status)
 		{
 		//To disable supplementary sync for RDKV platforms
 		#if (!defined(RDK_PERSISTENT_PATH_VIDEO) && !defined(FEATURE_SUPPORT_MQTTCM))
+			long tmOffset = 0;
+			tmOffset = getTimeOffset();
+			WebcfgInfo("The offset obtained from getTimeOffset is %ld\n", tmOffset);
+
+			WebcfgDebug("Before setting offset in main loop %s\n", printTime((long long)ts.tv_sec));
 			ts.tv_sec += getMaintenanceSyncSeconds(maintenance_count);
 			maintenance_doc_sync = 1;
-			WebcfgInfo("The Maintenance Sync triggers at %s\n", printTime((long long)ts.tv_sec));
+			WebcfgInfo("The Maintenance Sync triggers at %s in LTime\n", printTime(((long long)ts.tv_sec) + (tmOffset)));
+			WebcfgInfo("Maintenance sync start time in UTC is %s\n", printTime((long long)ts.tv_sec));
 		#else
 			maintenance_doc_sync = 0;
 			maintenance_count = 0;
@@ -384,12 +389,6 @@ void *WebConfigMultipartTask(void *status)
 	pthread_mutex_lock (get_global_notify_mut());
 	pthread_cond_signal (get_global_notify_con());
 	pthread_mutex_unlock (get_global_notify_mut());
-
-/*#ifdef FEATURE_SUPPORT_MQTTCM
-	pthread_mutex_lock (get_global_mqtt_retry_mut());
-	pthread_cond_signal (get_global_mqtt_retry_cond());
-	pthread_mutex_unlock (get_global_mqtt_retry_mut());
-#endif*/ //TODO: do we need this cond signal .check this
 
 	if(get_global_eventFlag())
 	{
@@ -569,14 +568,6 @@ void processWebconfgSync(int status, char* docname)
 		}
 		#endif
 
-		/*if(get_global_supplementarySync() == 0)
-		{
-			WebcfgInfo("webcfg_mqtt_init\n");
-			webcfg_mqtt_init();
-			WebcfgInfo("webcfg_mqtt_init done.\n");
-		}
-		return;*/
-
 		if(retry_count >3)
 		{
 			WebcfgInfo("Webcfg curl retry to server has reached max limit. Exiting.\n");
@@ -608,7 +599,6 @@ void processWebconfgSync(int status, char* docname)
 		}
 	}
 	WebcfgDebug("========= End of processWebconfgSync =============\n");
-
 	return;
 }
 
@@ -618,6 +608,7 @@ int handlehttpResponse(long response_code, char *webConfigData, int retry_count,
 	int msgpack_status=0;
 	int err = 0;
 	char version[512]={'\0'};
+	char docList[512]={'\0'};
 	uint32_t db_root_version = 0;
 	char *db_root_string = NULL;
 	int subdocList = 0;
@@ -666,7 +657,7 @@ int handlehttpResponse(long response_code, char *webConfigData, int retry_count,
 			if((contentLength !=NULL) && (strcmp(contentLength, "0") == 0))
 			{
 				WebcfgInfo("webConfigData content length is 0\n");
-				refreshConfigVersionList(version, response_code);
+				refreshConfigVersionList(version, response_code, docList);
 				WEBCFG_FREE(contentLength);
 				set_global_contentLen(NULL);
 				WEBCFG_FREE(transaction_uuid);
@@ -725,7 +716,7 @@ int handlehttpResponse(long response_code, char *webConfigData, int retry_count,
 		if (response_code == 404)
 		{
 			//To set POST-NONE root version when 404
-			refreshConfigVersionList(version, response_code);
+			refreshConfigVersionList(version, response_code, docList);
 		}
 		getRootDocVersionFromDBCache(&db_root_version, &db_root_string, &subdocList);
 		addWebConfgNotifyMsg(NULL, db_root_version, NULL, NULL, transaction_uuid, 0, "status", 0, db_root_string, response_code);
