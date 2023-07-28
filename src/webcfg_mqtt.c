@@ -487,8 +487,21 @@ int createMqttHeader(char **header_list)
 
 	if(!get_global_supplementarySync())
 	{
-		//Update query param in the URL based on the existing doc names from db
-		getConfigDocList(docList);
+		version_header = (char *) malloc(sizeof(char)*MAX_BUF_SIZE);
+		if(version_header !=NULL)
+		{
+			refreshConfigVersionList(version, 0, docList);
+			snprintf(version_header, MAX_BUF_SIZE, "\r\nIF-NONE-MATCH:%s", ((strlen(version)!=0) ? version : "0"));
+			WebcfgInfo("version_header formed %s\n", version_header);
+		}
+		else
+		{
+			WebcfgError("Failed in memory allocation for version_header\n");
+		}
+	}
+
+	if(!get_global_supplementarySync())
+	{
 		WebcfgInfo("docList is %s\n", docList);
 
 		doc_header = (char *) malloc(sizeof(char)*MAX_BUF_SIZE);
@@ -502,20 +515,7 @@ int createMqttHeader(char **header_list)
 			WebcfgError("Failed in memory allocation for doc_header\n");
 		}
 	}
-	if(!get_global_supplementarySync())
-	{
-		version_header = (char *) malloc(sizeof(char)*MAX_BUF_SIZE);
-		if(version_header !=NULL)
-		{
-			refreshConfigVersionList(version, 0);
-			snprintf(version_header, MAX_BUF_SIZE, "\r\nIF-NONE-MATCH:%s", ((strlen(version)!=0) ? version : "0"));
-			WebcfgInfo("version_header formed %s\n", version_header);
-		}
-		else
-		{
-			WebcfgError("Failed in memory allocation for version_header\n");
-		}
-	}
+
 	accept_header = (char *) malloc(sizeof(char)*MAX_BUF_SIZE);
 	if(accept_header !=NULL)
 	{
@@ -1070,6 +1070,7 @@ int handleMqttResponse(int response_code, char *contentLength, char* transaction
 {
 	int first_digit=0;
 	char version[512]={'\0'};
+	char docList[512]={'\0'};
 	uint32_t db_root_version = 0;
 	char *db_root_string = NULL;
 	int subdocList = 0;
@@ -1094,7 +1095,7 @@ int handleMqttResponse(int response_code, char *contentLength, char* transaction
 		{
 			WebcfgInfo("webConfigData content length is %s\n", contentLength);
 			WebcfgDebug("version is %s \n", version);
-			refreshConfigVersionList(version, response_code);
+			refreshConfigVersionList(version, response_code, docList);
 			set_global_contentLen(NULL);
 			WEBCFG_FREE(transaction_uuid);
 			return 1;
@@ -1138,7 +1139,7 @@ int handleMqttResponse(int response_code, char *contentLength, char* transaction
 		if (response_code == 404)
 		{
 			//To set POST-NONE root version when 404
-			refreshConfigVersionList(version, response_code);
+			refreshConfigVersionList(version, response_code, docList);
 		}
 		WebcfgDebug("db_root_version is %d and db_root_string is %s\n", db_root_version, db_root_string);
 		getRootDocVersionFromDBCache(&db_root_version, &db_root_string, &subdocList);

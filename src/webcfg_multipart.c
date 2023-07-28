@@ -73,6 +73,8 @@ char webpa_aut_token[4096]={'\0'};
 #if !defined (FEATURE_SUPPORT_MQTTCM) || defined (WAN_FAILOVER_SUPPORTED)
 static char g_interface[32]={'\0'};
 #endif
+
+#if !defined (FEATURE_SUPPORT_MQTTCM)
 static char g_systemReadyTime[64]={'\0'};
 static char g_FirmwareVersion[64]={'\0'};
 static char g_bootTime[64]={'\0'};
@@ -81,12 +83,13 @@ static char g_ModelName[64]={'\0'};
 static char g_PartnerID[64]={'\0'};
 static char g_AccountID[64]={'\0'};
 static char g_deviceWanMac[64]={'\0'};
-char g_RebootReason[64]={'\0'};
-static char g_transID[64]={'\0'};
-static char * g_contentLen = NULL;
 static char *supportedVersion_header=NULL;
 static char *supportedDocs_header=NULL;
 static char *supplementaryDocs_header=NULL;
+#endif
+char g_RebootReason[64]={'\0'};
+static char g_transID[64]={'\0'};
+static char * g_contentLen = NULL;
 static multipartdocs_t *g_mp_head = NULL;
 pthread_mutex_t multipart_t_mut =PTHREAD_MUTEX_INITIALIZER;
 static int eventFlag = 0;
