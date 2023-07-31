@@ -16,6 +16,11 @@ set(PROJ_WEBCFG webcfg)
 
 if (WEBCONFIG_BIN_SUPPORT)
 add_definitions(-DWEBCONFIG_BIN_SUPPORT)
+
+if (FEATURE_SUPPORT_MQTTCM)
+add_definitions(-DFEATURE_SUPPORT_MQTTCM)
+endif (FEATURE_SUPPORT_MQTTCM)
+
 endif (WEBCONFIG_BIN_SUPPORT)
 
 if (WAN_FAILOVER_SUPPORTED)
@@ -69,9 +74,19 @@ endif()
 if (WEBCONFIG_BIN_SUPPORT)
 set(HEADERS ${HEADERS} webcfg_rbus.h)
 set(SOURCES ${SOURCES} main.c webcfg_rbus.c)
+
+if (FEATURE_SUPPORT_MQTTCM)
+set(HEADERS ${HEADERS} webcfg_mqtt.h)
+set(SOURCES ${SOURCES} webcfg_mqtt.c)
+endif (FEATURE_SUPPORT_MQTTCM)
+
 add_executable(webconfig ${SOURCES} ${HEADERS})
 set_property(TARGET webconfig PROPERTY C_STANDARD 99)
-set(COMMON_LIBS -lwrp-c -lpthread -lwdmp-c -lmsgpackc -ltrower-base64 -lm -lcjson -lrt -luuid -lcurl -lrbus)
+set(COMMON_LIBS -lwrp-c -lpthread -lwdmp-c -lmsgpackc -ltrower-base64 -lm -lcjson -lrt -luuid -lrbus)
+
+if (NOT FEATURE_SUPPORT_MQTTCM)
+set(COMMON_LIBS ${COMMON_LIBS} -lcurl)
+endif()
 
 if (NOT DEVICE_EXTENDER)
 set(COMMON_LIBS ${COMMON_LIBS} -lcimplog)

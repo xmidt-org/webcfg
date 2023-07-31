@@ -70,7 +70,11 @@ struct token_data {
 /*----------------------------------------------------------------------------*/
 static char g_ETAG[64]={'\0'};
 char webpa_aut_token[4096]={'\0'};
+#if !defined (FEATURE_SUPPORT_MQTTCM) || defined (WAN_FAILOVER_SUPPORTED)
 static char g_interface[32]={'\0'};
+#endif
+
+#if !defined (FEATURE_SUPPORT_MQTTCM)
 static char g_systemReadyTime[64]={'\0'};
 static char g_FirmwareVersion[64]={'\0'};
 static char g_bootTime[64]={'\0'};
@@ -79,15 +83,17 @@ static char g_ModelName[64]={'\0'};
 static char g_PartnerID[64]={'\0'};
 static char g_AccountID[64]={'\0'};
 static char g_deviceWanMac[64]={'\0'};
-char g_RebootReason[64]={'\0'};
-static char g_transID[64]={'\0'};
-static char * g_contentLen = NULL;
 static char *supportedVersion_header=NULL;
 static char *supportedDocs_header=NULL;
 static char *supplementaryDocs_header=NULL;
+#endif
+char g_RebootReason[64]={'\0'};
+static char g_transID[64]={'\0'};
+static char * g_contentLen = NULL;
 static multipartdocs_t *g_mp_head = NULL;
 pthread_mutex_t multipart_t_mut =PTHREAD_MUTEX_INITIALIZER;
 static int eventFlag = 0;
+
 char * get_global_transID(void)
 {
     return g_transID;
@@ -195,6 +201,7 @@ WEBCFG_STATUS checkAkerDoc();
 */
 WEBCFG_STATUS webcfg_http_request(char **configData, int r_count, int status, long *code, char **transaction_id, char* contentType, size_t *dataSize, char* docname)
 {
+#if !defined (FEATURE_SUPPORT_MQTTCM)
 	CURL *curl;
 	CURLcode res;
 	CURLcode time_res;
@@ -444,6 +451,7 @@ WEBCFG_STATUS webcfg_http_request(char **configData, int r_count, int status, lo
 	{
 		WebcfgError("curl init failure\n");
 	}
+#endif
 	return WEBCFG_FAILURE;
 }
 
@@ -1114,7 +1122,7 @@ size_t headr_callback(char *buffer, size_t size, size_t nitems, void* data)
 	char* final_header = NULL;
 	char header_str[64] = {'\0'};
 	size_t content_len = 0;
-
+	(void) data;
 	etag_len = strlen(ETAG_HEADER);
 	content_len = strlen(CONTENT_LENGTH_HEADER);
 	if( nitems > etag_len )
@@ -1508,6 +1516,7 @@ void refreshConfigVersionList(char *versionsList, int http_status, char *docsLis
  * @param[out] trans_uuid for sync
  * @param[out] header_list output curl header list
 */
+#if !defined FEATURE_SUPPORT_MQTTCM
 void createCurlHeader( struct curl_slist *list, struct curl_slist **header_list, int status, char ** trans_uuid, char **subdocList)
 {
 	char *version_header = NULL;
@@ -1957,6 +1966,7 @@ void createCurlHeader( struct curl_slist *list, struct curl_slist **header_list,
 	}
 	*header_list = list;
 }
+#endif
 
 char* generate_trans_uuid()
 {

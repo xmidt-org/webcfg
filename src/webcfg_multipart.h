@@ -17,7 +17,9 @@
 #define REQUEST_H
 
 #include <stdint.h>
+#if !defined FEATURE_SUPPORT_MQTTCM
 #include <curl/curl.h>
+#endif
 #include "webcfg.h"
 #include <wdmp-c.h>
 
@@ -83,6 +85,8 @@ int get_multipartdoc_count();
 WEBCFG_STATUS deleteFromMpList(char* doc_name);
 void addToMpList(uint32_t etag, char *name_space, char *data, size_t data_size);
 void delete_mp_doc();
+#if !defined FEATURE_SUPPORT_MQTTCM
 void createCurlHeader( struct curl_slist *list, struct curl_slist **header_list, int status, char ** trans_uuid,char **subdocList);
+#endif
 char *replaceMacWord(const char *s, const char *macW, const char *deviceMACW);
 #endif

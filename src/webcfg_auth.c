@@ -172,6 +172,3 @@ void execute_token_script(char *token, char *name, size_t len, char *mac, char *
         }
     }
 }
-
-
-

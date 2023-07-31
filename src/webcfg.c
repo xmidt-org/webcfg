@@ -34,6 +34,11 @@
 #include "webcfg_event.h"
 #include "webcfg_blob.h"
 #include "webcfg_timer.h"
+
+#ifdef FEATURE_SUPPORT_MQTTCM
+#include "webcfg_mqtt.h"
+#endif
+
 #ifdef FEATURE_SUPPORT_AKER
 #include "webcfg_aker.h"
 #endif
@@ -130,18 +135,21 @@ void *WebConfigMultipartTask(void *status)
 	initDB(WEBCFG_DB_FILE);
 
 	//To disable supplementary sync for RDKV platforms
-#if !defined(RDK_PERSISTENT_PATH_VIDEO)
+#if (!defined(RDK_PERSISTENT_PATH_VIDEO) && !defined(FEATURE_SUPPORT_MQTTCM))
+
 	initMaintenanceTimer();
 #endif
-	
+
+	//The event handler intialisation is disabled in RDKV platforms as blob type is not applicable
 	if(get_global_eventFlag() == 0)
 	{
-        	WebcfgInfo("Starting initEventHandlingTask\n");
-        	initEventHandlingTask();
-        	processWebcfgEvents();
-        	set_global_eventFlag();
+		WebcfgInfo("Starting initEventHandlingTask\n");
+		initEventHandlingTask();
+		processWebcfgEvents();
+		set_global_eventFlag();
 	}
-	
+
+#if !defined (FEATURE_SUPPORT_MQTTCM)
 	//For Primary sync set flag to 0
 	set_global_supplementarySync(0);
 	WebcfgInfo("Webconfig is ready to process requests. set webcfgReady to true\n");
@@ -167,6 +175,7 @@ void *WebConfigMultipartTask(void *status)
 
 	//Resetting the supplementary sync
 	set_global_supplementarySync(0);
+#endif
 	set_bootSync(false);
 
 	while(1)
@@ -249,8 +258,7 @@ void *WebConfigMultipartTask(void *status)
 		if ( retry_flag == 0)
 		{
 		//To disable supplementary sync for RDKV platforms
-		#if !defined(RDK_PERSISTENT_PATH_VIDEO)
-
+		#if (!defined(RDK_PERSISTENT_PATH_VIDEO) && !defined(FEATURE_SUPPORT_MQTTCM))
 			long tmOffset = 0;
 			tmOffset = getTimeOffset();
 			WebcfgInfo("The offset obtained from getTimeOffset is %ld\n", tmOffset);
@@ -381,7 +389,6 @@ void *WebConfigMultipartTask(void *status)
 	pthread_mutex_lock (get_global_notify_mut());
 	pthread_cond_signal (get_global_notify_con());
 	pthread_mutex_unlock (get_global_notify_mut());
-
 
 	if(get_global_eventFlag())
 	{

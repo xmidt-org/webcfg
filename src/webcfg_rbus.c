@@ -23,6 +23,11 @@
 #include <wdmp-c.h>
 #include <time.h>
 #include "webcfg_rbus.h"
+
+#ifdef FEATURE_SUPPORT_MQTTCM
+#include "webcfg_mqtt.h"
+#endif
+
 #include "webcfg_metadata.h"
 #ifdef WAN_FAILOVER_SUPPORTED
 #include "webcfg_multipart.h"
@@ -1274,23 +1279,23 @@ rbusError_t fetchCachedBlobHandler(rbusHandle_t handle, char const* methodName, 
  */
 WEBCFG_STATUS regWebConfigDataModel()
 {
-	rbusError_t ret = RBUS_ERROR_SUCCESS;
+	rbusError_t ret1 = RBUS_ERROR_SUCCESS;
+	rbusError_t ret2 = RBUS_ERROR_SUCCESS;
+
 	rbusError_t retPsmGet = RBUS_ERROR_BUS_ERROR;
 	WEBCFG_STATUS status = WEBCFG_SUCCESS;
 
-	WebcfgInfo("Registering parameters %s, %s, %s %s\n", WEBCFG_RFC_PARAM, WEBCFG_FORCESYNC_PARAM, WEBCFG_URL_PARAM, WEBCFG_SUPPLEMENTARY_TELEMETRY_PARAM);
 	if(!rbus_handle)
 	{
 		WebcfgError("regWebConfigDataModel Failed in getting bus handles\n");
 		return WEBCFG_FAILURE;
 	}
 
-	rbusDataElement_t dataElements[NUM_WEBCFG_ELEMENTS] = {
+	WebcfgInfo("Registering parameters %s, %s \n", WEBCFG_RFC_PARAM, WEBCFG_DATA_PARAM);
+
+	rbusDataElement_t dataElements1[NUM_WEBCFG_ELEMENTS1] = {
 
 		{WEBCFG_RFC_PARAM, RBUS_ELEMENT_TYPE_PROPERTY, {webcfgRfcGetHandler, webcfgRfcSetHandler, NULL, NULL, NULL, NULL}},
-		{WEBCFG_URL_PARAM, RBUS_ELEMENT_TYPE_PROPERTY, {webcfgUrlGetHandler, webcfgUrlSetHandler, NULL, NULL, NULL, NULL}},
-		{WEBCFG_FORCESYNC_PARAM, RBUS_ELEMENT_TYPE_PROPERTY, {webcfgFrGetHandler, webcfgFrSetHandler, NULL, NULL, NULL, NULL}},
-		{WEBCFG_SUPPLEMENTARY_TELEMETRY_PARAM, RBUS_ELEMENT_TYPE_PROPERTY, {webcfgTelemetryGetHandler, webcfgTelemetrySetHandler, NULL, NULL, NULL, NULL}},
 		{WEBCFG_DATA_PARAM, RBUS_ELEMENT_TYPE_PROPERTY, {webcfgDataGetHandler, webcfgDataSetHandler, NULL, NULL, NULL, NULL}},
 		{WEBCFG_SUPPORTED_DOCS_PARAM, RBUS_ELEMENT_TYPE_PROPERTY, {webcfgSupportedDocsGetHandler, webcfgSupportedDocsSetHandler, NULL, NULL, NULL, NULL}},
 		{WEBCFG_SUPPORTED_VERSION_PARAM, RBUS_ELEMENT_TYPE_PROPERTY, {webcfgSupportedVersionGetHandler, webcfgSupportedVersionSetHandler, NULL, NULL, NULL, NULL}},
@@ -1298,10 +1303,24 @@ WEBCFG_STATUS regWebConfigDataModel()
 		{WEBCFG_UPSTREAM_EVENT, RBUS_ELEMENT_TYPE_EVENT, {NULL, NULL, NULL, NULL, eventSubHandler, NULL}},
 		{WEBCFG_UTIL_METHOD, RBUS_ELEMENT_TYPE_METHOD, {NULL, NULL, NULL, NULL, NULL, fetchCachedBlobHandler}}
 	};
-	ret = rbus_regDataElements(rbus_handle, NUM_WEBCFG_ELEMENTS, dataElements);
-	if(ret == RBUS_ERROR_SUCCESS)
+
+	ret1 = rbus_regDataElements(rbus_handle, NUM_WEBCFG_ELEMENTS1, dataElements1);
+
+#if !defined (FEATURE_SUPPORT_MQTTCM)
+	rbusDataElement_t dataElements2[NUM_WEBCFG_ELEMENTS2] = {
+
+		{WEBCFG_URL_PARAM, RBUS_ELEMENT_TYPE_PROPERTY, {webcfgUrlGetHandler, webcfgUrlSetHandler, NULL, NULL, NULL, NULL}},
+		{WEBCFG_FORCESYNC_PARAM, RBUS_ELEMENT_TYPE_PROPERTY, {webcfgFrGetHandler, webcfgFrSetHandler, NULL, NULL, NULL, NULL}},
+		{WEBCFG_SUPPLEMENTARY_TELEMETRY_PARAM, RBUS_ELEMENT_TYPE_PROPERTY, {webcfgTelemetryGetHandler, webcfgTelemetrySetHandler, NULL, NULL, NULL, NULL}},
+	};
+
+	ret2 = rbus_regDataElements(rbus_handle, NUM_WEBCFG_ELEMENTS2, dataElements2);
+#endif
+
+	if(ret1 == RBUS_ERROR_SUCCESS && ret2 == RBUS_ERROR_SUCCESS)
 	{
 		WebcfgDebug("Registered data element %s with rbus \n ", WEBCFG_RFC_PARAM);
+
 		memset(ForceSync, 0, 256);
 		webcfgStrncpy( ForceSync, "", sizeof(ForceSync));
 
@@ -1770,6 +1789,9 @@ int set_rbus_RfcEnable(bool bValue)
 			if(get_global_mpThreadId() == NULL)
 			{
 				initWebConfigMultipartTask(0);
+				#ifdef FEATURE_SUPPORT_MQTTCM
+					initWebconfigMqttTask(0);
+				#endif
 			}
 			else
 			{
@@ -1788,6 +1810,9 @@ int set_rbus_RfcEnable(bool bValue)
 			set_global_shutdown(true);
 			pthread_cond_signal(get_global_sync_condition());
 			pthread_mutex_unlock(get_global_sync_mutex());
+                        #ifdef FEATURE_SUPPORT_MQTTCM
+				pthread_cond_signal(get_global_mqtt_sync_condition());
+			#endif		
 		}
 	}
 	retPsmSet = rbus_StoreValueIntoDB( paramRFCEnable, buf );
@@ -2011,46 +2036,53 @@ void sendNotification_rbus(char *payload, char *source, char *destination)
 			}
 
 			msg_len = wrp_struct_to (notif_wrp_msg, WRP_BYTES, &msg_bytes);
-			if(msg_len>=0)
+
+		#ifdef FEATURE_SUPPORT_MQTTCM
+			int ret = sendNotification_mqtt(payload, destination, notif_wrp_msg, msg_bytes);
+			if (ret)
 			{
-				// 30s wait interval for subscription 	
-				if(!subscribed)
-				{
-					waitForUpstreamEventSubscribe(30);
-				}
-				if(subscribed)
-				{
-					rbusValue_t value;
-					rbusObject_t data;
-					rbusValue_Init(&value);
-					rbusValue_SetBytes(value, msg_bytes, msg_len);
-					rbusObject_Init(&data, NULL);
-					rbusObject_SetValue(data, "value", value);
-					rbusEvent_t event;
-					event.name = WEBCFG_UPSTREAM_EVENT;
-					event.data = data;
-					event.type = RBUS_EVENT_GENERAL;
-					rc = rbusEvent_Publish(rbus_handle, &event);
-					rbusValue_Release(value);
-					rbusObject_Release(data);
-					if(rc != RBUS_ERROR_SUCCESS)
-						WebcfgError("Failed to send Notification : %d, %s\n", rc, rbusError_ToString(rc));
-					else
-						WebcfgInfo("Notification successfully sent to %s\n", WEBCFG_UPSTREAM_EVENT);
-				}
-				else
-					WebcfgError("Failed to send Notification as no subscription\n");
-	
-				wrp_free_struct (notif_wrp_msg );
-                        
-        	                if(msg_bytes)
-				{
-					WEBCFG_FREE(msg_bytes);
-				}
+				WebcfgInfo("sendNotification_mqtt . ret %d\n", ret);
 			}
-			else{
-				WebcfgError("msg_len is less than 0\n");
-                                wrp_free_struct (notif_wrp_msg );
+			wrp_free_struct (notif_wrp_msg );
+                        if(msg_bytes)
+			{
+				WEBCFG_FREE(msg_bytes);
+			}
+			return ;
+		#endif
+			// 30s wait interval for subscription 	
+			if(!subscribed)
+			{
+				waitForUpstreamEventSubscribe(30);
+	    		}
+			if(subscribed)
+			{
+				rbusValue_t value;
+				rbusObject_t data;
+				rbusValue_Init(&value);
+				rbusValue_SetBytes(value, msg_bytes, msg_len);
+				rbusObject_Init(&data, NULL);
+				rbusObject_SetValue(data, "value", value);
+				rbusEvent_t event;
+				event.name = WEBCFG_UPSTREAM_EVENT;
+				event.data = data;
+				event.type = RBUS_EVENT_GENERAL;
+				rc = rbusEvent_Publish(rbus_handle, &event);
+				rbusValue_Release(value);
+				rbusObject_Release(data);
+				if(rc != RBUS_ERROR_SUCCESS)
+					WebcfgError("Failed to send Notification : %d, %s\n", rc, rbusError_ToString(rc));
+				else
+					WebcfgInfo("Notification successfully sent to %s\n", WEBCFG_UPSTREAM_EVENT);
+			}
+			else
+				WebcfgError("Failed to send Notification as no subscription\n");
+
+			wrp_free_struct (notif_wrp_msg );
+                        
+                        if(msg_bytes)
+			{
+				WEBCFG_FREE(msg_bytes);
 			}
 		}
 	}
@@ -2138,7 +2170,8 @@ int subscribeTo_CurrentActiveInterface_Event()
 void trigger_webcfg_forcedsync()
 {
 	char *str = NULL;
-	int status = 0;	
+	int status = 0;
+
 	str = strdup("root");
 	//webcfg_forcedsync_needed is set initially whenever force sync set is detected, but this does not guarantee the force sync to happen immediately when previous sync is in progress, cloud sync will be retried once previous sync is completed.
 	set_global_webcfg_forcedsync_needed(1);
@@ -2156,6 +2189,7 @@ void rbus_log_handler(
     int threadId,
     char* message)
 {
+    WebcfgDebug("threadId %d\n", threadId);
     const char* slevel = "";
 
     if(level < RBUS_LOG_ERROR)
