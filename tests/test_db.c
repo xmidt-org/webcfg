@@ -28,6 +28,11 @@
 #define UNUSED(x) (void )(x)
 //mock functions
 
+long getTimeOffset()
+{
+	return 0;
+}
+
 bool get_global_shutdown()
 {
 	return false;
