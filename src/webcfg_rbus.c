@@ -2169,6 +2169,18 @@ int subscribeTo_CurrentActiveInterface_Event()
 /*Trigger force sync with cloud from webconfig client.*/
 void trigger_webcfg_forcedsync()
 {
+#ifdef FEATURE_SUPPORT_MQTTCM
+	mqttBackOffRetry();
+	int ret = triggerBootupSync();
+	if(ret)
+	{
+		WebcfgInfo("Triggered bootup sync via mqtt\n");
+	}
+	else
+	{
+		WebcfgError("Failed to trigger bootup sync via mqtt\n");
+	}
+#else
 	char *str = NULL;
 	int status = 0;
 
@@ -2179,6 +2191,7 @@ void trigger_webcfg_forcedsync()
 	set_rbus_ForceSync(str, &status);
 	WEBCFG_FREE(str);
 	str=NULL;
+#endif
 }
 
 /* Enables rbus ERROR level logs in webconfig. Modify RBUS_LOG_ERROR check if more debug logs are needed from rbus. */
