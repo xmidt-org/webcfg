@@ -98,6 +98,8 @@ void* WebconfigMqttTask(void *status)
 
 	mqttBackOffRetry();
 
+	WebcfgInfo("MQTTCM broker is connected, proceed to subscribe\n");
+
 	WebcfgInfo("rbus event subscribe to mqtt subscribe callback\n");
 	rc = rbusEvent_Subscribe(rbus_handle, WEBCFG_SUBSCRIBE_CALLBACK, webcfgSubscribeCallbackHandler, NULL, 0);
 	if(rc != RBUS_ERROR_SUCCESS)
@@ -210,7 +212,7 @@ void mqttBackOffRetry()
 		connStatus = getMqttCMConnStatus();
 		if(connStatus)
 		{
-			WebcfgInfo("MQTTCM broker is connected, proceed further\n");
+			WebcfgDebug("MQTTCM broker is connected, proceed further\n");
 			break;
 		}
 		else
@@ -315,7 +317,7 @@ static void webcfgSubscribeCallbackHandler(
 		if(!bootupsync)
 		{
 			WebcfgInfo("mqtt is connected and subscribed to topic, trigger bootup sync to cloud.\n");
-			int ret = triggerBootupSync();
+			int ret = triggerMqttSync();
 			if(ret)
 			{
 				WebcfgInfo("Triggered bootup sync via mqtt\n");
@@ -331,7 +333,7 @@ static void webcfgSubscribeCallbackHandler(
     (void)handle;
 }
 
-int triggerBootupSync()
+int triggerMqttSync()
 {
 	char *mqttheaderList = NULL;
 	mqttheaderList = (char *) malloc(sizeof(char) * 1024);

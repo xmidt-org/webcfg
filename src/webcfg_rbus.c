@@ -2171,14 +2171,15 @@ void trigger_webcfg_forcedsync()
 {
 #ifdef FEATURE_SUPPORT_MQTTCM
 	mqttBackOffRetry();
-	int ret = triggerBootupSync();
+	WebcfgInfo("mqtt is connected after wan restart event, trigger sync with cloud.\n");
+	int ret = triggerMqttSync();
 	if(ret)
 	{
-		WebcfgInfo("Triggered bootup sync via mqtt\n");
+		WebcfgInfo("Triggered sync via mqtt\n");
 	}
 	else
 	{
-		WebcfgError("Failed to trigger bootup sync via mqtt\n");
+		WebcfgError("Failed to trigger sync via mqtt\n");
 	}
 #else
 	char *str = NULL;
