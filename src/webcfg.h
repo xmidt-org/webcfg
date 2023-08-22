@@ -48,7 +48,8 @@ extern int numLoops;
 typedef enum
 {
     WEBCFG_SUCCESS = 0,
-    WEBCFG_FAILURE
+    WEBCFG_FAILURE,
+    WEBCFG_NO_CHANGE
 } WEBCFG_STATUS;
 
 typedef enum
@@ -91,7 +92,10 @@ pthread_mutex_t *get_global_sync_mutex(void);
 pthread_t *get_global_mpThreadId(void);
 int get_global_supplementarySync();
 void set_global_supplementarySync(int value);
-
+int get_global_webcfg_forcedsync_needed();
+void set_global_webcfg_forcedsync_needed(int value);
+void set_global_webcfg_forcedsync_started(int value);
+int get_global_webcfg_forcedsync_started();
 void initWebConfigMultipartTask(unsigned long status);
 void processWebconfgSync(int Status, char* docname);
 WEBCFG_STATUS webcfg_http_request(char **configData, int r_count, int status, long *code, char **transaction_id,char* contentType, size_t* dataSize, char* docname);

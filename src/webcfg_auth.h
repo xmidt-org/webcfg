@@ -17,7 +17,9 @@
 #define WEBCFGAUTH_H
 
 #include <stdint.h>
+#if !defined FEATURE_SUPPORT_MQTTCM
 #include <curl/curl.h>
+#endif
 #include "webcfg_log.h"
 #include "webcfg.h"
 #if ! defined(DEVICE_EXTENDER)

@@ -26,8 +26,6 @@
 #include <rbus/rbus_object.h>
 #include <rbus/rbus_property.h>
 #include <rbus/rbus_value.h>
-#include <rbus-core/rbus_core.h>
-#include <rbus-core/rbus_session_mgr.h>
 
 #include <wdmp-c.h>
 #include <wrp-c.h>
@@ -40,7 +38,14 @@
 #define buffLen 1024
 #define maxParamLen 128
 
-#define NUM_WEBCFG_ELEMENTS 9
+#define NUM_WEBCFG_ELEMENTS1 7
+
+#if !defined (FEATURE_SUPPORT_MQTTCM)
+#define NUM_WEBCFG_ELEMENTS2 3
+#endif
+
+#define MAX_FORCE_RESET_SET_COUNT 3
+#define MAX_FORCE_RESET_TIME_SECS 24*60*60
 
 #define WEBCFG_COMPONENT_NAME "webconfig"
 #define MAX_PARAMETERNAME_LEN			4096
@@ -54,6 +59,7 @@
 #define WEBCFG_SUPPORTED_DOCS_PARAM	"Device.X_RDK_WebConfig.SupportedDocs"
 #define WEBCFG_SUPPORTED_VERSION_PARAM	"Device.X_RDK_WebConfig.SupportedSchemaVersion"
 #define WEBCFG_SUPPLEMENTARY_TELEMETRY_PARAM  "Device.X_RDK_WebConfig.SupplementaryServiceUrls.Telemetry"
+#define WEBCFG_SUBDOC_FORCERESET_PARAM  "Device.X_RDK_WebConfig.webcfgSubdocForceReset"
 
 #ifdef WAN_FAILOVER_SUPPORTED
 #define WEBCFG_INTERFACE_PARAM "Device.X_RDK_WanManager.CurrentActiveInterface"
@@ -114,7 +120,8 @@ int get_rbus_ForceSync(char** pString, char **transactionId );
 bool get_rbus_RfcEnable();
 void sendNotification_rbus(char *payload, char *source, char *destination);
 void waitForUpstreamEventSubscribe(int wait_time);
-
+void trigger_webcfg_forcedsync();
+void registerRbusLogger();
 webcfgError_t fetchMpBlobData(char *docname, void **blobdata, int *len, uint32_t *etag);
 #ifdef WAN_FAILOVER_SUPPORTED
 int subscribeTo_CurrentActiveInterface_Event();

@@ -18,15 +18,24 @@
 #include "signal.h"
 #include <curl/curl.h>
 #ifdef INCLUDE_BREAKPAD
+#ifndef DEVICE_CAMERA
 #include "breakpad_wrapper.h"
+#else
+#include "breakpadwrap.h"
+#endif  //DEVICE_CAMERA
 #endif
 #include "webcfg.h"
 #include "webcfg_log.h"
 #include "webcfg_generic.h"
 #include "webcfg_rbus.h"
+#include "webcfg_wanhandle.h"
 #include "webcfg_privilege.h"
 #include <unistd.h>
 #include <pthread.h>
+
+#ifdef FEATURE_SUPPORT_MQTTCM
+#include "webcfg_mqtt.h"
+#endif
 /*----------------------------------------------------------------------------*/
 /*                             Function Prototypes                            */
 /*----------------------------------------------------------------------------*/
@@ -50,7 +59,16 @@ int main()
     	struct timespec cTime;
     	char systemReadyTime[32]={'\0'};
 #ifdef INCLUDE_BREAKPAD
+#ifndef DEVICE_CAMERA
     breakpad_ExceptionHandler();
+#else
+    /* breakpad handles the signals SIGSEGV, SIGBUS, SIGFPE, and SIGILL */
+    BreakPadWrapExceptionHandler eh;
+    eh = newBreakPadWrapExceptionHandler();
+    if(NULL != eh) {
+        WebcfgInfo("Breakpad Initialized\n");
+    }
+#endif //DEVICE_CAMERA
 #else
 	signal(SIGTERM, sig_handler);
 	signal(SIGINT, sig_handler);
@@ -67,24 +85,28 @@ int main()
 #endif
 	WebcfgInfo("********** Starting component: %s **********\n ", WEBCFG_COMPONENT_NAME);
 	webcfg_drop_root_privilege();
+#if !defined (FEATURE_SUPPORT_MQTTCM)
 	curl_global_init(CURL_GLOBAL_DEFAULT);
-
+#endif
 	if(isRbusEnabled())
 	{
+		registerRbusLogger();
 		WebcfgDebug("RBUS mode. webconfigRbusInit\n");
 		webconfigRbusInit(WEBCFG_COMPONENT_NAME);
 		regWebConfigDataModel();
+		#ifdef WAN_FAILOVER_SUPPORTED
+		subscribeTo_CurrentActiveInterface_Event();
+		#endif
 		systemStatus = rbus_waitUntilSystemReady();
 		WebcfgDebug("rbus_waitUntilSystemReady systemStatus is %d\n", systemStatus);
     		getCurrent_Time(&cTime);
     		snprintf(systemReadyTime, sizeof(systemReadyTime),"%d", (int)cTime.tv_sec);
     		WebcfgInfo("systemReadyTime is %s\n", systemReadyTime);
 		set_global_systemReadyTime(systemReadyTime);
+		WebcfgInfo("Registering WanEventHandler sysevents\n");
+		WanEventHandler();
 		// wait for upstream subscriber for 5mins
 		waitForUpstreamEventSubscribe(300);
-		#ifdef WAN_FAILOVER_SUPPORTED
-		subscribeTo_CurrentActiveInterface_Event();
-		#endif
 		ret = rbus_GetValueFromDB( PARAM_RFC_ENABLE, &strValue );
 		if (ret == 0)
 		{
@@ -100,6 +122,12 @@ int main()
 			{
 				WebcfgInfo("WebConfig Rfc is enabled, starting initWebConfigMultipartTask.\n");
 				initWebConfigMultipartTask((unsigned long) systemStatus);
+			#ifdef FEATURE_SUPPORT_MQTTCM
+				WebcfgInfo("Starting initWebconfigMqttTask\n");
+				initWebconfigMqttTask((unsigned long) systemStatus);
+			#else
+				WebcfgInfo("mqtt is disabled..\n");
+			#endif
 			}
 			else
 			{
@@ -121,8 +149,9 @@ int main()
 	pthread_cond_wait(&webcfg_con, &webcfg_mut);
 	WebcfgDebug("pthread_mutex_unlock webcfg_mut\n");
 	pthread_mutex_unlock (&webcfg_mut);
-
+#if !defined (FEATURE_SUPPORT_MQTTCM)
 	curl_global_cleanup();
+#endif
 	WebcfgInfo("Exiting webconfig main thread!!\n");
 	return 1;
 }

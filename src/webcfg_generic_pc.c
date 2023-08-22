@@ -46,6 +46,8 @@ char *__attribute__((weak)) getRebootReason(void);
 char *__attribute__((weak)) getConnClientParamName(void);
 char *__attribute__((weak)) getFirmwareVersion(void);
 char *__attribute__((weak)) get_deviceMAC(void);
+char *__attribute__((weak)) get_deviceWanMAC(void);
+long __attribute__((weak)) getTimeOffset(void);
 char *__attribute__((weak)) getFirmwareUpgradeStartTime(void);
 char *__attribute__((weak)) getFirmwareUpgradeEndTime(void);
 char *__attribute__((weak)) get_global_systemReadyTime(void);
@@ -64,9 +66,21 @@ void __attribute__((weak)) setAttributes(param_t *attArr, const unsigned int par
 int __attribute__((weak)) rbus_GetValueFromDB( char* paramName, char** paramValue);
 int __attribute__((weak)) rbus_StoreValueIntoDB(char *paramName, char *value);
 int __attribute__((weak)) rbus_waitUntilSystemReady();
+#ifdef FEATURE_SUPPORT_MQTTCM
+int __attribute__((weak)) Get_Mqtt_LocationId( char *pString);
+int __attribute__((weak)) Get_Mqtt_NodeId( char *pString);
+int __attribute__((weak)) Get_Mqtt_Broker( char *pString);
+int __attribute__((weak)) Get_Mqtt_Port( char *pString);
+char *__attribute__((weak)) Get_Mqtt_ClientId();
+#endif
 /*----------------------------------------------------------------------------*/
 /*                             External Functions                             */
 /*----------------------------------------------------------------------------*/
+
+long getTimeOffset(void)
+{
+    return 0;
+}
 
 char *getDeviceBootTime(void)
 {
@@ -133,6 +147,11 @@ char *get_deviceMAC(void)
 	return "123456789000";
 }
 
+char *get_deviceWanMAC(void)
+{
+	return "123456789000";
+}
+
 char *getFirmwareUpgradeStartTime(void)
 {
     return NULL;
@@ -145,7 +164,7 @@ char *getFirmwareUpgradeEndTime(void)
 
 char *get_global_systemReadyTime(void)
 {
-    return NULL;
+    return global_systemReadyTime;
 }
 
 void set_global_systemReadyTime(char* systemReadyTime)
@@ -224,8 +243,37 @@ int Set_Supplementary_URL( char *name, char *pString)
     UNUSED(pString);
     return 0;
 }
-
-
+#ifdef FEATURE_SUPPORT_MQTTCM
+int Get_Mqtt_LocationId( char *pString)
+{
+    WebcfgDebug("Inside Get_Mqtt_LocationId weak function.\n");
+    UNUSED(pString);
+    return 0;
+}
+int Get_Mqtt_NodeId( char *pString)
+{
+    WebcfgDebug("Inside Get_Mqtt_NodeId weak function.\n");
+    UNUSED(pString);
+    return 0;
+}
+int Get_Mqtt_Broker( char *pString)
+{
+    WebcfgDebug("Inside Get_Mqtt_Broker weak function.\n");
+    UNUSED(pString);
+    return 0;
+}
+int Get_Mqtt_Port( char *pString)
+{
+    WebcfgDebug("Inside Get_Mqtt_Port weak function.\n");
+    UNUSED(pString);
+    return 0;
+}
+char* Get_Mqtt_ClientId()
+{
+    WebcfgDebug("Inside Get_Mqtt_ClientId weak function.\n");
+    return NULL;
+}
+#endif
 void setValues(const param_t paramVal[], const unsigned int paramCount, const int setType, char *transactionId, money_trace_spans *timeSpan, WDMP_STATUS *retStatus, int *ccspStatus)
 {
 #ifdef WEBCONFIG_BIN_SUPPORT

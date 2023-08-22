@@ -35,6 +35,10 @@
 #include "webcfg_blob.h"
 #include "webcfg_timer.h"
 
+#ifdef FEATURE_SUPPORT_MQTTCM
+#include "webcfg_mqtt.h"
+#endif
+
 #ifdef FEATURE_SUPPORT_AKER
 #include "webcfg_aker.h"
 #endif
@@ -44,7 +48,9 @@
 
 
 #ifdef MULTIPART_UTILITY
-#ifdef DEVICE_EXTENDER
+#ifdef DEVICE_CAMERA
+#define TEST_FILE_LOCATION		"/opt/multipart.bin"
+#elif DEVICE_EXTENDER
 #define TEST_FILE_LOCATION              "/usr/opensync/data/multipart.bin"
 #elif BUILD_YOCTO
 #define TEST_FILE_LOCATION		"/nvram/multipart.bin"
@@ -71,6 +77,8 @@ pthread_t* g_mpthreadId;
 static int g_testfile = 0;
 #endif
 static int g_supplementarySync = 0;
+static int g_webcfg_forcedsync_needed = 0;
+static int g_webcfg_forcedsync_started = 0;
 /*----------------------------------------------------------------------------*/
 /*                             Function Prototypes                            */
 /*----------------------------------------------------------------------------*/
@@ -127,8 +135,10 @@ void *WebConfigMultipartTask(void *status)
 	initDB(WEBCFG_DB_FILE);
 
 	//To disable supplementary sync for RDKV platforms
-#if !defined(RDK_PERSISTENT_PATH_VIDEO)
+#if (!defined(RDK_PERSISTENT_PATH_VIDEO) && !defined(FEATURE_SUPPORT_MQTTCM))
+
 	initMaintenanceTimer();
+#endif
 
 	//The event handler intialisation is disabled in RDKV platforms as blob type is not applicable
 	if(get_global_eventFlag() == 0)
@@ -138,7 +148,8 @@ void *WebConfigMultipartTask(void *status)
 		processWebcfgEvents();
 		set_global_eventFlag();
 	}
-#endif
+
+#if !defined (FEATURE_SUPPORT_MQTTCM)
 	//For Primary sync set flag to 0
 	set_global_supplementarySync(0);
 	WebcfgInfo("Webconfig is ready to process requests. set webcfgReady to true\n");
@@ -164,6 +175,7 @@ void *WebConfigMultipartTask(void *status)
 
 	//Resetting the supplementary sync
 	set_global_supplementarySync(0);
+#endif
 	set_bootSync(false);
 
 	while(1)
@@ -180,6 +192,11 @@ void *WebConfigMultipartTask(void *status)
 			}
 			setForceSync("", "", 0);
 			set_global_supplementarySync(0);
+			if(get_global_webcfg_forcedsync_started())
+			{
+				WebcfgDebug("reset webcfg_forcedsync_started\n");
+				set_global_webcfg_forcedsync_started(0);
+			}
 		}
 
 		if(!wait_flag)
@@ -241,10 +258,16 @@ void *WebConfigMultipartTask(void *status)
 		if ( retry_flag == 0)
 		{
 		//To disable supplementary sync for RDKV platforms
-		#if !defined(RDK_PERSISTENT_PATH_VIDEO)
+		#if (!defined(RDK_PERSISTENT_PATH_VIDEO) && !defined(FEATURE_SUPPORT_MQTTCM))
+			long tmOffset = 0;
+			tmOffset = getTimeOffset();
+			WebcfgInfo("The offset obtained from getTimeOffset is %ld\n", tmOffset);
+
+			WebcfgDebug("Before setting offset in main loop %s\n", printTime((long long)ts.tv_sec));
 			ts.tv_sec += getMaintenanceSyncSeconds(maintenance_count);
 			maintenance_doc_sync = 1;
-			WebcfgInfo("The Maintenance Sync triggers at %s\n", printTime((long long)ts.tv_sec));
+			WebcfgInfo("The Maintenance Sync triggers at %s in LTime\n", printTime(((long long)ts.tv_sec) + (tmOffset)));
+			WebcfgInfo("Maintenance sync start time in UTC is %s\n", printTime((long long)ts.tv_sec));
 		#else
 			maintenance_doc_sync = 0;
 			maintenance_count = 0;
@@ -260,8 +283,14 @@ void *WebConfigMultipartTask(void *status)
 			ts.tv_sec += get_retry_timer();
 			WebcfgDebug("The retry triggers at %s\n", printTime((long long)ts.tv_sec));
 		}
-
-		if(retry_flag == 1 || maintenance_doc_sync == 1)
+		if(get_global_webcfg_forcedsync_needed() == 1)
+		{
+			WebcfgInfo("webcfg_forcedsync detected, trigger force sync with cloud.\n");
+			forced_sync = 1;
+			wait_flag = 1;
+			rv = 0;
+		}
+		else if(retry_flag == 1 || maintenance_doc_sync == 1)
 		{
 			WebcfgDebug("B4 sync_condition pthread_cond_timedwait\n");
 			set_maintenanceSync(false);
@@ -295,12 +324,22 @@ void *WebConfigMultipartTask(void *status)
 		}
 		else if(!rv && !g_shutdown)
 		{
+			//webcfg_forcedsync_needed is set initially whenever force sync SET is detected internally & webcfg_forcedsync_started is set when actual sync is started once previous sync is completed.
+			if(get_global_webcfg_forcedsync_needed())
+			{
+				set_global_webcfg_forcedsync_needed(0);
+				set_global_webcfg_forcedsync_started(1);
+				WebcfgDebug("webcfg_forcedsync_needed reset to %d and webcfg_forcedsync_started %d\n", get_global_webcfg_forcedsync_needed(), get_global_webcfg_forcedsync_started());
+			}
 			char *ForceSyncDoc = NULL;
 			char* ForceSyncTransID = NULL;
 
 			// Identify ForceSync based on docname
 			getForceSync(&ForceSyncDoc, &ForceSyncTransID);
-			WebcfgInfo("ForceSyncDoc %s ForceSyncTransID. %s\n", ForceSyncDoc, ForceSyncTransID);
+			if(ForceSyncDoc !=NULL && ForceSyncTransID !=NULL)
+			{
+				WebcfgInfo("ForceSyncDoc %s ForceSyncTransID. %s\n", ForceSyncDoc, ForceSyncTransID);
+			}
 			if(ForceSyncTransID !=NULL)
 			{
 				if((ForceSyncDoc != NULL) && strlen(ForceSyncDoc)>0)
@@ -351,7 +390,6 @@ void *WebConfigMultipartTask(void *status)
 	pthread_cond_signal (get_global_notify_con());
 	pthread_mutex_unlock (get_global_notify_mut());
 
-
 	if(get_global_eventFlag())
 	{
 		pthread_mutex_lock (get_global_event_mut());
@@ -383,6 +421,8 @@ void *WebConfigMultipartTask(void *status)
 	set_global_retry_timestamp(0);
 	set_retry_timer(0);
 	set_global_supplementarySync(0);
+	set_global_webcfg_forcedsync_needed(0);
+	set_global_webcfg_forcedsync_started(0);
 #ifdef FEATURE_SUPPORT_AKER
 	set_send_aker_flag(false);
 #endif
@@ -483,7 +523,25 @@ int get_global_supplementarySync()
 {
     return g_supplementarySync;
 }
+void set_global_webcfg_forcedsync_needed(int value)
+{
+    g_webcfg_forcedsync_needed = value;
+}
 
+int get_global_webcfg_forcedsync_needed()
+{
+    return g_webcfg_forcedsync_needed;
+}
+
+void set_global_webcfg_forcedsync_started(int value)
+{
+    g_webcfg_forcedsync_started = value;
+}
+
+int get_global_webcfg_forcedsync_started()
+{
+    return g_webcfg_forcedsync_started;
+}
 /*----------------------------------------------------------------------------*/
 /*                             Internal functions                             */
 /*----------------------------------------------------------------------------*/
@@ -550,6 +608,7 @@ int handlehttpResponse(long response_code, char *webConfigData, int retry_count,
 	int msgpack_status=0;
 	int err = 0;
 	char version[512]={'\0'};
+	char docList[512]={'\0'};
 	uint32_t db_root_version = 0;
 	char *db_root_string = NULL;
 	int subdocList = 0;
@@ -598,7 +657,7 @@ int handlehttpResponse(long response_code, char *webConfigData, int retry_count,
 			if((contentLength !=NULL) && (strcmp(contentLength, "0") == 0))
 			{
 				WebcfgInfo("webConfigData content length is 0\n");
-				refreshConfigVersionList(version, response_code);
+				refreshConfigVersionList(version, response_code, docList);
 				WEBCFG_FREE(contentLength);
 				set_global_contentLen(NULL);
 				WEBCFG_FREE(transaction_uuid);
@@ -657,7 +716,7 @@ int handlehttpResponse(long response_code, char *webConfigData, int retry_count,
 		if (response_code == 404)
 		{
 			//To set POST-NONE root version when 404
-			refreshConfigVersionList(version, response_code);
+			refreshConfigVersionList(version, response_code, docList);
 		}
 		getRootDocVersionFromDBCache(&db_root_version, &db_root_string, &subdocList);
 		addWebConfgNotifyMsg(NULL, db_root_version, NULL, NULL, transaction_uuid, 0, "status", 0, db_root_string, response_code);

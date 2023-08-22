@@ -37,14 +37,32 @@ multipartdocs_t *get_global_mp(void)
 
 bool get_webcfgReady()
 {
-    return false;
+    return true;
 }
 
 bool get_maintenanceSync()
 {
     return false;
 }
+void set_global_webcfg_forcedsync_needed(int value)
+{
+   UNUSED(value);
+}
 
+int get_global_webcfg_forcedsync_needed()
+{
+    return false;
+}
+
+void set_global_webcfg_forcedsync_started(int value)
+{
+    UNUSED(value);
+}
+
+int get_global_webcfg_forcedsync_started()
+{
+    return false;
+}
 void set_global_supplementarySync(int value)
 {
     UNUSED(value);
@@ -54,7 +72,6 @@ int get_global_supplementarySync()
 {
 	return 0;
 }
-
 
 int Get_Supplementary_URL( char *name, char *pString)
 {
@@ -85,6 +102,47 @@ pthread_t *get_global_mpThreadId(void)
 {
 	return NULL;
 }
+webconfig_db_data_t * get_global_db_node(void)
+{
+	return NULL;
+}
+WEBCFG_STATUS updateDBlist(char *docname, uint32_t version,char *rootstr)
+{
+	UNUSED(docname);
+	UNUSED(version);
+	UNUSED(rootstr);
+	return 0;
+}
+
+int get_successDocCount()
+{
+	return 0;
+}
+
+WEBCFG_STATUS addNewDocEntry(size_t count)
+{
+	UNUSED(count);
+	return 0;
+}
+
+WEBCFG_STATUS updateTmpList(webconfig_tmp_data_t *temp, char *docname, uint32_t version, char *status, char *error_details, uint16_t error_code, uint16_t trans_id, int retry)
+{
+	UNUSED(temp);
+	UNUSED(docname);
+	UNUSED(version);
+	UNUSED(error_details);
+	UNUSED(error_code);
+	UNUSED(trans_id);
+	UNUSED(retry);
+	return 0;
+}
+
+webconfig_tmp_data_t * getTmpNode(char *docname)
+{
+	UNUSED(docname);
+	return NULL;
+}
+
 int rbus_StoreValueIntoDB(char *paramName, char *value)
 {
 	WebcfgDebug("Inside rbus_StoreValueIntoDB weak fn\n");

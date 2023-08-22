@@ -70,7 +70,11 @@ struct token_data {
 /*----------------------------------------------------------------------------*/
 static char g_ETAG[64]={'\0'};
 char webpa_aut_token[4096]={'\0'};
+#if !defined (FEATURE_SUPPORT_MQTTCM) || defined (WAN_FAILOVER_SUPPORTED)
 static char g_interface[32]={'\0'};
+#endif
+
+#if !defined (FEATURE_SUPPORT_MQTTCM)
 static char g_systemReadyTime[64]={'\0'};
 static char g_FirmwareVersion[64]={'\0'};
 static char g_bootTime[64]={'\0'};
@@ -78,15 +82,18 @@ static char g_productClass[64]={'\0'};
 static char g_ModelName[64]={'\0'};
 static char g_PartnerID[64]={'\0'};
 static char g_AccountID[64]={'\0'};
-char g_RebootReason[64]={'\0'};
-static char g_transID[64]={'\0'};
-static char * g_contentLen = NULL;
+static char g_deviceWanMac[64]={'\0'};
 static char *supportedVersion_header=NULL;
 static char *supportedDocs_header=NULL;
 static char *supplementaryDocs_header=NULL;
+#endif
+char g_RebootReason[64]={'\0'};
+static char g_transID[64]={'\0'};
+static char * g_contentLen = NULL;
 static multipartdocs_t *g_mp_head = NULL;
 pthread_mutex_t multipart_t_mut =PTHREAD_MUTEX_INITIALIZER;
 static int eventFlag = 0;
+
 char * get_global_transID(void)
 {
     return g_transID;
@@ -194,6 +201,7 @@ WEBCFG_STATUS checkAkerDoc();
 */
 WEBCFG_STATUS webcfg_http_request(char **configData, int r_count, int status, long *code, char **transaction_id, char* contentType, size_t *dataSize, char* docname)
 {
+#if !defined (FEATURE_SUPPORT_MQTTCM)
 	CURL *curl;
 	CURLcode res;
 	CURLcode time_res;
@@ -204,6 +212,7 @@ WEBCFG_STATUS webcfg_http_request(char **configData, int r_count, int status, lo
 	char *ct = NULL;
 	char *webConfigURL = NULL;
 	char *transID = NULL;
+	char *subdoclist = NULL;
 	char docList[512] = {'\0'};
 	char configURL[256] = { 0 };
 	char c[] = "{mac}";
@@ -224,14 +233,20 @@ WEBCFG_STATUS webcfg_http_request(char **configData, int r_count, int status, lo
 		if(NULL == data.data)
 		{
 			WebcfgError("Failed to allocate memory.\n");
+			curl_easy_cleanup(curl);
 			return WEBCFG_FAILURE;
 		}
 		data.data[0] = '\0';
-		createCurlHeader(list, &headers_list, status, &transID);
+		createCurlHeader(list, &headers_list, status, &transID, &subdoclist);
 		if(transID !=NULL)
 		{
 			*transaction_id = strdup(transID);
 			WEBCFG_FREE(transID);
+		}
+		if(subdoclist !=NULL)
+		{
+			strncpy(docList, subdoclist, sizeof(docList)-1);
+			WEBCFG_FREE(subdoclist);
 		}
 		WebcfgInfo("The get_global_supplementarySync() is %d\n", get_global_supplementarySync());
 		if(get_global_supplementarySync() == 0)
@@ -286,17 +301,14 @@ WEBCFG_STATUS webcfg_http_request(char **configData, int r_count, int status, lo
 
 		if(!get_global_supplementarySync())
 		{
-			//Update query param in the URL based on the existing doc names from db
-			getConfigDocList(docList);
-		}
-
-		if(strlen(docList) > 0)
-		{
-			WebcfgInfo("docList is %s\n", docList);
-			snprintf(syncURL, MAX_BUF_SIZE, "%s?group_id=%s", webConfigURL, docList);
-			WEBCFG_FREE(webConfigURL);
-			WebcfgDebug("syncURL is %s\n", syncURL);
-			webConfigURL =strdup( syncURL);
+			if(strlen(docList) > 0)
+			{
+				WebcfgDebug("docList is %s\n", docList);
+				snprintf(syncURL, MAX_BUF_SIZE, "%s?group_id=%s", webConfigURL, docList);
+				WEBCFG_FREE(webConfigURL);
+				WebcfgDebug("syncURL is %s\n", syncURL);
+				webConfigURL =strdup( syncURL);
+			}
 		}
 
 		if(webConfigURL !=NULL)
@@ -439,6 +451,7 @@ WEBCFG_STATUS webcfg_http_request(char **configData, int r_count, int status, lo
 	{
 		WebcfgError("curl init failure\n");
 	}
+#endif
 	return WEBCFG_FAILURE;
 }
 
@@ -484,7 +497,7 @@ WEBCFG_STATUS parseMultipartDocument(void *config_data, char *ct , size_t data_s
 		int index1=0, index2 =0;
 
 		/* For Subdocs count */
-		while((ptr_count - str_body) < (int)data_size )
+		while(ptr_count!=NULL && (ptr_count - str_body) < (int)data_size )
 		{
 			ptr_count = memchr(ptr_count, '-', data_size - (ptr_count - str_body));
 			if(0 == memcmp(ptr_count, last_line_boundary, strlen(last_line_boundary)))
@@ -502,7 +515,7 @@ WEBCFG_STATUS parseMultipartDocument(void *config_data, char *ct , size_t data_s
 
 		///Subdoc contents are retrieved with boundary as delimiter
 		delete_mp_doc();
-		while((ptr_lb - str_body) < (int)data_size)
+		while(ptr_lb!=NULL && (ptr_lb - str_body) < (int)data_size)
 		{
 			ptr_lb = memchr(ptr_lb, '-', data_size - (ptr_lb - str_body));
 			if(0 == memcmp(ptr_lb, last_line_boundary, strlen(last_line_boundary)))
@@ -515,7 +528,7 @@ WEBCFG_STATUS parseMultipartDocument(void *config_data, char *ct , size_t data_s
 				ptr_lb = ptr_lb+(strlen(line_boundary))-1;
 				ptr_lb1 = ptr_lb+1;
 				num_of_parts = 1;
-				while(0 != num_of_parts % 2)
+				while(ptr_lb1!=NULL && 0 != num_of_parts % 2)
 				{
 					ptr_lb1 = memchr(ptr_lb1, '-', data_size - (ptr_lb1 - str_body));
 					if(0 == memcmp(ptr_lb1, last_line_boundary, strlen(last_line_boundary)))
@@ -1109,7 +1122,7 @@ size_t headr_callback(char *buffer, size_t size, size_t nitems, void* data)
 	char* final_header = NULL;
 	char header_str[64] = {'\0'};
 	size_t content_len = 0;
-
+	(void) data;
 	etag_len = strlen(ETAG_HEADER);
 	content_len = strlen(CONTENT_LENGTH_HEADER);
 	if( nitems > etag_len )
@@ -1305,36 +1318,6 @@ int readFromFile(char *filename, char **data, int *len)
 	return 1;
 }
 
-/* Traverse through db list to get docnames of all docs with root.
-e.g. root,ble,lan,mesh,moca. */
-void getConfigDocList(char *docList)
-{
-	char *docList_tmp = NULL;
-	webconfig_db_data_t *temp = NULL;
-	temp = get_global_db_node();
-
-	if( NULL != temp)
-	{
-		sprintf(docList, "%s", "root");
-		WebcfgDebug("docList is %s\n", docList);
-
-		while (NULL != temp)
-		{
-			if( temp->name != NULL)
-			{
-				if( strcmp(temp->name,"root") !=0 )
-				{
-					docList_tmp = strdup(docList);
-					sprintf(docList, "%s,%s",docList_tmp, temp->name);
-					WEBCFG_FREE(docList_tmp);
-				}
-			}
-			temp= temp->next;
-		}
-		WebcfgDebug("Final docList is %s len %zu\n", docList, strlen(docList));
-	}
-}
-
 void getRootDocVersionFromDBCache(uint32_t *rt_version, char **rt_string, int *subdoclist)
 {
 	webconfig_db_data_t *temp = NULL;
@@ -1459,25 +1442,32 @@ void derive_root_doc_version_string(char **rootVersion, uint32_t *root_ver, int 
 	}
 }
 
-/* Traverse through db list to get versions of all docs with root.
+/* Traverse through db list to get versions and doclist of all docs with root.
 e.g. IF-NONE-MATCH: 123,44317,66317,77317 where 123 is root version.
+e.g. root,ble,lan,mesh,moca
 Currently versionsList length is fixed to 512 which can support up to 45 docs.
-This can be increased if required. */
-void refreshConfigVersionList(char *versionsList, int http_status)
+This can be increased if required.
+VersionList and docList are fetched at once from DB to fix version and docList mismatch when DB is updated.*/
+void refreshConfigVersionList(char *versionsList, int http_status, char *docsList)
 {
 	char *versionsList_tmp = NULL;
+	char *docsList_tmp = NULL;
 	char *root_str = NULL;
 	uint32_t root_version = 0;
+	WEBCFG_STATUS retStatus = WEBCFG_SUCCESS;
 
 	//initialize to default value "0".
 	snprintf(versionsList, 512, "%s", "0");
 
 	derive_root_doc_version_string(&root_str, &root_version, http_status);
 	WebcfgDebug("update root_version %lu rootString %s to DB\n", (long)root_version, root_str);
-	checkDBList("root", root_version, root_str);
-	WebcfgDebug("addNewDocEntry. get_successDocCount %d\n", get_successDocCount());
-	addNewDocEntry(get_successDocCount());
 
+	retStatus = checkDBList("root", root_version, root_str);
+	if(retStatus == WEBCFG_SUCCESS)
+	{
+		WebcfgDebug("addNewDocEntry. get_successDocCount %d\n", get_successDocCount());
+		addNewDocEntry(get_successDocCount());
+	}
 	webconfig_db_data_t *temp = NULL;
 	temp = get_global_db_node();
 
@@ -1496,6 +1486,9 @@ void refreshConfigVersionList(char *versionsList, int http_status)
 		}
 		WebcfgInfo("versionsList is %s\n", versionsList);
 
+		snprintf(docsList, 512, "%s", "root");
+		WebcfgDebug("docsList is %s\n", docsList);
+
 		while (NULL != temp)
 		{
 			if( temp->name != NULL)
@@ -1505,11 +1498,16 @@ void refreshConfigVersionList(char *versionsList, int http_status)
 					versionsList_tmp = strdup(versionsList);
 					sprintf(versionsList, "%s,%lu",versionsList_tmp,(long)temp->version);
 					WEBCFG_FREE(versionsList_tmp);
+					//Fetch docsList and version together to fix docs & version mismatch from DB
+					docsList_tmp = strdup(docsList);
+					snprintf(docsList, 512, "%s,%s",docsList_tmp, temp->name);
+					WEBCFG_FREE(docsList_tmp);
 				}
 			}
 			temp= temp->next;
 		}
 		WebcfgDebug("Final versionsList is %s len %zu\n", versionsList, strlen(versionsList));
+		WebcfgDebug("Final docsList is %s len %zu\n", docsList, strlen(docsList));
 	}
 }
 
@@ -1519,7 +1517,8 @@ void refreshConfigVersionList(char *versionsList, int http_status)
  * @param[out] trans_uuid for sync
  * @param[out] header_list output curl header list
 */
-void createCurlHeader( struct curl_slist *list, struct curl_slist **header_list, int status, char ** trans_uuid)
+#if !defined FEATURE_SUPPORT_MQTTCM
+void createCurlHeader( struct curl_slist *list, struct curl_slist **header_list, int status, char ** trans_uuid, char **subdocList)
 {
 	char *version_header = NULL;
 	char *auth_header = NULL;
@@ -1536,12 +1535,14 @@ void createCurlHeader( struct curl_slist *list, struct curl_slist **header_list,
 	char *telemetryVersion_header = NULL;
 	char *PartnerID = NULL, *PartnerID_header = NULL;
 	char *AccountID = NULL, *AccountID_header = NULL;
+	char *DeviceWanMac = NULL, *DeviceWanMac_header = NULL;
 	struct timespec cTime;
 	char currentTime[32];
 	char *currentTime_header=NULL;
 	char *uuid_header = NULL;
 	char *transaction_uuid = NULL;
 	char version[512]={'\0'};
+	char docList[512]={'\0'};
 	char* syncTransID = NULL;
 	char* ForceSyncDoc = NULL;
 	size_t supported_doc_size = 0;
@@ -1567,9 +1568,11 @@ void createCurlHeader( struct curl_slist *list, struct curl_slist **header_list,
 		version_header = (char *) malloc(sizeof(char)*MAX_BUF_SIZE);
 		if(version_header !=NULL)
 		{
-			refreshConfigVersionList(version, 0);
+			refreshConfigVersionList(version, 0, docList);
 			snprintf(version_header, MAX_BUF_SIZE, "IF-NONE-MATCH:%s", ((strlen(version)!=0) ? version : "0"));
 			WebcfgInfo("version_header formed %s\n", version_header);
+			WebcfgInfo("docList fetched %s\n", docList);
+			*subdocList = strdup(docList);
 			list = curl_slist_append(list, version_header);
 			WEBCFG_FREE(version_header);
 		}
@@ -1585,59 +1588,60 @@ void createCurlHeader( struct curl_slist *list, struct curl_slist **header_list,
 		WEBCFG_FREE(schema_header);
 	}
 
-	if(!get_global_supplementarySync())
+	if(supportedVersion_header == NULL)
 	{
-		if(supportedVersion_header == NULL)
-		{
-			supportedVersion = getsupportedVersion();
+		supportedVersion = getsupportedVersion();
 
-			if(supportedVersion !=NULL)
-			{
-				supported_version_size = strlen(supportedVersion)+strlen("X-System-Schema-Version: ");
-				supportedVersion_header = (char *) malloc(supported_version_size+1);
-				memset(supportedVersion_header,0,supported_version_size+1);
-				WebcfgDebug("supportedVersion fetched is %s\n", supportedVersion);
-				snprintf(supportedVersion_header, supported_version_size+1, "X-System-Schema-Version: %s", supportedVersion);
-				WebcfgInfo("supportedVersion_header formed %s\n", supportedVersion_header);
-				list = curl_slist_append(list, supportedVersion_header);
-			}
-			else
-			{
-				WebcfgInfo("supportedVersion fetched is NULL\n");
-			}
-		}
-		else
+		if(supportedVersion !=NULL)
 		{
+			supported_version_size = strlen(supportedVersion)+strlen("X-System-Schema-Version: ");
+			supportedVersion_header = (char *) malloc(supported_version_size+1);
+			memset(supportedVersion_header,0,supported_version_size+1);
+			WebcfgDebug("supportedVersion fetched is %s\n", supportedVersion);
+			snprintf(supportedVersion_header, supported_version_size+1, "X-System-Schema-Version: %s", supportedVersion);
 			WebcfgInfo("supportedVersion_header formed %s\n", supportedVersion_header);
 			list = curl_slist_append(list, supportedVersion_header);
 		}
-
-		if(supportedDocs_header == NULL)
+		else
 		{
-			supportedDocs = getsupportedDocs();
+			WebcfgInfo("supportedVersion fetched is NULL\n");
+		}
+	}
+	else
+	{
+		WebcfgInfo("supportedVersion_header formed %s\n", supportedVersion_header);
+		list = curl_slist_append(list, supportedVersion_header);
+	}
 
-			if(supportedDocs !=NULL)
+	if(supportedDocs_header == NULL)
+       	{
+		supportedDocs = getsupportedDocs();
+
+      		if(supportedDocs !=NULL)
+		{
+			supported_doc_size = strlen(supportedDocs)+strlen("X-System-Supported-Docs: ");
+			supportedDocs_header = (char *) malloc(supported_doc_size+1);
+			if(supportedDocs_header != NULL)
 			{
-				supported_doc_size = strlen(supportedDocs)+strlen("X-System-Supported-Docs: ");
-				supportedDocs_header = (char *) malloc(supported_doc_size+1);
 				memset(supportedDocs_header,0,supported_doc_size+1);
 				WebcfgDebug("supportedDocs fetched is %s\n", supportedDocs);
 				snprintf(supportedDocs_header, supported_doc_size+1, "X-System-Supported-Docs: %s", supportedDocs);
 				WebcfgInfo("supportedDocs_header formed %s\n", supportedDocs_header);
 				list = curl_slist_append(list, supportedDocs_header);
 			}
-			else
-			{
-				WebcfgInfo("SupportedDocs fetched is NULL\n");
-			}
 		}
 		else
 		{
-			WebcfgInfo("supportedDocs_header formed %s\n", supportedDocs_header);
-			list = curl_slist_append(list, supportedDocs_header);
+			WebcfgInfo("SupportedDocs fetched is NULL\n");
 		}
 	}
 	else
+	{
+		WebcfgInfo("supportedDocs_header formed %s\n", supportedDocs_header);
+		list = curl_slist_append(list, supportedDocs_header);               
+       	}
+
+	if(get_global_supplementarySync())
 	{
 		if(supplementaryDocs_header == NULL)
 		{
@@ -1805,9 +1809,9 @@ void createCurlHeader( struct curl_slist *list, struct curl_slist **header_list,
 			WebcfgInfo("uuid_header formed %s\n", uuid_header);
 			list = curl_slist_append(list, uuid_header);
 			*trans_uuid = strdup(transaction_uuid);
-			WEBCFG_FREE(transaction_uuid);
 			WEBCFG_FREE(uuid_header);
 		}
+		WEBCFG_FREE(transaction_uuid);
 	}
 	else
 	{
@@ -1933,9 +1937,37 @@ void createCurlHeader( struct curl_slist *list, struct curl_slist **header_list,
 		{
 			WebcfgError("Failed to get AccountID\n");
 		}
+
+		if(strlen(g_deviceWanMac) ==0)
+		{
+			DeviceWanMac = get_deviceWanMAC();
+			if(DeviceWanMac !=NULL)
+			{
+			       strncpy(g_deviceWanMac, DeviceWanMac, sizeof(g_deviceWanMac)-1);
+			       WebcfgDebug("g_deviceWanMac fetched is %s\n", g_deviceWanMac);
+			}
+		}
+
+		if(strlen(g_deviceWanMac))
+		{
+			DeviceWanMac_header = (char *) malloc(sizeof(char)*MAX_BUF_SIZE);
+			if(DeviceWanMac_header !=NULL)
+			{
+				snprintf(DeviceWanMac_header, MAX_BUF_SIZE, "X-System-Wan-Mac: %s", g_deviceWanMac);
+				WebcfgInfo("DeviceWanMac_header formed %s\n", DeviceWanMac_header);
+				list = curl_slist_append(list, DeviceWanMac_header);
+				WEBCFG_FREE(DeviceWanMac_header);
+			}
+		}
+		else
+		{
+			WebcfgError("Failed to get DeviceWanMac\n");
+		}
+
 	}
 	*header_list = list;
 }
+#endif
 
 char* generate_trans_uuid()
 {

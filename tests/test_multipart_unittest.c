@@ -180,10 +180,11 @@ void test_createHeader(){
 	struct curl_slist *list = NULL;
 	struct curl_slist *headers_list = NULL;
 	char *transID = NULL;
+	char *subdoclist = NULL;
 	int status=0;
 	curl = curl_easy_init();
 	CU_ASSERT_PTR_NOT_NULL(curl);
-	createCurlHeader(list, &headers_list, status, &transID);
+	createCurlHeader(list, &headers_list, status, &transID, &subdoclist);
 	CU_ASSERT_PTR_NOT_NULL(transID);
 	CU_ASSERT_PTR_NOT_NULL(headers_list);		
 }
@@ -241,7 +242,7 @@ void test_updateDBlist(){
 	char *rootstr = strdup("factory-reset");
 	uint32_t version = 1234;
 	int sts = updateDBlist("root", version, rootstr);
-	CU_ASSERT_EQUAL(0,sts);
+	CU_ASSERT_EQUAL(2,sts);
 }
 
 void test_appendedDoc(){

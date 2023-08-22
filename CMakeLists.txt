@@ -20,8 +20,8 @@ include(ExternalProject)
 include(CTest)
 
 add_definitions(-std=c99)
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=c99 -g -Werror -Wall -Wno-sizeof-pointer-memaccess -Wno-format-truncation -D_GNU_SOURCE=1")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c99 -g -Werror -Wall -Wno-sizeof-pointer-memaccess -Wno-format-truncation -D_GNU_SOURCE=1")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=c99 -g -Werror -Wall -Wno-sizeof-pointer-memaccess -Wno-format-truncation -Wno-unused-parameter -D_GNU_SOURCE=1")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c99 -g -Werror -Wall -Wno-sizeof-pointer-memaccess -Wno-format-truncation -Wno-unused-parameter -D_GNU_SOURCE=1")
 
 if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
 set(CMAKE_MACOSX_RPATH 1)
@@ -53,10 +53,11 @@ include_directories(${INCLUDE_DIR}/nanomsg
 endif (FEATURE_SUPPORT_AKER)
 
 if (WEBCONFIG_BIN_SUPPORT)
+
 include_directories(${INCLUDE_DIR}/rbus
-		    ${INCLUDE_DIR}/rbus-core
 		    ${INCLUDE_DIR}/rtmessage
 )
+
 endif (WEBCONFIG_BIN_SUPPORT)
 
 if (NOT BUILD_YOCTO)
@@ -95,7 +96,7 @@ add_dependencies(libtrower-base64 trower-base64)
 ExternalProject_Add(wdmp-c
     PREFIX ${CMAKE_CURRENT_BINARY_DIR}/_prefix/wdmp-c
     GIT_REPOSITORY https://github.com/Comcast/wdmp-c.git
-    GIT_TAG "796dddbcfa7686ec63536d950775e79b52ee5c3f"
+    GIT_TAG "f9f687b6b4b10c2b72341e792a64334f0a409848"
     CMAKE_ARGS += -DCMAKE_INSTALL_PREFIX=${INSTALL_DIR}
                   -DBUILD_TESTING=OFF
 )
@@ -118,12 +119,13 @@ add_dependencies(libcimplog cimplog)
 ExternalProject_Add(cJSON
     PREFIX ${PREFIX_DIR}/cJSON
     GIT_REPOSITORY https://github.com/DaveGamble/cJSON.git
-    GIT_TAG "aafb64a1c549b7b927e339df6d35b1d5059dc235"
+    GIT_TAG "39853e5148dad8dc5d32ea2b00943cf4a0c6f120"
     CMAKE_ARGS += -DCMAKE_INSTALL_PREFIX=${INSTALL_DIR}
 )
 add_library(libcJSON STATIC IMPORTED)
 add_dependencies(libcJSON cJSON)
 
+if (NOT FEATURE_SUPPORT_MQTTCM)
 # curl external dependency
 #-------------------------------------------------------------------------------
 ExternalProject_Add(curl
@@ -134,6 +136,7 @@ ExternalProject_Add(curl
 )
 add_library(libcurl STATIC SHARED IMPORTED)
 add_dependencies(libcurl curl)
+endif()
 #find_library( LIB_CURL,
 #              NAMES curl
 #              PATHS /usr/lib64 )
@@ -187,43 +190,21 @@ add_dependencies(liblibparodus libparodus)
 endif (FEATURE_SUPPORT_AKER)
 
 if (WEBCONFIG_BIN_SUPPORT)
-# rtMessage external dependency
-#-------------------------------------------------------------------------------
-ExternalProject_Add(rtMessage
-     PREFIX ${CMAKE_CURRENT_BINARY_DIR}/_prefix/rtMessage
-     GIT_REPOSITORY https://github.com/rdkcmf/rdk-rtmessage.git
-     GIT_TAG rdk-next
-     CMAKE_ARGS += -DBUILD_RTMESSAGE_LIB=ON
-                   -DBUILD_RTMESSAGE_SAMPLE_APP=ON
-                   -DBUILD_FOR_DESKTOP=ON
-                   -DBUILD_DATAPROVIDER_LIB=ON
-                   -DCMAKE_INSTALL_PREFIX=${INSTALL_DIR} -DBUILD_TESTING=OFF
-)
-add_library(librtMessage STATIC SHARED IMPORTED)
-add_dependencies(librtMessage rtMessage)
-
-# rbus-core external dependency	
-#-------------------------------------------------------------------------------
-ExternalProject_Add(rbus-core
-     DEPENDS rtMessage
-     PREFIX ${CMAKE_CURRENT_BINARY_DIR}/_prefix/rbus-core
-     GIT_REPOSITORY https://github.com/rdkcmf/rbuscore.git
-     GIT_TAG rdk-next
-     CMAKE_ARGS += -DBUILD_FOR_DESKTOP=ON -DCMAKE_INSTALL_PREFIX=${INSTALL_DIR}
-                   -DBUILD_TESTING=OFF
-)
-add_library(librbus-core STATIC SHARED IMPORTED)
-add_dependencies(librbus-core rbus-core)
 
 # rbus external dependency
 #-------------------------------------------------------------------------------
 ExternalProject_Add(rbus
-     DEPENDS rtMessage rbus-core
      PREFIX ${CMAKE_CURRENT_BINARY_DIR}/_prefix/rbus
-     GIT_REPOSITORY https://github.com/rdkcmf/rbus.git
-     GIT_TAG rdk-next
+     GIT_REPOSITORY https://github.com/rdkcentral/rbus.git
+     GIT_TAG main
      CMAKE_ARGS += -DBUILD_FOR_DESKTOP=ON -DCMAKE_INSTALL_PREFIX=${INSTALL_DIR} -DBUILD_TESTING=OFF
 )
+
+add_library(librbuscore STATIC SHARED IMPORTED)
+add_dependencies(librbuscore rbuscore)
+
+add_library(librtMessage STATIC SHARED IMPORTED)
+add_dependencies(librtMessage rtMessage)
 
 add_library(librbus STATIC SHARED IMPORTED)
 add_dependencies(librbus rbus)
