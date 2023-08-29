@@ -141,6 +141,8 @@ void release_success_docs_tmplist();
 
 int get_numOfMpDocs();
 
+void set_numOfMpDocs(int);
+
 void reset_numOfMpDocs();
 
 int get_successDocCount();

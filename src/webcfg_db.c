@@ -382,6 +382,10 @@ int get_numOfMpDocs()
 {
     return numOfMpDocs;
 }
+void set_numOfMpDocs(int num)
+{
+	numOfMpDocs = num;
+}
 
 void reset_numOfMpDocs()
 {

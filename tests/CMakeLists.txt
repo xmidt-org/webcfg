@@ -219,6 +219,11 @@ target_link_libraries (test_db -lcunit -lmsgpackc -lcurl -lpthread  -lm -luuid -
 
 target_link_libraries (test_db gcov -Wl,--no-as-needed )
 
+add_test(NAME test_webcfgdb COMMAND ${MEMORY_CHECK} ./test_webcfgdb)
+add_executable(test_webcfgdb test_webcfgdb.c ../src/webcfg_db.c ../src/webcfg_pack.c ../src/webcfg_helpers.c ../src/webcfg_param.c ../src/webcfg_multipart.c ../src/webcfg_timer.c ../src/webcfg_notify.c )
+target_link_libraries (test_webcfgdb -lcunit -lmsgpackc -lcurl -lpthread  -lm -luuid -ltrower-base64 -lwdmp-c -lcimplog -lcjson -lwrp-c)
+
+target_link_libraries (test_webcfgdb gcov -Wl,--no-as-needed )
 #-------------------------------------------------------------------------------
 #   test_multipart_unittest
 #-------------------------------------------------------------------------------
