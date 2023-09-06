@@ -2211,3 +2211,15 @@ void registerRbusLogger()
 	rbus_registerLogHandler(rbus_log_handler);
 	WebcfgDebug("Registered rbus log handler\n");
 }
+
+void set_global_webconfig_url(char *value)
+{
+	WEBCFG_FREE(URLVal);
+	URLVal = strdup(value);
+}
+
+void set_global_supplementary_url(char *value)
+{
+	WEBCFG_FREE(SupplementaryURLVal);
+	SupplementaryURLVal = strdup(value);
+}
