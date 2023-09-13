@@ -601,6 +601,247 @@ void test_delete_tmp_docs_list()
     CU_ASSERT_FATAL( NULL == get_global_tmp_node());
 }
 
+
+void test_release_success_docs_tmplist()
+{
+    int count = 0;
+    webconfig_tmp_data_t *tmpData = (webconfig_tmp_data_t *)malloc(sizeof(webconfig_tmp_data_t));
+    tmpData->name = strdup("root");
+    tmpData->version = 232323;
+    tmpData->status = strdup("pending");
+    tmpData->trans_id = 4104;
+    tmpData->retry_count = 0;
+    tmpData->error_code = 0;
+    tmpData->error_details = strdup("none");
+    tmpData->next = NULL;
+    count++;
+    webconfig_tmp_data_t *tmp = (webconfig_tmp_data_t *)malloc(sizeof(webconfig_tmp_data_t));
+    tmp->name = strdup("privatessid");
+    tmp->version = 1234;
+    tmp->status = strdup("success");
+    tmp->trans_id = 4204;
+    tmp->retry_count = 0;
+    tmp->error_code = 0;
+    tmp->error_details = strdup("none");
+    tmp->next = NULL;
+    tmpData->next = tmp;
+    count++;
+    webconfig_tmp_data_t *tmp1 = (webconfig_tmp_data_t *)malloc(sizeof(webconfig_tmp_data_t));
+    tmp1->name = strdup("moca");
+    tmp1->version = 5678;
+    tmp1->status = strdup("success");
+    tmp1->trans_id = 4304;
+    tmp1->retry_count = 0;
+    tmp1->error_code = 0;
+    tmp1->error_details = strdup("none");
+    tmp1->next = NULL;
+    tmp->next = tmp1;
+    count++;
+    set_global_tmp_node(tmpData);
+    set_numOfMpDocs(count);
+    release_success_docs_tmplist(); //to release success docs
+    CU_ASSERT_FATAL( NULL == getTmpNode("moca"));
+    CU_ASSERT_FATAL( NULL == getTmpNode("privatessid"));
+    CU_ASSERT_FATAL( NULL != getTmpNode("root"));
+    reset_numOfMpDocs();
+    delete_tmp_list();
+    CU_ASSERT_FATAL( NULL == get_global_tmp_node());
+}
+
+void test_get_successDocCount()
+{
+    int m = get_successDocCount();
+    CU_ASSERT_EQUAL(0,m);
+    webconfig_db_data_t *wd;
+    wd = (webconfig_db_data_t *) malloc (sizeof(webconfig_db_data_t));
+    CU_ASSERT_PTR_NOT_NULL(wd);
+    wd->name = strdup("wan");
+    wd->version = 410448631;
+    wd->root_string = strdup("portmapping");
+    wd->next=NULL;
+    addToDBList(wd);
+    int n = get_successDocCount();
+    CU_ASSERT_EQUAL(1,n);
+    if(wd)
+    {
+        WEBCFG_FREE(wd->name);
+        wd->version = 0;
+        WEBCFG_FREE(wd->root_string);
+        WEBCFG_FREE(wd);
+    }
+    reset_successDocCount();
+    //webcfgdb_destroy(wd);
+}
+
+void test_get_global_db_node()
+{
+    webconfig_db_data_t *wd;
+    wd = (webconfig_db_data_t *) malloc (sizeof(webconfig_db_data_t));
+    CU_ASSERT_PTR_NOT_NULL(wd);
+    wd->name = strdup("wan");
+    wd->version = 410448631;
+    wd->root_string = strdup("portmapping");
+    wd->next=NULL;
+    addToDBList(wd);
+    int n = get_successDocCount();
+    CU_ASSERT_EQUAL(1,n);
+    CU_ASSERT_FATAL( NULL != get_global_db_node());
+    webcfgdb_destroy(wd);
+    reset_successDocCount();
+    reset_db_node();
+    CU_ASSERT_FATAL( NULL == get_global_db_node());
+}
+
+void test_reset_db_node()
+{
+    webconfig_db_data_t *wd;
+    wd = (webconfig_db_data_t *) malloc (sizeof(webconfig_db_data_t));
+    CU_ASSERT_PTR_NOT_NULL(wd);
+    wd->name = strdup("wan");
+    wd->version = 410448631;
+    wd->root_string = strdup("portmapping");
+    wd->next=NULL;
+    addToDBList(wd);
+    int n = get_successDocCount();
+    CU_ASSERT_EQUAL(1,n);
+    CU_ASSERT_FATAL( NULL != get_global_db_node());
+    webcfgdb_destroy(wd);
+    reset_successDocCount();
+    reset_db_node();
+    CU_ASSERT_FATAL( NULL == get_global_db_node());
+}
+
+
+void test_reset_successDocCount()
+{
+    int m = get_successDocCount();
+    CU_ASSERT_EQUAL(0,m);
+    webconfig_db_data_t *wd;
+    wd = (webconfig_db_data_t *) malloc (sizeof(webconfig_db_data_t));
+    CU_ASSERT_PTR_NOT_NULL(wd);
+    wd->name = strdup("wan");
+    wd->version = 410448631;
+    wd->root_string = strdup("portmapping");
+    wd->next=NULL;
+    addToDBList(wd);
+    int n = get_successDocCount();
+    CU_ASSERT_EQUAL(1,n);
+    if(wd)
+    {
+        WEBCFG_FREE(wd->name);
+        wd->version = 0;
+        WEBCFG_FREE(wd->root_string);
+        WEBCFG_FREE(wd);
+    }
+    //webcfgdb_destroy(wd);
+    reset_successDocCount();
+    int p = get_successDocCount();
+    CU_ASSERT_EQUAL(0,p);
+}
+
+void test_checkTmpRootUpdate()
+{
+    int count = 0;
+    webconfig_tmp_data_t *tmpData = (webconfig_tmp_data_t *)malloc(sizeof(webconfig_tmp_data_t));
+    tmpData->name = strdup("root");
+    tmpData->version = 232323;
+    tmpData->status = strdup("failed");
+    tmpData->trans_id = 4104;
+    tmpData->retry_count = 0;
+    tmpData->error_code = 0;
+    tmpData->error_details = strdup("invalid");
+    tmpData->next = NULL;
+    count++;
+    webconfig_tmp_data_t *tmp = (webconfig_tmp_data_t *)malloc(sizeof(webconfig_tmp_data_t));
+    tmp->name = strdup("privatessid");
+    tmp->version = 1234;
+    tmp->status = strdup("success");
+    tmp->trans_id = 4204;
+    tmp->retry_count = 0;
+    tmp->error_code = 0;
+    tmp->error_details = strdup("none");
+    tmp->next = NULL;
+    tmpData->next = tmp;
+    count++;
+    webconfig_tmp_data_t *tmp1 = (webconfig_tmp_data_t *)malloc(sizeof(webconfig_tmp_data_t));
+    tmp1->name = strdup("moca");
+    tmp1->version = 5678;
+    tmp1->status = strdup("success");
+    tmp1->trans_id = 4304;
+    tmp1->retry_count = 0;
+    tmp1->error_code = 0;
+    tmp1->error_details = strdup("none");
+    tmp1->next = NULL;
+    tmp->next = tmp1;
+    count++;
+    set_global_tmp_node(tmpData);
+    set_global_supplementarySync(0);
+    set_numOfMpDocs(count);
+    CU_ASSERT_FATAL( NULL != getTmpNode("root"));
+    checkTmpRootUpdate();
+    CU_ASSERT_FATAL( NULL != getTmpNode("root"));
+    delete_tmp_list();
+    CU_ASSERT_FATAL( NULL == get_global_tmp_node());
+}
+
+void test_set_doc_fail()
+{
+    int m = get_doc_fail();
+    CU_ASSERT_EQUAL(0,m);
+    set_doc_fail(1);
+    int n = get_doc_fail();
+    CU_ASSERT_EQUAL(1,n);
+    set_doc_fail(0);
+    int p = get_doc_fail();
+    CU_ASSERT_EQUAL(0,p);
+}
+
+void test_get_doc_fail()
+{
+    int m = get_doc_fail();
+    CU_ASSERT_EQUAL(0,m);
+    set_doc_fail(1);
+    int n = get_doc_fail();
+    CU_ASSERT_EQUAL(1,n);
+    set_doc_fail(0);
+    int p = get_doc_fail();
+    CU_ASSERT_EQUAL(0,p);
+}
+
+void test_webcfgdbparam_strerror() 
+{
+    CU_ASSERT_STRING_EQUAL(webcfgdbparam_strerror(0),"No errors.");
+    CU_ASSERT_STRING_EQUAL(webcfgdbparam_strerror(1),"Out of memory.");
+    CU_ASSERT_STRING_EQUAL(webcfgdbparam_strerror(2),"Invalid first element.");
+    CU_ASSERT_STRING_EQUAL(webcfgdbparam_strerror(3),"Invalid 'datatype' value.");
+    CU_ASSERT_STRING_EQUAL(webcfgdbparam_strerror(4),"Invalid 'parameters' array.");
+}
+
+void test_updateFailureTimeStamp()
+{
+    long long expiry_time = 0;
+    webconfig_tmp_data_t *tmpData = (webconfig_tmp_data_t *)malloc(sizeof(webconfig_tmp_data_t));
+    tmpData->name = strdup("privatessid");
+    tmpData->version = 1234;
+    tmpData->status = strdup("pending");
+    tmpData->trans_id = 4204;
+    tmpData->retry_count = 0;
+    tmpData->error_code = 0;
+    tmpData->error_details = strdup("none");
+    tmpData->next = NULL;
+    set_global_tmp_node(tmpData);
+    expiry_time = getRetryExpiryTimeout();
+    int m = updateFailureTimeStamp(tmpData,"privatessid", expiry_time);
+    CU_ASSERT_EQUAL(0,m);
+    int n = updateFailureTimeStamp(tmpData,"moca", expiry_time);
+    CU_ASSERT_EQUAL(1,n);
+    //CU_ASSERT_FATAL( NULL != getTmpNode("moca"));
+    //CU_ASSERT_FATAL( NULL != getTmpNode("privatessid"));
+    //CU_ASSERT_FATAL( NULL == getTmpNode("wan"));
+    delete_tmp_list();
+    CU_ASSERT_FATAL( NULL == get_global_tmp_node());
+}
+
 void add_suites( CU_pSuite *suite )
 {
     *suite = CU_add_suite( "tests", NULL, NULL );
@@ -614,6 +855,16 @@ void add_suites( CU_pSuite *suite )
     CU_add_test( *suite, "test updateTmpList", test_updateTmpList);
     CU_add_test( *suite, "test deleteFromTmpList", test_deleteFromTmpList);
     CU_add_test( *suite, "test delete_tmp_docs_list", test_delete_tmp_docs_list);
+    CU_add_test( *suite, "test release_success_docs_tmplist", test_release_success_docs_tmplist);
+    CU_add_test( *suite, "test get_successDocCount", test_get_successDocCount);
+    CU_add_test( *suite, "test get_global_db_node", test_get_global_db_node);
+    CU_add_test( *suite, "test reset_db_node", test_reset_db_node);
+    CU_add_test( *suite, "test reset_successDocCount", test_reset_successDocCount);
+    CU_add_test( *suite, "test checkTmpRootUpdate", test_checkTmpRootUpdate);
+    CU_add_test( *suite, "test set_doc_fail", test_set_doc_fail);
+    CU_add_test( *suite, "test get_doc_fail", test_get_doc_fail);
+    CU_add_test( *suite, "test webcfgdbparam_strerror", test_webcfgdbparam_strerror);
+    CU_add_test( *suite, "test updateFailureTimeStamp", test_updateFailureTimeStamp); 
 }
 
 /*----------------------------------------------------------------------------*/
