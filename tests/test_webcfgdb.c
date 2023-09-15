@@ -33,19 +33,11 @@ long getTimeOffset()
 	return 0;
 }
 
-bool get_global_shutdown()
-{
-	return false;
-}
 int akerwait__ (unsigned int secs)
 {
 	UNUSED(secs);
 	return 0;
 
-}
-char *getAuthToken()
-{
-	return NULL;
 }
 char* get_deviceMAC()
 {
@@ -71,17 +63,14 @@ int Set_Webconfig_URL( char *pString)
 	return 0;
 }
 
-char * webcfg_appendeddoc(char * subdoc_name, uint32_t version, char * blob_data, size_t blob_size, uint16_t *trans_id)
-{
-	UNUSED(subdoc_name);
-	UNUSED(version);
-	UNUSED(blob_data);
-	UNUSED(blob_size);
-	UNUSED(trans_id);
-	return NULL;
-}
 
 void initEventHandlingTask(){
+	return;
+}
+void webcfgCallback(char *Info, void* user_data)
+{
+	UNUSED(Info);
+	UNUSED(user_data);
 	return;
 }
 
@@ -89,11 +78,6 @@ void processWebcfgEvents(){
 	return;
 }
 
-void webcfgStrncpy(char *destStr, const char *srcStr, size_t destSize)
-{
-    strncpy(destStr, srcStr, destSize-1);
-    destStr[destSize-1] = '\0';
-}
 
 WEBCFG_STATUS checkAndUpdateTmpRetryCount(webconfig_tmp_data_t *temp, char *docname)
 {
@@ -129,10 +113,6 @@ WDMP_STATUS mapStatus(int ret)
 }
 
 
-void isSubDocSupported(){
-	return;
-
-}
 
 void checkAkerStatus(){
 	
@@ -150,14 +130,6 @@ return ;
 }
 
 
-char * getsupportedDocs()
-{
-	return NULL;
-}
-char * getsupportedVersion()
-{
-	return NULL;
-}
 
 char * getDeviceBootTime()
 {
@@ -206,13 +178,24 @@ char * getRebootReason()
 	return reason;
 }
 
-char* get_global_auth_token(){
-	char *tok = strdup("1234567890");
-	return tok ;
+pthread_t get_global_event_threadid()
+{
+    return 0;
 }
-void getCurrent_Time(struct timespec *timer){
-	UNUSED(timer);
-	return;
+
+pthread_t get_global_process_threadid()
+{
+    return 0;
+}
+
+pthread_cond_t *get_global_event_con(void)
+{
+    return 0;
+}
+
+pthread_mutex_t *get_global_event_mut(void)
+{
+    return 0;
 }
 
 
@@ -228,15 +211,6 @@ char * getAccountID()
 	return aID;
 }
 
-void set_global_supplementarySync(int value)
-{
-    UNUSED(value);
-}
-
-int get_global_supplementarySync()
-{
-	return 0;
-}
 
 
 int Get_Supplementary_URL( char *name, char *pString)
@@ -260,14 +234,6 @@ char *getFirmwareUpgradeStartTime(void)
 char *getFirmwareUpgradeEndTime(void)
 {
     return NULL;
-}
-char * getsupplementaryDocs()
-{
-      return NULL;
-}
-int generateRandomId()
-{
-	return 0;
 }
 
 /*----------------------------------------------------------------------------*/
