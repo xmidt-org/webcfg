@@ -66,6 +66,27 @@ if (MULTIPART_UTILITY)
 add_definitions(-DMULTIPART_UTILITY)
 endif (MULTIPART_UTILITY)
 
+if (WEBCONFIG_BIN_SUPPORT)
+
+# rbus external dependency
+#-------------------------------------------------------------------------------
+ExternalProject_Add(rbus
+     PREFIX ${CMAKE_CURRENT_BINARY_DIR}/_prefix/rbus
+     GIT_REPOSITORY https://github.com/rdkcentral/rbus.git
+     GIT_TAG main
+     CMAKE_ARGS += -DBUILD_FOR_DESKTOP=ON -DCMAKE_INSTALL_PREFIX=${INSTALL_DIR} -DBUILD_TESTING=OFF
+)
+
+add_library(librbuscore STATIC SHARED IMPORTED)
+add_dependencies(librbuscore rbuscore)
+
+add_library(librtMessage STATIC SHARED IMPORTED)
+add_dependencies(librtMessage rtMessage)
+
+add_library(librbus STATIC SHARED IMPORTED)
+add_dependencies(librbus rbus)
+endif (WEBCONFIG_BIN_SUPPORT)
+
 # msgpack-c external dependency
 #-------------------------------------------------------------------------------
 ExternalProject_Add(msgpack
@@ -188,27 +209,6 @@ ExternalProject_Add(libparodus
 add_library(liblibparodus STATIC SHARED IMPORTED)
 add_dependencies(liblibparodus libparodus)
 endif (FEATURE_SUPPORT_AKER)
-
-if (WEBCONFIG_BIN_SUPPORT)
-
-# rbus external dependency
-#-------------------------------------------------------------------------------
-ExternalProject_Add(rbus
-     PREFIX ${CMAKE_CURRENT_BINARY_DIR}/_prefix/rbus
-     GIT_REPOSITORY https://github.com/rdkcentral/rbus.git
-     GIT_TAG main
-     CMAKE_ARGS += -DBUILD_FOR_DESKTOP=ON -DCMAKE_INSTALL_PREFIX=${INSTALL_DIR} -DBUILD_TESTING=OFF
-)
-
-add_library(librbuscore STATIC SHARED IMPORTED)
-add_dependencies(librbuscore rbuscore)
-
-add_library(librtMessage STATIC SHARED IMPORTED)
-add_dependencies(librtMessage rtMessage)
-
-add_library(librbus STATIC SHARED IMPORTED)
-add_dependencies(librbus rbus)
-endif (WEBCONFIG_BIN_SUPPORT)
 
 endif ()
 link_directories ( ${LIBRARY_DIR} ${COMMON_LIBRARY_DIR} ${LIBRARY_DIR64} )
