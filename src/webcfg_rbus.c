@@ -1415,7 +1415,7 @@ DATA_TYPE mapRbusToWdmpDataType(rbusValueType_t rbusType)
 
 static rbusValueType_t mapWdmpToRbusDataType(DATA_TYPE wdmpType)
 {
-	DATA_TYPE rbusType = RBUS_NONE;
+	rbusValueType_t rbusType = RBUS_NONE;
 
 	switch (wdmpType)
 	{
