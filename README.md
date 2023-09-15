@@ -14,6 +14,7 @@ webcfg is the client implementation of webconfig.
 mkdir build
 cd build
 cmake ..
-make
+makeUpdated codecov is showing 
 make test
 ```
+
