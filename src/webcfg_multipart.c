@@ -284,6 +284,7 @@ WEBCFG_STATUS webcfg_http_request(char **configData, int r_count, int status, lo
 			if(get_global_supplementarySync() == 0)
 			{
 				rc = Set_Webconfig_URL(webConfigURL);
+				#ifdef WEBCONFIG_BIN_SUPPORT
 				if(rc == RBUS_ERROR_SUCCESS)
 				{
 					set_global_webconfig_url(webConfigURL);
@@ -292,11 +293,13 @@ WEBCFG_STATUS webcfg_http_request(char **configData, int r_count, int status, lo
 				else
 				{
 					WebcfgError("Failed to set Webconfig URL\n");
-				}				
+				}
+				#endif
 			}
 			else
 			{
 				rc = Set_Supplementary_URL(docname_upper, webConfigURL);
+				#ifdef WEBCONFIG_BIN_SUPPORT
 				if(rc == RBUS_ERROR_SUCCESS)
 				{
 					set_global_supplementary_url(webConfigURL);
@@ -306,7 +309,9 @@ WEBCFG_STATUS webcfg_http_request(char **configData, int r_count, int status, lo
 				{
 					WebcfgError("Failed to set Supplementary URL\n");					
 				}
+				#endif
 			}
+			WebcfgDebug("set url rc:%d\n",rc);
 		}
 		else
 		{

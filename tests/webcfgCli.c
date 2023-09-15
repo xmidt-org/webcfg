@@ -79,6 +79,59 @@ char * getParameterValue(char *paramName)
 	return NULL;
 }
 
+long getTimeOffset(void)
+{
+    return 0;
+}
+
+int Get_Supplementary_URL( char *name, char *pString)
+{
+    UNUSED(name);
+    UNUSED(pString);
+    return 0;
+}
+char *getPartnerID(void)
+{
+    return NULL;
+}
+char *getAccountID(void)
+{
+    return NULL;
+}
+char* get_deviceWanMAC(void)
+{
+	return NULL;
+}
+char *getConnClientParamName(void)
+{
+    return NULL;
+}
+int Set_Supplementary_URL( char *name, char *pString)
+{
+    UNUSED(name);
+    UNUSED(pString);
+    return 0;
+}
+char *getFirmwareUpgradeEndTime(void)
+{
+    return NULL;
+}
+int rbus_StoreValueIntoDB(char *paramName, char *value)
+{
+	UNUSED(paramName);
+	UNUSED(value);
+	return 0;
+}
+int rbus_GetValueFromDB( char* paramName, char** paramValue)
+{
+	UNUSED(paramName);
+	UNUSED(paramValue);
+	return 0;
+}
+char *getFirmwareUpgradeStartTime(void)
+{
+    return NULL;
+}
 char * getSerialNumber()
 {
 	char *sNum = strdup("1234");
