@@ -700,7 +700,7 @@ WEBCFG_STATUS deleteFromTmpList(char* doc_name, webconfig_tmp_data_t **next_node
 		WebcfgError("Invalid value for doc\n");
 		return WEBCFG_FAILURE;
 	}
-	WebcfgDebug("doc to be deleted: %s\n", doc_name);
+	WebcfgInfo("doc to be deleted: %s\n", doc_name);
 
 	prev_node = NULL;
 	pthread_mutex_lock (&webconfig_tmp_data_mut);	
@@ -710,30 +710,30 @@ WEBCFG_STATUS deleteFromTmpList(char* doc_name, webconfig_tmp_data_t **next_node
 	{
 		if(strcmp(curr_node->name, doc_name) == 0)
 		{
-			WebcfgDebug("Found the node to delete\n");
+			WebcfgInfo("Found the node to delete\n");
 			if( NULL == prev_node )
 			{
-				WebcfgDebug("need to delete first doc\n");
+				WebcfgInfo("need to delete first doc\n");
 				g_head = curr_node->next;
 			}
 			else
 			{
-				WebcfgDebug("Traversing to find node\n");
+				WebcfgInfo("Traversing to find node\n");
 				prev_node->next = curr_node->next; 
 				*next_node = curr_node->next;
 
 			}
 
-			WebcfgDebug("Deleting the node entries\n");
+			WebcfgInfo("Deleting the node entries\n");
 			WEBCFG_FREE( curr_node->name );
 			WEBCFG_FREE( curr_node->status );
 			WEBCFG_FREE( curr_node->error_details );
 			WEBCFG_FREE( curr_node->cloud_trans_id);
 			WEBCFG_FREE( curr_node );
 			curr_node = NULL;
-			WebcfgDebug("Deleted successfully and returning..\n");
+			WebcfgInfo("Deleted successfully and returning..\n");
 			numOfMpDocs =numOfMpDocs - 1;
-			WebcfgDebug("numOfMpDocs after delete is %d\n", numOfMpDocs);
+			WebcfgInfo("numOfMpDocs after delete is %d\n", numOfMpDocs);
 			pthread_mutex_unlock (&webconfig_tmp_data_mut);
 			return WEBCFG_SUCCESS;
 		}
@@ -790,15 +790,15 @@ void delete_tmp_docs_list()
 // To release success tmp docs during every maintenance window when few docs are failed in list .
 void release_success_docs_tmplist()
 {
-   webconfig_tmp_data_t *temp = NULL, *next_node;
+   webconfig_tmp_data_t *temp = NULL, *next_node = NULL;
    temp = get_global_tmp_node();
 
-    WebcfgDebug("Inside release_success_docs_list()\n");
+    WebcfgInfo("Inside release_success_docs_list()\n");
     while(temp != NULL)
     {
 	if((temp->status != NULL) && (strcmp(temp->status, "success") ==0))
 	{
-		WebcfgDebug("Delete node--> temp->name %s temp->version %lu temp->status %s temp->isSupplementarySync %d temp->error_details %s temp->error_code %lu temp->trans_id %lu temp->retry_count %d temp->cloud_trans_id %s\n",temp->name, (long)temp->version, temp->status, temp->isSupplementarySync, temp->error_details, (long)temp->error_code, (long)temp->trans_id, temp->retry_count, temp->cloud_trans_id);
+		WebcfgInfo("Delete node--> temp->name %s temp->version %lu temp->status %s temp->isSupplementarySync %d temp->error_details %s temp->error_code %lu temp->trans_id %lu temp->retry_count %d temp->cloud_trans_id %s\n",temp->name, (long)temp->version, temp->status, temp->isSupplementarySync, temp->error_details, (long)temp->error_code, (long)temp->trans_id, temp->retry_count, temp->cloud_trans_id);
 		deleteFromTmpList(temp->name,&next_node);
 		temp = next_node;
 		continue;	
