@@ -115,6 +115,8 @@ rbusError_t removeRBUSEventElement();
 rbusError_t rbusWebcfgEventHandler(rbusHandle_t handle, rbusProperty_t prop, rbusSetHandlerOptions_t* opts);
 int set_rbus_RfcEnable(bool bValue);
 int set_rbus_ForceSync(char* pString, int *pStatus);
+void set_global_webconfig_url(char *value);
+void set_global_supplementary_url(char *value);
 int parseForceSyncJson(char *jsonpayload, char **forceSyncVal, char **forceSynctransID);
 int get_rbus_ForceSync(char** pString, char **transactionId );
 bool get_rbus_RfcEnable();
