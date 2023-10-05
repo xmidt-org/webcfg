@@ -2454,13 +2454,8 @@ WEBCFG_STATUS deleteRootAndMultipartDocs()
 		delete_tmp_list();
 		delete_multipart();
 		WebcfgDebug("After free mp\n");
-		return WEBCFG_SUCCESS;
 	}
-	else
-	{
-		WebcfgError("deleteRootAndMultipartDocs failed\n");
-		return WEBCFG_FAILURE;
-	}
+	return WEBCFG_SUCCESS;
 }
 
 void failedDocsRetry()

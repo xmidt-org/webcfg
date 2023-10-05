@@ -553,7 +553,7 @@ void test_deleteRootAndMultipartDocs_fail(){
 	tmpData->next = NULL;
 	set_global_tmp_node(tmpData);
 	int m=deleteRootAndMultipartDocs();
-	CU_ASSERT_EQUAL(1,m);
+	CU_ASSERT_EQUAL(0,m);
 	set_global_tmp_node(NULL);
 	set_global_mp(NULL);
 }
