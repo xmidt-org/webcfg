@@ -301,7 +301,7 @@ target_link_libraries (test_generic -lcunit -lmsgpackc -lcimplog -ltrower-base64
 if (WEBCONFIG_BIN_SUPPORT)
 target_link_libraries (test_generic -lrbus)
 endif (WEBCONFIG_BIN_SUPPORT)
-
+ 
 target_link_libraries (test_generic gcov -Wl,--no-as-needed )
 
 # Code coverage
