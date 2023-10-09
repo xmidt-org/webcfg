@@ -291,7 +291,18 @@ target_link_libraries (test_rbus_fr -lcunit -lwrp-c -lcimplog -lmsgpackc -lcurl 
 target_link_libraries (test_rbus_fr gcov -Wl,--no-as-needed )
 endif (WEBCONFIG_BIN_SUPPORT)
 
+#-------------------------------------------------------------------------------
+#   test_generic
+#-------------------------------------------------------------------------------
+add_test(NAME test_generic COMMAND ${MEMORY_CHECK} ./test_generic)
+add_executable(test_generic test_generic.c ../src/webcfg_generic.c)
+target_link_libraries (test_generic -lcunit -lmsgpackc -lcimplog -ltrower-base64 -lwdmp-c -lcjson)
 
+if (WEBCONFIG_BIN_SUPPORT)
+target_link_libraries (test_generic -lrbus)
+endif (WEBCONFIG_BIN_SUPPORT)
+
+target_link_libraries (test_generic gcov -Wl,--no-as-needed )
 
 # Code coverage
 
@@ -316,6 +327,8 @@ COMMAND lcov -q --capture --directory
 ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/test_multipart_unittest.dir/__/src --output-file test_multipart_unittest.info
 COMMAND lcov -q --capture --directory 
 ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/test_webcfgpack.dir/__/src --output-file test_webcfgpack.info
+COMMAND lcov -q --capture --directory
+${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/test_generic.dir/__/src --output-file test_generic.info
 
 COMMAND lcov
 -a test_events_supp.info
@@ -328,6 +341,7 @@ COMMAND lcov
 -a test_root.info
 -a test_multipart_unittest.info
 -a test_webcfgpack.info
+-a test_generic.info
 --output-file coverage.info
 
 COMMAND genhtml coverage.info
