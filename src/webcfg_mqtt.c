@@ -96,7 +96,7 @@ void* WebconfigMqttTask(void *status)
 		return NULL;
 	}
 
-	mqttBackOffRetry();
+	checkMqttConnStatus();
 
 	WebcfgInfo("MQTTCM broker is connected, proceed to subscribe\n");
 
@@ -190,7 +190,8 @@ int getMqttCMConnStatus()
         return ret;
 }
 
-void mqttBackOffRetry()
+//This function checks the mqtt connection status and if it is "down" it will wait in back off retry
+void checkMqttConnStatus()
 {
 	int connStatus = 0;
 	int backoffRetryTime = 0;

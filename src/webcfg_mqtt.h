@@ -64,7 +64,7 @@ void publish_notify_mqtt(void *payload, ssize_t len, char * dest);
 char * createMqttPubHeader(char * payload, char * dest, ssize_t * payload_len);
 int createMqttHeader(char **header_list);
 int triggerMqttSync();
-void mqttBackOffRetry();
+void checkMqttConnStatus();
 int processPayload(char * data, int dataSize);
 int sendNotification_mqtt(char *payload, char *destination, wrp_msg_t *notif_wrp_msg, void *msg_bytes);
 void* WebconfigMqttTask(void *status);

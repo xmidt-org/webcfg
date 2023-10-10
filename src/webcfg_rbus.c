@@ -2170,7 +2170,7 @@ int subscribeTo_CurrentActiveInterface_Event()
 void trigger_webcfg_forcedsync()
 {
 #ifdef FEATURE_SUPPORT_MQTTCM
-	mqttBackOffRetry();
+	checkMqttConnStatus();
 	WebcfgInfo("mqtt is connected after wan restart event, trigger sync with cloud.\n");
 	int ret = triggerMqttSync();
 	if(ret)
