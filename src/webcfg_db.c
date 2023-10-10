@@ -794,7 +794,7 @@ void delete_tmp_docs_list()
 // To release success tmp docs during every maintenance window when few docs are failed in list .
 void release_success_docs_tmplist()
 {
-   webconfig_tmp_data_t *temp = NULL, *next_node;
+   webconfig_tmp_data_t *temp = NULL, *next_node = NULL;
    temp = get_global_tmp_node();
 
     WebcfgDebug("Inside release_success_docs_list()\n");
