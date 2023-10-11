@@ -149,11 +149,11 @@ void *WebConfigMultipartTask(void *status)
 		set_global_eventFlag();
 	}
 
+	WebcfgInfo("Webconfig is ready to process requests. set webcfgReady to true\n");
+	set_webcfgReady(true);
 #if !defined (FEATURE_SUPPORT_MQTTCM)
 	//For Primary sync set flag to 0
 	set_global_supplementarySync(0);
-	WebcfgInfo("Webconfig is ready to process requests. set webcfgReady to true\n");
-	set_webcfgReady(true);
 	set_bootSync(true);
 	processWebconfgSync((int)Status, NULL);
 
