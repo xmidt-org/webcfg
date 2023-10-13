@@ -28,16 +28,6 @@
 /*----------------------------------------------------------------------------*/
 /*                               Data Structures                              */
 /*----------------------------------------------------------------------------*/
-typedef struct SubDocSupportMap
-{
-    char name[256];//portforwarding or wlan
-    char support[8];//true or false;
-    #ifdef WEBCONFIG_BIN_SUPPORT
-    char rbus_listener[8];//true or false
-    char dest[64]; //comp destination eg. webconfig.pam.portforwarding
-    #endif
-    struct SubDocSupportMap *next;
-}SubDocSupportMap_t;
 
 /*----------------------------------------------------------------------------*/
 /*                            File Scoped Variables                           */
@@ -53,9 +43,6 @@ SupplementaryDocs_t *g_spInfoTail = NULL;
 /*                             Function Prototypes                            */
 /*----------------------------------------------------------------------------*/
 void displaystruct();
-SubDocSupportMap_t * get_global_sdInfoHead(void);
-SubDocSupportMap_t * get_global_sdInfoTail(void);
-SupplementaryDocs_t * get_global_spInfoTail(void);
 /*----------------------------------------------------------------------------*/
 /*                             External Functions                             */
 /*----------------------------------------------------------------------------*/
@@ -365,6 +352,22 @@ WEBCFG_STATUS isSupplementaryDoc(char *subDoc)
 /*----------------------------------------------------------------------------*/
 /*                             Internal functions                             */
 /*----------------------------------------------------------------------------*/
+void set_global_sdInfoHead(SubDocSupportMap_t *new_head) {
+	g_sdInfoHead = new_head;
+}
+
+void set_global_sdInfoTail(SubDocSupportMap_t *new_tail) {
+    g_sdInfoTail = new_tail;
+}
+
+void set_global_spInfoHead(SupplementaryDocs_t *new_head) {
+    g_spInfoHead = new_head;
+}
+
+void set_global_spInfoTail(SupplementaryDocs_t *new_head) {
+    g_spInfoTail = new_head;
+}
+
 SubDocSupportMap_t * get_global_sdInfoHead(void)
 {
     SubDocSupportMap_t *tmp = NULL;

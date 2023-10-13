@@ -36,6 +36,27 @@ typedef struct SupplementaryDocs
 	char *name;
 	struct SupplementaryDocs *next;
 }SupplementaryDocs_t;
+
+typedef struct SubDocSupportMap
+{
+    char name[256];//portforwarding or wlan
+    char support[8];//true or false;
+    #ifdef WEBCONFIG_BIN_SUPPORT
+    char rbus_listener[8];//true or false
+    char dest[64]; //comp destination eg. webconfig.pam.portforwarding
+    #endif
+    struct SubDocSupportMap *next;
+}SubDocSupportMap_t;
+
+void set_global_sdInfoHead(SubDocSupportMap_t *new_head);
+void set_global_sdInfoTail(SubDocSupportMap_t *new_tail);
+void set_global_spInfoHead(SupplementaryDocs_t *new_head);
+void set_global_spInfoTail(SupplementaryDocs_t *new_head);
+
+SubDocSupportMap_t * get_global_sdInfoHead(void);
+SubDocSupportMap_t * get_global_sdInfoTail(void);
+SupplementaryDocs_t * get_global_spInfoTail(void);
+
 /*----------------------------------------------------------------------------*/
 /*                             External Functions                             */
 /*----------------------------------------------------------------------------*/
@@ -53,6 +74,7 @@ char * getsupportedVersion();
 char * getsupplementaryDocs();
 void supplementaryDocs();
 void delete_supplementary_list();
+void displaystruct();
 SupplementaryDocs_t * get_global_spInfoHead(void);
 WEBCFG_STATUS isSupplementaryDoc(char *subDoc);
 #endif
