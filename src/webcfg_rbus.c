@@ -37,7 +37,7 @@ time_t start_time;
 int force_reset_call_count=0;
 
 
-static rbusHandle_t rbus_handle;
+rbusHandle_t rbus_handle;
 
 static bool  RfcVal = false ;
 static char* URLVal = NULL ;
@@ -1413,7 +1413,7 @@ DATA_TYPE mapRbusToWdmpDataType(rbusValueType_t rbusType)
 	return wdmp_type;
 }
 
-static rbusValueType_t mapWdmpToRbusDataType(DATA_TYPE wdmpType)
+rbusValueType_t mapWdmpToRbusDataType(DATA_TYPE wdmpType)
 {
 	rbusValueType_t rbusType = RBUS_NONE;
 
