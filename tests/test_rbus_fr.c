@@ -38,6 +38,7 @@
 #define FILE_URL "/tmp/webcfg_url"
 
 #define UNUSED(x) (void )(x)
+#define WEBCFG_BLOB_PARAM "Device.X_RDK_WebConfig.blobElement"
 
 rbusHandle_t handle;
 extern rbusHandle_t rbus_handle;
@@ -1411,6 +1412,147 @@ void test_subscribeTo_CurrentActiveInterface_Event()
 }
 #endif
 
+void test_setValues_rbus()
+{
+	webconfigRbusInit("consumerComponent");
+	regWebConfigDataModel();
+	
+	WDMP_STATUS ret = WDMP_FAILURE;
+	int ccspStatus = 0;
+	int paramCount = 2;
+	param_t *reqParam = NULL;
+	reqParam = (param_t *) malloc(sizeof(param_t) * paramCount);
+	memset(reqParam,0,(sizeof(param_t) * paramCount));
+	reqParam[0].name = WEBCFG_SUPPLEMENTARY_TELEMETRY_PARAM;
+	reqParam[0].value = strdup("telemetry");
+	reqParam[0].type = WDMP_BASE64;
+	reqParam[1].name = WEBCFG_URL_PARAM;
+	reqParam[1].value = strdup("webcfgurl");
+	reqParam[1].type = WDMP_BASE64;
+
+	setValues_rbus(reqParam, paramCount, 3, NULL, NULL, &ret, &ccspStatus);
+	CU_ASSERT_EQUAL(CCSP_Msg_Bus_OK, ccspStatus);
+	CU_ASSERT_EQUAL(WDMP_SUCCESS, ret);
+	free(reqParam);
+}
+
+void test_getVlues_rbus()
+{
+	int paramCount=0;
+	int retStatus = WDMP_FAILURE;
+	int count=0;
+	const char *getParamList[2];
+	getParamList[0] = WEBCFG_SUPPLEMENTARY_TELEMETRY_PARAM;
+	getParamList[1] = WEBCFG_URL_PARAM;
+
+	paramCount = sizeof(getParamList)/sizeof(getParamList[0]);
+	param_t **parametervalArr = (param_t **) malloc(sizeof(param_t *) * paramCount);
+
+	getValues_rbus(getParamList, paramCount, 0, NULL, &parametervalArr, &count, &retStatus);
+	CU_ASSERT_EQUAL(count, 2);
+	CU_ASSERT_EQUAL(retStatus, WDMP_SUCCESS);
+	CU_ASSERT_STRING_EQUAL(parametervalArr[0]->value, "telemetry");
+	CU_ASSERT_STRING_EQUAL(parametervalArr[1]->value, "webcfgurl");
+	
+	free(parametervalArr);
+	webpaRbus_Uninit(); 
+}
+
+static void publishUpstreamEventSuccessCallbackHandler(
+    rbusHandle_t handle,
+    rbusEvent_t const* event,
+    rbusEventSubscription_t* subscription)
+{
+	WebcfgInfo("OnPublish webcfgUtil success callback received successfully\n");
+}
+
+void test_sendNotification_rbus()
+{
+	webconfigRbusInit("providerComponent");
+    	regWebConfigDataModel();
+
+	char *payload = strdup("payloadData");
+	char *source = strdup("src");
+	char *destination = strdup("dest");
+
+    	int res = rbus_open(&handle, "consumerComponent");
+    	if(res != RBUS_ERROR_SUCCESS)
+	{
+		CU_FAIL("rbus_open failed for consumerComponent");
+	}
+	int ret = rbusEvent_Subscribe(handle, WEBCFG_UPSTREAM_EVENT, publishUpstreamEventSuccessCallbackHandler, NULL, 0);
+    	if(ret != RBUS_ERROR_SUCCESS)
+	{
+		CU_FAIL("subscribe_to_event onsubscribe event failed");
+	}
+	
+	sendNotification_rbus(payload, source, destination);
+
+	rbus_close(handle);
+	webpaRbus_Uninit();
+}
+
+rbusError_t webcfgBlobElementSetHandler(rbusHandle_t handle, rbusProperty_t prop, rbusSetHandlerOptions_t* opts) {
+
+	(void) handle;
+    	(void) opts;
+    	char const* paramName = rbusProperty_GetName(prop);
+
+    	WebcfgInfo("Parameter name is %s \n", paramName);
+    	rbusValueType_t type_t;
+    	rbusValue_t paramValue_t = rbusProperty_GetValue(prop);
+    	if(paramValue_t) {
+        	type_t = rbusValue_GetType(paramValue_t);
+    	} else {
+		WebcfgError("Invalid input to set\n");
+        	return RBUS_ERROR_INVALID_INPUT;
+    	}
+   
+    	if(strncmp(paramName, WEBCFG_BLOB_PARAM, maxParamLen) == 0){
+        	if(type_t == RBUS_BYTES) {
+            		int len;
+	    		uint8_t const* data = rbusValue_GetBytes(paramValue_t, &len);
+	    		CU_ASSERT_FATAL(NULL != data);
+        	}
+         	else {
+            		WebcfgError("Unexpected value type for property %s\n", paramName);
+	    		return RBUS_ERROR_INVALID_INPUT;
+        	}
+    	}
+	else {
+		WebcfgError("Unexpected parameter = %s\n", paramName);
+		return RBUS_ERROR_ELEMENT_DOES_NOT_EXIST;
+	}   
+     	return RBUS_ERROR_SUCCESS;
+}
+
+void test_blobSet_rbus()
+{
+	char *buff = strdup("blobdata");
+	int sendMsgSize = sizeof(buff);
+	WDMP_STATUS retStatus = WDMP_FAILURE;
+	int ccspStatus = 0;
+
+	webconfigRbusInit("consumerComponent");
+	int res = rbus_open(&handle, "providerComponent");
+    	if(res != RBUS_ERROR_SUCCESS)
+	{
+		CU_FAIL("rbus_open failed for providerComponent");
+	}
+	rbusDataElement_t webcfgBlobElement[1] = {
+		{WEBCFG_BLOB_PARAM, RBUS_ELEMENT_TYPE_PROPERTY, {NULL, webcfgBlobElementSetHandler, NULL, NULL, NULL, NULL}}
+	};
+	rbusError_t ret = rbus_regDataElements(handle, 1, webcfgBlobElement);
+	CU_ASSERT_EQUAL(ret, RBUS_ERROR_SUCCESS);
+
+	blobSet_rbus(WEBCFG_BLOB_PARAM, buff, sendMsgSize, &retStatus, &ccspStatus);
+	CU_ASSERT_EQUAL(CCSP_Msg_Bus_OK, ccspStatus);
+	CU_ASSERT_EQUAL(WDMP_SUCCESS, retStatus);
+
+	rbus_close(handle);
+	webpaRbus_Uninit(); 
+}
+
 void printTest()
 {
 	int count = get_global_supplementarySync();
@@ -1470,7 +1612,11 @@ void add_suites( CU_pSuite *suite )
      	CU_add_test( *suite, "test webcfgSubdocForceResetSet_GetHandler", test_webcfgSubdocForceResetSet_GetHandler);
 	#ifdef WAN_FAILOVER_SUPPORTED
      	CU_add_test( *suite, "test subscribeTo_CurrentActiveInterface_Event", test_subscribeTo_CurrentActiveInterface_Event);
-	#endif 
+	#endif
+	CU_add_test( *suite, "test setValues_rbus", test_setValues_rbus);
+	CU_add_test( *suite, "test getVlues_rbus", test_getVlues_rbus);
+	CU_add_test( *suite, "test sendNotification_rbus", test_sendNotification_rbus);
+	CU_add_test( *suite, "test blobSet_rbus", test_blobSet_rbus); 
 }
 
 /*----------------------------------------------------------------------------*/
