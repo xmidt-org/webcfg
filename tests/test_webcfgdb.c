@@ -636,6 +636,9 @@ void test_get_successDocCount()
         WEBCFG_FREE(wd);
     }
     reset_successDocCount();
+    reset_db_node();
+    int p = get_successDocCount();
+    CU_ASSERT_EQUAL(0,p);
     //webcfgdb_destroy(wd);
 }
 
@@ -652,7 +655,14 @@ void test_get_global_db_node()
     int n = get_successDocCount();
     CU_ASSERT_EQUAL(1,n);
     CU_ASSERT_FATAL( NULL != get_global_db_node());
-    webcfgdb_destroy(wd);
+    //webcfgdb_destroy(wd);
+    if(wd)
+    {
+        WEBCFG_FREE(wd->name);
+        wd->version = 0;
+        WEBCFG_FREE(wd->root_string);
+        WEBCFG_FREE(wd);
+    }
     reset_successDocCount();
     reset_db_node();
     CU_ASSERT_FATAL( NULL == get_global_db_node());
@@ -671,12 +681,18 @@ void test_reset_db_node()
     int n = get_successDocCount();
     CU_ASSERT_EQUAL(1,n);
     CU_ASSERT_FATAL( NULL != get_global_db_node());
-    webcfgdb_destroy(wd);
+    //webcfgdb_destroy(wd);
+    if(wd)
+    {
+        WEBCFG_FREE(wd->name);
+        wd->version = 0;
+        WEBCFG_FREE(wd->root_string);
+        WEBCFG_FREE(wd);
+    }
     reset_successDocCount();
     reset_db_node();
     CU_ASSERT_FATAL( NULL == get_global_db_node());
 }
-
 
 void test_reset_successDocCount()
 {
@@ -701,6 +717,7 @@ void test_reset_successDocCount()
     }
     //webcfgdb_destroy(wd);
     reset_successDocCount();
+    reset_db_node();
     int p = get_successDocCount();
     CU_ASSERT_EQUAL(0,p);
 }
@@ -781,6 +798,7 @@ void test_webcfgdbparam_strerror()
     CU_ASSERT_STRING_EQUAL(webcfgdbparam_strerror(2),"Invalid first element.");
     CU_ASSERT_STRING_EQUAL(webcfgdbparam_strerror(3),"Invalid 'datatype' value.");
     CU_ASSERT_STRING_EQUAL(webcfgdbparam_strerror(4),"Invalid 'parameters' array.");
+    CU_ASSERT_STRING_EQUAL(webcfgdbparam_strerror(5),"Unknown error.");
 }
 
 void test_updateFailureTimeStamp()
@@ -808,6 +826,229 @@ void test_updateFailureTimeStamp()
     CU_ASSERT_FATAL( NULL == get_global_tmp_node());
 }
 
+void test_writeToDBFile()
+{
+    size_t webcfgdbPackSize = -1;
+    void* dbData = NULL;
+    size_t count=1;
+    webconfig_db_data_t * webcfgdb = NULL;
+    webcfgdb = (webconfig_db_data_t *) malloc (sizeof(webconfig_db_data_t));
+    webcfgdb->name = strdup("wan");
+    webcfgdb->version = 410448631;
+    webcfgdb->root_string = strdup("portmapping");
+    webcfgdb->next=NULL;
+    webcfgdbPackSize = webcfgdb_pack(webcfgdb, &dbData, count);
+    //CU_ASSERT_PTR_NOT_NULL(webcfgdbPackSize);
+    WebcfgDebug("webcfgdbPackSize %lu \n",webcfgdbPackSize);
+    CU_ASSERT_NOT_EQUAL(-1,webcfgdbPackSize);
+    CU_ASSERT_PTR_NOT_NULL(dbData);
+    int m = writeToDBFile("/tmp/webcfgdb.txt",(char *)dbData,webcfgdbPackSize);
+    CU_ASSERT_EQUAL(1,m);
+    int n = writeToDBFile("/tmp/webcfgdb.txt",NULL,webcfgdbPackSize);
+    CU_ASSERT_EQUAL(0,n);
+    if(dbData)
+    {
+        WEBCFG_FREE(dbData);
+    }
+    if(webcfgdb)
+    {
+        WEBCFG_FREE(webcfgdb->name);
+        webcfgdb->version = 0;
+        WEBCFG_FREE(webcfgdb->root_string);
+        WEBCFG_FREE(webcfgdb);
+    }
+    remove("/tmp/webcfgdb.txt");
+}
+
+
+void test_webcfgdb_destroy() //doubt
+{
+    int m = get_successDocCount();
+    CU_ASSERT_EQUAL(0,m);
+    webconfig_db_data_t *wd;
+    wd = (webconfig_db_data_t *) malloc (sizeof(webconfig_db_data_t));
+    CU_ASSERT_PTR_NOT_NULL(wd);
+    wd->name = strdup("wan");
+    wd->version = 410448631;
+    wd->root_string = strdup("portmapping");
+    wd->next=NULL;
+    addToDBList(wd);
+    int n = get_successDocCount();
+    CU_ASSERT_EQUAL(1,n);
+    CU_ASSERT_FATAL( NULL != get_global_db_node());
+    WEBCFG_FREE(wd->root_string);
+    webcfgdb_destroy(wd);
+    reset_successDocCount();
+    reset_db_node();
+    /*if(wd == NULL)
+	WebcfgInfo("\nvenkat setting to freee %s!!!!!!!!", (char *)wd); */
+    CU_ASSERT_FATAL( NULL == get_global_db_node());
+}
+
+void test_webcfgdbblob_destroy()
+{
+    size_t webcfgdbBlobPackSize = -1;
+    void * data = NULL;
+    webconfig_db_data_t * webcfgdb = NULL;
+    webconfig_tmp_data_t *webcfgtemp;
+    //db data
+    webcfgdb = (webconfig_db_data_t *) malloc (sizeof(webconfig_db_data_t));
+    webcfgdb->name = strdup("wan");
+    webcfgdb->version = 410448631;
+    webcfgdb->root_string = strdup("portmapping");
+    webcfgdb->next=NULL;
+    CU_ASSERT_PTR_NOT_NULL(webcfgdb);
+    //temp data
+    webcfgtemp=(webconfig_tmp_data_t *)malloc(sizeof(webconfig_tmp_data_t));
+    webcfgtemp->name = strdup("wan");
+    webcfgtemp->version = 410448631;
+    webcfgtemp->status = strdup("pending");
+    webcfgtemp->error_details = strdup("none");
+    webcfgtemp->error_code = 0;
+    webcfgtemp->trans_id = 0;
+    webcfgtemp->retry_count = 0;
+    webcfgtemp->next=NULL;
+    CU_ASSERT_PTR_NOT_NULL(webcfgtemp);
+    //webcfgdb_blob_pack function
+    webcfgdbBlobPackSize = webcfgdb_blob_pack(webcfgdb, webcfgtemp, &data);
+    CU_ASSERT_NOT_EQUAL(-1,webcfgdbBlobPackSize);
+
+    //decodeBlobData
+    blob_struct_t *blobdata = NULL;
+    blobdata = decodeBlobData((void *)data, webcfgdbBlobPackSize );
+    CU_ASSERT_PTR_NOT_NULL(blobdata);
+    CU_ASSERT_STRING_EQUAL("wan",blobdata->entries[0].name);
+    CU_ASSERT_EQUAL(410448631,blobdata->entries[0].version);
+    CU_ASSERT_STRING_EQUAL("success",blobdata->entries[0].status);
+    CU_ASSERT_STRING_EQUAL("none",blobdata->entries[0].error_details);
+    CU_ASSERT_EQUAL(0,blobdata->entries[0].error_code);
+    CU_ASSERT_STRING_EQUAL("portmapping",blobdata->entries[0].root_string);
+    webcfgdbblob_destroy(blobdata);
+    WEBCFG_FREE(data);
+    if(webcfgdb)
+    {
+        WEBCFG_FREE(webcfgdb->name);
+        webcfgdb->version = 0;
+        WEBCFG_FREE(webcfgdb->root_string);
+        WEBCFG_FREE(webcfgdb);
+    }
+    CU_ASSERT_PTR_NULL(webcfgdb);
+    if(webcfgtemp)
+    {
+        WEBCFG_FREE(webcfgtemp->name);
+        webcfgtemp->version = 0;
+        WEBCFG_FREE(webcfgtemp->status);
+        WEBCFG_FREE(webcfgtemp->error_details);
+        WEBCFG_FREE(webcfgtemp);
+    }
+    CU_ASSERT_PTR_NULL(webcfgtemp);
+}
+
+void test_webcfgdbblob_strerror()
+{
+    CU_ASSERT_STRING_EQUAL(webcfgdbblob_strerror(0),"No errors.");
+    CU_ASSERT_STRING_EQUAL(webcfgdbblob_strerror(1),"Out of memory.");
+    CU_ASSERT_STRING_EQUAL(webcfgdbblob_strerror(2),"Invalid first element.");
+    CU_ASSERT_STRING_EQUAL(webcfgdbblob_strerror(3),"Invalid 'datatype' value.");
+    CU_ASSERT_STRING_EQUAL(webcfgdbblob_strerror(4),"Invalid 'parameters' array.");
+    CU_ASSERT_STRING_EQUAL(webcfgdbblob_strerror(5),"Unknown error.");
+}
+
+void test_writebase64ToDBFile()
+{
+    size_t webcfgdbPackSize = -1;
+    void* dbData = NULL;
+    size_t count=1;
+    webconfig_db_data_t * webcfgdb = NULL;
+    webcfgdb = (webconfig_db_data_t *) malloc (sizeof(webconfig_db_data_t));
+    webcfgdb->name = strdup("wan");
+    webcfgdb->version = 410448631;
+    webcfgdb->root_string = strdup("portmapping");
+    webcfgdb->next=NULL;
+    webcfgdbPackSize = webcfgdb_pack(webcfgdb, &dbData, count);
+    //CU_ASSERT_PTR_NOT_NULL(webcfgdbPackSize);
+    WebcfgDebug("webcfgdbPackSize %lu \n",webcfgdbPackSize);
+    CU_ASSERT_NOT_EQUAL(-1,webcfgdbPackSize);
+    CU_ASSERT_PTR_NOT_NULL(dbData);
+    int m = writebase64ToDBFile("/tmp/webcfgdb.txt",(char *)dbData);
+    CU_ASSERT_EQUAL(1,m);
+    if(dbData)
+    {
+        WEBCFG_FREE(dbData);
+    }
+    if(webcfgdb)
+    {
+        WEBCFG_FREE(webcfgdb->name);
+        webcfgdb->version = 0;
+        WEBCFG_FREE(webcfgdb->root_string);
+        WEBCFG_FREE(webcfgdb);
+    }
+    int n = writebase64ToDBFile("/tmp/webcfgdb.txt",NULL);
+    CU_ASSERT_EQUAL(0,n);
+    remove("/tmp/webcfgdb.txt");
+}
+
+void test_get_DB_BLOB()
+{
+    //size_t webcfgdbBlobPackSize = -1;
+   // void * data = NULL;
+    webconfig_tmp_data_t * webcfgtemp = NULL;
+    webconfig_db_data_t * webcfgdb = NULL;
+
+    //temp data
+    webcfgtemp=(webconfig_tmp_data_t *)malloc(sizeof(webconfig_tmp_data_t));
+    webcfgtemp->name = strdup("wan");
+    webcfgtemp->version = 5678;
+    webcfgtemp->status = strdup("success");
+    webcfgtemp->trans_id = 4204;
+    webcfgtemp->retry_count = 0;
+    webcfgtemp->error_code = 0;
+    webcfgtemp->error_details = strdup("none");
+    webcfgtemp->next=NULL;
+    CU_ASSERT_PTR_NOT_NULL(webcfgtemp);
+    set_global_tmp_node(webcfgtemp);
+    CU_ASSERT_FATAL( NULL != get_global_tmp_node());
+    //db data
+    webcfgdb = (webconfig_db_data_t *) malloc (sizeof(webconfig_db_data_t));
+    webcfgdb->name = strdup("wan");
+    webcfgdb->version = 410448631;
+    webcfgdb->root_string = strdup("portmapping");
+    webcfgdb->next=NULL;
+    CU_ASSERT_PTR_NOT_NULL(webcfgdb);
+    addToDBList(webcfgdb);
+    int m = get_successDocCount();
+    CU_ASSERT_EQUAL(1,m);
+    CU_ASSERT_FATAL( NULL != get_global_db_node());
+
+    CU_ASSERT_FATAL( NULL != get_DB_BLOB());
+    if(webcfgtemp)
+    {
+        WEBCFG_FREE(webcfgtemp->name);
+        webcfgtemp->version = 0;
+        WEBCFG_FREE(webcfgtemp->status);
+        WEBCFG_FREE(webcfgtemp->error_details);
+        WEBCFG_FREE(webcfgtemp);
+    }
+    CU_ASSERT_PTR_NULL(webcfgtemp);
+    set_global_tmp_node(webcfgtemp);
+    CU_ASSERT_FATAL( NULL == get_global_tmp_node());
+
+    if(webcfgdb)
+    {
+        WEBCFG_FREE(webcfgdb->name);
+        webcfgdb->version = 0;
+        WEBCFG_FREE(webcfgdb->root_string);
+        WEBCFG_FREE(webcfgdb);
+    }
+    reset_db_node();
+    CU_ASSERT_PTR_NULL(webcfgdb);
+    reset_successDocCount();
+    int n = get_successDocCount();
+    CU_ASSERT_EQUAL(0,n);
+    CU_ASSERT_FATAL( NULL == get_global_db_node());
+
+    CU_ASSERT_FATAL( NULL == get_DB_BLOB());
+}
 void add_suites( CU_pSuite *suite )
 {
     *suite = CU_add_suite( "tests", NULL, NULL );
@@ -831,6 +1072,12 @@ void add_suites( CU_pSuite *suite )
     CU_add_test( *suite, "test get_doc_fail", test_get_doc_fail);
     CU_add_test( *suite, "test webcfgdbparam_strerror", test_webcfgdbparam_strerror);
     CU_add_test( *suite, "test updateFailureTimeStamp", test_updateFailureTimeStamp); 
+    CU_add_test( *suite, "test writeToDBFile", test_writeToDBFile);
+    CU_add_test( *suite, "test webcfgdb_destroy", test_webcfgdb_destroy);
+    CU_add_test( *suite, "test webcfgdbblob_destroy", test_webcfgdbblob_destroy);
+    CU_add_test( *suite, "test webcfgdbblob_strerror", test_webcfgdbblob_strerror);
+    CU_add_test( *suite, "test writebase64ToDBFile", test_writebase64ToDBFile);
+    CU_add_test( *suite, "test get_DB_BLOB", test_get_DB_BLOB);
 }
 
 /*----------------------------------------------------------------------------*/
