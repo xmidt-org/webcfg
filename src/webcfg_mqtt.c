@@ -1235,6 +1235,8 @@ int processPayload(char * data, int dataSize)
 		ptr_count++;
 	}
 
+	ptr_count = data_body;
+	ptr1_count = data_body;
 	while((ptr_count - data_body) < dataSize )
 	{
 		ptr_count = memchr(ptr_count, 'C', dataSize - (ptr_count - data_body));
