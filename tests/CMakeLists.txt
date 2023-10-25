@@ -321,6 +321,15 @@ endif (WEBCONFIG_BIN_SUPPORT)
 
 target_link_libraries (test_timer gcov -Wl,--no-as-needed )
 
+#-------------------------------------------------------------------------------
+#   test_notify
+#-------------------------------------------------------------------------------
+add_test(NAME test_notify COMMAND ${MEMORY_CHECK} ./test_notify)
+add_executable(test_notify test_notify.c ../src/webcfg_notify.c)
+target_link_libraries (test_notify -lcunit -lmsgpackc -lcimplog -ltrower-base64 -lwdmp-c -lcjson -lpthread)
+ 
+target_link_libraries (test_notify gcov -Wl,--no-as-needed )
+
 # Code coverage
 
 add_custom_target(coverage
@@ -350,6 +359,8 @@ COMMAND lcov -q --capture --directory
 ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/test_rbus_fr.dir/__/src --output-file test_rbus_fr.info
 COMMAND lcov -q --capture --directory
 ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/test_timer.dir/__/src --output-file test_timer.info
+COMMAND lcov -q --capture --directory 
+${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/test_notify.dir/__/src --output-file test_notify.info
 
 
 COMMAND lcov
@@ -366,6 +377,7 @@ COMMAND lcov
 -a test_generic.info
 -a test_rbus_fr.info
 -a test_timer.info
+-a test_notify.info
 --output-file coverage.info
 
 COMMAND genhtml coverage.info
