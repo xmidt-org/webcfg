@@ -125,6 +125,18 @@ void waitForUpstreamEventSubscribe(int wait_time);
 void trigger_webcfg_forcedsync();
 void registerRbusLogger();
 webcfgError_t fetchMpBlobData(char *docname, void **blobdata, int *len, uint32_t *etag);
+bool isRbusInitialized();
+void webpaRbus_Uninit();
+rbusError_t publishSubdocResetEvent(char *subdocName);
+bool get_global_isRbus(void);
+char * webcfgError_ToString(webcfgError_t e);
+rbusValueType_t mapWdmpToRbusDataType(DATA_TYPE wdmpType);
+int mapRbusToCcspStatus(int Rbus_error_code);
+rbusError_t eventSubHandler(rbusHandle_t handle, rbusEventSubAction_t action, const char* eventName, rbusFilter_t filter, int32_t interval, bool* autoPublish);
+rbusError_t resetEventSubHandler(rbusHandle_t handle, rbusEventSubAction_t action, const char* eventName, rbusFilter_t filter, int32_t interval, bool* autoPublish);
+void rbus_log_handler(rbusLogLevel level, const char* file, int line, int threadId, char* message);
+webcfgError_t checkSubdocInDb(char *docname);
+webcfgError_t resetSubdocVersion(char *docname);
 #ifdef WAN_FAILOVER_SUPPORTED
 int subscribeTo_CurrentActiveInterface_Event();
 #endif

@@ -21,6 +21,10 @@ if (WEBCONFIG_BIN_SUPPORT)
 add_definitions(-DWEBCONFIG_BIN_SUPPORT)
 endif (WEBCONFIG_BIN_SUPPORT)
 
+if (WAN_FAILOVER_SUPPORTED)
+add_definitions(-DWAN_FAILOVER_SUPPORTED)
+endif (WAN_FAILOVER_SUPPORTED)
+
 if(NOT DISABLE_VALGRIND)
 set (MEMORY_CHECK valgrind --leak-check=full --show-reachable=yes --track-origins=yes -v)
 endif ()
@@ -29,7 +33,7 @@ link_directories ( ${LIBRARY_DIR} )
 #-------------------------------------------------------------------------------
 #   webcfgCli
 #-------------------------------------------------------------------------------
-set(SOURCES webcfgCli.c ../src/webcfg_helpers.c ../src/webcfg.c ../src/webcfg_param.c ../src/webcfg_pack.c ../src/webcfg_multipart.c ../src/webcfg_auth.c ../src/webcfg_notify.c ../src/webcfg_db.c ../src/webcfg_generic.c ../src/webcfg_blob.c ../src/webcfg_event.c ../src/webcfg_metadata.c ../src/webcfg_timer.c)
+set(SOURCES webcfgCli.c ../src/webcfg_helpers.c ../src/webcfg.c ../src/webcfg_param.c ../src/webcfg_pack.c ../src/webcfg_multipart.c ../src/webcfg_auth.c ../src/webcfg_notify.c ../src/webcfg_db.c ../src/webcfg_generic_pc.c ../src/webcfg_blob.c ../src/webcfg_event.c ../src/webcfg_metadata.c ../src/webcfg_timer.c)
 
 if (WEBCONFIG_BIN_SUPPORT)
 set(SOURCES ${SOURCES} ../src/webcfg_rbus.c)
@@ -285,13 +289,37 @@ target_link_libraries (test_multipart_unittest gcov -Wl,--no-as-needed )
 #-------------------------------------------------------------------------------
 if (WEBCONFIG_BIN_SUPPORT)
 add_test(NAME test_rbus_fr COMMAND ${MEMORY_CHECK} ./test_rbus_fr)
-add_executable(test_rbus_fr test_rbus_fr.c ../src/webcfg_rbus.c ../src/webcfg_wanhandle.c)
+add_executable(test_rbus_fr test_rbus_fr.c ../src/webcfg_rbus.c ../src/webcfg_wanhandle.c ../src/webcfg_db.c ../src/webcfg_multipart.c ../src/webcfg_generic_pc.c)
 target_link_libraries (test_rbus_fr -lcunit -lwrp-c -lcimplog -lmsgpackc -lcurl -lpthread  -lm -luuid -ltrower-base64 -lwdmp-c -lcjson  -lrbus)
 
 target_link_libraries (test_rbus_fr gcov -Wl,--no-as-needed )
 endif (WEBCONFIG_BIN_SUPPORT)
 
+#-------------------------------------------------------------------------------
+#   test_generic
+#-------------------------------------------------------------------------------
+add_test(NAME test_generic COMMAND ${MEMORY_CHECK} ./test_generic)
+add_executable(test_generic test_generic.c ../src/webcfg_generic.c)
+target_link_libraries (test_generic -lcunit -lmsgpackc -lcimplog -ltrower-base64 -lwdmp-c -lcjson)
+ 
+if (WEBCONFIG_BIN_SUPPORT)
+target_link_libraries (test_generic -lrbus)
+endif (WEBCONFIG_BIN_SUPPORT)
+ 
+target_link_libraries (test_generic gcov -Wl,--no-as-needed )
 
+#-------------------------------------------------------------------------------
+#   test_timer
+#-------------------------------------------------------------------------------
+add_test(NAME test_timer COMMAND ${MEMORY_CHECK} ./test_timer)
+add_executable(test_timer test_timer.c ../src/webcfg_timer.c)
+target_link_libraries (test_timer -lcunit -lmsgpackc -lcimplog -ltrower-base64 -lwdmp-c -lcjson)
+
+if (WEBCONFIG_BIN_SUPPORT)
+target_link_libraries (test_timer -lrbus)
+endif (WEBCONFIG_BIN_SUPPORT)
+
+target_link_libraries (test_timer gcov -Wl,--no-as-needed )
 
 # Code coverage
 
@@ -316,6 +344,13 @@ COMMAND lcov -q --capture --directory
 ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/test_multipart_unittest.dir/__/src --output-file test_multipart_unittest.info
 COMMAND lcov -q --capture --directory 
 ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/test_webcfgpack.dir/__/src --output-file test_webcfgpack.info
+COMMAND lcov -q --capture --directory 
+${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/test_generic.dir/__/src --output-file test_generic.info
+COMMAND lcov -q --capture --directory 
+${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/test_rbus_fr.dir/__/src --output-file test_rbus_fr.info
+COMMAND lcov -q --capture --directory
+${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/test_timer.dir/__/src --output-file test_timer.info
+
 
 COMMAND lcov
 -a test_events_supp.info
@@ -328,6 +363,9 @@ COMMAND lcov
 -a test_root.info
 -a test_multipart_unittest.info
 -a test_webcfgpack.info
+-a test_generic.info
+-a test_rbus_fr.info
+-a test_timer.info
 --output-file coverage.info
 
 COMMAND genhtml coverage.info

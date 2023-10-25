@@ -38,6 +38,7 @@ int getMaintenanceSyncSeconds(int maintenance_count);
 int retrySyncSeconds();
 long getTimeInSeconds(long long time);
 void set_global_maintenance_time(long value);
+long get_global_maintenance_time();
 void set_global_retry_timestamp(long value);
 long get_global_retry_timestamp();
 int updateRetryTimeDiff(long long expiry_time);

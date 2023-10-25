@@ -85,10 +85,6 @@ void* WebconfigMqttTask(void *status)
 	pthread_mutex_lock (&mqtt_sync_mutex);
 	int rc = -1;
 	rbusHandle_t rbus_handle;
-	int connStatus = 0;
-	int backoffRetryTime = 0;
-	int backoff_max_time = 5;
-	int max_retry_sleep;
 
 	systemStatus = (unsigned long)status;
 	WebcfgInfo("WebconfigMqttTask\n");
@@ -100,39 +96,9 @@ void* WebconfigMqttTask(void *status)
 		return NULL;
 	}
 
-	//Retry Backoff count shall start at c=2 & calculate 2^c - 1.
-	int c =2;
-        max_retry_sleep = (int) pow(2, backoff_max_time) -1;
-        WebcfgInfo("max_retry_sleep is %d\n", max_retry_sleep );
+	checkMqttConnStatus();
 
-	while(1)
-	{
-		if(backoffRetryTime < max_retry_sleep)
-		{
-			backoffRetryTime = (int) pow(2, c) -1;
-		}
-
-		WebcfgInfo("New backoffRetryTime value calculated as %d seconds\n", backoffRetryTime);
-		connStatus = getMqttCMConnStatus();
-		if(connStatus)
-		{
-			WebcfgInfo("MQTTCM broker is connected, proceed to subscribe\n");
-			break;
-		}
-		else
-		{
-			WebcfgError("MQTTCM broker is not connected, waiting..\n");
-			sleep(backoffRetryTime);
-			c++;
-
-			if(backoffRetryTime == max_retry_sleep)
-			{
-				c = 2;
-				backoffRetryTime = 0;
-				WebcfgInfo("backoffRetryTime reached max value, reseting to initial value\n");
-			}
-		}
-	}
+	WebcfgInfo("MQTTCM broker is connected, proceed to subscribe\n");
 
 	WebcfgInfo("rbus event subscribe to mqtt subscribe callback\n");
 	rc = rbusEvent_Subscribe(rbus_handle, WEBCFG_SUBSCRIBE_CALLBACK, webcfgSubscribeCallbackHandler, NULL, 0);
@@ -224,6 +190,48 @@ int getMqttCMConnStatus()
         return ret;
 }
 
+//This function checks the mqtt connection status and if it is "down" it will wait in back off retry
+void checkMqttConnStatus()
+{
+	int connStatus = 0;
+	int backoffRetryTime = 0;
+	int backoff_max_time = 5;
+	int max_retry_sleep;
+	//Retry Backoff count shall start at c=2 & calculate 2^c - 1.
+	int c =2;
+        max_retry_sleep = (int) pow(2, backoff_max_time) -1;
+        WebcfgInfo("max_retry_sleep is %d\n", max_retry_sleep );
+
+	while(1)
+	{
+		if(backoffRetryTime < max_retry_sleep)
+		{
+			backoffRetryTime = (int) pow(2, c) -1;
+		}
+
+		WebcfgInfo("New backoffRetryTime value calculated as %d seconds\n", backoffRetryTime);
+		connStatus = getMqttCMConnStatus();
+		if(connStatus)
+		{
+			WebcfgDebug("MQTTCM broker is connected, proceed further\n");
+			break;
+		}
+		else
+		{
+			WebcfgError("MQTTCM broker is not connected, waiting..\n");
+			sleep(backoffRetryTime);
+			c++;
+
+			if(backoffRetryTime == max_retry_sleep)
+			{
+				c = 2;
+				backoffRetryTime = 0;
+				WebcfgInfo("backoffRetryTime reached max value, reseting to initial value\n");
+			}
+		}
+	}
+}
+
 rbusError_t mqttSubscribeInit()
 {
 	rbusError_t ret = RBUS_ERROR_BUS_ERROR;
@@ -310,7 +318,7 @@ static void webcfgSubscribeCallbackHandler(
 		if(!bootupsync)
 		{
 			WebcfgInfo("mqtt is connected and subscribed to topic, trigger bootup sync to cloud.\n");
-			int ret = triggerBootupSync();
+			int ret = triggerMqttSync();
 			if(ret)
 			{
 				WebcfgInfo("Triggered bootup sync via mqtt\n");
@@ -326,7 +334,7 @@ static void webcfgSubscribeCallbackHandler(
     (void)handle;
 }
 
-int triggerBootupSync()
+int triggerMqttSync()
 {
 	char *mqttheaderList = NULL;
 	mqttheaderList = (char *) malloc(sizeof(char) * 1024);
@@ -1227,6 +1235,8 @@ int processPayload(char * data, int dataSize)
 		ptr_count++;
 	}
 
+	ptr_count = data_body;
+	ptr1_count = data_body;
 	while((ptr_count - data_body) < dataSize )
 	{
 		ptr_count = memchr(ptr_count, 'C', dataSize - (ptr_count - data_body));

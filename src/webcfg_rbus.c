@@ -37,7 +37,7 @@ time_t start_time;
 int force_reset_call_count=0;
 
 
-static rbusHandle_t rbus_handle;
+rbusHandle_t rbus_handle;
 
 static bool  RfcVal = false ;
 static char* URLVal = NULL ;
@@ -1413,7 +1413,7 @@ DATA_TYPE mapRbusToWdmpDataType(rbusValueType_t rbusType)
 	return wdmp_type;
 }
 
-static rbusValueType_t mapWdmpToRbusDataType(DATA_TYPE wdmpType)
+rbusValueType_t mapWdmpToRbusDataType(DATA_TYPE wdmpType)
 {
 	rbusValueType_t rbusType = RBUS_NONE;
 
@@ -2169,6 +2169,19 @@ int subscribeTo_CurrentActiveInterface_Event()
 /*Trigger force sync with cloud from webconfig client.*/
 void trigger_webcfg_forcedsync()
 {
+#ifdef FEATURE_SUPPORT_MQTTCM
+	checkMqttConnStatus();
+	WebcfgInfo("mqtt is connected after wan restart event, trigger sync with cloud.\n");
+	int ret = triggerMqttSync();
+	if(ret)
+	{
+		WebcfgInfo("Triggered sync via mqtt\n");
+	}
+	else
+	{
+		WebcfgError("Failed to trigger sync via mqtt\n");
+	}
+#else
 	char *str = NULL;
 	int status = 0;
 
@@ -2179,6 +2192,7 @@ void trigger_webcfg_forcedsync()
 	set_rbus_ForceSync(str, &status);
 	WEBCFG_FREE(str);
 	str=NULL;
+#endif
 }
 
 /* Enables rbus ERROR level logs in webconfig. Modify RBUS_LOG_ERROR check if more debug logs are needed from rbus. */
