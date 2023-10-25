@@ -330,6 +330,7 @@ target_link_libraries (test_notify -lcunit -lmsgpackc -lcimplog -ltrower-base64 
  
 target_link_libraries (test_notify gcov -Wl,--no-as-needed )
 
+
 # Code coverage
 
 add_custom_target(coverage
@@ -361,6 +362,7 @@ COMMAND lcov -q --capture --directory
 ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/test_timer.dir/__/src --output-file test_timer.info
 COMMAND lcov -q --capture --directory 
 ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/test_notify.dir/__/src --output-file test_notify.info
+
 
 COMMAND lcov
 -a test_events_supp.info
