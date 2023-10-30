@@ -26,12 +26,13 @@
 /*----------------------------------------------------------------------------*/
 #define MAX_BUF_SIZE	           256
 #define MAX_PARAMETERNAME_LENGTH       512
-#define BACKOFF_SLEEP_DELAY_SEC 	    10
 
 #ifdef BUILD_YOCTO
 #define DEVICE_PROPS_FILE       "/etc/device.properties"
+#define BACKOFF_SLEEP_DELAY_SEC 	    10
 #else
 #define DEVICE_PROPS_FILE       "/tmp/device.properties"
+#define BACKOFF_SLEEP_DELAY_SEC 	    1
 #endif
 
 #define WEBCFG_FREE(__x__) if(__x__ != NULL) { free((void*)(__x__)); __x__ = NULL;} else {printf("Trying to free null pointer\n");}
@@ -99,6 +100,7 @@ int get_global_webcfg_forcedsync_started();
 void initWebConfigMultipartTask(unsigned long status);
 void processWebconfgSync(int Status, char* docname);
 WEBCFG_STATUS webcfg_http_request(char **configData, int r_count, int status, long *code, char **transaction_id,char* contentType, size_t* dataSize, char* docname);
+int handlehttpResponse(long response_code, char *webConfigData, int retry_count, char* transaction_uuid, char* ct, size_t dataSize);
 
 void webcfgStrncpy(char *destStr, const char *srcStr, size_t destSize);
 

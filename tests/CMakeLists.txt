@@ -331,6 +331,25 @@ target_link_libraries (test_notify -lcunit -lmsgpackc -lcimplog -ltrower-base64 
 target_link_libraries (test_notify gcov -Wl,--no-as-needed )
 
 #-------------------------------------------------------------------------------
+#   test_webcfg
+#-------------------------------------------------------------------------------
+add_test(NAME test_webcfg COMMAND ${MEMORY_CHECK} ./test_webcfg)
+set(SOURCES test_webcfg.c ../src/webcfg_param.c ../src/webcfg_multipart.c ../src/webcfg_helpers.c ../src/webcfg.c ../src/webcfg_auth.c ../src/webcfg_notify.c ../src/webcfg_db.c ../src/webcfg_pack.c ../src/webcfg_blob.c ../src/webcfg_metadata.c ../src/webcfg.c ../src/webcfg_generic_pc.c ../src/webcfg_timer.c)
+
+if (WEBCONFIG_BIN_SUPPORT)
+set(SOURCES ${SOURCES} ../src/webcfg_rbus.c)
+endif (WEBCONFIG_BIN_SUPPORT)
+
+add_executable(test_webcfg ${SOURCES})
+target_link_libraries (test_webcfg -lcunit -lwrp-c -lcimplog -lmsgpackc -lcurl -lpthread  -lm -luuid -ltrower-base64 -lwdmp-c -lcjson -lcmocka)
+
+if (WEBCONFIG_BIN_SUPPORT)
+target_link_libraries (test_webcfg -lrbus)
+endif (WEBCONFIG_BIN_SUPPORT)
+
+target_link_libraries (test_webcfg gcov -Wl,--no-as-needed )
+
+#-------------------------------------------------------------------------------
 #   test_generic
 #-------------------------------------------------------------------------------
 add_test(NAME test_generic_pc COMMAND ${MEMORY_CHECK} ./test_generic_pc)
@@ -374,6 +393,8 @@ COMMAND lcov -q --capture --directory
 ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/test_timer.dir/__/src --output-file test_timer.info
 COMMAND lcov -q --capture --directory 
 ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/test_notify.dir/__/src --output-file test_notify.info
+COMMAND lcov -q --capture --directory
+${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/test_webcfg.dir/__/src --output-file test_webcfg.info
 COMMAND lcov -q --capture --directory 
 ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/test_generic.dir/__/src --output-file test_generic_pc.info
 
@@ -393,6 +414,7 @@ COMMAND lcov
 -a test_rbus_fr.info
 -a test_timer.info
 -a test_notify.info
+-a test_webcfg.info
 -a test_generic_pc.info
 --output-file coverage.info
 
