@@ -59,7 +59,7 @@ endif (FEATURE_SUPPORT_AKER)
 #-------------------------------------------------------------------------------
 add_test(NAME test_webcfgparam COMMAND ${MEMORY_CHECK} ./test_webcfgparam)
 add_executable(test_webcfgparam test_webcfgparam.c ../src/webcfg_param.c ../src/webcfg_helpers.c)
-target_link_libraries (test_webcfgparam -lcunit -lmsgpackc -lcimplog)
+target_link_libraries (test_webcfgparam -lcunit -lmsgpackc -lcimplog -lcjson)
 
 target_link_libraries (test_webcfgparam gcov -Wl,--no-as-needed )
 
