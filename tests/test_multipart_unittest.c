@@ -29,6 +29,7 @@
 #include <unistd.h>
 #include <CUnit/Basic.h>
 #include <wdmp-c.h>
+#include <cmocka.h>
 
 #include "../src/webcfg_log.h"
 #include "../src/webcfg_param.h"
@@ -51,6 +52,14 @@ int numLoops;
 
 #define MAX_HEADER_LEN	4096
 #define UNUSED(x) (void )(x)
+
+
+struct mock_token_data {
+    size_t size;
+    char* data;
+};
+
+struct mock_token_data mock_data;
 
 char device_mac[32] = {'\0'};
 
@@ -186,7 +195,16 @@ void test_createHeader(){
 	CU_ASSERT_PTR_NOT_NULL(curl);
 	createCurlHeader(list, &headers_list, status, &transID, &subdoclist);
 	CU_ASSERT_PTR_NOT_NULL(transID);
-	CU_ASSERT_PTR_NOT_NULL(headers_list);		
+	CU_ASSERT_PTR_NOT_NULL(headers_list);
+
+	//success case
+	setsupportedDocs("00000001000000000000000000000001");
+	setsupportedVersion("1234-v0");	
+	set_global_supplementarySync(1);
+	setsupplementaryDocs("telemetry");
+	createCurlHeader(list, &headers_list, status, &transID, &subdoclist);
+	CU_ASSERT_PTR_NOT_NULL(transID);
+	CU_ASSERT_PTR_NOT_NULL(headers_list);
 }
 
 
@@ -223,9 +241,7 @@ void test_checkRootUpdate(){
 		WEBCFG_FREE(tmpData->error_details);
 		WEBCFG_FREE(tmpData);
 	}
-
 }
-
 
 void test_checkDBList(){
 	char *root_str = strdup("factory-reset");
@@ -632,6 +648,232 @@ void test_get_multipartdoc_count(){
 	CU_ASSERT_FATAL( NULL == get_global_mp() );
 }
 
+void test_parseMultipartDocument_ValidBoundary() {
+    WEBCFG_STATUS result;
+    const char config_data[] = "HTTP 200 OK\nContent-Type: multipart/mixed; boundary=+CeB5yCWds7LeVP4oibmKefQ091Vpt2x4g99cJfDCmXpFxt5d\nEtag: 345431215\n\n--+CeB5yCWds7LeVP4oibmKefQ091Vpt2x4g99cJfDCmXpFxt5d\nContent-type: application/msgpack\nEtag: 2132354\nNamespace: moca\nparameter: somedata\n--+CeB5yCWds7LeVP4oibmKefQ091Vpt2x4g99cJfDCmXpFxt5d--";
+    size_t data_size = strlen(config_data);
+    char ct[] = "Content-Type: multipart/mixed; boundary=+CeB5yCWds7LeVP4oibmKefQ091Vpt2x4g99cJfDCmXpFxt5d";
+    char *trans_uuid = strdup("1234");
+    char *config_data_copy = (char *)malloc(data_size + 1);
+
+    if (config_data_copy != NULL) {
+        strcpy(config_data_copy, config_data);
+        result = parseMultipartDocument(config_data_copy, ct, data_size, trans_uuid);
+        CU_ASSERT_EQUAL(result, WEBCFG_FAILURE);
+    } else {
+        CU_FAIL("Memory allocation for config_data_copy (valid boundary) failed");
+    }
+}
+
+void test_loadInitURLFromFile()
+{
+	//URL value NULL
+	char *data="";
+	char *web_url;
+	writeToDBFile(DEVICE_PROPS_FILE,data,strlen(data));
+	loadInitURLFromFile(&web_url);
+	printf("The value of url is %s",web_url);
+	//CU_ASSERT_PTR_NULL(web_url);
+
+	//URL value not NULL
+	data = "WEBCONFIG_INIT_URL=tcp://112.1.1.1:4444 ";
+	writeToDBFile(DEVICE_PROPS_FILE,data,strlen(data));
+	loadInitURLFromFile(&web_url);
+	CU_ASSERT_STRING_EQUAL("tcp://112.1.1.1:4444", web_url);
+}
+
+void test_failedDocsRetry()
+{
+	multipartdocs_t *multipartdocs = (multipartdocs_t *)malloc(sizeof(multipartdocs_t));
+	multipartdocs->name_space = strdup("moca");
+	multipartdocs->data = (char* )malloc(64);
+	multipartdocs->isSupplementarySync = 0;
+	multipartdocs->next = NULL;
+	set_global_mp(multipartdocs);
+	//checkRetryTimer returns true
+	webconfig_tmp_data_t *tmpData = (webconfig_tmp_data_t *)malloc(sizeof(webconfig_tmp_data_t));
+	tmpData->name = strdup("moca");
+	tmpData->version = 1234;
+	tmpData->status = strdup("success");
+	tmpData->trans_id = 4104;
+	tmpData->retry_count = 0;
+	tmpData->error_code = 192;
+	tmpData->error_details = strdup("none");
+	tmpData->retry_timestamp = 1;
+	tmpData->next = NULL;
+	set_global_tmp_node(tmpData);
+
+	//subdoc set fails
+	failedDocsRetry();
+	CU_ASSERT_STRING_EQUAL("moca",tmpData->name);
+
+	//retry skip
+	failedDocsRetry();
+	printf("The value is %s",tmpData->error_details);
+	CU_ASSERT_PTR_NOT_NULL(tmpData->error_details);
+
+}
+
+void test_getRootDocVersionFromDBCache()
+{
+	uint32_t expected_version;
+    char *expected_string;
+    int expected_subdoclist;
+
+	uint32_t rt_version;
+    char *rt_string = NULL;
+    int subdoclist = 0;
+    char *rootstr = strdup("factory-reset");
+	uint32_t version = 1234;
+	updateDBlist("root", version, rootstr);
+    getRootDocVersionFromDBCache(&rt_version, &rt_string, &subdoclist);
+
+	expected_version = version;
+	expected_string = rootstr;
+	expected_subdoclist = 1;
+
+	CU_ASSERT(rt_version == expected_version);
+    CU_ASSERT_STRING_EQUAL(rt_string, expected_string);
+    CU_ASSERT_EQUAL(subdoclist, expected_subdoclist);
+}
+
+void test_lineparser()
+{
+	char *name_space = NULL;
+    uint32_t etag = 0;
+    char *data = NULL;
+    size_t data_size = 0;
+	char input[100] = "Content-type: application/msgpack";
+
+	//content type as msgpack
+	line_parser(input, sizeof(input), &name_space, &etag, &data, &data_size);
+
+	//content type not msgpack
+	strcpy(input, "Content-type: application/");
+	line_parser(input, sizeof(input), &name_space, &etag, &data, &data_size);
+
+	//proper name
+	strcpy(input, "Namespace: blob");
+	line_parser(input, sizeof(input), &name_space, &etag, &data, &data_size);
+	CU_ASSERT_STRING_EQUAL(name_space, "blob");
+
+	//proper etag
+	strcpy(input, "Etag: 2132354");
+	line_parser(input, sizeof(input), &name_space, &etag, &data, &data_size);
+    CU_ASSERT_EQUAL(etag, 2132354);
+
+	//parameter 
+	strcpy(input, "ªparameters: somedata");
+	line_parser(input, sizeof(input), &name_space, &etag, &data, &data_size);
+
+    CU_ASSERT_PTR_NOT_NULL(data);
+    CU_ASSERT_EQUAL(data_size, sizeof(input));
+}
+
+void test_subdoc_parser()
+{
+	set_global_mp(NULL);
+	//Proper values
+	char *input_data = "Content-type: application/msgpack\nNamespace: blob\nEtag: 12345\nparameters: somedata\nThis is the end of it\n";
+	int no_of_bytes = strlen(input_data);
+	subdoc_parser(input_data, no_of_bytes);
+
+	CU_ASSERT_PTR_NOT_NULL(get_global_mp());
+
+	//NULL etag and namespace
+	input_data = "Content-type: application/msgpack\nNamespace: NULL\nEtag: 0\nparameters: somedata\nThis is the end of it\n";
+	no_of_bytes = strlen(input_data);
+	subdoc_parser(input_data, no_of_bytes);
+	CU_ASSERT_PTR_NOT_NULL(get_global_mp());
+}
+
+void test_stripspaces() 
+{
+	char input1[] = "This is a test"; // No spaces, newlines, or carriage returns
+    char input2[] = "This\nis a\rtest"; // Contains newlines and carriage returns
+    char input3[] = " Remove   spaces "; // Contains extra spaces
+
+	char *result1 = NULL;
+    char *result2 = NULL;
+    char *result3 = NULL;
+
+	// Test with input1
+    stripspaces(input1, &result1);
+    CU_ASSERT_STRING_EQUAL(result1, "Thisisatest");
+
+    // Test with input2
+    stripspaces(input2, &result2);
+    CU_ASSERT_STRING_EQUAL(result2, "Thisisatest");
+
+    // Test with input3
+    stripspaces(input3, &result3);
+    CU_ASSERT_STRING_EQUAL(result3, "Removespaces");
+}
+
+void test_get_webCfg_interface()
+{
+	char *data = "WEBCONFIG_INTERFACE=erouter0 ";
+	char *interface = NULL;
+	writeToDBFile(DEVICE_PROPS_FILE,data,strlen(data));
+
+	get_webCfg_interface(&interface);
+	CU_ASSERT_PTR_NOT_NULL(interface);
+    CU_ASSERT_STRING_EQUAL(interface, "erouter0");
+}
+
+void test_headr_callback()
+{
+	char buffer[100] = "Etag: 2132354";
+	size_t size = strlen(buffer);
+	size_t nitems = 15;
+	void* data = NULL;
+	set_global_contentLen(NULL);
+
+	size_t result = headr_callback(buffer, size, nitems, data);
+	CU_ASSERT_EQUAL(result, nitems);
+	CU_ASSERT_PTR_NULL(get_global_contentLen());
+
+	char *content = get_global_contentLen();
+	printf("The value is %s\n",content);
+
+	strcpy(buffer,"Content-Length: 1052");
+	size = strlen(buffer);
+	result = headr_callback(buffer, size, nitems, data);
+	CU_ASSERT_EQUAL(result, nitems);
+	CU_ASSERT_PTR_NOT_NULL(get_global_contentLen());
+	CU_ASSERT_STRING_EQUAL(get_global_contentLen(), "1052");
+}
+
+void test_writer_callback_fn() 
+{
+	mock_data.size = 0;
+	mock_data.data = NULL;
+	char buffer[] = "Hello, World!";
+	size_t size = sizeof(char);
+	size_t nmemb = strlen(buffer);
+
+	size_t result = writer_callback_fn(buffer, size, nmemb, &mock_data);
+	CU_ASSERT_EQUAL(result, nmemb);
+	CU_ASSERT_EQUAL(mock_data.size, nmemb);
+}
+
+void test_refreshConfigVersionList() 
+{
+    char versionsList[512];
+    char docsList[512];
+	int http_status = 200;
+	refreshConfigVersionList(versionsList, http_status, docsList);
+	CU_ASSERT_PTR_NOT_NULL(get_global_db_node);
+}
+
+void test_processMsgpackSubdoc()
+{
+	char *transaction_id = strdup("1234");
+	WEBCFG_STATUS result;
+	result = processMsgpackSubdoc(transaction_id);
+	CU_ASSERT_EQUAL(result, WEBCFG_FAILURE);
+}
+
 void add_suites( CU_pSuite *suite )
 {
     *suite = CU_add_suite( "tests", NULL, NULL );
@@ -677,6 +919,18 @@ void add_suites( CU_pSuite *suite )
       CU_add_test( *suite, "test  addToMpList", test_addToMpList);
       CU_add_test( *suite, "test  delete_mp_doc", test_delete_mp_doc);
       CU_add_test( *suite, "test  get_multipartdoc_count", test_get_multipartdoc_count);
+	  CU_add_test( *suite, "test  parseMultipartDocument_ValidBoundary", test_parseMultipartDocument_ValidBoundary);
+	  CU_add_test( *suite, "test loadInitURLFromFile", test_loadInitURLFromFile);
+	  CU_add_test( *suite, "test failedDocsRetry", test_failedDocsRetry);
+	  CU_add_test( *suite, "test getRootDocVersionFromDBCache", test_getRootDocVersionFromDBCache);
+	  CU_add_test( *suite, "test lineparser", test_lineparser);
+	  CU_add_test( *suite, "test subdoc_parser", test_subdoc_parser);
+	  CU_add_test( *suite, "test stripspaces", test_stripspaces);
+	  CU_add_test( *suite, "test get_webCfg_interface", test_get_webCfg_interface);
+	  CU_add_test( *suite, "test headr_callback", test_headr_callback);  
+	  CU_add_test( *suite, "test writer_callback_fn", test_writer_callback_fn);  
+	  CU_add_test( *suite, "test refreshConfigVersionList", test_refreshConfigVersionList);
+	  CU_add_test( *suite, "test processMsgpackSubdoc", test_processMsgpackSubdoc);
 }
 
 /*----------------------------------------------------------------------------*/
