@@ -435,7 +435,7 @@ void test_set_global_ETAG(){
 }
 
 void test_get_global_ETAG(){
-	printf("etag is %s\n", get_global_ETAG());
+	WebcfgDebug("etag is %s\n", get_global_ETAG());
 	CU_ASSERT_FATAL( NULL != get_global_ETAG() );
 }
 
@@ -445,7 +445,7 @@ void test_set_global_transID(){
 }
 
 void test_get_global_transID(){
-	printf("transID is %s\n", get_global_transID());
+	WebcfgDebug("transID is %s\n", get_global_transID());
 	CU_ASSERT_FATAL( NULL != get_global_transID() );
 }
 void test_set_global_contentLen(){
@@ -454,7 +454,7 @@ void test_set_global_contentLen(){
 }
 
 void test_get_global_contentLen(){
-	printf("contentLen is %s\n", get_global_contentLen());
+	WebcfgDebug("contentLen is %s\n", get_global_contentLen());
 	CU_ASSERT_FATAL( NULL != get_global_contentLen() );
 }
 void test_set_global_eventFlag(){
@@ -463,7 +463,7 @@ void test_set_global_eventFlag(){
 }
 
 void test_get_global_eventFlag(){
-	printf("eventFlag is %d\n", get_global_eventFlag());
+	WebcfgDebug("eventFlag is %d\n", get_global_eventFlag());
 	CU_ASSERT_FATAL( 0 != get_global_eventFlag() );
 }
 
@@ -479,7 +479,7 @@ void test_set_global_interface(){
 }
 
 void test_get_global_interface(){
-	printf("interface is %s\n", get_global_interface());
+	WebcfgDebug("interface is %s\n", get_global_interface());
 	CU_ASSERT_FATAL( NULL != get_global_interface() );
 }
 #endif
@@ -650,7 +650,7 @@ void test_get_multipartdoc_count(){
 
 void test_parseMultipartDocument_ValidBoundary() {
     WEBCFG_STATUS result;
-    const char config_data[] = "HTTP 200 OK\nContent-Type: multipart/mixed; boundary=+CeB5yCWds7LeVP4oibmKefQ091Vpt2x4g99cJfDCmXpFxt5d\nEtag: 345431215\n\n--+CeB5yCWds7LeVP4oibmKefQ091Vpt2x4g99cJfDCmXpFxt5d\nContent-type: application/msgpack\nEtag: 2132354\nNamespace: moca\nparameter: somedata\n--+CeB5yCWds7LeVP4oibmKefQ091Vpt2x4g99cJfDCmXpFxt5d--";
+    const char config_data[] = "HTTP 200 OK\nContent-Type: multipart/mixed; boundary=+CeB5yCWds7LeVP4oibmKefQ091Vpt2x4g99cJfDCmXpFxt5d\nEtag: 345431215\n\n--+CeB5yCWds7LeVP4oibmKefQ091Vpt2x4g99cJfDCmXpFxt5d\nContent-type: application/msgpack\nEtag: 2132354\nNamespace: value\nparameter: somedata\n--+CeB5yCWds7LeVP4oibmKefQ091Vpt2x4g99cJfDCmXpFxt5d--";
     size_t data_size = strlen(config_data);
     char ct[] = "Content-Type: multipart/mixed; boundary=+CeB5yCWds7LeVP4oibmKefQ091Vpt2x4g99cJfDCmXpFxt5d";
     char *trans_uuid = strdup("1234");
@@ -669,17 +669,19 @@ void test_loadInitURLFromFile()
 {
 	//URL value NULL
 	char *data="";
-	char *web_url;
+	char *web_url = NULL;
 	writeToDBFile(DEVICE_PROPS_FILE,data,strlen(data));
 	loadInitURLFromFile(&web_url);
-	printf("The value of url is %s",web_url);
-	//CU_ASSERT_PTR_NULL(web_url);
+	CU_ASSERT_PTR_NULL(web_url);
 
 	//URL value not NULL
-	data = "WEBCONFIG_INIT_URL=tcp://112.1.1.1:4444 ";
+	data = "WEBCONFIG_INIT_URL=tcp://https://test ";
 	writeToDBFile(DEVICE_PROPS_FILE,data,strlen(data));
 	loadInitURLFromFile(&web_url);
-	CU_ASSERT_STRING_EQUAL("tcp://112.1.1.1:4444", web_url);
+	CU_ASSERT_STRING_EQUAL("tcp://https://test", web_url);
+	if (remove(DEVICE_PROPS_FILE) != 0) {
+    		WebcfgError("Failed to remove file");
+	}
 }
 
 void test_failedDocsRetry()
@@ -709,7 +711,6 @@ void test_failedDocsRetry()
 
 	//retry skip
 	failedDocsRetry();
-	printf("The value is %s",tmpData->error_details);
 	CU_ASSERT_PTR_NOT_NULL(tmpData->error_details);
 
 }
@@ -717,32 +718,32 @@ void test_failedDocsRetry()
 void test_getRootDocVersionFromDBCache()
 {
 	uint32_t expected_version;
-    char *expected_string;
-    int expected_subdoclist;
+    	char *expected_string;
+     	int expected_subdoclist;
 
 	uint32_t rt_version;
-    char *rt_string = NULL;
-    int subdoclist = 0;
-    char *rootstr = strdup("factory-reset");
+    	char *rt_string = NULL;
+     	int subdoclist = 0;
+    	char *rootstr = strdup("factory-reset");
 	uint32_t version = 1234;
 	updateDBlist("root", version, rootstr);
-    getRootDocVersionFromDBCache(&rt_version, &rt_string, &subdoclist);
+    	getRootDocVersionFromDBCache(&rt_version, &rt_string, &subdoclist);
 
 	expected_version = version;
 	expected_string = rootstr;
 	expected_subdoclist = 1;
 
 	CU_ASSERT(rt_version == expected_version);
-    CU_ASSERT_STRING_EQUAL(rt_string, expected_string);
-    CU_ASSERT_EQUAL(subdoclist, expected_subdoclist);
+     	CU_ASSERT_STRING_EQUAL(rt_string, expected_string);  
+      	CU_ASSERT_EQUAL(subdoclist, expected_subdoclist);
 }
 
 void test_lineparser()
 {
 	char *name_space = NULL;
-    uint32_t etag = 0;
-    char *data = NULL;
-    size_t data_size = 0;
+    	uint32_t etag = 0;
+    	char *data = NULL;
+    	size_t data_size = 0;
 	char input[100] = "Content-type: application/msgpack";
 
 	//content type as msgpack
@@ -760,14 +761,14 @@ void test_lineparser()
 	//proper etag
 	strcpy(input, "Etag: 2132354");
 	line_parser(input, sizeof(input), &name_space, &etag, &data, &data_size);
-    CU_ASSERT_EQUAL(etag, 2132354);
+    	CU_ASSERT_EQUAL(etag, 2132354);
 
 	//parameter 
 	strcpy(input, "ªparameters: somedata");
 	line_parser(input, sizeof(input), &name_space, &etag, &data, &data_size);
 
-    CU_ASSERT_PTR_NOT_NULL(data);
-    CU_ASSERT_EQUAL(data_size, sizeof(input));
+    	CU_ASSERT_PTR_NOT_NULL(data);
+      	CU_ASSERT_EQUAL(data_size, sizeof(input));
 }
 
 void test_subdoc_parser()
@@ -790,35 +791,38 @@ void test_subdoc_parser()
 void test_stripspaces() 
 {
 	char input1[] = "This is a test"; // No spaces, newlines, or carriage returns
-    char input2[] = "This\nis a\rtest"; // Contains newlines and carriage returns
-    char input3[] = " Remove   spaces "; // Contains extra spaces
+    	char input2[] = "This\nis a\rtest"; // Contains newlines and carriage returns
+    	char input3[] = " Remove   spaces "; // Contains extra spaces
 
 	char *result1 = NULL;
-    char *result2 = NULL;
-    char *result3 = NULL;
+    	char *result2 = NULL;
+    	char *result3 = NULL;
 
 	// Test with input1
-    stripspaces(input1, &result1);
-    CU_ASSERT_STRING_EQUAL(result1, "Thisisatest");
+	stripspaces(input1, &result1);
+	CU_ASSERT_STRING_EQUAL(result1, "Thisisatest");
 
-    // Test with input2
-    stripspaces(input2, &result2);
-    CU_ASSERT_STRING_EQUAL(result2, "Thisisatest");
+    	// Test with input2
+	stripspaces(input2, &result2);
+    	CU_ASSERT_STRING_EQUAL(result2, "Thisisatest");
 
-    // Test with input3
-    stripspaces(input3, &result3);
-    CU_ASSERT_STRING_EQUAL(result3, "Removespaces");
+	// Test with input3
+    	stripspaces(input3, &result3);
+    	CU_ASSERT_STRING_EQUAL(result3, "Removespaces");
 }
 
 void test_get_webCfg_interface()
 {
-	char *data = "WEBCONFIG_INTERFACE=erouter0 ";
+	char *data = "WEBCONFIG_INTERFACE=eth0 ";
 	char *interface = NULL;
 	writeToDBFile(DEVICE_PROPS_FILE,data,strlen(data));
 
 	get_webCfg_interface(&interface);
 	CU_ASSERT_PTR_NOT_NULL(interface);
-    CU_ASSERT_STRING_EQUAL(interface, "erouter0");
+	CU_ASSERT_STRING_EQUAL(interface, "eth0");
+	if (remove(DEVICE_PROPS_FILE) != 0) {
+    		WebcfgError("Failed to remove file");
+	}
 }
 
 void test_headr_callback()
@@ -834,8 +838,7 @@ void test_headr_callback()
 	CU_ASSERT_PTR_NULL(get_global_contentLen());
 
 	char *content = get_global_contentLen();
-	printf("The value is %s\n",content);
-
+	WebcfgDebug("The content length is %s\n",content);
 	strcpy(buffer,"Content-Length: 1052");
 	size = strlen(buffer);
 	result = headr_callback(buffer, size, nitems, data);
@@ -859,8 +862,8 @@ void test_writer_callback_fn()
 
 void test_refreshConfigVersionList() 
 {
-    char versionsList[512];
-    char docsList[512];
+    	char versionsList[512];
+    	char docsList[512];
 	int http_status = 200;
 	refreshConfigVersionList(versionsList, http_status, docsList);
 	CU_ASSERT_PTR_NOT_NULL(get_global_db_node);
@@ -919,18 +922,18 @@ void add_suites( CU_pSuite *suite )
       CU_add_test( *suite, "test  addToMpList", test_addToMpList);
       CU_add_test( *suite, "test  delete_mp_doc", test_delete_mp_doc);
       CU_add_test( *suite, "test  get_multipartdoc_count", test_get_multipartdoc_count);
-	  CU_add_test( *suite, "test  parseMultipartDocument_ValidBoundary", test_parseMultipartDocument_ValidBoundary);
-	  CU_add_test( *suite, "test loadInitURLFromFile", test_loadInitURLFromFile);
-	  CU_add_test( *suite, "test failedDocsRetry", test_failedDocsRetry);
-	  CU_add_test( *suite, "test getRootDocVersionFromDBCache", test_getRootDocVersionFromDBCache);
-	  CU_add_test( *suite, "test lineparser", test_lineparser);
-	  CU_add_test( *suite, "test subdoc_parser", test_subdoc_parser);
-	  CU_add_test( *suite, "test stripspaces", test_stripspaces);
-	  CU_add_test( *suite, "test get_webCfg_interface", test_get_webCfg_interface);
-	  CU_add_test( *suite, "test headr_callback", test_headr_callback);  
-	  CU_add_test( *suite, "test writer_callback_fn", test_writer_callback_fn);  
-	  CU_add_test( *suite, "test refreshConfigVersionList", test_refreshConfigVersionList);
-	  CU_add_test( *suite, "test processMsgpackSubdoc", test_processMsgpackSubdoc);
+      CU_add_test( *suite, "test  parseMultipartDocument_ValidBoundary", test_parseMultipartDocument_ValidBoundary);
+      CU_add_test( *suite, "test loadInitURLFromFile", test_loadInitURLFromFile);
+      CU_add_test( *suite, "test failedDocsRetry", test_failedDocsRetry);
+      CU_add_test( *suite, "test getRootDocVersionFromDBCache", test_getRootDocVersionFromDBCache);
+      CU_add_test( *suite, "test lineparser", test_lineparser);
+      CU_add_test( *suite, "test subdoc_parser", test_subdoc_parser);
+      CU_add_test( *suite, "test stripspaces", test_stripspaces);
+      CU_add_test( *suite, "test get_webCfg_interface", test_get_webCfg_interface);
+      CU_add_test( *suite, "test headr_callback", test_headr_callback);  
+      CU_add_test( *suite, "test writer_callback_fn", test_writer_callback_fn);  
+      CU_add_test( *suite, "test refreshConfigVersionList", test_refreshConfigVersionList);
+      CU_add_test( *suite, "test processMsgpackSubdoc", test_processMsgpackSubdoc);
 }
 
 /*----------------------------------------------------------------------------*/
@@ -950,9 +953,9 @@ int main( int argc, char *argv[] )
         if( NULL != suite ) {
             CU_basic_set_mode( CU_BRM_VERBOSE );
             CU_basic_run_tests();
-            printf( "\n" );
+            WebcfgDebug( "\n" );
             CU_basic_show_failures( CU_get_failure_list() );
-            printf( "\n\n" );
+            WebcfgDebug( "\n\n" );
             rv = CU_get_number_of_tests_failed();
         }
 
