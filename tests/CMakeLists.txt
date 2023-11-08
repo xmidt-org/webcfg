@@ -185,7 +185,7 @@ target_link_libraries (test_events_supp gcov -Wl,--no-as-needed )
 #-------------------------------------------------------------------------------
 #   test_webcfgevents
 #-------------------------------------------------------------------------------
-add_test(NAME test_webcfgevents COMMAND ${MEMORY_CHECK} ./testwebcfg_events)
+add_test(NAME test_webcfgevents COMMAND ${MEMORY_CHECK} ./test_webcfgevents)
 set(SOURCES test_webcfgevents.c ../src/webcfg_param.c ../src/webcfg_multipart.c ../src/webcfg_helpers.c ../src/webcfg.c ../src/webcfg_auth.c ../src/webcfg_notify.c ../src/webcfg_db.c ../src/webcfg_pack.c ../src/webcfg_blob.c ../src/webcfg_event.c ../src/webcfg_generic_pc.c ../src/webcfg_metadata.c ../src/webcfg_timer.c )
 
 if (WEBCONFIG_BIN_SUPPORT)
