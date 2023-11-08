@@ -180,6 +180,36 @@ target_link_libraries (test_events_supp -llibparodus -lnanomsg)
 endif (FEATURE_SUPPORT_AKER)
 
 target_link_libraries (test_events_supp gcov -Wl,--no-as-needed )
+
+
+#-------------------------------------------------------------------------------
+#   test_webcfgevents
+#-------------------------------------------------------------------------------
+add_test(NAME test_webcfgevents COMMAND ${MEMORY_CHECK} ./testwebcfg_events)
+set(SOURCES test_webcfgevents.c ../src/webcfg_param.c ../src/webcfg_multipart.c ../src/webcfg_helpers.c ../src/webcfg.c ../src/webcfg_auth.c ../src/webcfg_notify.c ../src/webcfg_db.c ../src/webcfg_pack.c ../src/webcfg_blob.c ../src/webcfg_event.c ../src/webcfg_generic_pc.c ../src/webcfg_metadata.c ../src/webcfg_timer.c )
+
+if (WEBCONFIG_BIN_SUPPORT)
+set(SOURCES ${SOURCES} ../src/webcfg_rbus.c)
+endif (WEBCONFIG_BIN_SUPPORT)
+
+if (FEATURE_SUPPORT_AKER)
+set(SOURCES ${SOURCES} ../src/webcfg_client.c ../src/webcfg_aker.c)
+endif (FEATURE_SUPPORT_AKER)
+
+add_executable(test_webcfgevents ${SOURCES})
+
+target_link_libraries (test_webcfgevents -lcunit -lmsgpackc -lcurl -lpthread  -lm -luuid -ltrower-base64 -lwdmp-c -lcimplog -lcjson -lwrp-c)
+
+if (WEBCONFIG_BIN_SUPPORT)
+target_link_libraries (test_webcfgevents -lrbus)
+endif (WEBCONFIG_BIN_SUPPORT)
+
+if (FEATURE_SUPPORT_AKER)
+target_link_libraries (test_webcfgevents -llibparodus -lnanomsg)
+endif (FEATURE_SUPPORT_AKER)
+
+target_link_libraries (test_webcfgevents gcov -Wl,--no-as-needed )
+
 #-------------------------------------------------------------------------------
 #   test_metadata
 #-------------------------------------------------------------------------------

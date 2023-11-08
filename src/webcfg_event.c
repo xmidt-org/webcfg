@@ -60,12 +60,8 @@ int checkWebcfgTimer();
 int addToEventQueue(char *buf);
 void sendSuccessNotification(webconfig_tmp_data_t *subdoc_node, char *name, uint32_t version, uint16_t txid);
 WEBCFG_STATUS startWebcfgTimer(expire_timer_t *timer_node, char *name, uint16_t transID, uint32_t timeout);
-WEBCFG_STATUS stopWebcfgTimer(expire_timer_t *temp, char *name, uint16_t trans_id);
 int checkTimerExpired (char **exp_doc);
 void createTimerExpiryEvent(char *docName, uint16_t transid);
-WEBCFG_STATUS updateTimerList(expire_timer_t *temp, int status, char *docname, uint16_t transid, uint32_t timeout);
-WEBCFG_STATUS deleteFromTimerList(char* doc_name);
-WEBCFG_STATUS checkDBVersion(char *docname, uint32_t version);
 WEBCFG_STATUS validateEvent(webconfig_tmp_data_t *temp, char *docname, uint16_t txid);
 expire_timer_t * getTimerNode(char *docname);
 void handleConnectedClientNotify(char *status);
@@ -98,6 +94,17 @@ expire_timer_t * get_global_timer_node(void)
     tmp = g_timer_head;
     pthread_mutex_unlock (&expire_timer_mut);
     return tmp;
+}
+void set_numOfEvents(int num)
+{
+    numOfEvents = num;
+}
+
+void set_global_timer_node(expire_timer_t * new)
+{
+    pthread_mutex_lock (&expire_timer_mut);
+    g_timer_head = new;
+    pthread_mutex_unlock (&expire_timer_mut);
 }	
 
 void free_event_params_struct(event_params_t *param)
@@ -797,12 +804,6 @@ WEBCFG_STATUS updateTimerList(expire_timer_t *temp, int status, char *docname, u
 			temp->running = status;
 			temp->txid = transid;
 			temp->timeout = timeout;
-			if(strcmp(temp->subdoc_name, docname) !=0)
-			{
-				WEBCFG_FREE(temp->subdoc_name);
-				temp->subdoc_name = NULL;
-				temp->subdoc_name = strdup(docname);
-			}
 			WebcfgInfo("doc timer %s is updated with txid %lu timeout %lu\n", docname, (long)temp->txid, (long)temp->timeout);
 			pthread_mutex_unlock (&expire_timer_mut);
 			return WEBCFG_SUCCESS;
