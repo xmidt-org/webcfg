@@ -20,6 +20,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdbool.h>
+#include <unistd.h>
 #include <cJSON.h>
 #include <wdmp-c.h>
 #include <wrp-c.h>
@@ -1410,6 +1411,106 @@ void test_subscribeTo_CurrentActiveInterface_Event()
 	rbus_close(handle);
 	webpaRbus_Uninit();
 }
+
+//WanMgr_Rbus_String_EventPublish_OnValueChange(): publish rbus events on value change
+rbusError_t WanMgr_Rbus_String_EventPublish_OnValueChange(rbusHandle_t rbusHandle,char *dm_event, void *prev_dm_value, void *dm_value)
+{
+    rbusEvent_t event;
+    rbusObject_t rdata;
+    rbusValue_t Value, preValue, byVal;
+	rbusError_t ret;
+    int rc = RBUS_ERROR_BUS_ERROR;
+
+    if(dm_event == NULL || dm_value == NULL)
+    {
+        WebcfgError("%s %d - Failed publishing\n", __FUNCTION__, __LINE__);
+        return rc;
+    }
+
+    rbusValue_Init(&Value);
+    rbusValue_SetString(Value, (char*)dm_value);
+
+    rbusValue_Init(&preValue);
+    rbusValue_SetString(preValue, (char*)prev_dm_value);
+
+    rbusValue_Init(&byVal);
+    rbusValue_SetString(byVal, "webcfg_unitest");
+
+    rbusObject_Init(&rdata, NULL);
+    rbusObject_SetValue(rdata, "value", Value);
+    rbusObject_SetValue(rdata, "oldValue", preValue);
+    rbusObject_SetValue(rdata, "by", byVal);
+
+    event.name = dm_event;
+    event.data = rdata;
+    event.type = RBUS_EVENT_VALUE_CHANGED;
+
+    WebcfgInfo("%s %d - dm_event[%s],prev_dm_value[%s],dm_value[%s]\n", __FUNCTION__, __LINE__, dm_event, (char*)prev_dm_value, (char*)dm_value);
+
+    if((ret = rbusEvent_Publish(rbusHandle, &event)) != RBUS_ERROR_SUCCESS)
+    {
+        WebcfgError("%s %d - Event [%s] published failed %d\n", __FUNCTION__, __LINE__,dm_event,ret);
+    }
+    else
+    {
+        WebcfgInfo("%s %d - Event [%s] published successfully\n", __FUNCTION__, __LINE__, dm_event);
+        rc = RBUS_ERROR_SUCCESS;
+    }
+
+    rbusValue_Release(Value);
+    rbusValue_Release(preValue);
+    rbusValue_Release(byVal);
+    rbusObject_Release(rdata);
+    return rc;
+}
+ //Event subscribe handler API for objects:
+rbusError_t WanMgr_Rbus_SubscribeHandler(rbusHandle_t handle, rbusEventSubAction_t action, const char *eventName, rbusFilter_t filter, int32_t interval, bool *autoPublish)
+{
+    (void)handle;
+    (void)filter;
+    (void)interval;
+
+    *autoPublish = false;
+
+    WebcfgInfo(("WanMgr_Rbus_SubscribeHandler called.\n"));
+
+    if (action == RBUS_EVENT_ACTION_SUBSCRIBE)
+    {
+        WebcfgInfo(" %s %d - %s Subscribed \n", __FUNCTION__, __LINE__, eventName);
+    }
+    else
+    {
+        WebcfgError(" %s %d - %s Unsubscribed \n", __FUNCTION__, __LINE__, eventName);
+    }
+    return RBUS_ERROR_SUCCESS;
+}
+
+void test_eventReceiveHandler()
+{
+	rbusDataElement_t wanMgrRbusDataElements[1] = {
+		{WEBCFG_INTERFACE_PARAM,  RBUS_ELEMENT_TYPE_PROPERTY, {NULL, NULL, NULL, NULL, WanMgr_Rbus_SubscribeHandler, NULL}}};		
+
+	int res = rbus_open(&handle, "providerComponent");
+    if(res != RBUS_ERROR_SUCCESS)
+	{
+		CU_FAIL("rbus_open failed for providerComponent");
+	}
+	rbusError_t ret = rbus_regDataElements(handle, 1, wanMgrRbusDataElements);
+	CU_ASSERT_EQUAL(ret, RBUS_ERROR_SUCCESS);
+	webconfigRbusInit(WEBCFG_COMPONENT_NAME);
+	int rc = RBUS_ERROR_SUCCESS;	
+	rc = subscribeTo_CurrentActiveInterface_Event();
+ 	WebcfgInfo(" subscribeTo_CurrentActiveInterface_Event : %d\n",rc);
+	sleep(1);
+	WanMgr_Rbus_String_EventPublish_OnValueChange(handle,WEBCFG_INTERFACE_PARAM,"eth1","eth2");
+	sleep(2);
+	printf("get_global_interface(): %s\n",get_global_interface());
+	CU_ASSERT_STRING_EQUAL(get_global_interface(),"eth2");
+	rbus_unregDataElements(handle, 1, wanMgrRbusDataElements);
+	rbus_close(handle);
+	rbusEvent_Unsubscribe(rbus_handle,WEBCFG_INTERFACE_PARAM);	
+	webpaRbus_Uninit();		
+}
 #endif
 
 void test_setValues_rbus()
@@ -1609,14 +1710,17 @@ void add_suites( CU_pSuite *suite )
      	CU_add_test( *suite, "test rbusWebcfgEventHandler", test_rbusWebcfgEventHandler);
      	CU_add_test( *suite, "test fetchMpBlobData", test_fetchMpBlobData);
      	CU_add_test( *suite, "test webcfg_util_method", test_webcfg_util_method);
-     	CU_add_test( *suite, "test webcfgSubdocForceResetSet_GetHandler", test_webcfgSubdocForceResetSet_GetHandler);
 	#ifdef WAN_FAILOVER_SUPPORTED
+     	CU_add_test( *suite, "test eventReceiveHandler", test_eventReceiveHandler);			
      	CU_add_test( *suite, "test subscribeTo_CurrentActiveInterface_Event", test_subscribeTo_CurrentActiveInterface_Event);
 	#endif
+     	CU_add_test( *suite, "test webcfgSubdocForceResetSet_GetHandler", test_webcfgSubdocForceResetSet_GetHandler);	
 	CU_add_test( *suite, "test setValues_rbus", test_setValues_rbus);
 	CU_add_test( *suite, "test getVlues_rbus", test_getVlues_rbus);
 	CU_add_test( *suite, "test sendNotification_rbus", test_sendNotification_rbus);
 	CU_add_test( *suite, "test blobSet_rbus", test_blobSet_rbus); 
+    	CU_add_test( *suite, "test registerRbusLogger", test_registerRbusLogger);
+    	CU_add_test( *suite, "test rbus_log_handler", test_rbus_log_handler);		
 }
 
 /*----------------------------------------------------------------------------*/
