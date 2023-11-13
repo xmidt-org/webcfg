@@ -364,7 +364,7 @@ target_link_libraries (test_notify gcov -Wl,--no-as-needed )
 #   test_webcfg
 #-------------------------------------------------------------------------------
 add_test(NAME test_webcfg COMMAND ${MEMORY_CHECK} ./test_webcfg)
-set(SOURCES test_webcfg.c ../src/webcfg_param.c ../src/webcfg_multipart.c ../src/webcfg_helpers.c ../src/webcfg.c ../src/webcfg_auth.c ../src/webcfg_notify.c ../src/webcfg_db.c ../src/webcfg_pack.c ../src/webcfg_blob.c ../src/webcfg_metadata.c ../src/webcfg.c ../src/webcfg_generic_pc.c ../src/webcfg_timer.c)
+set(SOURCES test_webcfg.c ../src/webcfg_param.c ../src/webcfg_multipart.c ../src/webcfg_helpers.c ../src/webcfg.c ../src/webcfg_auth.c ../src/webcfg_notify.c ../src/webcfg_db.c ../src/webcfg_pack.c ../src/webcfg_blob.c ../src/webcfg_metadata.c ../src/webcfg_generic_pc.c ../src/webcfg_timer.c ../src/webcfg_event.c)
 
 if (WEBCONFIG_BIN_SUPPORT)
 set(SOURCES ${SOURCES} ../src/webcfg_rbus.c)

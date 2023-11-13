@@ -24,12 +24,15 @@
 #include <cimplog.h>
 #include "../src/webcfg_db.h"
 #include "../src/webcfg_log.h"
-//#include "../src/webcfg_pack.h"
-//#include "../src/webcfg_helpers.h"
-//#include "../src/webcfg_param.h"
+#include "../src/webcfg_rbus.h"
+#include "../src/webcfg_metadata.h"
+#include "../src/webcfg.h"
+#include "../src/webcfg_event.h"
 #include "../src/webcfg_multipart.h"
 #define UNUSED(x) (void )(x)
 //mock functions
+
+static int maintenance_sync_lock = true;
 
 void* test_thread_function()
 {
@@ -69,28 +72,6 @@ int Get_Webconfig_URL( char *pString)
 int Set_Webconfig_URL( char *pString)
 {
 	printf("Set_Webconfig_URL pString %s\n", pString);
-	return 0;
-}
-
-void initEventHandlingTask(){
-	return;
-}
-void webcfgCallback(char *Info, void* user_data)
-{
-	UNUSED(Info);
-	UNUSED(user_data);
-	return;
-}
-
-void processWebcfgEvents(){
-	return;
-}
-
-
-WEBCFG_STATUS checkAndUpdateTmpRetryCount(webconfig_tmp_data_t *temp, char *docname)
-{
-	UNUSED(temp);
-	UNUSED(docname);
 	return 0;
 }
 
@@ -135,8 +116,21 @@ char * getFirmwareVersion()
 
 int getForceSync(char** pString, char **transactionId)
 {
-	UNUSED(pString);
-	UNUSED(transactionId);
+	if(get_doc_fail())
+	{
+		UNUSED(*pString);
+		UNUSED(*transactionId);
+	}
+	else if(get_global_supplementarySync())
+	{
+		*pString = strdup("telemetry");
+		*transactionId = strdup("42215325617131212");
+	}
+	else if(!get_maintenanceSync())
+	{
+		*pString = strdup("root");
+		*transactionId = strdup("42215325617131212");
+	}
 	return 0;
 }
 
@@ -152,10 +146,6 @@ char * getModelName()
 	return mName;
 }
 
-
-void retryMultipartSubdoc(){
-	return ;
-}
 char *get_global_systemReadyTime()
 {
 	char *sTime = strdup("158000123");
@@ -167,27 +157,6 @@ char * getRebootReason()
 	char *reason = strdup("factory-reset");
 	return reason;
 }
-
-pthread_t get_global_event_threadid()
-{
-	return 0;
-}
-
-pthread_t get_global_process_threadid()
-{
-	return 0;
-}
-
-pthread_cond_t *get_global_event_con(void)
-{
-	return 0;
-}
-
-pthread_mutex_t *get_global_event_mut(void)
-{
-	return 0;
-}
-
 
 char * getPartnerID()
 {
@@ -218,12 +187,59 @@ int Set_Supplementary_URL( char *name, char *pString)
 }
 char *getFirmwareUpgradeStartTime(void)
 {
-	return NULL;
+	if(!maintenance_sync_lock)
+	{
+		time_t rawtime;
+		struct tm *timeval;
+
+		time(&rawtime);
+		timeval = localtime(&rawtime);
+
+		int hrs = timeval->tm_hour;
+		int min = timeval->tm_min;
+		int sec = timeval->tm_sec;
+
+		int total_secs = hrs * 3600 + min * 60 + sec;
+		total_secs += 6;
+
+		char *total_secs_str = (char *)malloc(sizeof(char) * 6);
+		snprintf(total_secs_str, sizeof(total_secs_str), "%d", total_secs);
+
+		return total_secs_str;
+	}
+	else
+	{
+		return NULL;
+	}
 }
 
 char *getFirmwareUpgradeEndTime(void)
 {
-	return NULL;
+
+	if(!maintenance_sync_lock)
+	{
+		time_t rawtime;
+		struct tm *timeval;
+
+		time(&rawtime);
+		timeval = localtime(&rawtime);
+
+		int hrs = timeval->tm_hour;
+		int min = timeval->tm_min;
+		int sec = timeval->tm_sec;
+
+		int total_secs = hrs * 3600 + min * 60 + sec;
+		total_secs += 10;
+
+		char *total_secs_str = (char *)malloc(sizeof(char) * 6);
+		snprintf(total_secs_str, sizeof(total_secs_str), "%d", total_secs);
+
+		return total_secs_str;
+	}
+	else
+	{
+		return NULL;
+	}
 }
 
 /*----------------------------------------------------------------------------*/
@@ -296,10 +312,44 @@ void test_handlehttpResponse_200_Post_None()
 	handlehttpResponse(200, NULL, 0, transid, "example_ct", 100);
 }
 
+void test_handlehttpResponse_200_Success()
+{
+	char * webConfigData = strdup("HTTP 200 OK\r\nContent-Type: multipart/mixed; boundary=+CeB5yCWds7LeVP4oibmKefQ091Vpt2x4g99cJfDCmXpFxt5d\r\nEtag: 345431215\r\n\n--+CeB5yCWds7LeVP4oibmKefQ091Vpt2x4g99cJfDCmXpFxt5d\r\nContent-type: application/msgpack\r\nEtag: 2132354\r\nNamespace: value\r\n\r\nparameters: somedata\r\n--+CeB5yCWds7LeVP4oibmKefQ091Vpt2x4g99cJfDCmXpFxt5d--\r\n");
+	size_t data_size = strlen(webConfigData);
+	char *ct = strdup("Content-Type: multipart/mixed; boundary=+CeB5yCWds7LeVP4oibmKefQ091Vpt2x4g99cJfDCmXpFxt5d");
+	char * transid = strdup("23133213edqq");
+	handlehttpResponse(200, webConfigData, 0, transid, ct, data_size);
+}
+
+void test_webconfigData_empty_retry3()
+{
+	/*webconfig_db_data_t *tmp = NULL;
+	tmp = (webconfig_db_data_t *) malloc(sizeof(webconfig_db_data_t));
+	if(tmp)
+	{
+		memset(tmp, 0, sizeof(webconfig_db_data_t));
+
+		tmp->name = strdup("root");
+		tmp->version = 0;
+		tmp->root_string = strdup("0");
+		tmp->next = NULL;
+
+		set_global_db_node(tmp);
+	}*/
+	char * transid = strdup("23133213131edqq");
+	handlehttpResponse(200, NULL, 3, transid, "example_ct", 100);
+}
+
 void test_handlehttpResponse_204()
 {
 	char * transid = strdup("23133213131edqq");
 	handlehttpResponse(204, NULL, 0, transid, "example_ct", 100);
+}
+
+void test_handlehttpResponse_404()
+{
+	char * transid = strdup("23133213131edqq");
+	handlehttpResponse(404, NULL, 0, transid, "example_ct", 100);
 }
 
 void test_handlehttpResponse_403()
@@ -329,6 +379,94 @@ void test_initWebConfigMultipartTask_Thread()
     assert_non_null(get_global_mpThreadId());
 }
 
+void test_doc_retry()
+{
+    maintenance_sync_lock = false;
+    unsigned long status = 0;
+    initWebConfigMultipartTask(status);
+    sleep(6);
+    set_maintenanceSync(true);
+    pthread_cond_signal(get_global_sync_condition());
+    sleep(2);
+    set_doc_fail(1);
+    sleep(9);
+    assert_false(get_maintenanceSync());
+}
+
+void test_global_shutdown()
+{
+    unsigned long status = 0;
+    initWebConfigMultipartTask(status);
+    sleep(6);
+    set_global_shutdown(true);
+    pthread_cond_signal(get_global_sync_condition());
+    sleep(6);
+    set_global_shutdown(false);
+    assert_null(get_global_mpThreadId());
+}
+
+void test_maintenanceSync_check()
+{
+    unsigned long status = 0;
+    initWebConfigMultipartTask(status);
+    sleep(6);
+    set_maintenanceSync(true);
+    pthread_cond_signal(get_global_sync_condition());
+    sleep(4);
+    assert_false(get_maintenanceSync());
+}
+
+void test_forcedsync()
+{
+    unsigned long status = 0;
+    initWebConfigMultipartTask(status);
+    sleep(6);
+    set_global_webcfg_forcedsync_needed(1);
+    pthread_cond_signal(get_global_sync_condition());
+    sleep(6);
+    assert_int_equal(get_global_webcfg_forcedsync_needed(), 0);
+}
+
+void test_maintenanceSync_trigger()
+{
+    maintenance_sync_lock = false;
+    unsigned long status = 0;
+    initWebConfigMultipartTask(status);
+    sleep(6);
+    set_maintenanceSync(true);
+    pthread_cond_signal(get_global_sync_condition());
+    sleep(9);
+    assert_false(get_maintenanceSync());
+}
+
+void test_supplementarySync_and_ForceSync()
+{
+    SupplementaryDocs_t *spInfo = NULL;
+    spInfo = (SupplementaryDocs_t *)malloc(sizeof(SupplementaryDocs_t));
+
+    if(spInfo == NULL)
+    {
+        WebcfgError("Unable to allocate memory for supplementary docs\n");
+    }
+
+    memset(spInfo, 0, sizeof(SupplementaryDocs_t));
+
+    spInfo->name = strdup("telemetry");
+    spInfo->next = NULL;
+
+    set_global_spInfoHead(spInfo);
+    set_global_spInfoTail(spInfo);
+
+    unsigned long status = 0;
+    initWebConfigMultipartTask(status);
+    sleep(10);
+    set_global_webcfg_forcedsync_needed(1);
+    pthread_cond_signal(get_global_sync_condition());
+    set_global_supplementarySync(1);
+    sleep(6);
+    assert_non_null(get_global_mpThreadId());
+}
+
 
 /*----------------------------------------------------------------------------*/
 /*                             External Functions                             */
@@ -339,13 +477,22 @@ int main(int argc, char *argv[])
 		cmocka_unit_test(test_timeVal_Diff),
 		cmocka_unit_test(test_successJoinThread),
 		cmocka_unit_test(test_failureJoinThread),
+		cmocka_unit_test(test_global_shutdown),
 		cmocka_unit_test(test_initWebConfigMultipartTask_Thread),
 		cmocka_unit_test(test_handlehttpResponse_304),
 		cmocka_unit_test(test_handlehttpResponse_200_Post_None),
+		cmocka_unit_test(test_handlehttpResponse_200_Success),
+		cmocka_unit_test(test_webconfigData_empty_retry3),
 		cmocka_unit_test(test_handlehttpResponse_204),
+		cmocka_unit_test(test_handlehttpResponse_404),
 		cmocka_unit_test(test_handlehttpResponse_403),
 		cmocka_unit_test(test_handlehttpResponse_429),
-		cmocka_unit_test(test_handlehttpResponse_5xx)
+		cmocka_unit_test(test_handlehttpResponse_5xx),
+		cmocka_unit_test(test_forcedsync),
+		cmocka_unit_test(test_supplementarySync_and_ForceSync),
+		cmocka_unit_test(test_maintenanceSync_check),
+		cmocka_unit_test(test_doc_retry),
+		cmocka_unit_test(test_maintenanceSync_trigger)
 	};
 	return cmocka_run_group_tests(tests, NULL, 0);
 }

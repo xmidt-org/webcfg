@@ -231,19 +231,5 @@ link_directories ( ${LIBRARY_DIR} ${COMMON_LIBRARY_DIR} ${LIBRARY_DIR64} )
 add_subdirectory(src)
 
 if (BUILD_TESTING)
-# cmocka external dependency
-#-------------------------------------------------------------------------------
-ExternalProject_Add(cmocka
-    PREFIX ${CMAKE_CURRENT_BINARY_DIR}/_prefix/cmocka
-    GIT_REPOSITORY https://github.com/elventear/cmocka.git
-    GIT_TAG "b71a3060699bc1a5b00e958be353772f42545ac2"
-    CMAKE_ARGS += -DCMAKE_INSTALL_PREFIX=${INSTALL_DIR}
-)
-add_library(libcmocka STATIC SHARED IMPORTED)
-add_dependencies(libcmocka cmocka)
-
-endif (BUILD_TESTING)
-
-if (BUILD_TESTING)
     add_subdirectory(tests)
 endif (BUILD_TESTING)
