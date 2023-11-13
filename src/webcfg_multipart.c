@@ -170,16 +170,9 @@ char * get_global_interface(void)
 /*----------------------------------------------------------------------------*/
 /*                             Function Prototypes                            */
 /*----------------------------------------------------------------------------*/
-size_t writer_callback_fn(void *buffer, size_t size, size_t nmemb, void *datain);
-size_t headr_callback(char *buffer, size_t size, size_t nitems, void* data);
-void stripspaces(char *str, char **final_str);
-void line_parser(char *ptr, int no_of_bytes, char **name_space, uint32_t *etag, char **data, size_t *data_size);
-void subdoc_parser(char *ptr, int no_of_bytes);
 void addToDBList(webconfig_db_data_t *webcfgdb);
 char* generate_trans_uuid();
-WEBCFG_STATUS processMsgpackSubdoc(char *transaction_id);
 void loadInitURLFromFile(char **url);
-void get_webCfg_interface(char **interface);
 
 #ifdef FEATURE_SUPPORT_AKER
 WEBCFG_STATUS checkAkerDoc();

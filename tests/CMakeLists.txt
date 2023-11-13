@@ -59,7 +59,7 @@ endif (FEATURE_SUPPORT_AKER)
 #-------------------------------------------------------------------------------
 add_test(NAME test_webcfgparam COMMAND ${MEMORY_CHECK} ./test_webcfgparam)
 add_executable(test_webcfgparam test_webcfgparam.c ../src/webcfg_param.c ../src/webcfg_helpers.c)
-target_link_libraries (test_webcfgparam -lcunit -lmsgpackc -lcimplog)
+target_link_libraries (test_webcfgparam -lcunit -lmsgpackc -lcimplog -lcjson)
 
 target_link_libraries (test_webcfgparam gcov -Wl,--no-as-needed )
 
@@ -180,6 +180,36 @@ target_link_libraries (test_events_supp -llibparodus -lnanomsg)
 endif (FEATURE_SUPPORT_AKER)
 
 target_link_libraries (test_events_supp gcov -Wl,--no-as-needed )
+
+
+#-------------------------------------------------------------------------------
+#   test_webcfgevents
+#-------------------------------------------------------------------------------
+add_test(NAME test_webcfgevents COMMAND ${MEMORY_CHECK} ./test_webcfgevents)
+set(SOURCES test_webcfgevents.c ../src/webcfg_param.c ../src/webcfg_multipart.c ../src/webcfg_helpers.c ../src/webcfg.c ../src/webcfg_auth.c ../src/webcfg_notify.c ../src/webcfg_db.c ../src/webcfg_pack.c ../src/webcfg_blob.c ../src/webcfg_event.c ../src/webcfg_generic_pc.c ../src/webcfg_metadata.c ../src/webcfg_timer.c )
+
+if (WEBCONFIG_BIN_SUPPORT)
+set(SOURCES ${SOURCES} ../src/webcfg_rbus.c)
+endif (WEBCONFIG_BIN_SUPPORT)
+
+if (FEATURE_SUPPORT_AKER)
+set(SOURCES ${SOURCES} ../src/webcfg_client.c ../src/webcfg_aker.c)
+endif (FEATURE_SUPPORT_AKER)
+
+add_executable(test_webcfgevents ${SOURCES})
+
+target_link_libraries (test_webcfgevents -lcunit -lmsgpackc -lcurl -lpthread  -lm -luuid -ltrower-base64 -lwdmp-c -lcimplog -lcjson -lwrp-c)
+
+if (WEBCONFIG_BIN_SUPPORT)
+target_link_libraries (test_webcfgevents -lrbus)
+endif (WEBCONFIG_BIN_SUPPORT)
+
+if (FEATURE_SUPPORT_AKER)
+target_link_libraries (test_webcfgevents -llibparodus -lnanomsg)
+endif (FEATURE_SUPPORT_AKER)
+
+target_link_libraries (test_webcfgevents gcov -Wl,--no-as-needed )
+
 #-------------------------------------------------------------------------------
 #   test_metadata
 #-------------------------------------------------------------------------------
@@ -362,6 +392,15 @@ endif (WEBCONFIG_BIN_SUPPORT)
  
 target_link_libraries (test_generic_pc gcov -Wl,--no-as-needed )
 
+#-------------------------------------------------------------------------------
+#   test_blob
+#-------------------------------------------------------------------------------
+add_test(NAME test_blob COMMAND ${MEMORY_CHECK} ./test_blob)
+add_executable(test_blob test_blob.c ../src/webcfg_blob.c)
+target_link_libraries (test_blob -lcunit -lmsgpackc -lcimplog -lcjson -ltrower-base64 )
+
+target_link_libraries (test_blob gcov -Wl,--no-as-needed )
+
 # Code coverage
 
 add_custom_target(coverage
@@ -396,8 +435,9 @@ ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/test_notify.dir/__/src --output-file test
 COMMAND lcov -q --capture --directory
 ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/test_webcfg.dir/__/src --output-file test_webcfg.info
 COMMAND lcov -q --capture --directory 
-${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/test_generic.dir/__/src --output-file test_generic_pc.info
-
+${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/test_generic_pc.dir/__/src --output-file test_generic_pc.info
+COMMAND lcov -q --capture --directory 
+${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/test_blob.dir/__/src --output-file test_blob.info
 
 COMMAND lcov
 -a test_events_supp.info
@@ -416,6 +456,7 @@ COMMAND lcov
 -a test_notify.info
 -a test_webcfg.info
 -a test_generic_pc.info
+-a test_blob.info
 --output-file coverage.info
 
 COMMAND genhtml coverage.info

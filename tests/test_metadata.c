@@ -286,8 +286,10 @@ void test_displaystruct(void)
         {
                 strcpy(test->name,"privatessid");
                 strcpy(test->support,"true");
+				#ifdef WEBCONFIG_BIN_SUPPORT
                 strcpy(test->rbus_listener,"true");
                 strcpy(test->dest,"webconfig.pam.portforwarding");
+				#endif
                 test->next=NULL;
         }
 	SubDocSupportMap_t *test2 = NULL;
@@ -296,8 +298,10 @@ void test_displaystruct(void)
         {
                 strcpy(test2->name,"radio");
                 strcpy(test2->support,"true");
+				#ifdef WEBCONFIG_BIN_SUPPORT
                 strcpy(test2->rbus_listener,"true");
                 strcpy(test2->dest,"webconfig.pam.portforwarding");
+				#endif
                 test2->next=NULL;
                 test->next=test2;
         }
@@ -317,7 +321,7 @@ void test_displaystruct(void)
 	CU_ASSERT_STRING_EQUAL("radio",tmp);
 
 }
-
+#ifdef WEBCONFIG_BIN_SUPPORT
 void test_get_destination(void)
 {
 	char dest[64];
@@ -431,7 +435,7 @@ SubDocSupportMap_t *test = NULL;
 	result = isRbusListener("wan");
 	CU_ASSERT_EQUAL(0,result);
 }
-
+#endif
 void add_suites( CU_pSuite *suite )
 {
     *suite = CU_add_suite( "tests", NULL, NULL );
@@ -446,9 +450,11 @@ void add_suites( CU_pSuite *suite )
 	CU_add_test( *suite, "Test get_spInfoHead\n", test_get_spInfoHead);
 	CU_add_test( *suite, "Test get_spInfoTail\n", test_get_spInfotail);
 	CU_add_test( *suite, "Test displaystruct\n", test_displaystruct);
+#ifdef WEBCONFIG_BIN_SUPPORT	
 	CU_add_test( *suite, "Test get_destination\n", test_get_destination);
 	CU_add_test( *suite, "Test isRbusListener true\n", test_isRbusListener_true);	
 	CU_add_test( *suite, "Test isRbusListener false\n", test_isRbusListener_false);
+#endif	
 		
 }
 

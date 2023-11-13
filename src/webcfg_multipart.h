@@ -75,6 +75,13 @@ int get_global_eventFlag(void);
 void set_global_eventFlag();
 void set_global_ETAG(char *etag);
 char *get_global_ETAG(void);
+void line_parser(char *ptr, int no_of_bytes, char **name_space, uint32_t *etag, char **data, size_t *data_size);
+void subdoc_parser(char *ptr, int no_of_bytes);
+void stripspaces(char *str, char **final_str);
+void get_webCfg_interface(char **interface);
+size_t headr_callback(char *buffer, size_t size, size_t nitems, void* data);
+size_t writer_callback_fn(void *buffer, size_t size, size_t nmemb, void *datain);
+WEBCFG_STATUS processMsgpackSubdoc(char *transaction_id);
 #ifdef WAN_FAILOVER_SUPPORTED
 void set_global_interface(char * value);
 char * get_global_interface(void);
