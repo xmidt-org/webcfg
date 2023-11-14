@@ -430,6 +430,7 @@ void test_forcedsync()
 void test_maintenanceSync_trigger()
 {
     maintenance_sync_lock = false;
+    set_global_supplementarySync(0);
     unsigned long status = 0;
     initWebConfigMultipartTask(status);
     sleep(6);
@@ -491,8 +492,8 @@ int main(int argc, char *argv[])
 		cmocka_unit_test(test_forcedsync),
 		cmocka_unit_test(test_supplementarySync_and_ForceSync),
 		cmocka_unit_test(test_maintenanceSync_check),
-		cmocka_unit_test(test_doc_retry),
-		cmocka_unit_test(test_maintenanceSync_trigger)
+		cmocka_unit_test(test_maintenanceSync_trigger),
+		cmocka_unit_test(test_doc_retry)
 	};
 	return cmocka_run_group_tests(tests, NULL, 0);
 }
