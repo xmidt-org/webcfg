@@ -77,7 +77,7 @@ target_link_libraries (test_webcfgpack gcov -Wl,--no-as-needed )
 #-------------------------------------------------------------------------------
 add_test(NAME test_multipart COMMAND ${MEMORY_CHECK} ./test_multipart)
 
-set(SOURCES test_multipart.c ../src/webcfg_param.c ../src/webcfg_multipart.c ../src/webcfg_helpers.c ../src/webcfg.c ../src/webcfg_auth.c ../src/webcfg_notify.c ../src/webcfg_db.c ../src/webcfg_pack.c ../src/webcfg_blob.c ../src/webcfg_event.c ../src/webcfg_metadata.c ../src/webcfg_timer.c ../src/webcfg_generic_pc.c)
+set(SOURCES test_multipart.c ../src/webcfg_param.c ../src/webcfg_multipart.c ../src/webcfg_helpers.c ../src/webcfg.c ../src/webcfg_auth.c ../src/webcfg_notify.c ../src/webcfg_db.c ../src/webcfg_pack.c ../src/webcfg_blob.c ../src/webcfg_event.c ../src/webcfg_metadata.c ../src/webcfg_timer.c ../src/webcfg_generic_pc.c )
 
 if (WEBCONFIG_BIN_SUPPORT)
 set(SOURCES ${SOURCES} ../src/webcfg_rbus.c)
@@ -290,7 +290,7 @@ target_link_libraries (test_webcfgdb gcov -Wl,--no-as-needed )
 #-------------------------------------------------------------------------------
 add_test(NAME test_multipart_unittest COMMAND ${MEMORY_CHECK} ./test_multipart_unittest)
 
-set(SOURCES test_multipart_unittest.c ../src/webcfg_param.c ../src/webcfg_multipart.c ../src/webcfg_helpers.c ../src/webcfg.c ../src/webcfg_auth.c ../src/webcfg_notify.c ../src/webcfg_db.c ../src/webcfg_pack.c ../src/webcfg_blob.c ../src/webcfg_event.c ../src/webcfg_generic_pc.c ../src/webcfg_metadata.c)
+set(SOURCES test_multipart_unittest.c ../src/webcfg_param.c ../src/webcfg_multipart.c ../src/webcfg_helpers.c ../src/webcfg.c ../src/webcfg_auth.c ../src/webcfg_notify.c ../src/webcfg_db.c ../src/webcfg_pack.c ../src/webcfg_blob.c ../src/webcfg_event.c ../src/webcfg_generic_pc.c ../src/webcfg_metadata.c ../src/webcfg_timer.c)
 
 if (WEBCONFIG_BIN_SUPPORT)
 set(SOURCES ${SOURCES} ../src/webcfg_rbus.c)
@@ -401,6 +401,35 @@ target_link_libraries (test_blob -lcunit -lmsgpackc -lcimplog -lcjson -ltrower-b
 
 target_link_libraries (test_blob gcov -Wl,--no-as-needed )
 
+#-------------------------------------------------------------------------------
+#   test_cmoka_multipart.c
+#-------------------------------------------------------------------------------
+add_test(NAME test_cmocka_multipart COMMAND ${MEMORY_CHECK} ./test_cmocka_multipart)
+
+set(SOURCES test_cmocka_multipart.c ../src/webcfg_param.c ../src/webcfg_multipart.c ../src/webcfg_helpers.c ../src/webcfg.c ../src/webcfg_auth.c ../src/webcfg_notify.c ../src/webcfg_db.c ../src/webcfg_pack.c ../src/webcfg_blob.c ../src/webcfg_event.c ../src/webcfg_generic_pc.c ../src/webcfg_metadata.c ../src/webcfg_timer.c)
+
+if (WEBCONFIG_BIN_SUPPORT)
+set(SOURCES ${SOURCES} ../src/webcfg_rbus.c)
+endif (WEBCONFIG_BIN_SUPPORT)
+
+if (FEATURE_SUPPORT_AKER)
+set(SOURCES ${SOURCES} ../src/webcfg_client.c ../src/webcfg_aker.c)
+endif (FEATURE_SUPPORT_AKER)
+
+add_executable(test_cmocka_multipart ${SOURCES})
+
+target_link_libraries (test_cmocka_multipart -lcmocka -lcunit -lmsgpackc -lpthread  -lm -luuid -ltrower-base64 -lwdmp-c -lcimplog -lcjson -lwrp-c -lcurl )
+
+if (WEBCONFIG_BIN_SUPPORT)
+target_link_libraries (test_cmocka_multipart -lrbus)
+endif (WEBCONFIG_BIN_SUPPORT)
+
+if (FEATURE_SUPPORT_AKER)
+target_link_libraries (test_cmoka_multipart -llibparodus -lnanomsg)
+endif (FEATURE_SUPPORT_AKER)
+
+target_link_libraries (test_cmocka_multipart gcov -Wl,--no-as-needed )
+
 # Code coverage
 
 add_custom_target(coverage
@@ -438,6 +467,8 @@ COMMAND lcov -q --capture --directory
 ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/test_generic_pc.dir/__/src --output-file test_generic_pc.info
 COMMAND lcov -q --capture --directory 
 ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/test_blob.dir/__/src --output-file test_blob.info
+COMMAND lcov -q --capture --directory
+${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/test_cmocka_multipart.dir/__/src --output-file test_cmocka_multipart.info
 
 COMMAND lcov
 -a test_events_supp.info
@@ -457,6 +488,7 @@ COMMAND lcov
 -a test_webcfg.info
 -a test_generic_pc.info
 -a test_blob.info
+-a test_cmocka_multipart.info
 --output-file coverage.info
 
 COMMAND genhtml coverage.info
