@@ -411,6 +411,14 @@ endif (FEATURE_SUPPORT_AKER)
 
 target_link_libraries (test_cmocka_multipart gcov -Wl,--no-as-needed )
 
+#-------------------------------------------------------------------------------
+#   test_auth
+#-------------------------------------------------------------------------------
+add_test(NAME test_auth COMMAND ${MEMORY_CHECK} ./test_auth)
+add_executable(test_auth test_auth.c ../src/webcfg_auth.c)
+target_link_libraries (test_auth -lcunit -lmsgpackc -lcimplog -lcjson -ltrower-base64)
+target_link_libraries (test_auth gcov -Wl,--no-as-needed )
+
 # Code coverage
 
 add_custom_target(coverage
@@ -448,6 +456,9 @@ COMMAND lcov -q --capture --directory
 ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/test_blob.dir/__/src --output-file test_blob.info
 COMMAND lcov -q --capture --directory
 ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/test_cmocka_multipart.dir/__/src --output-file test_cmocka_multipart.info
+COMMAND lcov -q --capture --directory
+${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/test_auth.dir/__/src --output-file test_auth.info
+
 
 COMMAND lcov
 -a test_events_supp.info
@@ -467,6 +478,7 @@ COMMAND lcov
 -a test_generic_pc.info
 -a test_blob.info
 -a test_cmocka_multipart.info
+-a test_auth.info
 --output-file coverage.info
 
 COMMAND genhtml coverage.info
