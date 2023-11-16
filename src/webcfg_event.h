@@ -72,4 +72,9 @@ expire_timer_t * get_global_timer_node(void);
 void set_global_timer_node(expire_timer_t * new);
 void set_numOfEvents(int num);
 WEBCFG_STATUS stopWebcfgTimer(expire_timer_t *temp, char *name, uint16_t trans_id);
+expire_timer_t * getTimerNode(char *docname);
+WEBCFG_STATUS startWebcfgTimer(expire_timer_t *timer_node, char *name, uint16_t transID, uint32_t timeout);
+int checkTimerExpired (char **exp_doc);
+WEBCFG_STATUS validateEvent(webconfig_tmp_data_t *temp, char *docname, uint16_t txid);
+int parseEventData(char* str, event_params_t **val);
 #endif

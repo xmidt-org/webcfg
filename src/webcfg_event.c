@@ -53,17 +53,12 @@ static int numOfEvents = 0;
 /*                             Function Prototypes                            */
 /*----------------------------------------------------------------------------*/
 void* blobEventHandler();
-int parseEventData();
 void* processSubdocEvents();
 
 int checkWebcfgTimer();
 int addToEventQueue(char *buf);
 void sendSuccessNotification(webconfig_tmp_data_t *subdoc_node, char *name, uint32_t version, uint16_t txid);
-WEBCFG_STATUS startWebcfgTimer(expire_timer_t *timer_node, char *name, uint16_t transID, uint32_t timeout);
-int checkTimerExpired (char **exp_doc);
 void createTimerExpiryEvent(char *docName, uint16_t transid);
-WEBCFG_STATUS validateEvent(webconfig_tmp_data_t *temp, char *docname, uint16_t txid);
-expire_timer_t * getTimerNode(char *docname);
 void handleConnectedClientNotify(char *status);
 /*----------------------------------------------------------------------------*/
 /*                             External Functions                             */
