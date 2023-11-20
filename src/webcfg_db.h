@@ -21,7 +21,6 @@
 #include <stdbool.h>
 #include <base64.h>
 #include "webcfg.h"
-#include "webcfg_multipart.h"
 /*----------------------------------------------------------------------------*/
 /*                                   Macros                                   */
 /*----------------------------------------------------------------------------*/
@@ -116,6 +115,8 @@ WEBCFG_STATUS generateBlob();
 blob_t * get_DB_BLOB();
 
 webconfig_db_data_t * get_global_db_node(void);
+
+void set_global_db_node(webconfig_db_data_t *tmp);
 
 webconfig_tmp_data_t * get_global_tmp_node(void);
 
