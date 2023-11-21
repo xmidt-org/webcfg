@@ -53,7 +53,6 @@ rbusHandle_t handle;
 
 #define WEBCFG_BLOB_PARAM "Device.DeviceInfo.Test"
 
-int numLoops;
 
 #define MAX_HEADER_LEN	4096
 #define UNUSED(x) (void )(x)

@@ -37,134 +37,6 @@
 char *url = NULL;
 char *interface = NULL;
 char device_mac[32] = {'\0'};
-int numLoops;
-
-char* get_deviceMAC()
-{
-	strcpy(device_mac, "b42xxxxxxxxx");
-	return device_mac;
-}
-void setValues(const param_t paramVal[], const unsigned int paramCount, const int setType, char *transactionId, money_trace_spans *timeSpan, WDMP_STATUS *retStatus, int *ccspStatus)
-{
-	UNUSED(paramVal);
-	UNUSED(paramCount);
-	UNUSED(setType);
-	UNUSED(transactionId);
-	UNUSED(timeSpan);
-	UNUSED(ccspStatus);
-	*retStatus = WDMP_SUCCESS;
-	return;
-}
-
-void setAttributes(param_t *attArr, const unsigned int paramCount, money_trace_spans *timeSpan, WDMP_STATUS *retStatus)
-{
-	UNUSED(attArr);
-	UNUSED(paramCount);
-	UNUSED(timeSpan);
-	*retStatus = WDMP_SUCCESS;
-	return;
-}
-
-int getForceSync(char** pString, char **transactionId)
-{
-	UNUSED(pString);
-	UNUSED(transactionId);
-	return 0;
-}
-int setForceSync(char* pString, char *transactionId,int *session_status)
-{
-	UNUSED(pString);
-	UNUSED(transactionId);
-	UNUSED(session_status);
-	return 0;
-}
-
-char * getParameterValue(char *paramName)
-{
-	UNUSED(paramName);
-	return NULL;
-}
-
-char * getSerialNumber()
-{
-	char *sNum = strdup("1234");
-	return sNum;
-}
-
-char * getDeviceBootTime()
-{
-	char *bTime = strdup("152200345");
-	return bTime;
-}
-
-char * getProductClass()
-{
-	char *pClass = strdup("Product");
-	return pClass;
-}
-
-char * getModelName()
-{
-	char *mName = strdup("Model");
-	return mName;
-}
-
-char * getConnClientParamName()
-{
-	char *pName = strdup("ConnClientParamName");
-	return pName;
-}
-char * getFirmwareVersion()
-{
-	char *fName = strdup("Firmware.bin");
-	return fName;
-}
-
-char * getRebootReason()
-{
-	char *reason = strdup("factory-reset");
-	return reason;
-}
-
-void sendNotification(char *payload, char *source, char *destination)
-{
-	WEBCFG_FREE(payload);
-	WEBCFG_FREE(source);
-	UNUSED(destination);
-	return;
-}
-
-char *get_global_systemReadyTime()
-{
-	char *sTime = strdup("158000123");
-	return sTime;
-}
-
-int Get_Webconfig_URL( char *pString)
-{
-	char *webConfigURL =NULL;
-	loadInitURLFromFile(&webConfigURL);
-	pString = webConfigURL;
-        printf("The value of pString is %s\n",pString);
-	return 0;
-}
-
-int Set_Webconfig_URL( char *pString)
-{
-	printf("Set_Webconfig_URL pString %s\n", pString);
-	return 0;
-}
-
-int registerWebcfgEvent(WebConfigEventCallback webcfgEventCB)
-{
-	UNUSED(webcfgEventCB);
-	return 0;
-}
-
-int unregisterWebcfgEvent()
-{
-	return 0;
-}
 
 //privatessid,14464,410448631,ACK,0 (ACK success)
 void test_eventACK()
@@ -182,7 +54,6 @@ void test_eventACK()
 	tmpData->cloud_trans_id=strdup("abcdef");
 	tmpData->next = NULL;
 	set_global_tmp_node(tmpData);
-	numLoops = 2;
 	initWebConfigNotifyTask();
 	processWebcfgEvents();
 	webcfgCallback("privatessid,14464,410448631,ACK,0", NULL);
@@ -204,7 +75,6 @@ void test_invalidVersionACK()
 	tmpData->cloud_trans_id=strdup("abcdef");
 	tmpData->next = NULL;
 	set_global_tmp_node(tmpData);
-	numLoops = 2;
 	initWebConfigNotifyTask();
 	processWebcfgEvents();
 	webcfgCallback("privatessid,14464,410448631,ACK,0", NULL);
@@ -237,7 +107,6 @@ void test_eventTimeout()
 	tmpData->cloud_trans_id=strdup("abcdef");
 	tmpData->next = NULL;
 	set_global_tmp_node(tmpData);
-	numLoops = 2;
 	initWebConfigNotifyTask();
 	processWebcfgEvents();
 	webcfgCallback("homessid,14464,410448631,ACK,60", NULL);
@@ -267,7 +136,6 @@ void test_invalidVersionTimeout()
 	tmpData->cloud_trans_id=strdup("abcdef");
 	tmpData->next = NULL;
 	set_global_tmp_node(tmpData);
-	numLoops = 2;
 	initWebConfigNotifyTask();
 	processWebcfgEvents();
 	webcfgCallback("privatessid,14464,410448631,ACK,30", NULL);
@@ -299,7 +167,6 @@ void test_eventNACK()
 	tmpData->next = NULL;
 	set_global_tmp_node(tmpData);
 	set_global_transID("1234567");
-	numLoops = 2;
 	initWebConfigNotifyTask();
 	processWebcfgEvents();
 	webcfgCallback("portforwarding,14464,410448631,NACK,0,pam,192,failed", NULL);
@@ -329,7 +196,6 @@ void test_invalidVersionNACK()
 	tmpData->cloud_trans_id=strdup("abcdef");
 	tmpData->next = NULL;
 	set_global_tmp_node(tmpData);
-	numLoops = 2;
 	initWebConfigNotifyTask();
 	processWebcfgEvents();
 	webcfgCallback("privatessid,14464,410448631,NACK,0", NULL);
@@ -381,7 +247,6 @@ void test_eventEXPIRE()
 	set_global_tmp_node(tmpData);
 	set_global_transID("1234567");
 	set_global_mp(multipartdocs);
-	numLoops = 2;
 	initWebConfigNotifyTask();
 	processWebcfgEvents();
 	webcfgCallback("portforwarding,14464,0,EXPIRE,0", NULL);
@@ -412,7 +277,6 @@ void test_eventEXPIREWithoutRetry()
 
 	set_global_tmp_node(tmpData);
 	set_global_transID("1234567");
-	numLoops = 2;
 	initWebConfigNotifyTask();
 	processWebcfgEvents();
 	webcfgCallback("homessid,14464,0,EXPIRE,0", NULL);
@@ -443,7 +307,6 @@ void test_eventCrash()
 	tmpData->cloud_trans_id=strdup("abcdef");
 	tmpData->next = NULL;
 	set_global_tmp_node(tmpData);
-	numLoops = 2;
 	initWebConfigNotifyTask();
 	processWebcfgEvents();
 	webcfgCallback("privatessid,0,3097089542", NULL);
@@ -485,7 +348,6 @@ void test_eventCrashNewVersion()
 	}
 	set_global_tmp_node(tmpData);
 	set_global_mp(multipartdocs);
-	numLoops = 2;
 	initWebConfigNotifyTask();
 	processWebcfgEvents();
 	webcfgCallback("privatessid,0,0", NULL);
@@ -514,7 +376,6 @@ void test_eventCrashNewVersionWithoutRetry()
 	tmpData->cloud_trans_id=strdup("abcdef");
 	tmpData->next = NULL;
 	set_global_tmp_node(tmpData);
-	numLoops = 2;
 	initWebConfigNotifyTask();
 	processWebcfgEvents();
 	webcfgCallback("homessid,0,309708942", NULL);
@@ -565,7 +426,6 @@ void test_eventCrashSameVersion()
 	}
 	set_global_tmp_node(tmpData);
 	set_global_mp(multipartdocs);
-	numLoops = 2;
 	initWebConfigNotifyTask();
 	processWebcfgEvents();
 	webcfgCallback("portforwarding,0,12345", NULL);
@@ -595,7 +455,6 @@ void test_eventCrashSameVersionWithoutRetry()
 	tmpData->next = NULL;
 
 	set_global_tmp_node(tmpData);
-	numLoops = 2;
 	initWebConfigNotifyTask();
 	processWebcfgEvents();
 	webcfgCallback("privatessid,0,12345", NULL);
@@ -626,7 +485,6 @@ void test_eventCrashLatestVersion()
 	tmpData->next = NULL;
 
 	set_global_tmp_node(tmpData);
-	numLoops = 2;
 	initWebConfigNotifyTask();
 	processWebcfgEvents();
 	webcfgCallback("privatessid,0,12345", NULL);
@@ -656,7 +514,6 @@ void err_invalidACK()
 	tmpData->cloud_trans_id=strdup("abcdef");
 	tmpData->next = NULL;
 	set_global_tmp_node(tmpData);
-	numLoops = 2;
 	initWebConfigNotifyTask();
 	processWebcfgEvents();
 	webcfgCallback("privatessid,14464,410448631,ACK,0", NULL);
@@ -688,7 +545,6 @@ void test_eventACKEnabled()
 	tmpData->cloud_trans_id=strdup("abcdef");
 	tmpData->next = NULL;
 	set_global_tmp_node(tmpData);
-	numLoops = 2;
 	initWebConfigNotifyTask();
 	processWebcfgEvents();
 	webcfgCallback("mesh,14464,410448631,ACK;enabled,0", NULL);
@@ -711,7 +567,6 @@ void test_eventACKDisabled()
 	tmpData->cloud_trans_id=strdup("abcdef");
 	tmpData->next = NULL;
 	set_global_tmp_node(tmpData);
-	numLoops = 2;
 	initWebConfigNotifyTask();
 	processWebcfgEvents();
 	webcfgCallback("mesh,1234,410448631,ACK;disabled,0", NULL);
@@ -734,7 +589,6 @@ void test_adveventACKEnabled()
 	tmpData->cloud_trans_id=strdup("abcdef");
 	tmpData->next = NULL;
 	set_global_tmp_node(tmpData);
-	numLoops = 2;
 	initWebConfigNotifyTask();
 	processWebcfgEvents();
 	webcfgCallback("advsecurity,14464,410448631,ACK;enabled,0", NULL);
@@ -757,7 +611,6 @@ void test_adveventACKDisabled()
 	tmpData->cloud_trans_id=strdup("abcdef");
 	tmpData->next = NULL;
 	set_global_tmp_node(tmpData);
-	numLoops = 2;
 	initWebConfigNotifyTask();
 	processWebcfgEvents();
 	webcfgCallback("advsecurity,14464,410448631,ACK;disabled,0", NULL);

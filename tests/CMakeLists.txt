@@ -30,29 +30,6 @@ set (MEMORY_CHECK valgrind --leak-check=full --show-reachable=yes --track-origin
 endif ()
 
 link_directories ( ${LIBRARY_DIR} )
-#-------------------------------------------------------------------------------
-#   webcfgCli
-#-------------------------------------------------------------------------------
-set(SOURCES webcfgCli.c ../src/webcfg_helpers.c ../src/webcfg.c ../src/webcfg_param.c ../src/webcfg_pack.c ../src/webcfg_multipart.c ../src/webcfg_auth.c ../src/webcfg_notify.c ../src/webcfg_db.c ../src/webcfg_generic_pc.c ../src/webcfg_blob.c ../src/webcfg_event.c ../src/webcfg_metadata.c ../src/webcfg_timer.c)
-
-if (WEBCONFIG_BIN_SUPPORT)
-set(SOURCES ${SOURCES} ../src/webcfg_rbus.c)
-endif (WEBCONFIG_BIN_SUPPORT)
-
-if (FEATURE_SUPPORT_AKER)
-set(SOURCES ${SOURCES} ../src/webcfg_client.c ../src/webcfg_aker.c)
-endif (FEATURE_SUPPORT_AKER)
-
-add_executable(webcfgCli ${SOURCES})
-target_link_libraries (webcfgCli -lmsgpackc -lcurl -lpthread  -lm -luuid -ltrower-base64 -lwdmp-c -lcimplog -lcjson -lwrp-c)
-
-if (WEBCONFIG_BIN_SUPPORT)
-target_link_libraries (webcfgCli -lrbus)
-endif (WEBCONFIG_BIN_SUPPORT)
-
-if (FEATURE_SUPPORT_AKER)
-target_link_libraries (webcfgCli -llibparodus -lnanomsg)
-endif (FEATURE_SUPPORT_AKER)
 
 #-------------------------------------------------------------------------------
 #   test_webcfgparam

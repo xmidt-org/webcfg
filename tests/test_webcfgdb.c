@@ -27,7 +27,7 @@
 #include "../src/webcfg_notify.h"
 #define UNUSED(x) (void )(x)
 //mock functions
-
+/*
 long getTimeOffset()
 {
 	return 0;
@@ -62,7 +62,7 @@ int Set_Webconfig_URL( char *pString)
 	printf("Set_Webconfig_URL pString %s\n", pString);
 	return 0;
 }
-
+*/
 
 void initEventHandlingTask(){
 	return;
@@ -78,13 +78,12 @@ void processWebcfgEvents(){
 	return;
 }
 
-
 WEBCFG_STATUS checkAndUpdateTmpRetryCount(webconfig_tmp_data_t *temp, char *docname)
 {
 	UNUSED(temp);
 	UNUSED(docname);
 	return 0;
-}
+}/*
 void setValues(const param_t paramVal[], const unsigned int paramCount, const int setType, char *transactionId, money_trace_spans *timeSpan, WDMP_STATUS *retStatus, int *ccspStatus)
 {
 	UNUSED(paramVal);
@@ -160,12 +159,12 @@ char * getModelName()
 {
 	char *mName = strdup("Model");
 	return mName;
-}
+}*/
 
 
 void retryMultipartSubdoc(){
 	return ;
-}
+}/*
 char *get_global_systemReadyTime()
 {
 	char *sTime = strdup("158000123");
@@ -176,7 +175,7 @@ char * getRebootReason()
 {
 	char *reason = strdup("factory-reset");
 	return reason;
-}
+}*/
 
 pthread_t get_global_event_threadid()
 {
@@ -198,7 +197,7 @@ pthread_mutex_t *get_global_event_mut(void)
     return 0;
 }
 
-
+/*
 char * getPartnerID()
 {
 	char *pID = strdup("partnerID");
@@ -234,7 +233,7 @@ char *getFirmwareUpgradeStartTime(void)
 char *getFirmwareUpgradeEndTime(void)
 {
     return NULL;
-}
+}*/
 
 /*----------------------------------------------------------------------------*/
 /*                             Test Functions                             */

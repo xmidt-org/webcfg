@@ -40,7 +40,7 @@
 
 #define UNUSED(x) (void )(x)
 #define WEBCFG_BLOB_PARAM "Device.X_RDK_WebConfig.blobElement"
-int numLoops;
+
 rbusHandle_t handle;
 extern rbusHandle_t rbus_handle;
 pthread_mutex_t sync_mutex=PTHREAD_MUTEX_INITIALIZER;

@@ -36,7 +36,7 @@
 #include "../src/webcfg_timer.h"
 
 #define UNUSED(x) (void )(x)
-int numLoops;
+
 static int content_type_state = 0;
 
 typedef void CURL;
