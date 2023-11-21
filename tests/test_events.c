@@ -38,6 +38,12 @@ char *url = NULL;
 char *interface = NULL;
 char device_mac[32] = {'\0'};
 
+char * getConnClientParamName()
+{
+	char *pName = strdup("ConnClientParamName");
+	return pName;
+}
+
 //privatessid,14464,410448631,ACK,0 (ACK success)
 void test_eventACK()
 {
