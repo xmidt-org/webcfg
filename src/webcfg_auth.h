@@ -23,12 +23,12 @@
 #include "webcfg_log.h"
 #include "webcfg.h"
 #if ! defined(DEVICE_EXTENDER)
-    #if !defined(BUILD_YOCTO)
-        #define WEBPA_READ_HEADER         "/tmp/parodus_read_file.sh"
-        #define WEBPA_CREATE_HEADER       "/tmp/parodus_create_file.sh"    
+    #if defined(BUILD_YOCTO)
+        #define WEBPA_READ_HEADER       "/etc/parodus/parodus_read_file.sh"
+        #define WEBPA_CREATE_HEADER     "/etc/parodus/parodus_create_file.sh"   
     #else
-        #define WEBPA_READ_HEADER             "/etc/parodus/parodus_read_file.sh"
-        #define WEBPA_CREATE_HEADER           "/etc/parodus/parodus_create_file.sh"
+        #define WEBPA_READ_HEADER         "/tmp/parodus_read_file.sh"
+        #define WEBPA_CREATE_HEADER       "/tmp/parodus_create_file.sh" 
     #endif
 #else
     #define WEBPA_READ_HEADER             "/lib/webcfg/read_auth_token.sh"

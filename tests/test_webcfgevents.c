@@ -374,6 +374,193 @@ void test_stopWebcfgTimer()
 
 }
 
+void test_get_global_timer_node()
+{
+    CU_ASSERT_FATAL( NULL == get_global_timer_node());
+    expire_timer_t *new_node = NULL;
+    new_node=(expire_timer_t *)malloc(sizeof(expire_timer_t));
+    CU_ASSERT_PTR_NOT_NULL(new_node);
+    memset( new_node, 0, sizeof( expire_timer_t ) );
+    
+    new_node->running = true;
+    new_node->subdoc_name = strdup("moca");
+    new_node->txid = 1234;
+    new_node->timeout = 120;
+    new_node->next=NULL;
+    
+    set_global_timer_node(new_node);
+    CU_ASSERT_FATAL( NULL != get_global_timer_node());
+    if(new_node)
+    {
+        WEBCFG_FREE(new_node->subdoc_name);
+        WEBCFG_FREE(new_node);
+    }
+    set_global_timer_node(new_node);
+    CU_ASSERT_FATAL( NULL == get_global_timer_node());
+}
+
+void test_getTimerNode()
+{
+    CU_ASSERT_FATAL( NULL == get_global_timer_node());
+    int count = 0;
+    expire_timer_t *new_node = NULL;
+    new_node=(expire_timer_t *)malloc(sizeof(expire_timer_t));
+    CU_ASSERT_PTR_NOT_NULL(new_node);
+    memset( new_node, 0, sizeof( expire_timer_t ) );
+    
+    new_node->running = true;
+    new_node->subdoc_name = strdup("moca");
+    new_node->txid = 1234;
+    new_node->timeout = 120;
+    new_node->next=NULL;
+    count++;
+
+    expire_timer_t *temp = NULL;
+    temp=(expire_timer_t *)malloc(sizeof(expire_timer_t));
+    CU_ASSERT_PTR_NOT_NULL(temp);
+    memset( temp, 0, sizeof( expire_timer_t ) );
+    
+    temp->running = true;
+    temp->subdoc_name = strdup("wan");
+    temp->txid = 4567;
+    temp->timeout = 60;
+    temp->next=new_node;
+    count++;
+    
+    set_global_timer_node(temp);
+    set_numOfEvents(count);
+    CU_ASSERT_FATAL( NULL != get_global_timer_node());
+
+    CU_ASSERT_FATAL( NULL != getTimerNode("moca"));
+    CU_ASSERT_FATAL( NULL != getTimerNode("wan"));
+    CU_ASSERT_FATAL( NULL == getTimerNode("lan"));
+    
+    int m = deleteFromTimerList("moca");
+    CU_ASSERT_EQUAL(0,m);
+
+    int n = deleteFromTimerList("wan");
+    CU_ASSERT_EQUAL(0,n);
+    
+    CU_ASSERT_FATAL( NULL == get_global_timer_node());
+}
+
+void test_startWebcfgTimer()
+{
+    int count = 0;
+    expire_timer_t *new_node = NULL;
+    new_node=(expire_timer_t *)malloc(sizeof(expire_timer_t));
+    CU_ASSERT_PTR_NOT_NULL(new_node);
+    memset( new_node, 0, sizeof( expire_timer_t ) );
+    
+    new_node->running = false;
+    new_node->subdoc_name = strdup("moca");
+    new_node->txid = 1234;
+    new_node->timeout = 120;
+    new_node->next=NULL;
+    count++;
+    
+    set_global_timer_node(new_node);
+    set_numOfEvents(count);
+    CU_ASSERT_FATAL( NULL != get_global_timer_node());
+
+    int m = startWebcfgTimer(new_node,"moca",3456,60);
+    CU_ASSERT_EQUAL(0,m);
+
+    int n = startWebcfgTimer(new_node,"wan",6789,80);
+    CU_ASSERT_EQUAL(0,n);
+    
+    int a = deleteFromTimerList("moca");
+    CU_ASSERT_EQUAL(0,a);
+
+    int b = deleteFromTimerList("wan");
+    CU_ASSERT_EQUAL(0,b);
+    
+    CU_ASSERT_FATAL( NULL == get_global_timer_node());
+    
+}
+
+void test_checkTimerExpired()
+{
+    int count = 0;
+    char *expired_doc= NULL;
+    expire_timer_t *new_node = NULL;
+    new_node=(expire_timer_t *)malloc(sizeof(expire_timer_t));
+    CU_ASSERT_PTR_NOT_NULL(new_node);
+    memset( new_node, 0, sizeof( expire_timer_t ) );
+    
+    new_node->running = true;
+    new_node->subdoc_name = strdup("moca");
+    new_node->txid = 1234;
+    new_node->timeout = 0;
+    new_node->next=NULL;
+    count++;
+    
+    set_global_timer_node(new_node);
+    set_numOfEvents(count);
+    CU_ASSERT_FATAL( NULL != get_global_timer_node());
+    
+    int m = checkTimerExpired(&expired_doc);
+    CU_ASSERT_EQUAL(1,m);
+     
+    if(new_node)
+    {
+        WEBCFG_FREE(new_node->subdoc_name);
+        WEBCFG_FREE(new_node);
+        expired_doc= NULL;
+    }
+    set_global_timer_node(new_node);
+    int n = checkTimerExpired(&expired_doc);
+    CU_ASSERT_EQUAL(0,n);
+    CU_ASSERT_FATAL( NULL == get_global_timer_node());
+}
+
+void test_validateEvent()
+{
+    webconfig_tmp_data_t *tmpData = (webconfig_tmp_data_t *)malloc(sizeof(webconfig_tmp_data_t));
+    tmpData->name = strdup("moca");
+    tmpData->version = 1234;
+    tmpData->status = strdup("success");
+    tmpData->trans_id = 4104;
+    tmpData->retry_count = 0;
+    tmpData->error_code = 0;
+    tmpData->error_details = strdup("none");
+    tmpData->next = NULL;
+    CU_ASSERT_PTR_NOT_NULL(tmpData);
+
+    int m = validateEvent(tmpData,"moca",4104);
+    CU_ASSERT_EQUAL(0,m);
+
+    if(tmpData)
+    {
+        WEBCFG_FREE(tmpData->name);
+        tmpData->version = 0;
+        WEBCFG_FREE(tmpData->status);
+        tmpData->trans_id = 0;
+        WEBCFG_FREE(tmpData->error_details);
+        WEBCFG_FREE(tmpData);
+    }
+    CU_ASSERT_PTR_NULL(tmpData);
+    int n = validateEvent(tmpData,"moca",4104);
+    CU_ASSERT_EQUAL(1,n);
+}
+
+void test_parseEventData()
+{
+    event_params_t *eventParam = NULL;
+    char *data = (char *)malloc(128 * sizeof(char));
+    CU_ASSERT_PTR_NOT_NULL(data);
+    snprintf(data,128*sizeof(char),"%s,%hu,%u,EXPIRE,%u","moca",4104,0,0);
+    
+    int m = parseEventData(data,&eventParam);
+    CU_ASSERT_EQUAL(0,m);
+    if(data)
+    {
+        data = NULL;
+    }
+    int n = parseEventData(data,&eventParam);
+    CU_ASSERT_EQUAL(1,n);
+    free_event_params_struct(eventParam);
+}
 void add_suites( CU_pSuite *suite )
 {
     *suite = CU_add_suite( "tests", NULL, NULL );
@@ -387,6 +574,12 @@ void add_suites( CU_pSuite *suite )
     CU_add_test( *suite, "test updateTimerList",test_updateTimerList);
     CU_add_test( *suite, "test deleteFromTimerList",test_deleteFromTimerList);
     CU_add_test( *suite, "test stopWebcfgTimer",test_stopWebcfgTimer);
+    CU_add_test( *suite, "test get_global_timer_node",test_get_global_timer_node);
+    CU_add_test( *suite, "test getTimerNode",test_getTimerNode);
+    CU_add_test( *suite, "test startWebcfgTimer",test_startWebcfgTimer);
+    CU_add_test( *suite, "test checkTimerExpired",test_checkTimerExpired);
+    CU_add_test( *suite, "test validateEvent",test_validateEvent);
+    CU_add_test( *suite, "test parseEventData",test_parseEventData);
 }
 
 /*----------------------------------------------------------------------------*/

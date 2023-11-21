@@ -319,7 +319,7 @@ target_link_libraries (test_multipart_unittest gcov -Wl,--no-as-needed )
 #-------------------------------------------------------------------------------
 if (WEBCONFIG_BIN_SUPPORT)
 add_test(NAME test_rbus_fr COMMAND ${MEMORY_CHECK} ./test_rbus_fr)
-add_executable(test_rbus_fr test_rbus_fr.c ../src/webcfg_rbus.c ../src/webcfg_wanhandle.c ../src/webcfg_db.c ../src/webcfg_multipart.c ../src/webcfg_generic_pc.c)
+add_executable(test_rbus_fr test_rbus_fr.c ../src/webcfg_timer.c ../src/webcfg_auth.c ../src/webcfg_event.c ../src/webcfg_blob.c ../src/webcfg_metadata.c ../src/webcfg_rbus.c ../src/webcfg_param.c ../src/webcfg_wanhandle.c ../src/webcfg_db.c ../src/webcfg_multipart.c ../src/webcfg_generic_pc.c ../src/webcfg_helpers.c ../src/webcfg_pack.c ../src/webcfg_notify.c)
 target_link_libraries (test_rbus_fr -lcunit -lwrp-c -lcimplog -lmsgpackc -lcurl -lpthread  -lm -luuid -ltrower-base64 -lwdmp-c -lcjson  -lrbus)
 
 target_link_libraries (test_rbus_fr gcov -Wl,--no-as-needed )
@@ -359,6 +359,25 @@ add_executable(test_notify test_notify.c ../src/webcfg_notify.c)
 target_link_libraries (test_notify -lcunit -lmsgpackc -lcimplog -ltrower-base64 -lwdmp-c -lcjson -lpthread)
  
 target_link_libraries (test_notify gcov -Wl,--no-as-needed )
+
+#-------------------------------------------------------------------------------
+#   test_webcfg
+#-------------------------------------------------------------------------------
+add_test(NAME test_webcfg COMMAND ${MEMORY_CHECK} ./test_webcfg)
+set(SOURCES test_webcfg.c ../src/webcfg_param.c ../src/webcfg_multipart.c ../src/webcfg_helpers.c ../src/webcfg.c ../src/webcfg_auth.c ../src/webcfg_notify.c ../src/webcfg_db.c ../src/webcfg_pack.c ../src/webcfg_blob.c ../src/webcfg_metadata.c ../src/webcfg_generic_pc.c ../src/webcfg_timer.c ../src/webcfg_event.c)
+
+if (WEBCONFIG_BIN_SUPPORT)
+set(SOURCES ${SOURCES} ../src/webcfg_rbus.c)
+endif (WEBCONFIG_BIN_SUPPORT)
+
+add_executable(test_webcfg ${SOURCES})
+target_link_libraries (test_webcfg -lcunit -lwrp-c -lwdmp-c -lcimplog -lmsgpackc -lcurl -lpthread  -lm -luuid -ltrower-base64 -lcjson -lcmocka)
+
+if (WEBCONFIG_BIN_SUPPORT)
+target_link_libraries (test_webcfg -lrbus)
+endif (WEBCONFIG_BIN_SUPPORT)
+
+target_link_libraries (test_webcfg gcov -Wl,--no-as-needed )
 
 #-------------------------------------------------------------------------------
 #   test_generic
@@ -450,6 +469,8 @@ COMMAND lcov -q --capture --directory
 ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/test_timer.dir/__/src --output-file test_timer.info
 COMMAND lcov -q --capture --directory 
 ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/test_notify.dir/__/src --output-file test_notify.info
+COMMAND lcov -q --capture --directory
+${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/test_webcfg.dir/__/src --output-file test_webcfg.info
 COMMAND lcov -q --capture --directory 
 ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/test_generic_pc.dir/__/src --output-file test_generic_pc.info
 COMMAND lcov -q --capture --directory 
@@ -475,6 +496,7 @@ COMMAND lcov
 -a test_rbus_fr.info
 -a test_timer.info
 -a test_notify.info
+-a test_webcfg.info
 -a test_generic_pc.info
 -a test_blob.info
 -a test_cmocka_multipart.info

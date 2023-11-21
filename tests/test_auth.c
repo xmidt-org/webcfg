@@ -164,6 +164,8 @@ void test_getAuthToken_failure()
     getAuthToken();
     CU_ASSERT_PTR_NOT_NULL(get_deviceMAC());
     CU_ASSERT_PTR_NULL(getSerialNumber());
+    remove(WEBPA_CREATE_HEADER);
+    remove(WEBPA_READ_HEADER);      
 }
 
 void test_getAuthToken_error()
@@ -203,6 +205,8 @@ void test_getAuthToken_error()
     
     CU_ASSERT_PTR_NOT_NULL(get_deviceMAC());
     CU_ASSERT_PTR_NOT_NULL(getSerialNumber());
+    remove(WEBPA_CREATE_HEADER);
+    remove(WEBPA_READ_HEADER);
 }
 
 void add_suites( CU_pSuite *suite )
