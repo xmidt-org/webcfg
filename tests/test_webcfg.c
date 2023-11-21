@@ -47,12 +47,14 @@ long getTimeOffset()
 	return 0;
 }
 
+#ifdef FEATURE_SUPPORT_AKER
 int akerwait__ (unsigned int secs)
 {
 	UNUSED(secs);
 	return 0;
 
 }
+#endif
 
 char* get_deviceMAC()
 {
@@ -83,7 +85,7 @@ void sendNotification(char *payload, char *source, char *destination)
 	return;
 }
 
-
+#ifdef FEATURE_SUPPORT_AKER
 void checkAkerStatus(){
 	
 	return;
@@ -99,8 +101,7 @@ void processAkerSubdoc()
 {
 	return ;
 }
-
-
+#endif
 
 char * getDeviceBootTime()
 {
@@ -398,10 +399,16 @@ void test_global_shutdown()
     unsigned long status = 0;
     initWebConfigMultipartTask(status);
     sleep(6);
+    //Aseerting webcfgReady should be true
+    assert_true(get_webcfgReady());
+    //Asserting bootsync
+    assert_false(get_bootSync());
     set_global_shutdown(true);
     pthread_cond_signal(get_global_sync_condition());
     sleep(6);
     set_global_shutdown(false);
+    //Aseerting webcfgReady should be false in global Shutdown
+    assert_false(get_webcfgReady());
     assert_null(get_global_mpThreadId());
 }
 
