@@ -43,9 +43,11 @@
 #include "../src/webcfg_event.h"
 #include "../src/webcfg_auth.h"
 #include "../src/webcfg_blob.h"
+#ifdef WEBCONFIG_BIN_SUPPORT	
 #include "../src/webcfg_rbus.h"
-
+	
 rbusHandle_t handle;
+#endif
 
 #ifdef FEATURE_SUPPORT_AKER
 #include "webcfg_aker.h"
@@ -106,6 +108,7 @@ char * getModelName()
 	return mName;
 }
 
+#ifdef WEBCONFIG_BIN_SUPPORT	
 int getEncodedBlob(char *data, char **encodedData);
 static void packJsonString( cJSON *item, msgpack_packer *pk );
 static void packJsonNumber( cJSON *item, msgpack_packer *pk );
@@ -311,6 +314,7 @@ rbusError_t webcfgBlobElement1SetHandler(rbusHandle_t handle, rbusProperty_t pro
 	}   
      	return RBUS_ERROR_SUCCESS;
 }
+#endif
 
 void test_generate_trans_uuid(){
 
@@ -863,6 +867,7 @@ void test_failedDocsRetry()
 	tmpData->error_code = 192;
 	tmpData->error_details = strdup("none");
 	tmpData->retry_timestamp = 1;
+	tmpData->cloud_trans_id = strdup("abc123");
 	tmpData->next = NULL;
 	set_global_tmp_node(tmpData);
 
@@ -1078,6 +1083,7 @@ void test_processMsgpackSubdoc_failure()
 	CU_ASSERT_EQUAL(result, WEBCFG_FAILURE);
 }
 
+#ifdef WEBCONFIG_BIN_SUPPORT
 void test_processMsgpackSubdoc_msgpack_failure()
 {
 	int status = webconfigRbusInit("consumerComponent"); 
@@ -1192,6 +1198,7 @@ void test_processMsgpackSubdoc_setValues_rbus()
 	}
 	webpaRbus_Uninit(); 
 }
+#endif
 
 void add_suites( CU_pSuite *suite )
 {
@@ -1253,8 +1260,10 @@ void add_suites( CU_pSuite *suite )
       CU_add_test( *suite, "test readFromFile_success", test_readFromFile_success);
 	  CU_add_test( *suite, "test readFromFile_failure", test_readFromFile_failure);  
       CU_add_test( *suite, "test processMsgpackSubdoc_failure", test_processMsgpackSubdoc_failure);
+#ifdef WEBCONFIG_BIN_SUPPORT
       CU_add_test( *suite, "test processMsgpackSubdoc_msgpack_failure", test_processMsgpackSubdoc_msgpack_failure);
       CU_add_test( *suite, "test processMsgpackSubdoc_setValues_rbus", test_processMsgpackSubdoc_setValues_rbus);
+#endif
 }
 
 /*----------------------------------------------------------------------------*/

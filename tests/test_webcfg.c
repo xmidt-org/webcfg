@@ -24,7 +24,9 @@
 #include <cimplog.h>
 #include "../src/webcfg_db.h"
 #include "../src/webcfg_log.h"
+#ifdef WEBCONFIG_BIN_SUPPORT	
 #include "../src/webcfg_rbus.h"
+#endif	
 #include "../src/webcfg_metadata.h"
 #include "../src/webcfg.h"
 #include "../src/webcfg_event.h"
