@@ -25,44 +25,9 @@
 #include "../src/webcfg_multipart.h"
 #include "../src/webcfg_timer.h"
 #include "../src/webcfg_notify.h"
+#include "../src/webcfg_generic.h"
 #define UNUSED(x) (void )(x)
 //mock functions
-
-long getTimeOffset()
-{
-	return 0;
-}
-
-int akerwait__ (unsigned int secs)
-{
-	UNUSED(secs);
-	return 0;
-
-}
-char* get_deviceMAC()
-{
-	char *device_mac=strdup("b42xxxxxxxxx");
-	return device_mac;
-}
-char* get_deviceWanMAC()
-{
-	char *device_wan_mac=strdup("b42xxxxxxxxx");
-	return device_wan_mac;
-}
-int Get_Webconfig_URL( char *pString)
-{
-	char *webConfigURL =NULL;
-	loadInitURLFromFile(&webConfigURL);
-	pString = webConfigURL;
-        printf("The value of pString is %s\n",pString);
-	return 0;
-}
-int Set_Webconfig_URL( char *pString)
-{
-	printf("Set_Webconfig_URL pString %s\n", pString);
-	return 0;
-}
-
 
 void initEventHandlingTask(){
 	return;
@@ -79,33 +44,6 @@ WEBCFG_STATUS checkAndUpdateTmpRetryCount(webconfig_tmp_data_t *temp, char *docn
 	UNUSED(docname);
 	return 0;
 }
-void setValues(const param_t paramVal[], const unsigned int paramCount, const int setType, char *transactionId, money_trace_spans *timeSpan, WDMP_STATUS *retStatus, int *ccspStatus)
-{
-	UNUSED(paramVal);
-	UNUSED(paramCount);
-	UNUSED(setType);
-	UNUSED(transactionId);
-	UNUSED(timeSpan);
-	UNUSED(retStatus);
-	UNUSED(ccspStatus);
-	return;
-}
-
-
-void sendNotification(char *payload, char *source, char *destination)
-{
-	WEBCFG_FREE(payload);
-	WEBCFG_FREE(source);
-	UNUSED(destination);
-	return;
-}
-
-WDMP_STATUS mapStatus(int ret)
-{
-	UNUSED(ret);
-	return 0;
-}
-
 
 void webcfgCallback(char *Info, void* user_data)
 {
@@ -131,107 +69,9 @@ pthread_mutex_t *get_global_event_mut(void)
 {
     return 0;
 }
-void checkAkerStatus(){
-	
-	return;
-}
-void updateAkerMaxRetry(webconfig_tmp_data_t *temp, char *docname)
-{
-	UNUSED(temp);
-	UNUSED(docname);
-	return;
-}
-
-void processAkerSubdoc(){
-return ;
-}
-
-
-
-char * getDeviceBootTime()
-{
-	char *bTime = strdup("152200345");
-	return bTime;
-}
-
-char * getFirmwareVersion()
-{
-	char *fName = strdup("Firmware.bin");
-	return fName;
-}
-
-int getForceSync(char** pString, char **transactionId)
-{
-	UNUSED(pString);
-	UNUSED(transactionId);
-	return 0;
-}
-
-char * getProductClass()
-{
-	char *pClass = strdup("Product");
-	return pClass;
-}
-
-char * getModelName()
-{
-	char *mName = strdup("Model");
-	return mName;
-}
-
 
 void retryMultipartSubdoc(){
 	return ;
-}
-char *get_global_systemReadyTime()
-{
-	char *sTime = strdup("158000123");
-	return sTime;
-}
-
-char * getRebootReason()
-{
-	char *reason = strdup("factory-reset");
-	return reason;
-}
-
-
-
-char * getPartnerID()
-{
-	char *pID = strdup("partnerID");
-	return pID;
-}
-
-char * getAccountID()
-{
-	char *aID = strdup("accountID");
-	return aID;
-}
-
-
-
-int Get_Supplementary_URL( char *name, char *pString)
-{
-    UNUSED(name);
-    UNUSED(pString);
-    return 0;
-}
-
-int Set_Supplementary_URL( char *name, char *pString)
-{
-    UNUSED(name);
-    UNUSED(pString);
-    return 0;
-}
-char *getFirmwareUpgradeStartTime(void)
-{
-    return NULL;
-}
-
-char *getFirmwareUpgradeEndTime(void)
-{
-    return NULL;
 }
 
 /*----------------------------------------------------------------------------*/

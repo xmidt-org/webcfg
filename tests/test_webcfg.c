@@ -33,7 +33,7 @@
 #include "../src/webcfg_multipart.h"
 #define UNUSED(x) (void )(x)
 //mock functions
-
+int numLoops;
 static int maintenance_sync_lock = true;
 
 void* test_thread_function()
