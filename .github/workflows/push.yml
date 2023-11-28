@@ -4,7 +4,7 @@
 name: CI
 
 on:
-  pull_request:
+  pull_request_target:
   push:
     paths-ignore:
       - 'AUTHORS'
@@ -70,16 +70,16 @@ jobs:
         run: |
           gcovr --sonarqube coverage.xml -r ..
 
+      - name: Upload SonarCloud
+        run: |
+          build/sonar-scanner/bin/sonar-scanner -Dsonar.host.url=https://sonarcloud.io -Dproject.settings=.sonar-project.properties -Dsonar.login=${{ secrets.SONAR_TOKEN }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Upload Codecov.io
         uses: codecov/codecov-action@v1
         with:
           directory:        .
           fail_ci_if_error: true
-
-     # - name: Upload SonarCloud
-     #   run: |
-     #     build/sonar-scanner/bin/sonar-scanner -Dsonar.host.url=https://sonarcloud.io -Dproject.settings=.sonar-project.properties -Dsonar.login=${{ secrets.SONAR_TOKEN }}
-     #   env:
-     #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
 
