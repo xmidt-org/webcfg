@@ -13,6 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#ifdef _SKY_HUB_COMMON_PRODUCT_REQ_
+#define WEBCFG_WANSTATUS_PARAM "Device.X_RDK_WanManager.CurrentStatus"
+int subscribeTo_CurrentInterfaceStatus_Event();
+#endif
 
 void WanEventHandler();
 #define LOGGING_INTERVAL_SECS    ( 60 * 60 )

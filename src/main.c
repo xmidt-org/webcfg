@@ -97,6 +97,10 @@ int main()
 		#ifdef WAN_FAILOVER_SUPPORTED
 		subscribeTo_CurrentActiveInterface_Event();
 		#endif
+		#ifdef _SKY_HUB_COMMON_PRODUCT_REQ_
+		WebcfgInfo("Registering to Current Interface status\n");
+		subscribeTo_CurrentInterfaceStatus_Event();
+		#endif
 		systemStatus = rbus_waitUntilSystemReady();
 		WebcfgDebug("rbus_waitUntilSystemReady systemStatus is %d\n", systemStatus);
     		getCurrent_Time(&cTime);
