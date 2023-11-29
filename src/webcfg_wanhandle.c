@@ -21,9 +21,7 @@
 #ifdef _SKY_HUB_COMMON_PRODUCT_REQ_
 #include <stdlib.h>
 #include <string.h>
-#include <pthread.h>
 #include <unistd.h>
-#include <sysevent/sysevent.h>
 #include "time.h"
 #include "webcfg.h"
 #include "webcfg_rbus.h"
@@ -64,6 +62,12 @@ static void eventReceiveHandler(
          char *CurrentWANStatus = NULL;
          CurrentWANStatus = (char *) rbusValue_GetString(newValue, NULL);
 
+         if (CurrentWANStatus == NULL)
+         {
+	     WebcfgError(("CurrentWANStatus is NULL returning..\n"));
+             return;
+	 }
+	
          if (strcmp(CurrentWANStatus, "Down")==0)
          {
               WebcfgInfo("Received wan Down event\n");
