@@ -50,7 +50,7 @@ jobs:
       - name: CMake
         working-directory: build
         run: |
-          cmake .. -DWEBCONFIG_BIN_SUPPORT:BOOL=true -DWAN_FAILOVER_SUPPORTED:BOOL=true -DINTEGRATION_TESTING:BOOL=false -DDISABLE_VALGRIND:BOOL=${DISABLE_VALGRIND} -DENABLE_SESHAT:BOOL=true -DFEATURE_DNS_QUERY:BOOL=true
+          cmake .. -DWEBCONFIG_BIN_SUPPORT:BOOL=true -DWAN_FAILOVER_SUPPORTED:BOOL=true -DBUILD_GIT:BOOL=true -DDISABLE_VALGRIND:BOOL=${DISABLE_VALGRIND}
 
       - name: Unit tests run
         working-directory: build
@@ -59,6 +59,10 @@ jobs:
           export RBUS_ROOT=${HOME}/rbus
           export RBUS_INSTALL_DIR=${RBUS_ROOT}/install && \
           export LD_LIBRARY_PATH=${RBUS_INSTALL_DIR}/usr/lib/rbus_temp_lib:${LD_LIBRARY_PATH}            
+          export C_INCLUDE_PATH=${RBUS_INSTALL_DIR}/usr/include                   
+          mkdir _install
+          mkdir _install/lib
+          cp ${RBUS_INSTALL_DIR}/usr/lib/librbus* _install/lib                   
           build-wrapper-linux-x86/build-wrapper-linux-x86-64 --out-dir bw-output make all test 
               
       - name: Stop rtrouted

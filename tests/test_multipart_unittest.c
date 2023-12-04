@@ -1141,8 +1141,6 @@ void test_processMsgpackSubdoc_msgpack_failure()
 
 void test_processMsgpackSubdoc_setValues_rbus()
 {
-	webconfigRbusInit("consumerComponent");
-	regWebConfigDataModel();
 	int res = rbus_open(&handle, "providerComponent");
     	if(res != RBUS_ERROR_SUCCESS)
 	{
@@ -1156,6 +1154,8 @@ void test_processMsgpackSubdoc_setValues_rbus()
 	rbusError_t ret = rbus_regDataElements(handle, 1, webcfgBlobElement);
 	CU_ASSERT_EQUAL(ret, RBUS_ERROR_SUCCESS);
 
+	webconfigRbusInit("consumerComponent");
+	regWebConfigDataModel();	
 	SubDocSupportMap_t *supportdocs = (SubDocSupportMap_t *)malloc(sizeof(SubDocSupportMap_t));
 	if(supportdocs)
 	{
