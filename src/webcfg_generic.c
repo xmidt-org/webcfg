@@ -22,7 +22,7 @@
 #include "webcfg_log.h"
 #if defined(WEBCONFIG_BIN_SUPPORT)
 #include "webcfg_rbus.h"
-#include <rbus.h>
+#include <rbus/rbus.h>
 #endif
 /*----------------------------------------------------------------------------*/
 /*                                   Macros                                   */

@@ -1773,7 +1773,6 @@ void test_blobSet_rbus()
 	WDMP_STATUS retStatus = WDMP_FAILURE;
 	int ccspStatus = 0;
 
-	webconfigRbusInit("consumerComponent");
 	int res = rbus_open(&handle, "providerComponent");
     	if(res != RBUS_ERROR_SUCCESS)
 	{
@@ -1785,6 +1784,7 @@ void test_blobSet_rbus()
 	rbusError_t ret = rbus_regDataElements(handle, 1, webcfgBlobElement);
 	CU_ASSERT_EQUAL(ret, RBUS_ERROR_SUCCESS);
 
+	webconfigRbusInit("consumerComponent");	
 	blobSet_rbus(WEBCFG_BLOB_PARAM, buff, sendMsgSize, &retStatus, &ccspStatus);
 	CU_ASSERT_EQUAL(CCSP_Msg_Bus_OK, ccspStatus);
 	CU_ASSERT_EQUAL(WDMP_SUCCESS, retStatus);
