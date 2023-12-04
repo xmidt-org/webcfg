@@ -18,6 +18,9 @@
 
 #include "webcfg_wanhandle.h"
 
+void WanEventHandler()
+{
+}
 #ifdef _SKY_HUB_COMMON_PRODUCT_REQ_
 #include <stdlib.h>
 #include <string.h>
@@ -116,9 +119,3 @@ int subscribeTo_CurrentInterfaceStatus_Event()
          return rc;
 }
 #endif
-
-void WanEventHandler()
-{
-}
-
-
