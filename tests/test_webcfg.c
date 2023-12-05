@@ -464,6 +464,7 @@ void test_supplementarySync_and_ForceSync()
     spInfo->name = strdup("telemetry");
     spInfo->next = NULL;
 
+    WebcfgInfo("Test print\n");
     set_global_spInfoHead(spInfo);
     set_global_spInfoTail(spInfo);
 
