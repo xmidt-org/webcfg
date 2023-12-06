@@ -1541,6 +1541,8 @@ void refreshConfigVersionList(char *versionsList, int http_status, char *docsLis
  * @param[out] trans_uuid for sync
  * @param[out] header_list output curl header list
 */
+
+//NOTE: If new headers are added in webcfg curl flow add them in MQTT createMqttHeader also if necessary
 #if !defined FEATURE_SUPPORT_MQTTCM
 void createCurlHeader( struct curl_slist *list, struct curl_slist **header_list, int status, char ** trans_uuid, char **subdocList)
 {
