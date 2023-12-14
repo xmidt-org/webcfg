@@ -456,7 +456,7 @@ int createMqttHeader(char **header_list)
 	char *AccountID = NULL, *AccountID_header = NULL;
 	char *deviceId_header = NULL, *doc_header = NULL;
 	char *contenttype_header = NULL, *contentlen_header = NULL;
-	char *DeviceWanMac_header = NULL;
+	char *DeviceWanMac = NULL, *DeviceWanMac_header = NULL;
 	struct timespec cTime;
 	char currentTime[32];
 	char *currentTime_header=NULL;
@@ -891,6 +891,7 @@ int createMqttHeader(char **header_list)
 	{
 		WebcfgError("Failed in memory allocation for contentlen_header\n");
 	}
+
 	//Addtional headers for telemetry sync
 	if(get_global_supplementarySync())
 	{
@@ -934,10 +935,14 @@ int createMqttHeader(char **header_list)
 			WebcfgError("Failed to get AccountID\n");
 		}
 
-		if( get_deviceWanMAC() != NULL && strlen(get_deviceWanMAC()) !=0 )
+		if(strlen(g_deviceWanMac) ==0)
 		{
-		       strncpy(g_deviceWanMac, get_deviceWanMAC(), sizeof(g_deviceWanMac)-1);
-			WebcfgDebug("g_deviceWanMac fetched is %s\n", g_deviceWanMac);
+			DeviceWanMac = get_deviceWanMAC();
+			if(DeviceWanMac !=NULL)
+			{
+			       strncpy(g_deviceWanMac, DeviceWanMac, sizeof(g_deviceWanMac)-1);
+			       WebcfgDebug("g_deviceWanMac fetched is %s\n", g_deviceWanMac);
+			}
 		}
 
 		if(strlen(g_deviceWanMac))
@@ -957,6 +962,7 @@ int createMqttHeader(char **header_list)
 		{
 			WebcfgError("Failed to get DeviceWanMac_header\n");
 		}
+
 	}
 
 	if(!get_global_supplementarySync())
