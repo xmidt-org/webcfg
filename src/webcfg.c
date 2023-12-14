@@ -83,7 +83,6 @@ static int g_webcfg_forcedsync_started = 0;
 /*                             Function Prototypes                            */
 /*----------------------------------------------------------------------------*/
 void *WebConfigMultipartTask(void *status);
-int handlehttpResponse(long response_code, char *webConfigData, int retry_count, char* transaction_uuid, char* ct, size_t dataSize);
 /*----------------------------------------------------------------------------*/
 /*                             External Functions                             */
 /*----------------------------------------------------------------------------*/

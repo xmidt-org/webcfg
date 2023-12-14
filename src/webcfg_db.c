@@ -355,6 +355,13 @@ webconfig_db_data_t * get_global_db_node(void)
     return tmp;
 }
 
+void set_global_db_node(webconfig_db_data_t *tmp)
+{
+    pthread_mutex_lock (&webconfig_db_mut);
+    webcfgdb_data = tmp ;
+    pthread_mutex_unlock (&webconfig_db_mut);
+}
+
 webconfig_tmp_data_t * get_global_tmp_node(void)
 {
     webconfig_tmp_data_t * tmp = NULL;

@@ -29,9 +29,8 @@
 #endif
 
 #include "webcfg_metadata.h"
-#ifdef WAN_FAILOVER_SUPPORTED
 #include "webcfg_multipart.h"
-#endif
+
 
 time_t start_time;
 int force_reset_call_count=0;

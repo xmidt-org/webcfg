@@ -1,4 +1,6 @@
+#ifdef WEBCONFIG_BIN_SUPPORT
 #include <rbus/rbus.h>
+#endif
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -48,6 +50,7 @@ void sendNotification_rbus(char *payload, char *source, char *destination)
     UNUSED(destination);
 }
 
+#ifdef WEBCONFIG_BIN_SUPPORT
 rbusError_t registerRBUSEventElement()
 {
     return RBUS_ERROR_SUCCESS;
@@ -57,6 +60,7 @@ rbusError_t removeRBUSEventElement()
 {
     return remove_rbus; 
 }
+#endif
 
 void test_rbus_waitUntilSystemReady()
 {
@@ -88,6 +92,7 @@ void test_rbus_setAttributes()
 void test_mapStatus(void)
 {
 	WDMP_STATUS ret = WDMP_FAILURE;
+#ifdef WEBCONFIG_BIN_SUPPORT      
     ret = mapStatus(CCSP_Msg_Bus_OK);
     CU_ASSERT_EQUAL(ret, WDMP_SUCCESS);
     ret = mapStatus(CCSP_Msg_BUS_TIMEOUT);
@@ -97,22 +102,28 @@ void test_mapStatus(void)
     ret = mapStatus(CCSP_ERR_UNSUPPORTED_NAMESPACE);
     CU_ASSERT_EQUAL(ret, WDMP_ERR_UNSUPPORTED_NAMESPACE);         
     ret = mapStatus(CCSP_Msg_Bus_ERROR);
-    CU_ASSERT_EQUAL(ret, WDMP_FAILURE); \
+    CU_ASSERT_EQUAL(ret, WDMP_FAILURE);
     rbus_status = false;
     ret = mapStatus(0);
     CU_ASSERT_EQUAL(ret, 0);  
-    rbus_status = true;            
+    rbus_status = true; 
+#else
+    ret = mapStatus(0);
+    CU_ASSERT_EQUAL(ret, 0);  
+#endif               
 }
 
 void test_unregisterWebcfgEvent()
 {
-    int ret = 0;
+#ifdef WEBCONFIG_BIN_SUPPORT     
+    int ret = 0;   
     ret = unregisterWebcfgEvent();
     CU_ASSERT_EQUAL(ret, 1); 
     remove_rbus = RBUS_ERROR_BUS_ERROR;
     ret = unregisterWebcfgEvent();
     CU_ASSERT_EQUAL(ret, 0);  
-    remove_rbus = RBUS_ERROR_SUCCESS;       
+    remove_rbus = RBUS_ERROR_SUCCESS; 
+#endif          
 }
 
 void test_registerWebcfgEvent()
@@ -120,8 +131,13 @@ void test_registerWebcfgEvent()
     WebConfigEventCallback webcfgEventCB;
     webcfgEventCB = NULL;
     int ret = 0;
+#ifdef WEBCONFIG_BIN_SUPPORT    
     ret = registerWebcfgEvent(webcfgEventCB);
-    CU_ASSERT_EQUAL(ret, 1);         
+    CU_ASSERT_EQUAL(ret, 1);   
+#else
+    ret = registerWebcfgEvent(webcfgEventCB);
+    CU_ASSERT_EQUAL(ret, 0);  
+#endif          
 }
 
 void test_sendNotification()
