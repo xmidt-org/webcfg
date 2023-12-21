@@ -47,6 +47,7 @@ static char g_productClass[64]={'\0'};
 static char g_ModelName[64]={'\0'};
 static char g_PartnerID[64]={'\0'};
 static char g_AccountID[64]={'\0'};
+static char g_deviceWanMac[64]={'\0'};
 static char *supportedVersion_header=NULL;
 static char *supportedDocs_header=NULL;
 static char *supplementaryDocs_header=NULL;
@@ -455,6 +456,8 @@ int createMqttHeader(char **header_list)
 	char *AccountID = NULL, *AccountID_header = NULL;
 	char *deviceId_header = NULL, *doc_header = NULL;
 	char *contenttype_header = NULL, *contentlen_header = NULL;
+	char *DeviceWanMac = NULL, *DeviceWanMac_header = NULL;
+	char *deviceMac = NULL;
 	struct timespec cTime;
 	char currentTime[32];
 	char *currentTime_header=NULL;
@@ -468,10 +471,14 @@ int createMqttHeader(char **header_list)
 
 	WebcfgInfo("Start of createMqttHeader\n");
 
-	if( get_deviceMAC() != NULL && strlen(get_deviceMAC()) !=0 )
+	if( strlen(g_deviceId) ==0 )
 	{
-	       strncpy(g_deviceId, get_deviceMAC(), sizeof(g_deviceId)-1);
-	       WebcfgInfo("g_deviceId fetched is %s\n", g_deviceId);
+	       deviceMac = get_deviceMAC();
+	       if(deviceMac != NULL)
+	       {
+	              strncpy(g_deviceId, get_deviceMAC(), sizeof(g_deviceId)-1);
+	              WebcfgInfo("g_deviceId fetched is %s\n", g_deviceId);
+	       }
 	}
 
 	if(strlen(g_deviceId))
@@ -889,6 +896,7 @@ int createMqttHeader(char **header_list)
 	{
 		WebcfgError("Failed in memory allocation for contentlen_header\n");
 	}
+
 	//Addtional headers for telemetry sync
 	if(get_global_supplementarySync())
 	{
@@ -931,7 +939,37 @@ int createMqttHeader(char **header_list)
 		{
 			WebcfgError("Failed to get AccountID\n");
 		}
+
+		if(strlen(g_deviceWanMac) ==0)
+		{
+			DeviceWanMac = get_deviceWanMAC();
+			if(DeviceWanMac !=NULL)
+			{
+			       strncpy(g_deviceWanMac, DeviceWanMac, sizeof(g_deviceWanMac)-1);
+			       WebcfgDebug("g_deviceWanMac fetched is %s\n", g_deviceWanMac);
+			}
+		}
+
+		if(strlen(g_deviceWanMac))
+		{
+			DeviceWanMac_header = (char *) malloc(sizeof(char)*MAX_BUF_SIZE);
+			if(DeviceWanMac_header !=NULL)
+			{
+				snprintf(DeviceWanMac_header, MAX_BUF_SIZE, "\r\nX-System-Wan-Mac: %s", g_deviceWanMac);
+				WebcfgInfo("DeviceWanMac_header formed %s\n", DeviceWanMac_header);
+			}
+			else
+			{
+				WebcfgError("Failed in memory allocation for DeviceWanMac_header\n");
+			}
+		}
+		else
+		{
+			WebcfgError("Failed to get DeviceWanMac_header\n");
+		}
+
 	}
+
 	if(!get_global_supplementarySync())
 	{
 		WebcfgInfo("Framing primary sync header\n");
@@ -940,7 +978,8 @@ int createMqttHeader(char **header_list)
 	else
 	{
 		WebcfgInfo("Framing supplementary sync header\n");
-		snprintf(*header_list, 1024, "%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s\r\n\r\n", (deviceId_header!=NULL)?deviceId_header:"",(doc_header!=NULL)?doc_header:"", (version_header!=NULL)?version_header:"", (accept_header!=NULL)?accept_header:"", (schema_header!=NULL)?schema_header:"", (supportedVersion_header!=NULL)?supportedVersion_header:"", (supportedDocs_header!=NULL)?supportedDocs_header:"", (bootTime_header)?bootTime_header:"", (FwVersion_header)?FwVersion_header:"", (status_header)?status_header:"", (currentTime_header)?currentTime_header:"", (systemReadyTime_header!=NULL)?systemReadyTime_header:"", (uuid_header!=NULL)?uuid_header:"", (productClass_header!=NULL)?productClass_header:"", (ModelName_header!=NULL)?ModelName_header:"",(contenttype_header!=NULL)?contenttype_header:"", (contentlen_header!=NULL)?contentlen_header:"", (PartnerID_header!=NULL)?PartnerID_header:"",(supplementaryDocs_header!=NULL)?supplementaryDocs_header:"", (telemetryVersion_header!=NULL)?telemetryVersion_header:"", (AccountID_header!=NULL)?AccountID_header:"");
+		snprintf(*header_list, 1024, "%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s\r\n\r\n", (deviceId_header!=NULL)?deviceId_header:"",(doc_header!=NULL)?doc_header:"", (version_header!=NULL)?version_header:"", (accept_header!=NULL)?accept_header:"", (schema_header!=NULL)?schema_header:"", (supportedVersion_header!=NULL)?supportedVersion_header:"", (supportedDocs_header!=NULL)?supportedDocs_header:"", (bootTime_header)?bootTime_header:"", (FwVersion_header)?FwVersion_header:"", (status_header)?status_header:"", (currentTime_header)?currentTime_header:"", (systemReadyTime_header!=NULL)?systemReadyTime_header:"", (uuid_header!=NULL)?uuid_header:"", (productClass_header!=NULL)?productClass_header:"", (ModelName_header!=NULL)?ModelName_header:"",(contenttype_header!=NULL)?contenttype_header:"", (contentlen_header!=NULL)?contentlen_header:"", (PartnerID_header!=NULL)?PartnerID_header:"",(supplementaryDocs_header!=NULL)?supplementaryDocs_header:"", (telemetryVersion_header!=NULL)?telemetryVersion_header:"", (AccountID_header!=NULL)?AccountID_header:"", (DeviceWanMac_header!=NULL)?DeviceWanMac_header:"");
+		WEBCFG_FREE(DeviceWanMac_header);
 	}
 	writeToDBFile("/tmp/header_list.txt", *header_list, strlen(*header_list));
 	WebcfgDebug("mqtt header_list is \n%s\n", *header_list);
