@@ -1589,6 +1589,8 @@ void createCurlHeader( struct curl_slist *list, struct curl_slist **header_list,
 			list = curl_slist_append(list, version_header);
 			WEBCFG_FREE(version_header);
 		}
+		WebcfgInfo("Post none retain header formed POST-NONE-RETAIN: true\n");
+		list = curl_slist_append(list, "POST-NONE-RETAIN: true");		
 	}
 	list = curl_slist_append(list, "Accept: application/msgpack");
 
