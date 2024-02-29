@@ -1410,13 +1410,7 @@ void derive_root_doc_version_string(char **rootVersion, uint32_t *root_ver, int 
 
 			if(db_root_string !=NULL)
 			{
-				if((strcmp(db_root_string,"POST-NONE")==0) && (strcmp(g_RebootReason,FW_UPGRADE_REBOOT_REASON)!=0) && (strcmp(g_RebootReason,FORCED_FW_UPGRADE_REBOOT_REASON)!=0) && (strcmp(g_RebootReason,FACTORY_RESET_REBOOT_REASON)!=0))
-				{
-					*rootVersion = strdup("NONE-REBOOT");
-					WEBCFG_FREE(db_root_string);
-					return;
-				}
-				else if(status == 404 && ((strcmp(db_root_string, "NONE") == 0) || (strcmp(db_root_string, "NONE-MIGRATION") == 0) || (strcmp(db_root_string, "NONE-REBOOT") == 0)))
+				if(status == 404 && ((strcmp(db_root_string, "NONE") == 0) || (strcmp(db_root_string, "NONE-MIGRATION") == 0) || (strcmp(db_root_string, "NONE-REBOOT") == 0)))
 				{
 					*rootVersion = strdup("POST-NONE");
 					WEBCFG_FREE(db_root_string);
@@ -1595,6 +1589,8 @@ void createCurlHeader( struct curl_slist *list, struct curl_slist **header_list,
 			list = curl_slist_append(list, version_header);
 			WEBCFG_FREE(version_header);
 		}
+		WebcfgInfo("Post none retain header formed POST-NONE-RETAIN: true\n");
+		list = curl_slist_append(list, "POST-NONE-RETAIN: true");		
 	}
 	list = curl_slist_append(list, "Accept: application/msgpack");
 
