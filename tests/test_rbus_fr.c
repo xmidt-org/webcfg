@@ -61,17 +61,35 @@ void set_global_webcfg_forcedsync_needed(int value)
 {
 	UNUSED(value);
 }
-
+void set_webcfg_forceSync_needed(int value)
+{
+   UNUSED(value);
+}
 int get_global_webcfg_forcedsync_needed()
 {
 	return false;
 }
+int get_webcfg_forceSync_needed()
+{
+    return false;
+}
 
 bool get_global_webcfg_forcedsync_started_flag = false;
+bool get_webcfg_forceSync_started_flag = false;
 int get_global_webcfg_forcedsync_started()
 {
 	return get_global_webcfg_forcedsync_started_flag;
 }
+int get_webcfg_forceSync_started()
+{
+    return get_webcfg_forceSync_started_flag;
+}
+
+void set_webcfg_forceSync_started(int value)
+{
+    UNUSED(value);
+}
+
 
 int get_global_supplementarySync()
 {

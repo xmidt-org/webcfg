@@ -79,6 +79,9 @@ static int g_testfile = 0;
 static int g_supplementarySync = 0;
 static int g_webcfg_forcedsync_needed = 0;
 static int g_webcfg_forcedsync_started = 0;
+static int g_webcfg_forceSync_needed = 0;
+static int g_webcfg_forceSync_started = 0;
+
 /*----------------------------------------------------------------------------*/
 /*                             Function Prototypes                            */
 /*----------------------------------------------------------------------------*/
@@ -181,9 +184,9 @@ void *WebConfigMultipartTask(void *status)
 	{
 		if(forced_sync)
 		{
-			WebcfgDebug("Triggered Forced sync\n");
+			WebcfgInfo("Triggered Forced sync\n");
 			processWebconfgSync((int)Status, syncDoc);
-			WebcfgDebug("reset forced_sync after sync\n");
+			WebcfgInfo("reset forced_sync after sync\n");
 			forced_sync = 0;
 			if(get_global_supplementarySync() && syncDoc !=NULL)
 			{
@@ -196,10 +199,17 @@ void *WebConfigMultipartTask(void *status)
 				WebcfgDebug("reset webcfg_forcedsync_started\n");
 				set_global_webcfg_forcedsync_started(0);
 			}
+			if(get_webcfg_forceSync_started())
+			{
+				WebcfgInfo("reset webcfg_forcedsync_started\n");
+				set_webcfg_forceSync_started(0);
+			}
 		}
 
 		if(!wait_flag)
 		{
+		WebcfgInfo("####Sleep of 10s\n");
+               	sleep(10);
 			if(maintenance_doc_sync == 1 && checkMaintenanceTimer() == 1 )
 			{
 				WebcfgInfo("Maintenance window started. set maintenanceSync to true\n");
@@ -220,7 +230,7 @@ void *WebConfigMultipartTask(void *status)
 				{
 					WEBCFG_FREE(ForceSyncTransID);
 				}
-				WebcfgDebug("Triggered Supplementary doc boot sync\n");
+				WebcfgInfo("Triggered Supplementary doc boot sync\n");
 				SupplementaryDocs_t *sp = NULL;
 				sp = get_global_spInfoHead();
 
@@ -236,6 +246,7 @@ void *WebConfigMultipartTask(void *status)
 
 				initMaintenanceTimer();
 				maintenance_doc_sync = 0;//Maintenance trigger flag
+				WebcfgInfo("maintenance_doc_sync is %d\n", maintenance_doc_sync);
 				maintenance_count = 1;//Maintenance count to restrict one sync per day
 				set_global_supplementarySync(0);
 			}
@@ -252,7 +263,7 @@ void *WebConfigMultipartTask(void *status)
 		clock_gettime(CLOCK_REALTIME, &ts);
 
 		retry_flag = get_doc_fail();
-		WebcfgDebug("The retry flag value is %d\n", retry_flag);
+		WebcfgInfo("The retry flag value is %d\n", retry_flag);
 
 		if ( retry_flag == 0)
 		{
@@ -270,7 +281,7 @@ void *WebConfigMultipartTask(void *status)
 		#else
 			maintenance_doc_sync = 0;
 			maintenance_count = 0;
-			WebcfgDebug("maintenance_count is %d\n", maintenance_count);
+			WebcfgInfo("maintenance_count is %d\n", maintenance_count);
 		#endif
 		}
 		else
@@ -280,9 +291,9 @@ void *WebConfigMultipartTask(void *status)
 				set_retry_timer(retrySyncSeconds());
 			}
 			ts.tv_sec += get_retry_timer();
-			WebcfgDebug("The retry triggers at %s\n", printTime((long long)ts.tv_sec));
+			WebcfgInfo("The retry triggers at %s\n", printTime((long long)ts.tv_sec));
 		}
-		if(get_global_webcfg_forcedsync_needed() == 1)
+		if((get_webcfg_forceSync_needed() == 1) || (get_global_webcfg_forcedsync_needed() == 1) )
 		{
 			WebcfgInfo("webcfg_forcedsync detected, trigger force sync with cloud.\n");
 			forced_sync = 1;
@@ -291,12 +302,12 @@ void *WebConfigMultipartTask(void *status)
 		}
 		else if(retry_flag == 1 || maintenance_doc_sync == 1)
 		{
-			WebcfgDebug("B4 sync_condition pthread_cond_timedwait\n");
+			WebcfgInfo("B4 sync_condition pthread_cond_timedwait\n");
 			set_maintenanceSync(false);
 			WebcfgInfo("reset maintenanceSync to false\n");
 			rv = pthread_cond_timedwait(&sync_condition, &sync_mutex, &ts);
-			WebcfgDebug("The retry flag value is %d\n", get_doc_fail());
-			WebcfgDebug("The value of rv %d\n", rv);
+			WebcfgInfo("The retry flag value is %d\n", get_doc_fail());
+			WebcfgInfo("The value of rv %d\n", rv);
 		}
 		else 
 		{
@@ -311,14 +322,14 @@ void *WebConfigMultipartTask(void *status)
 				set_retry_timer(900);
 				set_global_retry_timestamp(0);
 				failedDocsRetry();
-				WebcfgDebug("After the failedDocsRetry\n");
+				WebcfgInfo("After the failedDocsRetry\n");
 			}
 			else
 			{
 				time(&t);
 				wait_flag = 0;
 				maintenance_count = 0;
-				WebcfgDebug("Supplementary Sync Interval %d sec and syncing at %s\n",value,ctime(&t));
+				WebcfgInfo("Supplementary Sync Interval %d sec and syncing at %s\n",value,ctime(&t));
 			}
 		}
 		else if(!rv && !g_shutdown)
@@ -329,6 +340,12 @@ void *WebConfigMultipartTask(void *status)
 				set_global_webcfg_forcedsync_needed(0);
 				set_global_webcfg_forcedsync_started(1);
 				WebcfgDebug("webcfg_forcedsync_needed reset to %d and webcfg_forcedsync_started %d\n", get_global_webcfg_forcedsync_needed(), get_global_webcfg_forcedsync_started());
+			}
+		       if(get_webcfg_forceSync_needed())
+			{
+				set_webcfg_forceSync_needed(0);
+				set_webcfg_forceSync_started(1);
+				WebcfgInfo("webcfg_forceSync_needed reset to %d and webcfg_forceSync_started %d\n", get_webcfg_forceSync_needed(), get_webcfg_forceSync_started());
 			}
 			char *ForceSyncDoc = NULL;
 			char* ForceSyncTransID = NULL;
@@ -345,6 +362,7 @@ void *WebConfigMultipartTask(void *status)
 				{
 					forced_sync = 1;
 					wait_flag = 1;
+					WebcfgInfo("ForceSyncTransID is %s\n", ForceSyncTransID);
 					WebcfgDebug("Received signal interrupt to Force Sync\n");
 
 					//To check poke string received is supplementary doc or not.
@@ -365,7 +383,7 @@ void *WebConfigMultipartTask(void *status)
 				}
 			}
 
-			WebcfgDebug("forced_sync is %d\n", forced_sync);
+			WebcfgInfo("forced_sync is %d\n", forced_sync);
 		}
 		else if(g_shutdown)
 		{
@@ -422,6 +440,8 @@ void *WebConfigMultipartTask(void *status)
 	set_global_supplementarySync(0);
 	set_global_webcfg_forcedsync_needed(0);
 	set_global_webcfg_forcedsync_started(0);
+	set_webcfg_forceSync_needed(0);
+	set_webcfg_forceSync_started(0);
 #ifdef FEATURE_SUPPORT_AKER
 	set_send_aker_flag(false);
 #endif
@@ -531,7 +551,15 @@ int get_global_webcfg_forcedsync_needed()
 {
     return g_webcfg_forcedsync_needed;
 }
+void set_webcfg_forceSync_needed(int value)
+{
+    g_webcfg_forceSync_needed = value;
+}
 
+int get_webcfg_forceSync_needed()
+{
+    return g_webcfg_forceSync_needed;
+}
 void set_global_webcfg_forcedsync_started(int value)
 {
     g_webcfg_forcedsync_started = value;
@@ -540,6 +568,16 @@ void set_global_webcfg_forcedsync_started(int value)
 int get_global_webcfg_forcedsync_started()
 {
     return g_webcfg_forcedsync_started;
+}
+
+void set_webcfg_forceSync_started(int value)
+{
+    g_webcfg_forceSync_started = value;
+}
+
+int get_webcfg_forceSync_started()
+{
+    return g_webcfg_forceSync_started;
 }
 /*----------------------------------------------------------------------------*/
 /*                             Internal functions                             */

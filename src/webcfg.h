@@ -110,4 +110,9 @@ long timeVal_Diff(struct timespec *starttime, struct timespec *finishtime);
 void initWebConfigClient();
 pthread_t get_global_client_threadid();
 void JoinThread (pthread_t threadId);
+
+int get_webcfg_forceSync_needed();
+void set_webcfg_forceSync_needed(int value);
+void set_webcfg_forceSync_started(int value);
+int get_webcfg_forceSync_started();
 #endif
