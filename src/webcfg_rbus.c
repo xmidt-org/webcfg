@@ -388,7 +388,7 @@ rbusError_t webcfgFrSetHandler(rbusHandle_t handle, rbusProperty_t prop, rbusSet
         return RBUS_ERROR_ELEMENT_DOES_NOT_EXIST;
     }
 
-    WebcfgInfo("Parameter name is %s \n", paramName);
+    WebcfgDebug("Parameter name is %s \n", paramName);
     rbusValueType_t type_t;
     rbusValue_t paramValue_t = rbusProperty_GetValue(prop);
     if(paramValue_t) {
@@ -406,7 +406,7 @@ rbusError_t webcfgFrSetHandler(rbusHandle_t handle, rbusProperty_t prop, rbusSet
         if(type_t == RBUS_STRING) {
             char* data = rbusValue_ToString(paramValue_t, NULL, 0);
             if(data) {
-                WebcfgInfo("Call datamodel function  with data %s \n", data);
+                WebcfgDebug("Call datamodel function  with data %s \n", data);
 
 		if(strlen(data) == strlen("telemetry"))
 		{
@@ -428,7 +428,7 @@ rbusError_t webcfgFrSetHandler(rbusHandle_t handle, rbusProperty_t prop, rbusSet
                 }
 		int session_status = 0;
 		int ret = set_rbus_ForceSync(data, &session_status);
-		WebcfgInfo("set_rbus_ForceSync ret %d\n", ret);
+		WebcfgDebug("set_rbus_ForceSync ret %d\n", ret);
 		if(session_status == 2)
 		{
 			WebcfgInfo("session_status is 2\n");
@@ -1873,7 +1873,7 @@ int parseForceSyncJson(char *jsonpayload, char **forceSyncVal, char **forceSynct
 			if ((force_sync_transid != NULL) && strlen(force_sync_transid) > 0)
 			{
 				*forceSynctransID = strdup(force_sync_transid);
-				WebcfgInfo("*forceSynctransID value parsed from json is %s\n", *forceSynctransID);
+				WebcfgDebug("*forceSynctransID value parsed from json is %s\n", *forceSynctransID);
 			}
 			else
 			{
@@ -1910,12 +1910,11 @@ int set_rbus_ForceSync(char* pString, int *pStatus)
 		}
 		if(value !=NULL)
 		{
-			WebcfgInfo("After parseForceSyncJson. value %s transactionId %s\n", value, transactionId);
+			WebcfgDebug("After parseForceSyncJson. value %s transactionId %s\n", value, transactionId);
 			webcfgStrncpy(ForceSync, value, sizeof(ForceSync));
 		}
 	}
-
-	WebcfgInfo("set_rbus_ForceSync . ForceSync string is %s\n", ForceSync);
+	WebcfgDebug("set_rbus_ForceSync . ForceSync string is %s\n", ForceSync);
        
         if(value !=NULL)
 	{
@@ -1957,7 +1956,6 @@ int set_rbus_ForceSync(char* pString, int *pStatus)
         }
         else
         {
-            WebcfgInfo("set_rbus_ForceSync- Inside else - initiating sync\n");
             /* sending signal to initWebConfigMultipartTask to trigger sync */
             pthread_mutex_lock (get_global_sync_mutex());
 
@@ -1968,7 +1966,8 @@ int set_rbus_ForceSync(char* pString, int *pStatus)
                 WebcfgInfo("ForceSyncTransID is %s\n", ForceSyncTransID);
             }
             WebcfgInfo("Trigger force sync\n");
-            //webcfg_forceSync_needed is set initially whenever force sync set is detected, but this does not guarantee the force sync to happen immediately when previous sync is in progress, cloud sync will be retried once previous sync is completed.
+            //Added for RDKB-55566 -  Force sync and maintenance sync happened together.
+            //webcfg_forceSync_needed is set initially whenever force sync set is detected, cloud sync will be retried once maintenance sync is completed.
             set_webcfg_forceSync_needed(1);
             WebcfgInfo("set webcfg_forcesync_needed to %d\n", get_webcfg_forceSync_needed());
             pthread_cond_signal(get_global_sync_condition());
@@ -1982,7 +1981,7 @@ int set_rbus_ForceSync(char* pString, int *pStatus)
     }
     else
     {
-        WebcfgInfo("Force sync param set with empty value\n");
+        WebcfgDebug("Force sync param set with empty value\n");
 	memset(ForceSyncTransID,0,sizeof(ForceSyncTransID));
     }
     return 1;
