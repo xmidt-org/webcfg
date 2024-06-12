@@ -302,26 +302,7 @@ void *WebConfigMultipartTask(void *status)
 		{
 			rv = pthread_cond_wait(&sync_condition, &sync_mutex);
 		}
-
-		if(rv == ETIMEDOUT && !g_shutdown)
-		{
-			if(get_doc_fail() == 1)
-			{
-				set_doc_fail(0);
-				set_retry_timer(900);
-				set_global_retry_timestamp(0);
-				failedDocsRetry();
-				WebcfgDebug("After the failedDocsRetry\n");
-			}
-			else
-			{
-				time(&t);
-				wait_flag = 0;
-				maintenance_count = 0;
-				WebcfgDebug("Supplementary Sync Interval %d sec and syncing at %s\n",value,ctime(&t));
-			}
-		}
-		else if(!rv && !g_shutdown)
+		if(!rv && !g_shutdown)
 		{
 			//webcfg_forcedsync_needed is set initially whenever force sync SET is detected internally & webcfg_forcedsync_started is set when actual sync is started once previous sync is completed.
 			if(get_global_webcfg_forcedsync_needed())
@@ -366,6 +347,24 @@ void *WebConfigMultipartTask(void *status)
 			}
 
 			WebcfgDebug("forced_sync is %d\n", forced_sync);
+		}
+		else if(rv == ETIMEDOUT && !g_shutdown)
+		{
+			if(get_doc_fail() == 1)
+			{
+				set_doc_fail(0);
+				set_retry_timer(900);
+				set_global_retry_timestamp(0);
+				failedDocsRetry();
+				WebcfgDebug("After the failedDocsRetry\n");
+			}
+			else
+			{
+				time(&t);
+				wait_flag = 0;
+				maintenance_count = 0;
+				WebcfgInfo("Supplementary Sync Interval %d sec and syncing at %s\n",value,ctime(&t));
+			}
 		}
 		else if(g_shutdown)
 		{

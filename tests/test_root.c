@@ -117,7 +117,7 @@ void test_POSTNONE()
 	
 	derive_root_doc_version_string(&root_str, &root_version, http_status);
 	CU_ASSERT_FATAL( NULL != root_str );
-	CU_ASSERT_STRING_EQUAL( "NONE-REBOOT", root_str );
+	CU_ASSERT_STRING_EQUAL( "POST-NONE", root_str );
 	fp = fopen("/tmp/webconfig_db.bin","rb");
 	if(fp !=NULL)
 	{
