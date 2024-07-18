@@ -111,6 +111,7 @@ void initMaintenanceTimer()
 	{
 		WebcfgDebug("upgrade_start_time is %s\n",upgrade_start_time);
 		fw_start_time = atoi(upgrade_start_time);
+		WEBCFG_FREE(upgrade_start_time);
 	}
 	else
 	{
@@ -123,6 +124,7 @@ void initMaintenanceTimer()
 	{
 		WebcfgDebug("upgrade_end_time is %s\n",upgrade_end_time);
 		fw_end_time = atoi(upgrade_end_time);
+		WEBCFG_FREE(upgrade_end_time);
 	}
 	else
 	{

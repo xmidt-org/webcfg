@@ -1818,11 +1818,13 @@ int set_rbus_RfcEnable(bool bValue)
 	if (retPsmSet != RBUS_ERROR_SUCCESS)
 	{
 		WebcfgError("psm_set failed ret %d for parameter %s and value %s\n", retPsmSet, paramRFCEnable, buf);
+		WEBCFG_FREE(buf);
 		return 1;
 	}
 	else
 	{
 		WebcfgDebug("psm_set success ret %d for parameter %s and value %s\n", retPsmSet, paramRFCEnable, buf);
+		WEBCFG_FREE(buf);
 		RfcVal = bValue;
 	}
 	return 0;
