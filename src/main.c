@@ -118,6 +118,7 @@ int main()
 			if(strValue != NULL)
 			{
 				webcfgStrncpy(RfcEnable, strValue, sizeof(RfcEnable));
+				WEBCFG_FREE(strValue);
 			}
 		}
 		if(RfcEnable[0] != '\0' && strncmp(RfcEnable, "true", strlen("true")) == 0)

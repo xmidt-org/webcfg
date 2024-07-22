@@ -768,6 +768,10 @@ void delete_tmp_list()
         temp = head;
 	head = head->next;
 	WebcfgDebug("Delete node--> temp->name %s temp->version %lu temp->status %s temp->isSupplementarySync %d temp->error_details %s temp->error_code %lu temp->trans_id %lu temp->retry_count %d temp->cloud_trans_id %s\n",temp->name, (long)temp->version, temp->status, temp->isSupplementarySync, temp->error_details, (long)temp->error_code, (long)temp->trans_id, temp->retry_count, temp->cloud_trans_id);
+	WEBCFG_FREE(temp->name);
+	WEBCFG_FREE(temp->status);
+	WEBCFG_FREE(temp->error_details);
+	WEBCFG_FREE(temp->cloud_trans_id);
 	free(temp);
 	temp = NULL;
     }
