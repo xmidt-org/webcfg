@@ -436,6 +436,16 @@ void test_forcedsync()
     assert_int_equal(get_global_webcfg_forcedsync_needed(), 0);
 }
 
+void test_forcedsync_without_wait()
+{
+    unsigned long status = 0;
+    set_global_webcfg_forcedsync_needed(1);
+    initWebConfigMultipartTask(status);
+    pthread_cond_signal(get_global_sync_condition());
+    sleep(6);
+    assert_int_equal(get_global_webcfg_forcedsync_needed(), 0);
+}
+
 void test_maintenanceSync_trigger()
 {
     maintenance_sync_lock = false;
@@ -477,6 +487,61 @@ void test_supplementarySync_and_ForceSync()
     assert_non_null(get_global_mpThreadId());
 }
 
+void test_cloud_forcesync_success()
+{
+    unsigned long status = 0;
+    initWebConfigMultipartTask(status);
+    sleep(6);
+    set_cloud_forcesync_retry_needed(1);
+    pthread_cond_signal(get_global_sync_condition());
+    sleep(6);
+    assert_int_equal(get_cloud_forcesync_retry_needed(), 0);
+}
+
+void test_cloud_forcesync_success_without_wait()
+{
+    unsigned long status = 0;
+    set_cloud_forcesync_retry_needed(1);
+    initWebConfigMultipartTask(status);
+    pthread_cond_signal(get_global_sync_condition());
+    sleep(6);
+    assert_int_equal(get_cloud_forcesync_retry_needed(), 0);
+}
+
+void test_cloud_forcesync_failure()
+{
+    unsigned long status = 0;
+    initWebConfigMultipartTask(status);
+    sleep(6);
+    set_cloud_forcesync_retry_needed(0);
+    assert_int_equal(get_cloud_forcesync_retry_needed(), 0);
+}
+
+void test_set_cloud_forcesync_retry_started()
+{
+    int value = 0;
+    set_cloud_forcesync_retry_started(value);
+    assert_int_equal(get_cloud_forcesync_retry_started(), 0);
+}
+
+void test_get_cloud_forcesync_retry_started()
+{
+    set_cloud_forcesync_retry_started(1);
+    assert_int_equal(get_cloud_forcesync_retry_started(), 1);
+}
+
+void test_set_cloud_forcesync_retry_needed()
+{
+    int value = 0;
+    set_cloud_forcesync_retry_needed(value);
+    assert_int_equal(get_cloud_forcesync_retry_needed(), 0);
+}
+
+void test_get_cloud_forcesync_retry_needed()
+{
+    set_cloud_forcesync_retry_needed(1);
+    assert_int_equal(get_cloud_forcesync_retry_needed(), 1);
+}
 
 /*----------------------------------------------------------------------------*/
 /*                             External Functions                             */
@@ -499,10 +564,18 @@ int main(int argc, char *argv[])
 		cmocka_unit_test(test_handlehttpResponse_429),
 		cmocka_unit_test(test_handlehttpResponse_5xx),
 		cmocka_unit_test(test_forcedsync),
+		cmocka_unit_test(test_forcedsync_without_wait),
 		cmocka_unit_test(test_supplementarySync_and_ForceSync),
 		cmocka_unit_test(test_maintenanceSync_check),
 		cmocka_unit_test(test_maintenanceSync_trigger),
-		cmocka_unit_test(test_doc_retry)
+		cmocka_unit_test(test_doc_retry),
+		cmocka_unit_test(test_cloud_forcesync_success),
+		cmocka_unit_test(test_cloud_forcesync_success_without_wait),
+		cmocka_unit_test(test_cloud_forcesync_failure),
+		cmocka_unit_test(test_set_cloud_forcesync_retry_started),
+		cmocka_unit_test(test_get_cloud_forcesync_retry_started),
+		cmocka_unit_test(test_set_cloud_forcesync_retry_needed),
+		cmocka_unit_test(test_get_cloud_forcesync_retry_needed)
 	};
 	return cmocka_run_group_tests(tests, NULL, 0);
 }

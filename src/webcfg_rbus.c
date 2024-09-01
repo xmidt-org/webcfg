@@ -1934,26 +1934,38 @@ int set_rbus_ForceSync(char* pString, int *pStatus)
         }
         else if(get_bootSync())
         {
-            WebcfgInfo("Bootup sync is already in progress, Ignoring this request.\n");
+            WebcfgInfo("Bootup sync is already in progress, will retry later.\n");
             *pStatus = 1;
+            set_cloud_forcesync_retry_needed(1);
             return 0;
         }
 	else if(get_maintenanceSync())
 	{
-		WebcfgInfo("Maintenance window sync is in progress, Ignoring this request.\n");
+		WebcfgInfo("Maintenance window sync is in progress, will retry later.\n");
 		*pStatus = 1;
+            	set_cloud_forcesync_retry_needed(1);
 		return 0;
 	}
 	else if(strlen(ForceSyncTransID)>0)
         {
-            WebcfgInfo("Force sync is already in progress, Ignoring this request.\n");
+            WebcfgInfo("Force sync is already in progress, will retry later.\n");
             *pStatus = 1;
+            set_cloud_forcesync_retry_needed(1);
             return 0;
         }
+        
 	else if(get_global_webcfg_forcedsync_started() ==1)
         {
-            WebcfgInfo("Webcfg forced sync is in progress, Ignoring this request & will retry later.\n");
+            WebcfgInfo("Webcfg forced sync is in progress, will retry later.\n");
             *pStatus = 1;
+            set_cloud_forcesync_retry_needed(1);
+            return 0;
+        }
+        else if(get_cloud_forcesync_retry_started() == 1)
+        {
+            WebcfgInfo("Cloud force sync retry is in progress, will retry later.\n");
+            *pStatus = 1;
+            set_cloud_forcesync_retry_needed(1);
             return 0;
         }
         else
