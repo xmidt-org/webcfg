@@ -79,6 +79,9 @@ static int g_testfile = 0;
 static int g_supplementarySync = 0;
 static int g_webcfg_forcedsync_needed = 0;
 static int g_webcfg_forcedsync_started = 0;
+
+static int g_cloud_forcesync_retry_needed = 0;
+static int g_cloud_forcesync_retry_started = 0;
 /*----------------------------------------------------------------------------*/
 /*                             Function Prototypes                            */
 /*----------------------------------------------------------------------------*/
@@ -196,6 +199,11 @@ void *WebConfigMultipartTask(void *status)
 				WebcfgDebug("reset webcfg_forcedsync_started\n");
 				set_global_webcfg_forcedsync_started(0);
 			}
+			if(get_cloud_forcesync_retry_started())
+			{
+				WebcfgDebug("reset cloud_forcesync_retry_started\n");
+				set_cloud_forcesync_retry_started(0);
+			}
 		}
 
 		if(!wait_flag)
@@ -282,9 +290,16 @@ void *WebConfigMultipartTask(void *status)
 			ts.tv_sec += get_retry_timer();
 			WebcfgDebug("The retry triggers at %s\n", printTime((long long)ts.tv_sec));
 		}
-		if(get_global_webcfg_forcedsync_needed() == 1)
+		if(get_global_webcfg_forcedsync_needed() == 1 || get_cloud_forcesync_retry_needed() == 1)
 		{
-			WebcfgInfo("webcfg_forcedsync detected, trigger force sync with cloud.\n");
+			if(get_cloud_forcesync_retry_needed() == 1)
+			{
+				WebcfgInfo("Cloud force sync in progress is detected, trigger force sync with cloud.\n");
+			}
+			else
+			{
+				WebcfgInfo("webcfg_forcedsync detected, trigger force sync with cloud.\n");
+			}
 			forced_sync = 1;
 			wait_flag = 1;
 			rv = 0;
@@ -310,6 +325,14 @@ void *WebConfigMultipartTask(void *status)
 				set_global_webcfg_forcedsync_needed(0);
 				set_global_webcfg_forcedsync_started(1);
 				WebcfgDebug("webcfg_forcedsync_needed reset to %d and webcfg_forcedsync_started %d\n", get_global_webcfg_forcedsync_needed(), get_global_webcfg_forcedsync_started());
+			}
+			//cloud_forcesync_retry_needed is set initially whenever cloud force sync is received while another sync is in progress & cloud_forcesync_retry_started is set when actual sync is started once previous sync is completed.
+			if(get_cloud_forcesync_retry_needed())
+			{
+				set_cloud_forcesync_retry_needed(0);
+				set_cloud_forcesync_retry_started(1);
+				WebcfgDebug("cloud_forcesync_retry_needed reset to %d and cloud_forcesync_retry_started set to %d\n",
+				            get_cloud_forcesync_retry_needed(), get_cloud_forcesync_retry_started());
 			}
 			char *ForceSyncDoc = NULL;
 			char* ForceSyncTransID = NULL;
@@ -421,6 +444,8 @@ void *WebConfigMultipartTask(void *status)
 	set_global_supplementarySync(0);
 	set_global_webcfg_forcedsync_needed(0);
 	set_global_webcfg_forcedsync_started(0);
+	set_cloud_forcesync_retry_needed(0);
+	set_cloud_forcesync_retry_started(0);
 #ifdef FEATURE_SUPPORT_AKER
 	set_send_aker_flag(false);
 #endif
@@ -539,6 +564,26 @@ void set_global_webcfg_forcedsync_started(int value)
 int get_global_webcfg_forcedsync_started()
 {
     return g_webcfg_forcedsync_started;
+}
+
+void set_cloud_forcesync_retry_needed(int value)
+{
+    g_cloud_forcesync_retry_needed = value;
+}
+
+int get_cloud_forcesync_retry_needed()
+{
+    return g_cloud_forcesync_retry_needed;
+}
+
+void set_cloud_forcesync_retry_started(int value)
+{
+   g_cloud_forcesync_retry_started = value;
+}
+
+int get_cloud_forcesync_retry_started()
+{
+    return g_cloud_forcesync_retry_started;
 }
 /*----------------------------------------------------------------------------*/
 /*                             Internal functions                             */

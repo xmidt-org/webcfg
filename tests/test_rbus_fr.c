@@ -62,15 +62,31 @@ void set_global_webcfg_forcedsync_needed(int value)
 	UNUSED(value);
 }
 
+void set_cloud_forcesync_retry_needed(int value)
+{
+	UNUSED(value);
+}
+
 int get_global_webcfg_forcedsync_needed()
 {
 	return false;
 }
 
-bool get_global_webcfg_forcedsync_started_flag = false;
+int get_cloud_forcesync_retry_needed()
+{
+	return true;
+}
+
+bool  get_global_webcfg_forcedsync_started_flag = false;
 int get_global_webcfg_forcedsync_started()
 {
 	return get_global_webcfg_forcedsync_started_flag;
+}
+
+bool get_cloud_forcesync_retry_started_flag = false;
+int get_cloud_forcesync_retry_started()
+{
+ 	return get_cloud_forcesync_retry_started_flag;
 }
 
 int get_global_supplementarySync()
@@ -196,6 +212,12 @@ void test_setForceSync()
 	CU_ASSERT_EQUAL(1,session_status);
 	CU_ASSERT_EQUAL(0,ret);
 	get_global_webcfg_forcedsync_started_flag = false;		
+	
+        get_cloud_forcesync_retry_started_flag = true;
+	ret = set_rbus_ForceSync("root", &session_status);
+	CU_ASSERT_EQUAL(1,session_status);
+	CU_ASSERT_EQUAL(0,ret);
+	get_cloud_forcesync_retry_started_flag = false;	
 }
 
 void test_setForceSync_failure()
