@@ -1513,8 +1513,9 @@ rbusError_t webcfgInterfaceSubscribeHandler(rbusHandle_t handle, rbusEventSubAct
 {
     	(void)handle;
     	(void)filter;
-    	(void)autoPublish;
     	(void)interval;
+	
+	*autoPublish = false;
 
     	WebcfgInfo(
         	"webcfgInterfaceSubscribeHandler called:\n" \
@@ -1562,11 +1563,11 @@ void test_subscribeTo_CurrentActiveInterface_Event()
 
 	rc = subscribeTo_CurrentActiveInterface_Event();
 	CU_ASSERT_EQUAL(rc, RBUS_ERROR_SUCCESS);
-
-	rbusError_t result = rbus_unregDataElements(handle, 1, webcfgInterfaceElement);
-	CU_ASSERT_EQUAL(result, RBUS_ERROR_SUCCESS);
-	rbus_close(handle);
+    sleep(1);
+	rbusEvent_Unsubscribe(rbus_handle,WEBCFG_INTERFACE_PARAM);	
 	webpaRbus_Uninit();
+	rbus_unregDataElements(handle, 1, webcfgInterfaceElement);
+	rbus_close(handle);
 }
 
 //WanMgr_Rbus_String_EventPublish_OnValueChange(): publish rbus events on value change
@@ -1667,10 +1668,10 @@ void test_eventReceiveHandler()
 	sleep(2);
 	printf("get_global_interface(): %s\n",get_global_interface());
 	CU_ASSERT_STRING_EQUAL(get_global_interface(),"eth2");
-	rbus_unregDataElements(handle, 1, wanMgrRbusDataElements);
-	rbus_close(handle);
 	rbusEvent_Unsubscribe(rbus_handle,WEBCFG_INTERFACE_PARAM);	
-	webpaRbus_Uninit();		
+	webpaRbus_Uninit();
+	rbus_unregDataElements(handle, 1, wanMgrRbusDataElements);
+	rbus_close(handle);		
 }
 #endif
 
@@ -1749,7 +1750,7 @@ void test_sendNotification_rbus()
 	}
 	
 	sendNotification_rbus(payload, source, destination);
-
+    rbusEvent_Unsubscribe(handle,WEBCFG_UPSTREAM_EVENT);
 	rbus_close(handle);
 	webpaRbus_Uninit();
 }
