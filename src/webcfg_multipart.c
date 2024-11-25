@@ -216,7 +216,7 @@ WEBCFG_STATUS webcfg_http_request(char **configData, int r_count, int status, lo
 	struct token_data data;
 	data.size = 0;
 	void * dataVal = NULL;
-	char syncURL[256]={'\0'};
+	char syncURL[MAX_URL_LENGTH]={'\0'};
 	char docname_upper[64]={'\0'};
 
 	curl = curl_easy_init();
@@ -321,7 +321,7 @@ WEBCFG_STATUS webcfg_http_request(char **configData, int r_count, int status, lo
 			if(strlen(docList) > 0)
 			{
 				WebcfgDebug("docList is %s\n", docList);
-				snprintf(syncURL, MAX_BUF_SIZE, "%s?group_id=%s", webConfigURL, docList);
+				snprintf(syncURL, MAX_URL_LENGTH, "%s?group_id=%s", webConfigURL, docList);
 				WEBCFG_FREE(webConfigURL);
 				WebcfgDebug("syncURL is %s\n", syncURL);
 				webConfigURL =strdup( syncURL);
