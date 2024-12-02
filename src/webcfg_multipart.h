@@ -95,4 +95,5 @@ void delete_mp_doc();
 void createCurlHeader( struct curl_slist *list, struct curl_slist **header_list, int status, char ** trans_uuid,char **subdocList);
 #endif
 char *replaceMacWord(const char *s, const char *macW, const char *deviceMACW);
+void checkValidURL(char **s);
 #endif

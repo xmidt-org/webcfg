@@ -332,6 +332,23 @@ void test_replaceMac(){
 	CU_ASSERT_STRING_EQUAL(webConfigURL,"https://config/b42xxxxxxxxx/com");	
 }
 
+void test_checkValidURL_ValidURL(){
+
+	char *webConfigURL = strdup("https://sample/device/123456ffaa/config");
+	checkValidURL(&webConfigURL);
+	const char *expected_url ="https://sample/device/123456ffaa/config";
+	CU_ASSERT_STRING_EQUAL(webConfigURL,expected_url);
+}
+
+void test_checkValidURL_InvalidURL(){
+
+	char *webConfigURL = strdup("https://sample/device//config");
+	checkValidURL(&webConfigURL);
+	const char *expected_url ="https://sample/device/b42xxxxxxxxx/config";
+	CU_ASSERT_STRING_EQUAL(webConfigURL,expected_url);
+}
+
+
 void test_createHeader(){
 	
 	CURL *curl;
@@ -1205,6 +1222,8 @@ void add_suites( CU_pSuite *suite )
     *suite = CU_add_suite( "tests", NULL, NULL );
       CU_add_test( *suite, "test  generate_trans_uuid", test_generate_trans_uuid);
       CU_add_test( *suite, "test  replaceMacWord", test_replaceMac);  
+      CU_add_test( *suite, "test  checkValidURL_ValidURL", test_checkValidURL_ValidURL);  
+      CU_add_test( *suite, "test  checkValidURL_InvalidURL", test_checkValidURL_InvalidURL);  
       CU_add_test( *suite, "test  createCurlHeader", test_createHeader);
       CU_add_test( *suite, "test  validateParam", test_validateParam);
       CU_add_test( *suite, "test  checkRootUpdate", test_checkRootUpdate);

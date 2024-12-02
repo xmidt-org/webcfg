@@ -274,6 +274,8 @@ WEBCFG_STATUS webcfg_http_request(char **configData, int r_count, int status, lo
 			//Replace {mac} string from default init url with actual deviceMAC
 			WebcfgDebug("replaceMacWord to actual device mac\n");
 			webConfigURL = replaceMacWord(configURL, c, get_deviceMAC());
+			//Check the url is having empty mac or actual devicemac
+			checkValidURL(&webConfigURL);
 			if(get_global_supplementarySync() == 0)
 			{
 				rc = Set_Webconfig_URL(webConfigURL);
@@ -327,7 +329,6 @@ WEBCFG_STATUS webcfg_http_request(char **configData, int r_count, int status, lo
 				webConfigURL =strdup( syncURL);
 			}
 		}
-
 		if(webConfigURL !=NULL)
 		{
 			WebcfgInfo("Webconfig root ConfigURL is %s\n", webConfigURL);
@@ -2262,6 +2263,62 @@ WEBCFG_STATUS print_tmp_doc_list(size_t mp_count)
 		}
 	}
 	return WEBCFG_SUCCESS;
+}
+
+void checkValidURL(char **s) {
+
+    char modified_url[256] = {0};
+    int maxRetryTime = 31;
+    int backoffRetryTime = 0;
+    int c = 2;
+
+    char *start = strstr(*s, "/device/");
+    if (start != NULL) {
+        start += 8;
+
+        // If the next character is '/', it means MAC address is missing
+        if (*start == '/') {
+        
+            WebcfgError("Device MAC EMPTY\n");
+            strncpy(modified_url, *s, start - *s);
+            modified_url[start - *s] = '\0';
+            
+            while (1) {
+                if (backoffRetryTime <= maxRetryTime) 
+                {
+                    backoffRetryTime = (int)pow(2, c) - 1;
+                }        
+                const char *mac = get_deviceMAC();
+                if (mac != NULL) 
+                {
+                    WebcfgDebug("Mac fetched is %s\n", mac);
+                    strncat(modified_url, mac, sizeof(modified_url) - strlen(modified_url) - 1);
+                    break;
+                }
+
+                WebcfgError("Unable to get MAC Address. Retrying...\n");
+                WebcfgInfo("New backoffRetryTime value calculated as %d seconds\n", backoffRetryTime);
+                sleep(backoffRetryTime);
+                c++;         
+                if (backoffRetryTime >= maxRetryTime) 
+                {
+                    WebcfgError("BackoffRetryTime reached max value, reseting to initial value and retrying\n");
+                    c = 2;
+                    continue;
+                }
+            }
+            strncat(modified_url, "/config", sizeof(modified_url) - strlen(modified_url) - 1);
+            modified_url[sizeof(modified_url) - 1] = '\0';
+            WEBCFG_FREE(*s);
+            *s = strdup(modified_url);
+            WebcfgInfo("Modified URL: %s\n", *s);
+        }
+        else
+        {
+            // If the MAC address is not empty
+            WebcfgInfo("URL is having valid MAC Address.\n");
+        }
+    }
 }
 
 char *replaceMacWord(const char *s, const char *macW, const char *deviceMACW)
