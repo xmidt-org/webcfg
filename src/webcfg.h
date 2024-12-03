@@ -25,6 +25,7 @@
 /*                                   Macros                                   */
 /*----------------------------------------------------------------------------*/
 #define MAX_BUF_SIZE	           256
+#define MAX_URL_LENGTH	           768
 #define MAX_PARAMETERNAME_LENGTH       512
 
 #ifdef BUILD_YOCTO
