@@ -2302,7 +2302,7 @@ void checkValidURL(char **s) {
                 c++;         
                 if (backoffRetryTime >= maxRetryTime) 
                 {
-                    WebcfgError("BackoffRetryTime reached max value, reseting to initial value and retrying\n");
+                    WebcfgInfo("BackoffRetryTime reached max value, reseting to initial value and retrying\n");
                     c = 2;
                     continue;
                 }
@@ -2316,7 +2316,7 @@ void checkValidURL(char **s) {
         else
         {
             // If the MAC address is not empty
-            WebcfgInfo("URL is having valid MAC Address.\n");
+            WebcfgDebug("URL is having valid MAC Address.\n");
         }
     }
 }
