@@ -192,6 +192,7 @@ void *WebConfigMultipartTask(void *status)
 			{
 				WEBCFG_FREE(syncDoc);
 			}
+			setForceTransID("");
 			setForceSync("", "", 0);
 			set_global_supplementarySync(0);
 			if(get_global_webcfg_forcedsync_started())
@@ -215,6 +216,7 @@ void *WebConfigMultipartTask(void *status)
 				char *ForceSyncDoc = NULL;
 				char* ForceSyncTransID = NULL;
 				getForceSync(&ForceSyncDoc, &ForceSyncTransID);
+				setForceTransID(ForceSyncTransID);
 				if((ForceSyncDoc == NULL) && (ForceSyncTransID == NULL) && (!forced_sync) && (!get_bootSync()))
 				{
 					WebcfgInfo("release success docs at every maintenance window\n");	
@@ -339,6 +341,7 @@ void *WebConfigMultipartTask(void *status)
 
 			// Identify ForceSync based on docname
 			getForceSync(&ForceSyncDoc, &ForceSyncTransID);
+			setForceTransID(ForceSyncTransID);
 			if(ForceSyncDoc !=NULL && ForceSyncTransID !=NULL)
 			{
 				WebcfgInfo("ForceSyncDoc %s ForceSyncTransID. %s\n", ForceSyncDoc, ForceSyncTransID);
