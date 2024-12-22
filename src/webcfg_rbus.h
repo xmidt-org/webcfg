@@ -94,6 +94,12 @@ typedef enum _webcfgError
 
 }webcfgError_t;
 
+typedef struct ForceSyncMsg {
+	char *ForceSyncVal;
+	char *ForceSyncTransID;
+    struct ForceSyncMsg* next;
+} ForceSyncMsg;
+
 bool isRbusEnabled();
 
 bool isRfcEnabled();
@@ -140,4 +146,8 @@ webcfgError_t resetSubdocVersion(char *docname);
 #ifdef WAN_FAILOVER_SUPPORTED
 int subscribeTo_CurrentActiveInterface_Event();
 #endif
+int addForceSyncMsgToQueue(char *ForceSync, char *ForceSyncTransID);
+int updateForceSyncMsgQueue(char* trans_id);
+void deleteForceSyncMsgQueue();
+void DisplayQueue();
 #endif

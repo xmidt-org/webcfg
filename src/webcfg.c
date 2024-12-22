@@ -34,6 +34,7 @@
 #include "webcfg_event.h"
 #include "webcfg_blob.h"
 #include "webcfg_timer.h"
+#include "webcfg_rbus.h"
 
 #ifdef FEATURE_SUPPORT_MQTTCM
 #include "webcfg_mqtt.h"
@@ -192,6 +193,7 @@ void *WebConfigMultipartTask(void *status)
 			{
 				WEBCFG_FREE(syncDoc);
 			}
+			setForceSyncTransID("");
 			setForceSync("", "", 0);
 			set_global_supplementarySync(0);
 			if(get_global_webcfg_forcedsync_started())
@@ -215,6 +217,7 @@ void *WebConfigMultipartTask(void *status)
 				char *ForceSyncDoc = NULL;
 				char* ForceSyncTransID = NULL;
 				getForceSync(&ForceSyncDoc, &ForceSyncTransID);
+				setForceSyncTransID(ForceSyncTransID);
 				if((ForceSyncDoc == NULL) && (ForceSyncTransID == NULL) && (!forced_sync) && (!get_bootSync()))
 				{
 					WebcfgInfo("release success docs at every maintenance window\n");	
@@ -339,12 +342,12 @@ void *WebConfigMultipartTask(void *status)
 
 			// Identify ForceSync based on docname
 			getForceSync(&ForceSyncDoc, &ForceSyncTransID);
+			setForceSyncTransID(ForceSyncTransID);
 			if(ForceSyncDoc !=NULL && ForceSyncTransID !=NULL)
 			{
 				WebcfgInfo("ForceSyncDoc %s ForceSyncTransID. %s\n", ForceSyncDoc, ForceSyncTransID);
 			}
-			if(ForceSyncTransID !=NULL)
-			{
+
 				if((ForceSyncDoc != NULL) && strlen(ForceSyncDoc)>0)
 				{
 					forced_sync = 1;
@@ -367,7 +370,6 @@ void *WebConfigMultipartTask(void *status)
 					WebcfgError("ForceSyncDoc is NULL\n");
 					WEBCFG_FREE(ForceSyncTransID);
 				}
-			}
 
 			WebcfgDebug("forced_sync is %d\n", forced_sync);
 		}
@@ -462,6 +464,9 @@ void *WebConfigMultipartTask(void *status)
 
 	WebcfgDebug("supplementary_destroy\n");
 	delete_supplementary_list();
+
+	WebcfgDebug("ForceSyncMsgQueue_destroy\n");
+	deleteForceSyncMsgQueue();
 
 	WebcfgInfo("B4 pthread_exit\n");
 	g_mpthreadId = NULL;
