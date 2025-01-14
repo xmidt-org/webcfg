@@ -86,6 +86,7 @@ static char g_deviceWanMac[64]={'\0'};
 static char *supportedVersion_header=NULL;
 static char *supportedDocs_header=NULL;
 static char *supplementaryDocs_header=NULL;
+static char g_ForceSyncTransID[128]={'\0'};
 #endif
 char g_RebootReason[64]={'\0'};
 static char g_transID[64]={'\0'};
@@ -171,7 +172,6 @@ char * get_global_interface(void)
 /*                             Function Prototypes                            */
 /*----------------------------------------------------------------------------*/
 void addToDBList(webconfig_db_data_t *webcfgdb);
-char* generate_trans_uuid();
 void loadInitURLFromFile(char **url);
 
 #ifdef FEATURE_SUPPORT_AKER
@@ -1557,8 +1557,6 @@ void createCurlHeader( struct curl_slist *list, struct curl_slist **header_list,
 	char *transaction_uuid = NULL;
 	char version[512]={'\0'};
 	char docList[512]={'\0'};
-	char* syncTransID = NULL;
-	char* ForceSyncDoc = NULL;
 	size_t supported_doc_size = 0;
 	size_t supported_version_size = 0;
 	size_t supplementary_docs_size = 0;
@@ -1795,20 +1793,10 @@ void createCurlHeader( struct curl_slist *list, struct curl_slist **header_list,
                 WebcfgDebug("Failed to get systemReadyTime\n");
         }
 
-	getForceSync(&ForceSyncDoc, &syncTransID);
-
-	if(syncTransID !=NULL)
+	if((g_ForceSyncTransID !=NULL) && (strlen(g_ForceSyncTransID)>0))
 	{
-		if(ForceSyncDoc !=NULL)
-		{
-			if (strlen(syncTransID)>0)
-			{
-				WebcfgInfo("updating transaction_uuid with force syncTransID\n");
-				transaction_uuid = strdup(syncTransID);
-			}
-			WEBCFG_FREE(ForceSyncDoc);
-		}
-		WEBCFG_FREE(syncTransID);
+			WebcfgInfo("updating transaction_uuid with force g_ForceSyncTransID\n");
+			transaction_uuid = strdup(g_ForceSyncTransID);
 	}
 
 	if(transaction_uuid == NULL)
@@ -2588,4 +2576,13 @@ int get_multipartdoc_count()
 		temp = temp->next;
 	}
 	return count;
+}
+
+void setForceSyncTransID(char *ForceSyncTransID)
+{
+	memset(g_ForceSyncTransID, 0, sizeof(g_ForceSyncTransID));
+	if(ForceSyncTransID!=NULL)
+	{
+		webcfgStrncpy( g_ForceSyncTransID, ForceSyncTransID, sizeof(g_ForceSyncTransID));
+	}
 }
