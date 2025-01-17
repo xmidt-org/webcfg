@@ -1100,6 +1100,16 @@ void test_processMsgpackSubdoc_failure()
 	CU_ASSERT_EQUAL(result, WEBCFG_FAILURE);
 }
 
+void test_setForceTransID() {
+    // Test with a valid transaction ID
+    char testTransID[] = "1234";
+    setForceSyncTransID(testTransID);
+    CU_ASSERT_STRING_EQUAL(getForceSyncTransID(), "1234");
+    // Test with a NULL transaction ID
+    setForceSyncTransID(NULL);
+    CU_ASSERT_STRING_EQUAL(getForceSyncTransID(), ""); // g_ForceSyncTransID should be cleared
+}
+
 #ifdef WEBCONFIG_BIN_SUPPORT
 void test_processMsgpackSubdoc_msgpack_failure()
 {
@@ -1279,6 +1289,7 @@ void add_suites( CU_pSuite *suite )
       CU_add_test( *suite, "test readFromFile_success", test_readFromFile_success);
 	  CU_add_test( *suite, "test readFromFile_failure", test_readFromFile_failure);  
       CU_add_test( *suite, "test processMsgpackSubdoc_failure", test_processMsgpackSubdoc_failure);
+      CU_add_test( *suite, "test  reset_global_eventFlag", test_setForceTransID);
 #ifdef WEBCONFIG_BIN_SUPPORT
       CU_add_test( *suite, "test processMsgpackSubdoc_msgpack_failure", test_processMsgpackSubdoc_msgpack_failure);
       CU_add_test( *suite, "test processMsgpackSubdoc_setValues_rbus", test_processMsgpackSubdoc_setValues_rbus);

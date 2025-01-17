@@ -181,6 +181,56 @@ void set_global_supplementarySync(int value)
 /*                                   Tests                                    */
 /*----------------------------------------------------------------------------*/
 
+void test_addForceSyncMsgToQueue(void) 
+{
+	int ret = -1;
+	ret = addForceSyncMsgToQueue("root", "TID1");
+	CU_ASSERT_EQUAL(ret, 0);
+	deleteForceSyncMsgQueue();
+}
+
+void test_DisplayQueue()
+{
+	addForceSyncMsgToQueue("ForceSync1", "TransID1");
+	DisplayQueue();
+	deleteForceSyncMsgQueue();	 
+}
+
+void test_deleteForceSyncMsgQueue() 
+{
+	CU_ASSERT_EQUAL(addForceSyncMsgToQueue("ForceSync1", "TransID1"), 0);
+	CU_ASSERT_PTR_NOT_NULL(getForceSyncMsgQueue());
+	deleteForceSyncMsgQueue();
+	CU_ASSERT_PTR_NULL(getForceSyncMsgQueue());
+}
+
+void test_updateForceSyncMsgQueue_Failure()
+{
+	char *trans_id = NULL;
+	int result = updateForceSyncMsgQueue(trans_id);
+	CU_ASSERT_EQUAL(result, 0);
+}
+
+void test_updateForceSyncMsgQueue_found(void) 
+{
+    // Initialize the ForceSyncMsg queue with two same doc entrys and different trasaction ids
+	char* pString1 = "{ \"value\":\"telemetry\", \"transaction_id\":\"12345\"}";
+	char* pString2 = "{ \"value\":\"telemetry\", \"transaction_id\":\"54321\"}";
+	int session_status = 0;
+	set_rbus_ForceSync(pString1,&session_status);
+	char *str = NULL;
+	char* transID = NULL;
+	int retGet = get_rbus_ForceSync(&str, &transID);
+	CU_ASSERT_EQUAL(retGet,1);
+	CU_ASSERT_STRING_EQUAL(transID,"12345"); 
+
+	set_rbus_ForceSync(pString2,&session_status);
+	retGet = get_rbus_ForceSync(&str, &transID);
+	CU_ASSERT_EQUAL(retGet,1);
+	CU_ASSERT_STRING_EQUAL(transID,"54321"); //Latest trasation id should receive
+	deleteForceSyncMsgQueue();	
+}
+
 // Test cases for set_rbus_ForceSync & get_rbus_ForceSync
 void test_setForceSync()
 {
@@ -212,12 +262,33 @@ void test_setForceSync()
 	CU_ASSERT_EQUAL(1,session_status);
 	CU_ASSERT_EQUAL(0,ret);
 	get_global_webcfg_forcedsync_started_flag = false;		
-	
-        get_cloud_forcesync_retry_started_flag = true;
+
+	get_cloud_forcesync_retry_started_flag = true;
 	ret = set_rbus_ForceSync("root", &session_status);
 	CU_ASSERT_EQUAL(1,session_status);
 	CU_ASSERT_EQUAL(0,ret);
-	get_cloud_forcesync_retry_started_flag = false;	
+	get_cloud_forcesync_retry_started_flag = false;
+
+	ret = set_rbus_ForceSync("root,telemetry", &session_status);
+	CU_ASSERT_EQUAL(1,session_status);
+	CU_ASSERT_EQUAL(0,ret);
+
+	ret = set_rbus_ForceSync("telemetry,root", &session_status);
+	CU_ASSERT_EQUAL(1,session_status);
+	CU_ASSERT_EQUAL(0,ret);
+	ForceSyncMsg* head = getForceSyncMsgQueue();
+	CU_ASSERT_PTR_NOT_NULL(head); // Ensure queue is not null
+	// Check the first node contains "telemetry"
+	CU_ASSERT_PTR_NOT_NULL(head->ForceSyncVal);
+	CU_ASSERT_STRING_EQUAL(head->ForceSyncVal, "telemetry");
+	// Move to the next node and check it contains "root"
+	ForceSyncMsg* second = head->next;
+	CU_ASSERT_PTR_NOT_NULL(second); // Ensure the second node exists
+	CU_ASSERT_PTR_NOT_NULL(second->ForceSyncVal);
+	CU_ASSERT_STRING_EQUAL(second->ForceSyncVal, "root");
+	// Ensure there are no more nodes in the queue
+	CU_ASSERT_PTR_NULL(second->next);
+	deleteForceSyncMsgQueue();
 }
 
 void test_setForceSync_failure()
@@ -1866,6 +1937,11 @@ void add_suites( CU_pSuite *suite )
      	CU_add_test( *suite, "test rbusWebcfgEventHandler", test_rbusWebcfgEventHandler);
      	CU_add_test( *suite, "test fetchMpBlobData", test_fetchMpBlobData);
      	CU_add_test( *suite, "test webcfg_util_method", test_webcfg_util_method);
+	CU_add_test( *suite, "test addForceSyncMsgToQueue", test_addForceSyncMsgToQueue);
+	CU_add_test( *suite, "test DisplayQueue", test_DisplayQueue);
+	CU_add_test( *suite, "test deleteForceSyncMsgQueue_simple", test_deleteForceSyncMsgQueue);
+	CU_add_test( *suite, "test updateForceSyncMsgQueue", test_updateForceSyncMsgQueue_Failure);
+	CU_add_test( *suite, "test DisplayQueue", test_updateForceSyncMsgQueue_found);
 	#ifdef WAN_FAILOVER_SUPPORTED
      	CU_add_test( *suite, "test eventReceiveHandler", test_eventReceiveHandler);			
      	CU_add_test( *suite, "test subscribeTo_CurrentActiveInterface_Event", test_subscribeTo_CurrentActiveInterface_Event);

@@ -150,4 +150,5 @@ int addForceSyncMsgToQueue(char *ForceSync, char *ForceSyncTransID);
 int updateForceSyncMsgQueue(char* trans_id);
 void deleteForceSyncMsgQueue();
 void DisplayQueue();
+ForceSyncMsg* getForceSyncMsgQueue();
 #endif
