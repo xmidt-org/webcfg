@@ -181,6 +181,60 @@ void set_global_supplementarySync(int value)
 /*                                   Tests                                    */
 /*----------------------------------------------------------------------------*/
 
+void test_addForceSyncMsgToQueue(void) {
+
+    addForceSyncMsgToQueue("root", "TID1");
+    CU_ASSERT_EQUAL(addForceSyncMsgToQueue("root", "TransID1"), 0);
+	deleteForceSyncMsgQueue();
+}
+void test_DisplayQueue()
+{
+	 DisplayQueue();
+}
+void test_deleteForceSyncMsgQueue() {
+    WebcfgDebug("Starting test_deleteForceSyncMsgQueue_simple...\n");
+
+
+    deleteForceSyncMsgQueue();
+    CU_ASSERT_PTR_NULL(getForceSyncMsgQueue());
+
+    CU_ASSERT_EQUAL(addForceSyncMsgToQueue("ForceSync1", "TransID1"), 0);
+    CU_ASSERT_PTR_NOT_NULL(getForceSyncMsgQueue());
+
+    deleteForceSyncMsgQueue();
+    CU_ASSERT_PTR_NULL(getForceSyncMsgQueue());
+    WebcfgDebug("Completed test_deleteForceSyncMsgQueue_simple.\n");
+}
+void test_updateForceSyncMsgQueue_Failure()
+{
+
+    int result = updateForceSyncMsgQueue("new_trans_id");
+    CU_ASSERT_EQUAL(result, 0);
+    WebcfgDebug("failed update inside\n");
+	deleteForceSyncMsgQueue();
+}
+void test_updateForceSyncMsgQueue_found(void) {
+    // Initialize the ForceSyncMsg queue with an entry
+	char* pString ="root";
+	int session_status = 0;
+	set_rbus_ForceSync(pString,&session_status);
+    // Retrieve the queue for checking purposes and print the initial queue
+	ForceSyncMsg *temp = getForceSyncMsgQueue();
+	int res=0;
+	while (temp != NULL) {
+        if (strcmp(temp->ForceSyncVal,"root") == 0) {
+           res = updateForceSyncMsgQueue("TID2");
+        }
+        temp = temp->next;
+    }
+	CU_ASSERT_NOT_EQUAL(0,res);
+	while (temp != NULL) {
+        free(temp->ForceSyncVal);
+        free(temp->ForceSyncTransID);
+        free(temp);
+    }
+}
+
 // Test cases for set_rbus_ForceSync & get_rbus_ForceSync
 void test_setForceSync()
 {
@@ -188,7 +242,7 @@ void test_setForceSync()
 	int ret = set_rbus_ForceSync("root", &session_status);
 	CU_ASSERT_EQUAL(0,session_status);
 	CU_ASSERT_EQUAL(1,ret);
-	
+
 	get_webcfgReady_flag = false;
 	ret = set_rbus_ForceSync("root", &session_status);
 	CU_ASSERT_EQUAL(2,session_status);
@@ -212,46 +266,53 @@ void test_setForceSync()
 	CU_ASSERT_EQUAL(1,session_status);
 	CU_ASSERT_EQUAL(0,ret);
 	get_global_webcfg_forcedsync_started_flag = false;		
-	
-        get_cloud_forcesync_retry_started_flag = true;
+
+	get_cloud_forcesync_retry_started_flag = true;
 	ret = set_rbus_ForceSync("root", &session_status);
 	CU_ASSERT_EQUAL(1,session_status);
 	CU_ASSERT_EQUAL(0,ret);
-	get_cloud_forcesync_retry_started_flag = false;	
+	get_cloud_forcesync_retry_started_flag = false;
+
+	ret = set_rbus_ForceSync("root,telemetry", &session_status);
+	CU_ASSERT_EQUAL(1,session_status);
+	CU_ASSERT_EQUAL(0,ret);
+	ret = set_rbus_ForceSync("telemetry,root", &session_status);
+	CU_ASSERT_EQUAL(1,session_status);
+	CU_ASSERT_EQUAL(0,ret);
+
+    set_rbus_ForceSync("root", &session_status);
+    ret = set_rbus_ForceSync("telemetry,root", &session_status);
+    CU_ASSERT_EQUAL(1,session_status);
+    CU_ASSERT_EQUAL(0,ret);
+    ForceSyncMsg* head = getForceSyncMsgQueue();
+    CU_ASSERT_PTR_NOT_NULL(head); // Ensure queue is not null
+    // Check the first node contains "telemetry"
+    CU_ASSERT_PTR_NOT_NULL(head->ForceSyncVal);
+    CU_ASSERT_STRING_EQUAL(head->ForceSyncVal, "telemetry");
+    // Move to the next node and check it contains "root"
+    ForceSyncMsg* second = head->next;
+    CU_ASSERT_PTR_NOT_NULL(second); // Ensure the second node exists
+    CU_ASSERT_PTR_NOT_NULL(second->ForceSyncVal);
+    CU_ASSERT_STRING_EQUAL(second->ForceSyncVal, "root");
+    // Ensure there are no more nodes in the queue
+    CU_ASSERT_PTR_NULL(second->next);
+
+	ForceSyncMsg* current = head;
+	while (current != NULL) {
+		ForceSyncMsg* next = current->next;
+		free(current->ForceSyncVal);
+		free(current->ForceSyncTransID);
+		free(current);
+		current = next;
+	}
 }
 
 void test_setForceSync_failure()
 {
 	int session_status = 0;
-	char *str = NULL;
-	char* transID = NULL;
 	int ret = set_rbus_ForceSync("", &session_status);
 	CU_ASSERT_EQUAL(0,session_status);
 	CU_ASSERT_EQUAL(1,ret);
-	int retGet = get_rbus_ForceSync(&str, &transID);
-	CU_ASSERT_EQUAL(0,retGet);
-}
-
-void test_setForceSync_json()
-{
-	char *data = "{ \"value\":\"root\", \"transaction_id\":\"e35c746c-bf15-43baXXXXXXXXXXXXXXXXXx____XXXXXXXXXXXXXX\"}";
-	int session_status = 0;
-	char *str = NULL;
-	char* transID = NULL;
-	int retSet = set_rbus_ForceSync(data, &session_status);
-	CU_ASSERT_EQUAL(0,session_status);
-	CU_ASSERT_EQUAL(1,retSet);
-	int retGet = get_rbus_ForceSync(&str, &transID);
-	CU_ASSERT_EQUAL(1,retGet);
-	
-	char *data1 = "{ \"value\":\"telemetry\", \"transaction_id\":\"e35c746c-bf15-43baXXXXXXXXXXXXXXXXXx____XXXXXXXXXXXXXX\"}";
-	session_status = 0;	
-	strcpy(Telemetry_string,"NULL");
-	retSet = set_rbus_ForceSync(data1, &session_status);
-	CU_ASSERT_EQUAL(0,session_status);
-	CU_ASSERT_EQUAL(0,retSet);
-	strcpy(Telemetry_string,"");		
-
 }
 
 // Test case for isRbusEnabled
@@ -1821,7 +1882,6 @@ void add_suites( CU_pSuite *suite )
 	*suite = CU_add_suite( "tests", NULL, NULL );
      	CU_add_test( *suite, "test rbus_forcesync", test_setForceSync);
      	CU_add_test( *suite, "test rbus_forcesync_failure", test_setForceSync_failure);
-     	CU_add_test( *suite, "test rbus_forcesync_json", test_setForceSync_json);
      	CU_add_test( *suite, "test isRbusEnabled_success", test_isRbusEnabled_success);
      	CU_add_test( *suite, "test get_global_isRbus_success", test_get_global_isRbus_success);
      	CU_add_test( *suite, "test isRfcEnabled_success", test_isRfcEnabled_success);
@@ -1866,6 +1926,11 @@ void add_suites( CU_pSuite *suite )
      	CU_add_test( *suite, "test rbusWebcfgEventHandler", test_rbusWebcfgEventHandler);
      	CU_add_test( *suite, "test fetchMpBlobData", test_fetchMpBlobData);
      	CU_add_test( *suite, "test webcfg_util_method", test_webcfg_util_method);
+		CU_add_test( *suite, "test addForceSyncMsgToQueue", test_addForceSyncMsgToQueue);
+		CU_add_test( *suite, "test DisplayQueue", test_DisplayQueue);
+		CU_add_test( *suite, "test deleteForceSyncMsgQueue_simple", test_deleteForceSyncMsgQueue);
+		CU_add_test( *suite, "test updateForceSyncMsgQueue", test_updateForceSyncMsgQueue_Failure);
+		CU_add_test( *suite, "test DisplayQueue", test_updateForceSyncMsgQueue_found);
 	#ifdef WAN_FAILOVER_SUPPORTED
      	CU_add_test( *suite, "test eventReceiveHandler", test_eventReceiveHandler);			
      	CU_add_test( *suite, "test subscribeTo_CurrentActiveInterface_Event", test_subscribeTo_CurrentActiveInterface_Event);

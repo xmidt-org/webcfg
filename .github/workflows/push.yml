@@ -31,7 +31,7 @@ jobs:
       - name: Install packages
         run: |
           sudo apt update
-          sudo apt-get -y install valgrind libcunit1 libcunit1-doc libcunit1-dev libmsgpack-dev gcovr libtool xsltproc docbook-xsl
+          sudo apt-get -y install valgrind libcunit1 libcunit1-doc libcunit1-dev libmsgpack-dev gcovr libtool xsltproc docbook-xsl uuid-dev
           pip install codecov
 
       - name: Make Build Directory

@@ -2461,3 +2461,8 @@ void set_global_supplementary_url(char *value)
 	WEBCFG_FREE(SupplementaryURLVal);
 	SupplementaryURLVal = strdup(value);
 }
+
+ForceSyncMsg* getForceSyncMsgQueue()
+{
+    return ForceSyncMsgQ;
+}
