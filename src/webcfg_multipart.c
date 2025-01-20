@@ -908,8 +908,9 @@ WEBCFG_STATUS processMsgpackSubdoc(char *transaction_id)
 						{
 							subdocStatus = isSubDocSupported(mp->name_space);
 							WebcfgDebug("ccspStatus is %d\n", ccspStatus);
-							if(ccspStatus == 204 && subdocStatus != WEBCFG_SUCCESS)
+							if(subdocStatus != WEBCFG_SUCCESS)
 							{
+								WebcfgInfo("Rejecting unsupported subdoc\n");
 								snprintf(result,MAX_VALUE_LEN,"doc_unsupported:%s", errDetails);
 							}
 							else
