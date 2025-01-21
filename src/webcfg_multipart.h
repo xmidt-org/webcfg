@@ -83,6 +83,7 @@ size_t headr_callback(char *buffer, size_t size, size_t nitems, void* data);
 size_t writer_callback_fn(void *buffer, size_t size, size_t nmemb, void *datain);
 WEBCFG_STATUS processMsgpackSubdoc(char *transaction_id);
 void setForceSyncTransID(char *ForceSyncTransID);
+const char* getForceSyncTransID();
 char* generate_trans_uuid();
 #ifdef WAN_FAILOVER_SUPPORTED
 void set_global_interface(char * value);

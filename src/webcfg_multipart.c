@@ -1793,7 +1793,7 @@ void createCurlHeader( struct curl_slist *list, struct curl_slist **header_list,
                 WebcfgDebug("Failed to get systemReadyTime\n");
         }
 
-	if((g_ForceSyncTransID !=NULL) && (strlen(g_ForceSyncTransID)>0))
+	if(strlen(g_ForceSyncTransID)>0)
 	{
 			WebcfgInfo("updating transaction_uuid with force g_ForceSyncTransID\n");
 			transaction_uuid = strdup(g_ForceSyncTransID);
@@ -2585,4 +2585,8 @@ void setForceSyncTransID(char *ForceSyncTransID)
 	{
 		webcfgStrncpy( g_ForceSyncTransID, ForceSyncTransID, sizeof(g_ForceSyncTransID));
 	}
+}
+
+const char* getForceSyncTransID() {
+    return g_ForceSyncTransID;
 }
