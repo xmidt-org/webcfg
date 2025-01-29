@@ -286,12 +286,15 @@ void *WebConfigMultipartTask(void *status)
 		}
 		else
 		{
+			set_retry_timer(900);
+			set_global_retry_timestamp(0);
+			failedDocsRetry();			
 			if(get_global_retry_timestamp() != 0)
 			{
 				set_retry_timer(retrySyncSeconds());
 			}
 			ts.tv_sec += get_retry_timer();
-			WebcfgDebug("The retry triggers at %s\n", printTime((long long)ts.tv_sec));
+			WebcfgInfo("The retry triggers at %s\n", printTime((long long)ts.tv_sec));
 		}
 		if(get_global_webcfg_forcedsync_needed() == 1 || get_cloud_forcesync_retry_needed() == 1)
 		{
