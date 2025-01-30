@@ -86,7 +86,6 @@ static char g_deviceWanMac[64]={'\0'};
 static char *supportedVersion_header=NULL;
 static char *supportedDocs_header=NULL;
 static char *supplementaryDocs_header=NULL;
-static char g_ForceSyncTransID[128]={'\0'};
 #endif
 static char g_ForceSyncTransID[128]={'\0'};
 char g_RebootReason[64]={'\0'};
