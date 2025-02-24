@@ -1981,6 +1981,7 @@ int set_rbus_ForceSync(char* pString, int *pStatus)
         {
             WebcfgInfo("Webconfig is not ready to process requests, Ignoring this request.\n");
             *pStatus = 2;
+	    WEBCFG_FREE(transactionId);			
             return 0;
         }
         else if(get_bootSync())
@@ -1988,6 +1989,7 @@ int set_rbus_ForceSync(char* pString, int *pStatus)
             WebcfgInfo("Bootup sync is already in progress, will retry later.\n");
             *pStatus = 1;
             set_cloud_forcesync_retry_needed(1);
+	    WEBCFG_FREE(transactionId);			
             return 0;
         }
 	else if(get_maintenanceSync())
@@ -1995,6 +1997,7 @@ int set_rbus_ForceSync(char* pString, int *pStatus)
 		WebcfgInfo("Maintenance window sync is in progress, will retry later.\n");
 		*pStatus = 1;
             	set_cloud_forcesync_retry_needed(1);
+		WEBCFG_FREE(transactionId);				
 		return 0;
 	}
 	else if(get_global_webcfg_forcedsync_started() ==1)
@@ -2002,6 +2005,7 @@ int set_rbus_ForceSync(char* pString, int *pStatus)
             WebcfgInfo("Webcfg forced sync is in progress, will retry later.\n");
             *pStatus = 1;
             set_cloud_forcesync_retry_needed(1);
+	    WEBCFG_FREE(transactionId);			
             return 0;
         }
         else if(get_cloud_forcesync_retry_started() == 1)
@@ -2009,6 +2013,7 @@ int set_rbus_ForceSync(char* pString, int *pStatus)
             WebcfgInfo("Cloud force sync retry is in progress, will retry later.\n");
             *pStatus = 1;
             set_cloud_forcesync_retry_needed(1);
+	    WEBCFG_FREE(transactionId);			
             return 0;
         }
 	else if(strlen(ForceSyncTransID)>0)
@@ -2016,6 +2021,7 @@ int set_rbus_ForceSync(char* pString, int *pStatus)
             WebcfgInfo("Force sync is already in progress, will retry later.\n");
             *pStatus = 1;
             set_cloud_forcesync_retry_needed(1);
+	    WEBCFG_FREE(transactionId);			
             return 0;
         }
         else
@@ -2152,7 +2158,7 @@ int updateForceSyncMsgQueue(char* trans_id)
 		if ((temp->ForceSyncVal) && (strcmp(temp->ForceSyncVal,ForceSync) == 0))
 		{
 			WEBCFG_FREE(temp->ForceSyncTransID);
-			temp->ForceSyncTransID = trans_id;
+			temp->ForceSyncTransID = strdup(trans_id);
 			found = 1;
 			break;
 		}
