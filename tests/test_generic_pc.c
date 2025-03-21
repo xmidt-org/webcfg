@@ -260,7 +260,7 @@ void test_getAccountID()
 {
     char *pString = "test";
     pString = getAccountID();
-    CU_ASSERT_STRING_EQUAL(pString, "unkown");        
+    CU_ASSERT_STRING_EQUAL(pString, "unknown");
 }
 
 void test_getPartnerID()
