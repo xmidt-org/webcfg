@@ -205,8 +205,6 @@ WEBCFG_STATUS webcfg_http_request(char **configData, int r_count, int status, lo
 	char *ct = NULL;
 	char *webConfigURL = NULL;
 	char *transID = NULL;
-	char *subdoclist = NULL;
-	char docList[512] = {'\0'};
 	char configURL[256] = { 0 };
 	char c[] = "{mac}";
 	int rv = 0;
@@ -216,7 +214,6 @@ WEBCFG_STATUS webcfg_http_request(char **configData, int r_count, int status, lo
 	struct token_data data;
 	data.size = 0;
 	void * dataVal = NULL;
-	char syncURL[MAX_URL_LENGTH]={'\0'};
 	char docname_upper[64]={'\0'};
 
 	curl = curl_easy_init();
@@ -231,16 +228,11 @@ WEBCFG_STATUS webcfg_http_request(char **configData, int r_count, int status, lo
 			return WEBCFG_FAILURE;
 		}
 		data.data[0] = '\0';
-		createCurlHeader(list, &headers_list, status, &transID, &subdoclist);
+		createCurlHeader(list, &headers_list, status, &transID);
 		if(transID !=NULL)
 		{
 			*transaction_id = strdup(transID);
 			WEBCFG_FREE(transID);
-		}
-		if(subdoclist !=NULL)
-		{
-			strncpy(docList, subdoclist, sizeof(docList)-1);
-			WEBCFG_FREE(subdoclist);
 		}
 		WebcfgInfo("The get_global_supplementarySync() is %d\n", get_global_supplementarySync());
 		if(get_global_supplementarySync() == 0)
@@ -318,17 +310,6 @@ WEBCFG_STATUS webcfg_http_request(char **configData, int r_count, int status, lo
 		}
 		WebcfgDebug("ConfigURL fetched is %s\n", webConfigURL);
 
-		if(!get_global_supplementarySync())
-		{
-			if(strlen(docList) > 0)
-			{
-				WebcfgDebug("docList is %s\n", docList);
-				snprintf(syncURL, MAX_URL_LENGTH, "%s?group_id=%s", webConfigURL, docList);
-				WEBCFG_FREE(webConfigURL);
-				WebcfgDebug("syncURL is %s\n", syncURL);
-				webConfigURL =strdup( syncURL);
-			}
-		}
 		if(webConfigURL !=NULL)
 		{
 			WebcfgInfo("Webconfig root ConfigURL is %s\n", webConfigURL);
@@ -1458,7 +1439,7 @@ void derive_root_doc_version_string(char **rootVersion, uint32_t *root_ver, int 
 /* Traverse through db list to get versions and doclist of all docs with root.
 e.g. IF-NONE-MATCH: 123,44317,66317,77317 where 123 is root version.
 e.g. root,ble,lan,mesh,moca
-Currently versionsList length is fixed to 512 which can support up to 45 docs.
+Currently versionsList length is fixed to 8192 which can support up to 512 docs.
 This can be increased if required.
 VersionList and docList are fetched at once from DB to fix version and docList mismatch when DB is updated.*/
 void refreshConfigVersionList(char *versionsList, int http_status, char *docsList)
@@ -1470,7 +1451,7 @@ void refreshConfigVersionList(char *versionsList, int http_status, char *docsLis
 	WEBCFG_STATUS retStatus = WEBCFG_SUCCESS;
 
 	//initialize to default value "0".
-	snprintf(versionsList, 512, "%s", "0");
+	snprintf(versionsList, MAX_LBUFF_SIZE, "%s", "0");
 
 	derive_root_doc_version_string(&root_str, &root_version, http_status);
 	WebcfgDebug("update root_version %lu rootString %s to DB\n", (long)root_version, root_str);
@@ -1489,7 +1470,7 @@ void refreshConfigVersionList(char *versionsList, int http_status, char *docsLis
 		if(root_str!=NULL && strlen(root_str) >0)
 		{
 			WebcfgDebug("update root_str %s to versionsList\n", root_str);
-			snprintf(versionsList, 512, "%s", root_str);
+			snprintf(versionsList, MAX_LBUFF_SIZE, "%s", root_str);
 			WEBCFG_FREE(root_str);
 		}
 		else
@@ -1499,7 +1480,7 @@ void refreshConfigVersionList(char *versionsList, int http_status, char *docsLis
 		}
 		WebcfgInfo("versionsList is %s\n", versionsList);
 
-		snprintf(docsList, 512, "%s", "root");
+		snprintf(docsList, MAX_LBUFF_SIZE, "%s", "root");
 		WebcfgDebug("docsList is %s\n", docsList);
 
 		while (NULL != temp)
@@ -1513,7 +1494,7 @@ void refreshConfigVersionList(char *versionsList, int http_status, char *docsLis
 					WEBCFG_FREE(versionsList_tmp);
 					//Fetch docsList and version together to fix docs & version mismatch from DB
 					docsList_tmp = strdup(docsList);
-					snprintf(docsList, 512, "%s,%s",docsList_tmp, temp->name);
+					snprintf(docsList, MAX_LBUFF_SIZE, "%s,%s",docsList_tmp, temp->name);
 					WEBCFG_FREE(docsList_tmp);
 				}
 			}
@@ -1533,12 +1514,13 @@ void refreshConfigVersionList(char *versionsList, int http_status, char *docsLis
 
 //NOTE: If new headers are added in webcfg curl flow add them in MQTT createMqttHeader also if necessary
 #if !defined FEATURE_SUPPORT_MQTTCM
-void createCurlHeader( struct curl_slist *list, struct curl_slist **header_list, int status, char ** trans_uuid, char **subdocList)
+void createCurlHeader( struct curl_slist *list, struct curl_slist **header_list, int status, char ** trans_uuid)
 {
 	char *version_header = NULL;
 	char *auth_header = NULL;
 	char *status_header=NULL;
 	char *schema_header=NULL;
+	char *doc_header = NULL;
 	char *bootTime = NULL, *bootTime_header = NULL;
 	char *FwVersion = NULL, *FwVersion_header=NULL;
 	char *supportedDocs = NULL;
@@ -1556,8 +1538,8 @@ void createCurlHeader( struct curl_slist *list, struct curl_slist **header_list,
 	char *currentTime_header=NULL;
 	char *uuid_header = NULL;
 	char *transaction_uuid = NULL;
-	char version[512]={'\0'};
-	char docList[512]={'\0'};
+	char version[MAX_LBUFF_SIZE]={'\0'};
+	char docList[MAX_LBUFF_SIZE]={'\0'};
 	size_t supported_doc_size = 0;
 	size_t supported_version_size = 0;
 	size_t supplementary_docs_size = 0;
@@ -1578,16 +1560,24 @@ void createCurlHeader( struct curl_slist *list, struct curl_slist **header_list,
 
 	if(!get_global_supplementarySync())
 	{
-		version_header = (char *) malloc(sizeof(char)*MAX_BUF_SIZE);
+		version_header = (char *) malloc(sizeof(char) * (MAX_LBUFF_SIZE + strlen("IF-NONE-MATCH:") + 1));
 		if(version_header !=NULL)
 		{
 			refreshConfigVersionList(version, 0, docList);
-			snprintf(version_header, MAX_BUF_SIZE, "IF-NONE-MATCH:%s", ((strlen(version)!=0) ? version : "0"));
+			snprintf(version_header, MAX_LBUFF_SIZE + strlen("IF-NONE-MATCH:") + 1, "IF-NONE-MATCH:%s", ((strlen(version)!=0) ? version : "0"));
 			WebcfgInfo("version_header formed %s\n", version_header);
 			WebcfgInfo("docList fetched %s\n", docList);
-			*subdocList = strdup(docList);
 			list = curl_slist_append(list, version_header);
 			WEBCFG_FREE(version_header);
+
+			doc_header = (char *)malloc(sizeof(char) * (MAX_LBUFF_SIZE + strlen("Doc-Name: ") + 1));
+			if (doc_header != NULL)
+			{
+				snprintf(doc_header, MAX_LBUFF_SIZE + strlen("Doc-Name: ") + 1, "Doc-Name: %s", docList);
+				list = curl_slist_append(list, doc_header);
+				WebcfgInfo("doc_header formed %s\n", doc_header);
+				WEBCFG_FREE(doc_header);
+			}
 		}
 		WebcfgInfo("Post none retain header formed POST-NONE-RETAIN: true\n");
 		list = curl_slist_append(list, "POST-NONE-RETAIN: true");		

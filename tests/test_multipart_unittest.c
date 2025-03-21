@@ -55,6 +55,9 @@ rbusHandle_t handle;
 
 #define WEBCFG_BLOB_PARAM "Device.DeviceInfo.Test"
 
+#define NUM_SUBDOCS 512
+#define SUBDOC_SIZE 16
+
 int numLoops;
 
 #define MAX_HEADER_LEN	4096
@@ -316,6 +319,47 @@ rbusError_t webcfgBlobElement1SetHandler(rbusHandle_t handle, rbusProperty_t pro
 }
 #endif
 
+void populate_db_with_subdocs()
+{
+    webconfig_db_data_t *head = NULL;
+    webconfig_db_data_t *current = NULL;
+
+    for (int i = 0; i < NUM_SUBDOCS; i++) {
+        webconfig_db_data_t *new_node = (webconfig_db_data_t *)malloc(sizeof(webconfig_db_data_t));
+        if (!new_node) {
+            perror("malloc failed");
+            return;
+        }
+
+        memset(new_node, 0, sizeof(webconfig_db_data_t));
+
+        new_node->name = (char *)malloc(SUBDOC_SIZE);
+        if (!new_node->name) {
+            perror("malloc failed");
+            free(new_node);
+            return;
+        }
+
+        if (i == 0) {
+            snprintf(new_node->name, SUBDOC_SIZE - 1, "root");
+        } else {
+            snprintf(new_node->name, SUBDOC_SIZE - 1, "subdoc_%d", i);
+        }
+        new_node->version = i;
+        new_node->next = NULL;
+
+        if (head == NULL) {
+            head = new_node;
+            current = head;
+        } else {
+            current->next = new_node;
+            current = current->next;
+        }
+    }
+
+    set_global_db_node(head);
+}
+
 void test_generate_trans_uuid(){
 
 	char *transaction_uuid = NULL;
@@ -355,11 +399,10 @@ void test_createHeader(){
 	struct curl_slist *list = NULL;
 	struct curl_slist *headers_list = NULL;
 	char *transID = NULL;
-	char *subdoclist = NULL;
 	int status=0;
 	curl = curl_easy_init();
 	CU_ASSERT_PTR_NOT_NULL(curl);
-	createCurlHeader(list, &headers_list, status, &transID, &subdoclist);
+	createCurlHeader(list, &headers_list, status, &transID);
 	CU_ASSERT_PTR_NOT_NULL(transID);
 	CU_ASSERT_PTR_NOT_NULL(headers_list);
 
@@ -368,9 +411,191 @@ void test_createHeader(){
 	setsupportedVersion("1234-v0");	
 	set_global_supplementarySync(1);
 	setsupplementaryDocs("telemetry");
-	createCurlHeader(list, &headers_list, status, &transID, &subdoclist);
+	createCurlHeader(list, &headers_list, status, &transID);
 	CU_ASSERT_PTR_NOT_NULL(transID);
 	CU_ASSERT_PTR_NOT_NULL(headers_list);
+}
+
+void test_createHeader_doc_header_max_data() {
+    CURL *curl;
+    struct curl_slist *list = NULL;
+    struct curl_slist *headers_list = NULL;
+    char *transID = NULL;
+    int status = 0;
+
+    curl = curl_easy_init();
+    CU_ASSERT_PTR_NOT_NULL(curl);
+
+    set_global_supplementarySync(0);
+
+    populate_db_with_subdocs();
+
+    createCurlHeader(list, &headers_list, status, &transID);
+    CU_ASSERT_PTR_NOT_NULL(transID);
+    CU_ASSERT_PTR_NOT_NULL(headers_list);
+
+    struct curl_slist *temp = headers_list;
+    int subdoc_found = 0;
+
+    while (temp)
+	{
+		WebcfgInfo("  Checking header: %s\n", temp->data);
+        if (strstr(temp->data, "Doc-Name:") == temp->data)
+		{
+            subdoc_found = 1;
+            break;
+        }
+        temp = temp->next;
+    }
+
+	if (!subdoc_found)
+		WebcfgInfo("  'Doc-Name' header NOT found!\n");
+	else
+		WebcfgInfo("  'Doc-Name' header found!\n");
+	CU_ASSERT_TRUE(subdoc_found);
+
+    if (transID) {
+        free(transID);
+        transID = NULL;
+    }
+
+    if (headers_list) {
+        curl_slist_free_all(headers_list);
+        headers_list = NULL;
+    }
+
+    if (curl) {
+        curl_easy_cleanup(curl);
+        curl = NULL;
+    }
+
+    webconfig_db_data_t *db_head = get_global_db_node();
+    webconfig_db_data_t *next = NULL;
+
+    while (db_head) {
+        next = db_head->next;
+        webcfgdb_destroy(db_head);
+        db_head = next;
+    }
+
+    set_global_db_node(NULL);
+}
+
+void test_createHeader_primary_sync() {
+    CURL *curl;
+    struct curl_slist *list = NULL;
+    struct curl_slist *headers_list = NULL;
+    char *transID = NULL;
+    int status = 0;
+
+    curl = curl_easy_init();
+    CU_ASSERT_PTR_NOT_NULL(curl);
+    set_global_supplementarySync(0);
+
+    createCurlHeader(list, &headers_list, status, &transID);
+    CU_ASSERT_PTR_NOT_NULL(transID);
+    CU_ASSERT_PTR_NOT_NULL(headers_list);
+
+    const char *expected_headers[] = {
+        "IF-NONE-MATCH:", "Doc-Name:", "POST-NONE-RETAIN: true"
+    };
+    const int num_expected_headers = sizeof(expected_headers) / sizeof(expected_headers[0]);
+    int found_headers[num_expected_headers];
+    memset(found_headers, 0, sizeof(found_headers));
+
+    struct curl_slist *temp = headers_list;
+    WebcfgInfo("Checking headers in headers_list for primary sync:\n");
+    while (temp)
+	{
+        for (int i = 0; i < num_expected_headers; i++)
+		{
+            if (strncmp(temp->data, expected_headers[i], strlen(expected_headers[i])) == 0)
+			{
+                WebcfgInfo("  --> Found header: '%s'\n", expected_headers[i]);
+                found_headers[i] = 1;
+            }
+        }
+        temp = temp->next;
+    }
+
+    for (int i = 0; i < num_expected_headers; i++)
+	{
+        if (!found_headers[i]) printf("  --> Missing header: %s\n", expected_headers[i]);
+        CU_ASSERT_TRUE(found_headers[i]);
+    }
+
+    // Cleanup
+    if (transID) {
+		free(transID);
+		transID = NULL;
+	}
+	if (headers_list) {
+		curl_slist_free_all(headers_list);
+		headers_list = NULL;
+	}
+	if (curl) {
+		curl_easy_cleanup(curl);
+		curl = NULL;
+	}
+}
+
+void test_createHeader_supplementary_sync() {
+    CURL *curl;
+    struct curl_slist *list = NULL;
+    struct curl_slist *headers_list = NULL;
+    char *transID = NULL;
+    int status = 0;
+
+    curl = curl_easy_init();
+    CU_ASSERT_PTR_NOT_NULL(curl);
+    set_global_supplementarySync(1);
+
+    createCurlHeader(list, &headers_list, status, &transID);
+    CU_ASSERT_PTR_NOT_NULL(transID);
+    CU_ASSERT_PTR_NOT_NULL(headers_list);
+
+    const char *expected_headers[] = {
+        "X-System-SupplementaryService-Sync:", "X-System-Telemetry-Profile-Version:",
+        "X-System-PartnerID:", "X-System-AccountID:", "X-System-Wan-Mac:"
+    };
+    int num_expected_headers = sizeof(expected_headers) / sizeof(expected_headers[0]);
+    int found_headers[num_expected_headers];
+    memset(found_headers, 0, sizeof(found_headers));
+
+    struct curl_slist *temp = headers_list;
+    WebcfgInfo("Checking headers in headers_list for supplementary sync:\n");
+
+    while (temp)
+	{
+        for (int i = 0; i < num_expected_headers; i++)
+		{
+            if (strncmp(temp->data, expected_headers[i], strlen(expected_headers[i])) == 0)
+			{
+                WebcfgInfo("  --> Found header: '%s'\n", expected_headers[i]);
+                found_headers[i] = 1;
+            }
+        }
+        temp = temp->next;
+    }
+
+    for (int i = 0; i < num_expected_headers; i++)
+	{
+        if (!found_headers[i]) WebcfgInfo("  --> Missing header: %s\n", expected_headers[i]);
+        CU_ASSERT_TRUE(found_headers[i]);
+    }
+
+    if (transID) {
+		free(transID);
+		transID = NULL;
+	}
+	if (headers_list) {
+		curl_slist_free_all(headers_list);
+		headers_list = NULL;
+	}
+	if (curl) {
+		curl_easy_cleanup(curl);
+		curl = NULL;
+	}
 }
 
 void test_validateParam()
@@ -556,6 +781,7 @@ void test_updateRootVersionToDB(){
 	tmpData->retry_count = 0;
 	tmpData->error_code = 0;
 	tmpData->error_details = strdup("none");
+	tmpData->cloud_trans_id = NULL;
 	tmpData->next = NULL;
 	set_global_tmp_node(tmpData);
 	set_global_ETAG("123");
@@ -707,6 +933,7 @@ void test_deleteRootAndMultipartDocs(){
 	tmpData->retry_count = 0;
 	tmpData->error_code = 0;
 	tmpData->error_details = strdup("none");
+	tmpData->cloud_trans_id = NULL;
 	tmpData->next = NULL;
 	set_global_tmp_node(tmpData);
 	int m=deleteRootAndMultipartDocs();
@@ -1235,6 +1462,9 @@ void add_suites( CU_pSuite *suite )
       CU_add_test( *suite, "test  checkValidURL_ValidURL", test_checkValidURL_ValidURL);  
       CU_add_test( *suite, "test  checkValidURL_InvalidURL", test_checkValidURL_InvalidURL);  
       CU_add_test( *suite, "test  createCurlHeader", test_createHeader);
+	  CU_add_test( *suite, "test  createHeader_doc_header_max_data", test_createHeader_doc_header_max_data);
+	  CU_add_test( *suite, "test  createHeader_primary_sync", test_createHeader_primary_sync);
+	  CU_add_test( *suite, "test  createHeader_supplementary_sync", test_createHeader_supplementary_sync);
       CU_add_test( *suite, "test  validateParam", test_validateParam);
       CU_add_test( *suite, "test  checkRootUpdate", test_checkRootUpdate);
       CU_add_test( *suite, "test  checkRootDelete", test_checkRootDelete);
