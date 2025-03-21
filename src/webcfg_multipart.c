@@ -2266,7 +2266,7 @@ void checkValidURL(char **s) {
         start += 8;
 
         // If the next character is '/', it means MAC address is missing
-        if (*start == '/') {
+        if (*start == '/' || strncmp(start, "000000000000", 12) == 0) {
         
             WebcfgError("Device MAC EMPTY\n");
             strncpy(modified_url, *s, start - *s);
@@ -2278,7 +2278,7 @@ void checkValidURL(char **s) {
                     backoffRetryTime = (int)pow(2, c) - 1;
                 }        
                 const char *mac = get_deviceMAC();
-                if (mac != NULL) 
+                if (mac != NULL && strncmp(mac, "000000000000", 12) != 0)
                 {
                     WebcfgDebug("Mac fetched is %s\n", mac);
                     strncat(modified_url, mac, sizeof(modified_url) - strlen(modified_url) - 1);
