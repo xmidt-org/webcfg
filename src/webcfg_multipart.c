@@ -589,7 +589,7 @@ WEBCFG_STATUS parseMultipartDocument(void *config_data, char *ct , size_t data_s
 		}
 		else
 		{
-			WebcfgDebug("processMsgpackSubdoc done,docs are sent for apply\n");
+			WebcfgInfo("processMsgpackSubdoc done,docs are sent for apply\n");
 		}
 		return WEBCFG_FAILURE;
 	}
@@ -1323,13 +1323,19 @@ int readFromFile(char *filename, char **data, int *len)
 	ch_count = ftell(fp);
 	fseek(fp, 0, SEEK_SET);
 	*data = (char *) malloc(sizeof(char) * (ch_count + 1));
-	sz = fread(*data, 1, ch_count-1,fp);
+	if( NULL == *data )
+	{
+		WebcfgError("Memory allocation for data failed.\n");
+		fclose(fp);
+		return 0;
+	}
+	sz = fread(*data, 1, ch_count,fp);
 	if (!sz) 
 	{	
 		fclose(fp);
 		WebcfgError("fread failed.\n");
 		WEBCFG_FREE(*data);
-		return WEBCFG_FAILURE;
+		return 0;
 	}
 	*len = ch_count;
 	(*data)[ch_count] ='\0';
