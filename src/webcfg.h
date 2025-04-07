@@ -25,8 +25,8 @@
 /*                                   Macros                                   */
 /*----------------------------------------------------------------------------*/
 #define MAX_BUF_SIZE	           256
-#define MAX_URL_LENGTH	           768
 #define MAX_PARAMETERNAME_LENGTH       512
+#define MAX_LBUFF_SIZE                 8192
 
 #ifdef BUILD_YOCTO
 #define DEVICE_PROPS_FILE       "/etc/device.properties"
