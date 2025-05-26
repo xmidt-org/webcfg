@@ -34,7 +34,9 @@
 #include "webcfg_event.h"
 #include "webcfg_blob.h"
 #include "webcfg_timer.h"
+#ifdef WEBCONFIG_BIN_SUPPORT
 #include "webcfg_rbus.h"
+#endif
 
 #ifdef FEATURE_SUPPORT_MQTTCM
 #include "webcfg_mqtt.h"
@@ -471,10 +473,10 @@ void *WebConfigMultipartTask(void *status)
 
 	WebcfgDebug("supplementary_destroy\n");
 	delete_supplementary_list();
-
+#ifdef WEBCONFIG_BIN_SUPPORT
 	WebcfgDebug("ForceSyncMsgQueue_destroy\n");
 	deleteForceSyncMsgQueue();
-
+#endif
 	WebcfgInfo("B4 pthread_exit\n");
 	g_mpthreadId = NULL;
 	pthread_exit(0);
