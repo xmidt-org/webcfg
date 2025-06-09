@@ -17,3 +17,12 @@ cmake ..
 make
 make test
 ```
+# To run webconfig as a standalone binary
+
+```
+mkdir build
+cd build
+cmake .. -DWEBCONFIG_BIN_SUPPORT:BOOL=true
+make
+make test
+```
