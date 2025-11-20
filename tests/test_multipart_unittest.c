@@ -378,9 +378,9 @@ void test_replaceMac(){
 
 void test_checkValidURL_ValidURL(){
 
-	char *webConfigURL = strdup("https://sample/device/123456ffaa/config");
+	char *webConfigURL = strdup("https://sample/device/b42xxxxxxxxx/config");
 	checkValidURL(&webConfigURL);
-	const char *expected_url ="https://sample/device/123456ffaa/config";
+	const char *expected_url ="https://sample/device/b42xxxxxxxxx/config";
 	CU_ASSERT_STRING_EQUAL(webConfigURL,expected_url);
 }
 
