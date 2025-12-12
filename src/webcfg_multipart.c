@@ -87,6 +87,7 @@ static char *supportedVersion_header=NULL;
 static char *supportedDocs_header=NULL;
 static char *supplementaryDocs_header=NULL;
 #endif
+static char g_ForceSyncTransID[128]={'\0'};
 char g_RebootReason[64]={'\0'};
 static char g_transID[64]={'\0'};
 static char * g_contentLen = NULL;
@@ -171,7 +172,6 @@ char * get_global_interface(void)
 /*                             Function Prototypes                            */
 /*----------------------------------------------------------------------------*/
 void addToDBList(webconfig_db_data_t *webcfgdb);
-char* generate_trans_uuid();
 void loadInitURLFromFile(char **url);
 
 #ifdef FEATURE_SUPPORT_AKER
@@ -205,8 +205,6 @@ WEBCFG_STATUS webcfg_http_request(char **configData, int r_count, int status, lo
 	char *ct = NULL;
 	char *webConfigURL = NULL;
 	char *transID = NULL;
-	char *subdoclist = NULL;
-	char docList[512] = {'\0'};
 	char configURL[256] = { 0 };
 	char c[] = "{mac}";
 	int rv = 0;
@@ -216,7 +214,6 @@ WEBCFG_STATUS webcfg_http_request(char **configData, int r_count, int status, lo
 	struct token_data data;
 	data.size = 0;
 	void * dataVal = NULL;
-	char syncURL[256]={'\0'};
 	char docname_upper[64]={'\0'};
 
 	curl = curl_easy_init();
@@ -231,16 +228,11 @@ WEBCFG_STATUS webcfg_http_request(char **configData, int r_count, int status, lo
 			return WEBCFG_FAILURE;
 		}
 		data.data[0] = '\0';
-		createCurlHeader(list, &headers_list, status, &transID, &subdoclist);
+		createCurlHeader(list, &headers_list, status, &transID);
 		if(transID !=NULL)
 		{
 			*transaction_id = strdup(transID);
 			WEBCFG_FREE(transID);
-		}
-		if(subdoclist !=NULL)
-		{
-			strncpy(docList, subdoclist, sizeof(docList)-1);
-			WEBCFG_FREE(subdoclist);
 		}
 		WebcfgInfo("The get_global_supplementarySync() is %d\n", get_global_supplementarySync());
 		if(get_global_supplementarySync() == 0)
@@ -274,6 +266,13 @@ WEBCFG_STATUS webcfg_http_request(char **configData, int r_count, int status, lo
 			//Replace {mac} string from default init url with actual deviceMAC
 			WebcfgDebug("replaceMacWord to actual device mac\n");
 			webConfigURL = replaceMacWord(configURL, c, get_deviceMAC());
+			if(webConfigURL == NULL)
+			{
+				WebcfgError("replaceMacWord failed. Failed to set webConfigURL\n");
+                return WEBCFG_FAILURE;
+			}
+			//Check the url is having empty mac or actual devicemac
+			checkValidURL(&webConfigURL);
 			if(get_global_supplementarySync() == 0)
 			{
 				rc = Set_Webconfig_URL(webConfigURL);
@@ -315,18 +314,6 @@ WEBCFG_STATUS webcfg_http_request(char **configData, int r_count, int status, lo
 			return WEBCFG_FAILURE;
 		}
 		WebcfgDebug("ConfigURL fetched is %s\n", webConfigURL);
-
-		if(!get_global_supplementarySync())
-		{
-			if(strlen(docList) > 0)
-			{
-				WebcfgDebug("docList is %s\n", docList);
-				snprintf(syncURL, MAX_BUF_SIZE, "%s?group_id=%s", webConfigURL, docList);
-				WEBCFG_FREE(webConfigURL);
-				WebcfgDebug("syncURL is %s\n", syncURL);
-				webConfigURL =strdup( syncURL);
-			}
-		}
 
 		if(webConfigURL !=NULL)
 		{
@@ -588,7 +575,7 @@ WEBCFG_STATUS parseMultipartDocument(void *config_data, char *ct , size_t data_s
 		}
 		else
 		{
-			WebcfgDebug("processMsgpackSubdoc done,docs are sent for apply\n");
+			WebcfgInfo("processMsgpackSubdoc done,docs are sent for apply\n");
 		}
 		return WEBCFG_FAILURE;
 	}
@@ -907,8 +894,9 @@ WEBCFG_STATUS processMsgpackSubdoc(char *transaction_id)
 						{
 							subdocStatus = isSubDocSupported(mp->name_space);
 							WebcfgDebug("ccspStatus is %d\n", ccspStatus);
-							if(ccspStatus == 204 && subdocStatus != WEBCFG_SUCCESS)
+							if(subdocStatus != WEBCFG_SUCCESS)
 							{
+								WebcfgInfo("Rejecting unsupported subdoc\n");
 								snprintf(result,MAX_VALUE_LEN,"doc_unsupported:%s", errDetails);
 							}
 							else
@@ -1321,13 +1309,19 @@ int readFromFile(char *filename, char **data, int *len)
 	ch_count = ftell(fp);
 	fseek(fp, 0, SEEK_SET);
 	*data = (char *) malloc(sizeof(char) * (ch_count + 1));
-	sz = fread(*data, 1, ch_count-1,fp);
+	if( NULL == *data )
+	{
+		WebcfgError("Memory allocation for data failed.\n");
+		fclose(fp);
+		return 0;
+	}
+	sz = fread(*data, 1, ch_count,fp);
 	if (!sz) 
 	{	
 		fclose(fp);
 		WebcfgError("fread failed.\n");
 		WEBCFG_FREE(*data);
-		return WEBCFG_FAILURE;
+		return 0;
 	}
 	*len = ch_count;
 	(*data)[ch_count] ='\0';
@@ -1410,13 +1404,7 @@ void derive_root_doc_version_string(char **rootVersion, uint32_t *root_ver, int 
 
 			if(db_root_string !=NULL)
 			{
-				if((strcmp(db_root_string,"POST-NONE")==0) && (strcmp(g_RebootReason,FW_UPGRADE_REBOOT_REASON)!=0) && (strcmp(g_RebootReason,FORCED_FW_UPGRADE_REBOOT_REASON)!=0) && (strcmp(g_RebootReason,FACTORY_RESET_REBOOT_REASON)!=0))
-				{
-					*rootVersion = strdup("NONE-REBOOT");
-					WEBCFG_FREE(db_root_string);
-					return;
-				}
-				else if(status == 404 && ((strcmp(db_root_string, "NONE") == 0) || (strcmp(db_root_string, "NONE-MIGRATION") == 0) || (strcmp(db_root_string, "NONE-REBOOT") == 0)))
+				if(status == 404 && ((strcmp(db_root_string, "NONE") == 0) || (strcmp(db_root_string, "NONE-MIGRATION") == 0) || (strcmp(db_root_string, "NONE-REBOOT") == 0)))
 				{
 					*rootVersion = strdup("POST-NONE");
 					WEBCFG_FREE(db_root_string);
@@ -1462,7 +1450,7 @@ void derive_root_doc_version_string(char **rootVersion, uint32_t *root_ver, int 
 /* Traverse through db list to get versions and doclist of all docs with root.
 e.g. IF-NONE-MATCH: 123,44317,66317,77317 where 123 is root version.
 e.g. root,ble,lan,mesh,moca
-Currently versionsList length is fixed to 512 which can support up to 45 docs.
+Currently versionsList length is fixed to 8192 which can support up to 512 docs.
 This can be increased if required.
 VersionList and docList are fetched at once from DB to fix version and docList mismatch when DB is updated.*/
 void refreshConfigVersionList(char *versionsList, int http_status, char *docsList)
@@ -1474,7 +1462,7 @@ void refreshConfigVersionList(char *versionsList, int http_status, char *docsLis
 	WEBCFG_STATUS retStatus = WEBCFG_SUCCESS;
 
 	//initialize to default value "0".
-	snprintf(versionsList, 512, "%s", "0");
+	snprintf(versionsList, MAX_LBUFF_SIZE, "%s", "0");
 
 	derive_root_doc_version_string(&root_str, &root_version, http_status);
 	WebcfgDebug("update root_version %lu rootString %s to DB\n", (long)root_version, root_str);
@@ -1493,7 +1481,7 @@ void refreshConfigVersionList(char *versionsList, int http_status, char *docsLis
 		if(root_str!=NULL && strlen(root_str) >0)
 		{
 			WebcfgDebug("update root_str %s to versionsList\n", root_str);
-			snprintf(versionsList, 512, "%s", root_str);
+			snprintf(versionsList, MAX_LBUFF_SIZE, "%s", root_str);
 			WEBCFG_FREE(root_str);
 		}
 		else
@@ -1503,7 +1491,7 @@ void refreshConfigVersionList(char *versionsList, int http_status, char *docsLis
 		}
 		WebcfgInfo("versionsList is %s\n", versionsList);
 
-		snprintf(docsList, 512, "%s", "root");
+		snprintf(docsList, MAX_LBUFF_SIZE, "%s", "root");
 		WebcfgDebug("docsList is %s\n", docsList);
 
 		while (NULL != temp)
@@ -1517,7 +1505,7 @@ void refreshConfigVersionList(char *versionsList, int http_status, char *docsLis
 					WEBCFG_FREE(versionsList_tmp);
 					//Fetch docsList and version together to fix docs & version mismatch from DB
 					docsList_tmp = strdup(docsList);
-					snprintf(docsList, 512, "%s,%s",docsList_tmp, temp->name);
+					snprintf(docsList, MAX_LBUFF_SIZE, "%s,%s",docsList_tmp, temp->name);
 					WEBCFG_FREE(docsList_tmp);
 				}
 			}
@@ -1534,13 +1522,16 @@ void refreshConfigVersionList(char *versionsList, int http_status, char *docsLis
  * @param[out] trans_uuid for sync
  * @param[out] header_list output curl header list
 */
+
+//NOTE: If new headers are added in webcfg curl flow add them in MQTT createMqttHeader also if necessary
 #if !defined FEATURE_SUPPORT_MQTTCM
-void createCurlHeader( struct curl_slist *list, struct curl_slist **header_list, int status, char ** trans_uuid, char **subdocList)
+void createCurlHeader( struct curl_slist *list, struct curl_slist **header_list, int status, char ** trans_uuid)
 {
 	char *version_header = NULL;
 	char *auth_header = NULL;
 	char *status_header=NULL;
 	char *schema_header=NULL;
+	char *doc_header = NULL;
 	char *bootTime = NULL, *bootTime_header = NULL;
 	char *FwVersion = NULL, *FwVersion_header=NULL;
 	char *supportedDocs = NULL;
@@ -1558,10 +1549,8 @@ void createCurlHeader( struct curl_slist *list, struct curl_slist **header_list,
 	char *currentTime_header=NULL;
 	char *uuid_header = NULL;
 	char *transaction_uuid = NULL;
-	char version[512]={'\0'};
-	char docList[512]={'\0'};
-	char* syncTransID = NULL;
-	char* ForceSyncDoc = NULL;
+	char version[MAX_LBUFF_SIZE]={'\0'};
+	char docList[MAX_LBUFF_SIZE]={'\0'};
 	size_t supported_doc_size = 0;
 	size_t supported_version_size = 0;
 	size_t supplementary_docs_size = 0;
@@ -1582,17 +1571,27 @@ void createCurlHeader( struct curl_slist *list, struct curl_slist **header_list,
 
 	if(!get_global_supplementarySync())
 	{
-		version_header = (char *) malloc(sizeof(char)*MAX_BUF_SIZE);
+		version_header = (char *) malloc(sizeof(char) * (MAX_LBUFF_SIZE + strlen("IF-NONE-MATCH:") + 1));
 		if(version_header !=NULL)
 		{
 			refreshConfigVersionList(version, 0, docList);
-			snprintf(version_header, MAX_BUF_SIZE, "IF-NONE-MATCH:%s", ((strlen(version)!=0) ? version : "0"));
+			snprintf(version_header, MAX_LBUFF_SIZE + strlen("IF-NONE-MATCH:") + 1, "IF-NONE-MATCH:%s", ((strlen(version)!=0) ? version : "0"));
 			WebcfgInfo("version_header formed %s\n", version_header);
 			WebcfgInfo("docList fetched %s\n", docList);
-			*subdocList = strdup(docList);
 			list = curl_slist_append(list, version_header);
 			WEBCFG_FREE(version_header);
+
+			doc_header = (char *)malloc(sizeof(char) * (MAX_LBUFF_SIZE + strlen("Doc-Name: ") + 1));
+			if (doc_header != NULL)
+			{
+				snprintf(doc_header, MAX_LBUFF_SIZE + strlen("Doc-Name: ") + 1, "Doc-Name: %s", docList);
+				list = curl_slist_append(list, doc_header);
+				WebcfgInfo("doc_header formed %s\n", doc_header);
+				WEBCFG_FREE(doc_header);
+			}
 		}
+		WebcfgInfo("Post none retain header formed POST-NONE-RETAIN: true\n");
+		list = curl_slist_append(list, "POST-NONE-RETAIN: true");		
 	}
 	list = curl_slist_append(list, "Accept: application/msgpack");
 
@@ -1796,20 +1795,10 @@ void createCurlHeader( struct curl_slist *list, struct curl_slist **header_list,
                 WebcfgDebug("Failed to get systemReadyTime\n");
         }
 
-	getForceSync(&ForceSyncDoc, &syncTransID);
-
-	if(syncTransID !=NULL)
+	if(strlen(g_ForceSyncTransID)>0)
 	{
-		if(ForceSyncDoc !=NULL)
-		{
-			if (strlen(syncTransID)>0)
-			{
-				WebcfgInfo("updating transaction_uuid with force syncTransID\n");
-				transaction_uuid = strdup(syncTransID);
-			}
-			WEBCFG_FREE(ForceSyncDoc);
-		}
-		WEBCFG_FREE(syncTransID);
+			WebcfgInfo("updating transaction_uuid with force g_ForceSyncTransID\n");
+			transaction_uuid = strdup(g_ForceSyncTransID);
 	}
 
 	if(transaction_uuid == NULL)
@@ -2013,6 +2002,8 @@ void delete_multipart()
 		temp = head;
 		head = head->next;
 		WebcfgDebug("Deleted mp node: temp->name_space:%s\n", temp->name_space);
+		WEBCFG_FREE(temp->name_space);
+		WEBCFG_FREE(temp->data);
 		free(temp);
 		temp = NULL;
 	}
@@ -2264,41 +2255,135 @@ WEBCFG_STATUS print_tmp_doc_list(size_t mp_count)
 	return WEBCFG_SUCCESS;
 }
 
+void checkValidURL(char **s) {
+
+    if (!s || *s == NULL)
+    {
+        WebcfgError("webConfigURL is Empty or NULL\n");
+        return;
+    }
+    char modified_url[256] = {0};
+    int maxRetryTime = 31;
+    int backoffRetryTime = 0;
+    int c = 2;
+
+    char *start = strstr(*s, "/device/");
+    if (start != NULL) {
+        start += 8;
+
+        // If the next character is '/', it means MAC address is missing
+        if (*start == '/' || strncmp(start, "000000000000", 12) == 0) {
+        
+            WebcfgError("Device MAC EMPTY\n");
+            strncpy(modified_url, *s, start - *s);
+            modified_url[start - *s] = '\0';
+            
+            while (1) {
+                if (backoffRetryTime <= maxRetryTime) 
+                {
+                    backoffRetryTime = (1 << c) - 1;
+                }        
+                const char *mac = get_deviceMAC();
+                if (mac != NULL && mac[0] != '\0' && strncmp(mac, "000000000000", 12) != 0)
+                {
+                    WebcfgDebug("Mac fetched is %s\n", mac);
+                    strncat(modified_url, mac, sizeof(modified_url) - strlen(modified_url) - 1);
+                    break;
+                }
+
+                WebcfgError("Unable to get MAC Address. Retrying...\n");
+                WebcfgInfo("New backoffRetryTime value calculated as %d seconds\n", backoffRetryTime);
+                sleep(backoffRetryTime);
+                c++;         
+                if (backoffRetryTime >= maxRetryTime) 
+                {
+                    WebcfgInfo("BackoffRetryTime reached max value, reseting to initial value and retrying\n");
+                    c = 2;
+                    continue;
+                }
+            }
+            strncat(modified_url, "/config", sizeof(modified_url) - strlen(modified_url) - 1);
+            modified_url[sizeof(modified_url) - 1] = '\0';
+            WEBCFG_FREE(*s);
+            *s = strdup(modified_url);
+            WebcfgInfo("Modified URL: %s\n", *s);
+        }
+        else
+        {
+            // If the MAC address is not empty
+            WebcfgDebug("URL is having valid MAC Address.\n");
+
+			// Validate if the MAC is correct for the box
+            const char *mac = get_deviceMAC();
+            if (mac != NULL && mac[0] != '\0' && strncmp(mac, start, 12) != 0)
+			{
+                WebcfgError("MAC Address in URL does not match actual device MAC. Updating...\n");
+                strncpy(modified_url, *s, start - *s);
+                modified_url[start - *s] = '\0';
+                strncat(modified_url, mac, sizeof(modified_url) - strlen(modified_url) - 1);
+                strncat(modified_url, "/config", sizeof(modified_url) - strlen(modified_url) - 1);
+                modified_url[sizeof(modified_url) - 1] = '\0';
+                WEBCFG_FREE(*s);
+                *s = strdup(modified_url);
+                WebcfgInfo("Updated URL: %s\n", *s);
+            }
+        }
+    }
+}
+
 char *replaceMacWord(const char *s, const char *macW, const char *deviceMACW)
 {
+    if (!s || !macW)
+    {
+        WebcfgInfo("macW or configURL is NULL\n");
+        return NULL;
+    }
 	char *result = NULL;
 	int i, cnt = 0;
 
-	if(deviceMACW != NULL)
-	{
-		int deviceMACWlen = strlen(deviceMACW);
-		int macWlen = strlen(macW);
-		// Counting the number of times mac word occur in the string
-		for (i = 0; s[i] != '\0'; i++)
-		{
-			if (strstr(&s[i], macW) == &s[i])
-			{
-			    cnt++;
-			    // Jumping to index after the mac word.
-			    i += macWlen - 1;
-			}
-		}
+    // When device mac is NULL replace with a fallback mac
+    if (deviceMACW == NULL || deviceMACW[0] == '\0')
+    {
+        WebcfgInfo("Device mac is NULL or Empty. Setting fallback mac\n");
+        deviceMACW = "000000000000";
+    }
 
-		result = (char *)malloc(i + cnt * (deviceMACWlen - macWlen) + 1);
-		i = 0;
-		while (*s)
+	int deviceMACWlen = strlen(deviceMACW);
+	int macWlen = strlen(macW);
+
+	// Counting the number of times mac word occur in the string
+	for (i = 0; s[i] != '\0'; i++)
+	{
+		if (strstr(&s[i], macW) == &s[i])
 		{
-			if (strstr(s, macW) == s)
-			{
-				strcpy(&result[i], deviceMACW);
-				i += deviceMACWlen;
-				s += macWlen;
-			}
-			else
-			    result[i++] = *s++;
+			cnt++;
+			// Jumping to index after the mac word.
+			i += macWlen - 1;
 		}
-		result[i] = '\0';
 	}
+
+	result = (char *)malloc(i + cnt * (deviceMACWlen - macWlen) + 1);
+	if(result == NULL)
+	{
+		WebcfgError("malloc failed for result\n");
+		return NULL;
+	}
+
+	i = 0;
+	while (*s)
+	{
+		if (strstr(s, macW) == s)
+		{
+			strcpy(&result[i], deviceMACW);
+			i += deviceMACWlen;
+			s += macWlen;
+		}
+		else
+		{
+			result[i++] = *s++;
+		}
+	}
+	result[i] = '\0';
 	return result;
 }
 
@@ -2531,4 +2616,17 @@ int get_multipartdoc_count()
 		temp = temp->next;
 	}
 	return count;
+}
+
+void setForceSyncTransID(char *ForceSyncTransID)
+{
+	memset(g_ForceSyncTransID, 0, sizeof(g_ForceSyncTransID));
+	if(ForceSyncTransID!=NULL)
+	{
+		webcfgStrncpy( g_ForceSyncTransID, ForceSyncTransID, sizeof(g_ForceSyncTransID));
+	}
+}
+
+const char* getForceSyncTransID() {
+    return g_ForceSyncTransID;
 }

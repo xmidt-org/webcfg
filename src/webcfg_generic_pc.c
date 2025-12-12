@@ -122,7 +122,7 @@ char *getPartnerID(void)
 
 char *getAccountID(void)
 {
-    char *AI=strdup("unkown");
+    char *AI=strdup("unknown");
     return AI;
 }
 

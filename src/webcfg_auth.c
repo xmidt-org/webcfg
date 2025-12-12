@@ -72,10 +72,11 @@ void getAuthToken()
 			{
 				WebcfgInfo("getSerialNumber\n");
 				serial_number = getSerialNumber();
+				WebcfgInfo("SerialNumber fetched success\n");
 		                if(serial_number != NULL && strlen(serial_number) > 0)
 		                {
 					strncpy(serialNum ,serial_number, sizeof(serialNum)-1);
-					WebcfgDebug("serialNum: %s\n", serialNum);
+					WebcfgInfo("serialNum is : %s\n", serialNum);
 					WEBCFG_FREE(serial_number);
 					flag_unk = 0;
 		                }
@@ -90,7 +91,9 @@ void getAuthToken()
 
 			if( strlen(serialNum)>0 )
 			{
+				WebcfgInfo("Proceed to execute_token_script function\n");
 				execute_token_script(output, WEBPA_READ_HEADER, sizeof(output), get_deviceMAC(), serialNum);
+				WebcfgInfo("execute_token_script is done\n");
 				if ((strlen(output) == 0))
 				{
 					WebcfgError("Unable to get auth token\n");
@@ -158,11 +161,14 @@ void execute_token_script(char *token, char *name, size_t len, char *mac, char *
         if(file)
         {
             snprintf(command,sizeof(command),"%s %s %s",name,serNum,mac);
+            WebcfgInfo("execute_token_script command is initiated\n");
             out = popen(command, "r");
+            WebcfgInfo("execute_token_script command is executed\n");
             if(out)
             {
                 fgets(token, len, out);
                 pclose(out);
+                WebcfgInfo("execute_token_script command is success\n");
             }
             fclose(file);
         }

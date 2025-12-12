@@ -77,6 +77,7 @@ ExternalProject_Add(msgpack
                   -DMSGPACK_ENABLE_CXX=OFF
                   -DMSGPACK_BUILD_EXAMPLES=OFF
                   -DBUILD_TESTING=OFF
+                  -DMSGPACK_BUILD_TESTS=OFF
 )
 add_library(libmsgpack STATIC SHARED IMPORTED)
 add_dependencies(libmsgpack msgpack)

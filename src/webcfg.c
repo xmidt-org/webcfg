@@ -34,6 +34,9 @@
 #include "webcfg_event.h"
 #include "webcfg_blob.h"
 #include "webcfg_timer.h"
+#ifdef WEBCONFIG_BIN_SUPPORT
+#include "webcfg_rbus.h"
+#endif
 
 #ifdef FEATURE_SUPPORT_MQTTCM
 #include "webcfg_mqtt.h"
@@ -79,6 +82,9 @@ static int g_testfile = 0;
 static int g_supplementarySync = 0;
 static int g_webcfg_forcedsync_needed = 0;
 static int g_webcfg_forcedsync_started = 0;
+
+static int g_cloud_forcesync_retry_needed = 0;
+static int g_cloud_forcesync_retry_started = 0;
 /*----------------------------------------------------------------------------*/
 /*                             Function Prototypes                            */
 /*----------------------------------------------------------------------------*/
@@ -189,12 +195,18 @@ void *WebConfigMultipartTask(void *status)
 			{
 				WEBCFG_FREE(syncDoc);
 			}
+			setForceSyncTransID("");
 			setForceSync("", "", 0);
 			set_global_supplementarySync(0);
 			if(get_global_webcfg_forcedsync_started())
 			{
 				WebcfgDebug("reset webcfg_forcedsync_started\n");
 				set_global_webcfg_forcedsync_started(0);
+			}
+			if(get_cloud_forcesync_retry_started())
+			{
+				WebcfgDebug("reset cloud_forcesync_retry_started\n");
+				set_cloud_forcesync_retry_started(0);
 			}
 		}
 
@@ -207,6 +219,7 @@ void *WebConfigMultipartTask(void *status)
 				char *ForceSyncDoc = NULL;
 				char* ForceSyncTransID = NULL;
 				getForceSync(&ForceSyncDoc, &ForceSyncTransID);
+				setForceSyncTransID(ForceSyncTransID);
 				if((ForceSyncDoc == NULL) && (ForceSyncTransID == NULL) && (!forced_sync) && (!get_bootSync()))
 				{
 					WebcfgInfo("release success docs at every maintenance window\n");	
@@ -275,16 +288,26 @@ void *WebConfigMultipartTask(void *status)
 		}
 		else
 		{
+			set_retry_timer(900);
+			set_global_retry_timestamp(0);
+			failedDocsRetry();			
 			if(get_global_retry_timestamp() != 0)
 			{
 				set_retry_timer(retrySyncSeconds());
 			}
 			ts.tv_sec += get_retry_timer();
-			WebcfgDebug("The retry triggers at %s\n", printTime((long long)ts.tv_sec));
+			WebcfgInfo("The retry triggers at %s\n", printTime((long long)ts.tv_sec));
 		}
-		if(get_global_webcfg_forcedsync_needed() == 1)
+		if(get_global_webcfg_forcedsync_needed() == 1 || get_cloud_forcesync_retry_needed() == 1)
 		{
-			WebcfgInfo("webcfg_forcedsync detected, trigger force sync with cloud.\n");
+			if(get_cloud_forcesync_retry_needed() == 1)
+			{
+				WebcfgInfo("Cloud force sync in progress is detected, trigger force sync with cloud.\n");
+			}
+			else
+			{
+				WebcfgInfo("webcfg_forcedsync detected, trigger force sync with cloud.\n");
+			}
 			forced_sync = 1;
 			wait_flag = 1;
 			rv = 0;
@@ -302,26 +325,7 @@ void *WebConfigMultipartTask(void *status)
 		{
 			rv = pthread_cond_wait(&sync_condition, &sync_mutex);
 		}
-
-		if(rv == ETIMEDOUT && !g_shutdown)
-		{
-			if(get_doc_fail() == 1)
-			{
-				set_doc_fail(0);
-				set_retry_timer(900);
-				set_global_retry_timestamp(0);
-				failedDocsRetry();
-				WebcfgDebug("After the failedDocsRetry\n");
-			}
-			else
-			{
-				time(&t);
-				wait_flag = 0;
-				maintenance_count = 0;
-				WebcfgDebug("Supplementary Sync Interval %d sec and syncing at %s\n",value,ctime(&t));
-			}
-		}
-		else if(!rv && !g_shutdown)
+		if(!rv && !g_shutdown)
 		{
 			//webcfg_forcedsync_needed is set initially whenever force sync SET is detected internally & webcfg_forcedsync_started is set when actual sync is started once previous sync is completed.
 			if(get_global_webcfg_forcedsync_needed())
@@ -330,17 +334,25 @@ void *WebConfigMultipartTask(void *status)
 				set_global_webcfg_forcedsync_started(1);
 				WebcfgDebug("webcfg_forcedsync_needed reset to %d and webcfg_forcedsync_started %d\n", get_global_webcfg_forcedsync_needed(), get_global_webcfg_forcedsync_started());
 			}
+			//cloud_forcesync_retry_needed is set initially whenever cloud force sync is received while another sync is in progress & cloud_forcesync_retry_started is set when actual sync is started once previous sync is completed.
+			if(get_cloud_forcesync_retry_needed())
+			{
+				set_cloud_forcesync_retry_needed(0);
+				set_cloud_forcesync_retry_started(1);
+				WebcfgDebug("cloud_forcesync_retry_needed reset to %d and cloud_forcesync_retry_started set to %d\n",
+				            get_cloud_forcesync_retry_needed(), get_cloud_forcesync_retry_started());
+			}
 			char *ForceSyncDoc = NULL;
 			char* ForceSyncTransID = NULL;
 
 			// Identify ForceSync based on docname
 			getForceSync(&ForceSyncDoc, &ForceSyncTransID);
+			setForceSyncTransID(ForceSyncTransID);
 			if(ForceSyncDoc !=NULL && ForceSyncTransID !=NULL)
 			{
 				WebcfgInfo("ForceSyncDoc %s ForceSyncTransID. %s\n", ForceSyncDoc, ForceSyncTransID);
 			}
-			if(ForceSyncTransID !=NULL)
-			{
+
 				if((ForceSyncDoc != NULL) && strlen(ForceSyncDoc)>0)
 				{
 					forced_sync = 1;
@@ -363,9 +375,26 @@ void *WebConfigMultipartTask(void *status)
 					WebcfgError("ForceSyncDoc is NULL\n");
 					WEBCFG_FREE(ForceSyncTransID);
 				}
-			}
 
 			WebcfgDebug("forced_sync is %d\n", forced_sync);
+		}
+		else if(rv == ETIMEDOUT && !g_shutdown)
+		{
+			if(get_doc_fail() == 1)
+			{
+				set_doc_fail(0);
+				set_retry_timer(900);
+				set_global_retry_timestamp(0);
+				failedDocsRetry();
+				WebcfgDebug("After the failedDocsRetry\n");
+			}
+			else
+			{
+				time(&t);
+				wait_flag = 0;
+				maintenance_count = 0;
+				WebcfgInfo("Supplementary Sync Interval %d sec and syncing at %s\n",value,ctime(&t));
+			}
 		}
 		else if(g_shutdown)
 		{
@@ -373,7 +402,11 @@ void *WebConfigMultipartTask(void *status)
 			pthread_mutex_unlock (&sync_mutex);
 			break;
 		}
-		
+		else
+		{
+			WebcfgError("sync_condition pthread_cond wait failed with value of rv: [%d]\n", rv);
+		}
+
 		pthread_mutex_unlock(&sync_mutex);
 
 	}
@@ -422,6 +455,8 @@ void *WebConfigMultipartTask(void *status)
 	set_global_supplementarySync(0);
 	set_global_webcfg_forcedsync_needed(0);
 	set_global_webcfg_forcedsync_started(0);
+	set_cloud_forcesync_retry_needed(0);
+	set_cloud_forcesync_retry_started(0);
 #ifdef FEATURE_SUPPORT_AKER
 	set_send_aker_flag(false);
 #endif
@@ -438,7 +473,10 @@ void *WebConfigMultipartTask(void *status)
 
 	WebcfgDebug("supplementary_destroy\n");
 	delete_supplementary_list();
-
+#ifdef WEBCONFIG_BIN_SUPPORT
+	WebcfgDebug("ForceSyncMsgQueue_destroy\n");
+	deleteForceSyncMsgQueue();
+#endif
 	WebcfgInfo("B4 pthread_exit\n");
 	g_mpthreadId = NULL;
 	pthread_exit(0);
@@ -540,6 +578,26 @@ void set_global_webcfg_forcedsync_started(int value)
 int get_global_webcfg_forcedsync_started()
 {
     return g_webcfg_forcedsync_started;
+}
+
+void set_cloud_forcesync_retry_needed(int value)
+{
+    g_cloud_forcesync_retry_needed = value;
+}
+
+int get_cloud_forcesync_retry_needed()
+{
+    return g_cloud_forcesync_retry_needed;
+}
+
+void set_cloud_forcesync_retry_started(int value)
+{
+   g_cloud_forcesync_retry_started = value;
+}
+
+int get_cloud_forcesync_retry_started()
+{
+    return g_cloud_forcesync_retry_started;
 }
 /*----------------------------------------------------------------------------*/
 /*                             Internal functions                             */
@@ -778,11 +836,21 @@ int testUtility()
 
 	if(readFromFile(TEST_FILE_LOCATION, &data, &test_dataSize) == 1)
 	{
+		if(data != NULL && test_dataSize == 0)
+		{
+			WebcfgError("Test file is empty\n");
+			return 0;
+		}
 		set_g_testfile(1);
 		WebcfgInfo("Using Test file \n");
 
 		char * data_body = malloc(sizeof(char) * test_dataSize+1);
-		memset(data_body, 0, sizeof(char) * test_dataSize+1);
+		if( NULL == data_body )
+		{
+			WebcfgError("Memory allocation for data_body failed.\n");
+			return 0;
+		}
+		memset(data_body, 0, sizeof(char) * (test_dataSize + 1));
 		data_body = memcpy(data_body, data, test_dataSize+1);
 		data_body[test_dataSize] = '\0';
 		char *ptr_count = data_body;
@@ -847,10 +915,6 @@ int testUtility()
 			if(test_file_status == WEBCFG_SUCCESS)
 			{
 				WebcfgInfo("Test webConfigData applied successfully\n");
-			}
-			else
-			{
-				WebcfgError("Failed to apply Test root webConfigData received from server\n");
 			}
 		}
 		else

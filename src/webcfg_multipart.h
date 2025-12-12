@@ -82,6 +82,9 @@ void get_webCfg_interface(char **interface);
 size_t headr_callback(char *buffer, size_t size, size_t nitems, void* data);
 size_t writer_callback_fn(void *buffer, size_t size, size_t nmemb, void *datain);
 WEBCFG_STATUS processMsgpackSubdoc(char *transaction_id);
+void setForceSyncTransID(char *ForceSyncTransID);
+const char* getForceSyncTransID();
+char* generate_trans_uuid();
 #ifdef WAN_FAILOVER_SUPPORTED
 void set_global_interface(char * value);
 char * get_global_interface(void);
@@ -92,7 +95,8 @@ WEBCFG_STATUS deleteFromMpList(char* doc_name);
 void addToMpList(uint32_t etag, char *name_space, char *data, size_t data_size);
 void delete_mp_doc();
 #if !defined FEATURE_SUPPORT_MQTTCM
-void createCurlHeader( struct curl_slist *list, struct curl_slist **header_list, int status, char ** trans_uuid,char **subdocList);
+void createCurlHeader( struct curl_slist *list, struct curl_slist **header_list, int status, char ** trans_uuid);
 #endif
 char *replaceMacWord(const char *s, const char *macW, const char *deviceMACW);
+void checkValidURL(char **s);
 #endif

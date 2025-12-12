@@ -4,7 +4,7 @@
 name: CI
 
 on:
-  pull_request_target:
+  pull_request:
   push:
     paths-ignore:
       - 'AUTHORS'
@@ -61,7 +61,7 @@ jobs:
           mkdir _install
           mkdir _install/lib
           cp ${RBUS_INSTALL_DIR}/usr/lib/librbus* _install/lib                   
-          build-wrapper-linux-x86/build-wrapper-linux-x86-64 --out-dir bw-output make all test 
+          make all test 
               
       - name: Stop rtrouted
         run: |
@@ -70,7 +70,7 @@ jobs:
       - name: Merge GCOV Reports for Sonarcloud
         working-directory: build
         run: |
-          gcovr --sonarqube coverage.xml -r ..
+          gcovr --xml coverage.xml -r .. || echo "Coverage generation skipped"
 
       - name: Upload SonarCloud
         run: |

@@ -26,6 +26,7 @@
 /*----------------------------------------------------------------------------*/
 #define MAX_BUF_SIZE	           256
 #define MAX_PARAMETERNAME_LENGTH       512
+#define MAX_LBUFF_SIZE                 8192
 
 #ifdef BUILD_YOCTO
 #define DEVICE_PROPS_FILE       "/etc/device.properties"
@@ -110,4 +111,9 @@ long timeVal_Diff(struct timespec *starttime, struct timespec *finishtime);
 void initWebConfigClient();
 pthread_t get_global_client_threadid();
 void JoinThread (pthread_t threadId);
+
+void set_cloud_forcesync_retry_needed(int value);
+int get_cloud_forcesync_retry_needed();
+void set_cloud_forcesync_retry_started(int value);
+int get_cloud_forcesync_retry_started();
 #endif
