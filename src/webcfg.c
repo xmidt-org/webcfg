@@ -125,8 +125,37 @@ void *WebConfigMultipartTask(void *status)
 	time_t t;
 	struct timespec ts;
 	Status = (unsigned long)status;
-
+#ifdef _ONESTACK_PRODUCT_REQ_
+	WebcfgDebug("OneStack build detected. Selecting WebConfig properties based on DeviceMode\n");
+	//Initialize webcfg properties for onestack product
+	char *DeviceMode = NULL;
+	DeviceMode = getDeviceMode();
+	if (DeviceMode == NULL)
+	{
+		WebcfgError("DeviceMode is NULL, defaulting to residential mode, loading %s\n", WEBCFG_PROPS_RESIDENTIAL_FILE);
+		initWebcfgProperties(WEBCFG_PROPS_RESIDENTIAL_FILE);
+	}
+	else if(strcmp(DeviceMode, "business") == 0)
+	{
+		WebcfgInfo("DeviceMode is business, loading %s\n", WEBCFG_PROPS_COMMERCIAL_FILE);
+		initWebcfgProperties(WEBCFG_PROPS_COMMERCIAL_FILE);
+		WEBCFG_FREE(DeviceMode);
+	}
+	else if(strcmp(DeviceMode, "residential") == 0)
+	{
+		WebcfgInfo("DeviceMode is residential, loading %s\n", WEBCFG_PROPS_RESIDENTIAL_FILE);
+		initWebcfgProperties(WEBCFG_PROPS_RESIDENTIAL_FILE);
+		WEBCFG_FREE(DeviceMode);
+	}
+	else
+	{
+		WebcfgError("Invalid DeviceMode %s , failed to load webconfig.properties file\n", DeviceMode);
+		WEBCFG_FREE(DeviceMode);
+		exit(1);
+	}
+#else
 	initWebcfgProperties(WEBCFG_PROPERTIES_FILE);
+#endif
 
 	//start webconfig notification thread.
 	initWebConfigNotifyTask();

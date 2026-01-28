@@ -73,6 +73,9 @@ int __attribute__((weak)) Get_Mqtt_Broker( char *pString);
 int __attribute__((weak)) Get_Mqtt_Port( char *pString);
 char *__attribute__((weak)) Get_Mqtt_ClientId();
 #endif
+#ifdef _ONESTACK_PRODUCT_REQ_
+char *__attribute__((weak)) getDeviceMode(void);
+#endif
 /*----------------------------------------------------------------------------*/
 /*                             External Functions                             */
 /*----------------------------------------------------------------------------*/
@@ -416,3 +419,11 @@ int rbus_waitUntilSystemReady()
 	WebcfgDebug("Inside rbus_waitUntilSystemReady weak fn\n");
 	return 0;
 }
+#ifdef _ONESTACK_PRODUCT_REQ_
+char *getDeviceMode(void)
+{
+	WebcfgDebug("Inside getDeviceMode weak fn\n");
+    char *mode=strdup("residential");
+    return mode;
+}
+#endif

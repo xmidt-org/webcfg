@@ -42,6 +42,9 @@ char *__attribute__((weak)) getModelName(void);
 #ifdef WAN_FAILOVER_SUPPORTED
 char *__attribute__((weak)) getInterfaceName(void);
 #endif
+#ifdef _ONESTACK_PRODUCT_REQ_
+char *__attribute__((weak)) getDeviceMode(void);
+#endif
 char *__attribute__((weak)) getPartnerID(void);
 char *__attribute__((weak)) getAccountID(void);
 char *__attribute__((weak)) getRebootReason(void);
@@ -116,6 +119,14 @@ char *getPartnerID(void)
 {
     return NULL;
 }
+
+#ifdef _ONESTACK_PRODUCT_REQ_
+char* getDeviceMode(void)
+{
+	WebcfgInfo("Inside getDeviceMode weak fn\n");
+	return NULL;
+}
+#endif
 
 char *getAccountID(void)
 {
