@@ -125,34 +125,12 @@ void *WebConfigMultipartTask(void *status)
 	time_t t;
 	struct timespec ts;
 	Status = (unsigned long)status;
+
 #ifdef _ONESTACK_PRODUCT_REQ_
 	WebcfgDebug("OneStack build detected. Selecting WebConfig properties based on DeviceMode\n");
-	//Initialize webcfg properties for onestack product
-	char *DeviceMode = NULL;
-	DeviceMode = getDeviceMode();
-	if (DeviceMode == NULL)
-	{
-		WebcfgError("DeviceMode is NULL, defaulting to residential mode, loading %s\n", WEBCFG_PROPS_RESIDENTIAL_FILE);
-		initWebcfgProperties(WEBCFG_PROPS_RESIDENTIAL_FILE);
-	}
-	else if(strcmp(DeviceMode, "business") == 0)
-	{
-		WebcfgInfo("DeviceMode is business, loading %s\n", WEBCFG_PROPS_COMMERCIAL_FILE);
-		initWebcfgProperties(WEBCFG_PROPS_COMMERCIAL_FILE);
-		WEBCFG_FREE(DeviceMode);
-	}
-	else if(strcmp(DeviceMode, "residential") == 0)
-	{
-		WebcfgInfo("DeviceMode is residential, loading %s\n", WEBCFG_PROPS_RESIDENTIAL_FILE);
-		initWebcfgProperties(WEBCFG_PROPS_RESIDENTIAL_FILE);
-		WEBCFG_FREE(DeviceMode);
-	}
-	else
-	{
-		WebcfgError("Invalid DeviceMode %s , failed to load webconfig.properties file\n", DeviceMode);
-		WEBCFG_FREE(DeviceMode);
-		exit(1);
-	}
+    char *propFile = getWebcfgPropsFileBasedOnDeviceMode();
+    initWebcfgProperties(propFile);
+
 #else
 	initWebcfgProperties(WEBCFG_PROPERTIES_FILE);
 #endif
@@ -983,3 +961,40 @@ void JoinThread (pthread_t threadId)
 		WebcfgError("Error joining thread threadId\n");
 	}
 }
+
+#ifdef _ONESTACK_PRODUCT_REQ_
+char* getWebcfgPropsFileBasedOnDeviceMode(void)
+{
+    char *DeviceMode = NULL;
+    char *propFile = WEBCFG_PROPS_RESIDENTIAL_FILE;
+
+    DeviceMode = getDeviceMode();
+    if (DeviceMode == NULL)
+    {
+		setDeviceMode("residential");
+        WebcfgError("DeviceMode is NULL, defaulting to residential mode, loading %s\n", propFile);
+    }
+    else if (strcmp(DeviceMode, "business") == 0)
+    {
+		propFile = WEBCFG_PROPS_COMMERCIAL_FILE;
+		setDeviceMode(DeviceMode);
+		WebcfgInfo("DeviceMode is %s, loading %s\n", DeviceMode, propFile);        
+    }
+    else if (strcmp(DeviceMode, "residential") == 0)
+    {
+		setDeviceMode(DeviceMode);
+        WebcfgInfo("DeviceMode is %s, loading %s\n", DeviceMode, propFile);
+    }
+    else
+    {
+        setDeviceMode("residential");
+        WebcfgError("Invalid DeviceMode %s, defaulting to residential mode, loading %s\n", DeviceMode, propFile);
+    }
+
+    if (DeviceMode != NULL)
+    {
+        WEBCFG_FREE(DeviceMode);
+    }
+	return propFile;
+}
+#endif

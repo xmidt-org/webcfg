@@ -48,6 +48,10 @@ typedef struct multipartdocs
     struct multipartdocs *next;
 } multipartdocs_t;
 
+#ifdef _ONESTACK_PRODUCT_REQ_
+void setDeviceMode(char *mode);
+#endif
+
 int readFromFile(char *filename, char **data, int *len);
 WEBCFG_STATUS parseMultipartDocument(void *config_data, char *ct , size_t data_size, char* trans_uuid);
 WEBCFG_STATUS print_tmp_doc_list(size_t mp_count);

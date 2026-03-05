@@ -95,6 +95,10 @@ static multipartdocs_t *g_mp_head = NULL;
 pthread_mutex_t multipart_t_mut =PTHREAD_MUTEX_INITIALIZER;
 static int eventFlag = 0;
 
+#ifdef _ONESTACK_PRODUCT_REQ_
+static char g_DeviceMode[32]={'\0'};
+#endif
+
 char * get_global_transID(void)
 {
     return g_transID;
@@ -1554,6 +1558,9 @@ void createCurlHeader( struct curl_slist *list, struct curl_slist **header_list,
 	size_t supported_doc_size = 0;
 	size_t supported_version_size = 0;
 	size_t supplementary_docs_size = 0;
+#ifdef _ONESTACK_PRODUCT_REQ_
+	char *DeviceMode_header = NULL;
+#endif	
 
 	WebcfgDebug("Start of createCurlheader\n");
 	//Fetch auth JWT token from cloud.
@@ -1877,6 +1884,23 @@ void createCurlHeader( struct curl_slist *list, struct curl_slist **header_list,
 	{
 		WebcfgError("Failed to get ModelName\n");
 	}
+#ifdef _ONESTACK_PRODUCT_REQ_
+	if(strlen(g_DeviceMode))
+	{
+		DeviceMode_header = (char *) malloc(sizeof(char)*MAX_BUF_SIZE);
+		if(DeviceMode_header !=NULL)
+		{
+			snprintf(DeviceMode_header, MAX_BUF_SIZE, "X-System-Type: %s", g_DeviceMode);
+			WebcfgInfo("DeviceMode_header formed %s\n", DeviceMode_header);
+			list = curl_slist_append(list, DeviceMode_header);
+			WEBCFG_FREE(DeviceMode_header);
+		}
+	}
+	else
+	{
+		WebcfgError("Failed to get DeviceMode\n");
+	}
+#endif
 
 	//Addtional headers for telemetry sync
 	if(get_global_supplementarySync())
@@ -2630,3 +2654,16 @@ void setForceSyncTransID(char *ForceSyncTransID)
 const char* getForceSyncTransID() {
     return g_ForceSyncTransID;
 }
+
+#ifdef _ONESTACK_PRODUCT_REQ_
+void setDeviceMode(char *mode)
+{
+    if (mode == NULL)
+    {
+        snprintf(g_DeviceMode, sizeof(g_DeviceMode), "residential");
+        return;
+    }
+
+    snprintf(g_DeviceMode, sizeof(g_DeviceMode), "%s", mode);
+}
+#endif
