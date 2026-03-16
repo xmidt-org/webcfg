@@ -25,6 +25,10 @@ if (WAN_FAILOVER_SUPPORTED)
 add_definitions(-DWAN_FAILOVER_SUPPORTED)
 endif (WAN_FAILOVER_SUPPORTED)
 
+if (_ONESTACK_PRODUCT_REQ_)
+add_definitions(-D_ONESTACK_PRODUCT_REQ_)
+endif (_ONESTACK_PRODUCT_REQ_)
+
 if(NOT DISABLE_VALGRIND)
 set (MEMORY_CHECK valgrind --leak-check=full --show-reachable=yes --track-origins=yes -v)
 endif ()

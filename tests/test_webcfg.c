@@ -543,6 +543,43 @@ void test_get_cloud_forcesync_retry_needed()
     assert_int_equal(get_cloud_forcesync_retry_needed(), 1);
 }
 
+#ifdef _ONESTACK_PRODUCT_REQ_
+char *g_mode = NULL;
+char *getDeviceMode(void)
+{
+	WebcfgDebug("Inside getDeviceMode weak fn\n");
+    return g_mode;
+}
+
+void test_device_mode_null()
+{
+	WEBCFG_FREE(g_mode);
+    char *file = getWebcfgPropsFileBasedOnDeviceMode();
+    assert_string_equal(file, WEBCFG_PROPS_RESIDENTIAL_FILE);
+}
+
+void test_device_mode_business()
+{
+	g_mode = strdup("business");
+    char *file = getWebcfgPropsFileBasedOnDeviceMode();
+    assert_string_equal(file, WEBCFG_PROPS_COMMERCIAL_FILE);
+}
+
+void test_device_mode_residential()
+{
+	g_mode = strdup("residential");
+    char *file = getWebcfgPropsFileBasedOnDeviceMode();
+    assert_string_equal(file, WEBCFG_PROPS_RESIDENTIAL_FILE);
+}
+
+void test_device_mode_invalid()
+{
+	g_mode = strdup("invalid");
+	char *file = getWebcfgPropsFileBasedOnDeviceMode();
+	assert_string_equal(file, WEBCFG_PROPS_RESIDENTIAL_FILE);
+}
+
+#endif
 /*----------------------------------------------------------------------------*/
 /*                             External Functions                             */
 /*----------------------------------------------------------------------------*/
@@ -575,7 +612,13 @@ int main(int argc, char *argv[])
 		cmocka_unit_test(test_set_cloud_forcesync_retry_started),
 		cmocka_unit_test(test_get_cloud_forcesync_retry_started),
 		cmocka_unit_test(test_set_cloud_forcesync_retry_needed),
-		cmocka_unit_test(test_get_cloud_forcesync_retry_needed)
+		cmocka_unit_test(test_get_cloud_forcesync_retry_needed),
+#ifdef _ONESTACK_PRODUCT_REQ_		
+        cmocka_unit_test(test_device_mode_null),
+        cmocka_unit_test(test_device_mode_business),
+        cmocka_unit_test(test_device_mode_residential),
+        cmocka_unit_test(test_device_mode_invalid),
+#endif	
 	};
 	return cmocka_run_group_tests(tests, NULL, 0);
 }

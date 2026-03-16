@@ -313,6 +313,18 @@ void test_getTimeOffset()
     CU_ASSERT_EQUAL(ret, 0);    
 }
 
+#ifdef _ONESTACK_PRODUCT_REQ_
+void test_device_mode()
+{
+    char *pString = NULL;
+    pString = getDeviceMode();
+    CU_ASSERT_STRING_EQUAL(pString, "residential");
+    if(pString != NULL)
+        free(pString);
+}
+#endif
+
+
 void add_suites( CU_pSuite *suite )
 {
     *suite = CU_add_suite( "tests", NULL, NULL );
@@ -348,7 +360,10 @@ void add_suites( CU_pSuite *suite )
     CU_add_test( *suite, "test getProductClass", test_getProductClass);  
     CU_add_test( *suite, "test getSerialNumber", test_getSerialNumber);  
     CU_add_test( *suite, "test getDeviceBootTime", test_getDeviceBootTime);     
-    CU_add_test( *suite, "test getTimeOffset", test_getTimeOffset);        
+    CU_add_test( *suite, "test getTimeOffset", test_getTimeOffset);
+#ifdef _ONESTACK_PRODUCT_REQ_		
+    CU_add_test( *suite, "test device_mode", test_device_mode);
+#endif
 }
 
 int main( int argc, char *argv[] )

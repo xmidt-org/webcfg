@@ -23,9 +23,19 @@
 /*                                   Macros                                   */
 /*----------------------------------------------------------------------------*/
 #ifdef BUILD_YOCTO
+#ifdef _ONESTACK_PRODUCT_REQ_
+#define WEBCFG_PROPS_COMMERCIAL_FILE "/etc/webconfig.properties.commercial"
+#define WEBCFG_PROPS_RESIDENTIAL_FILE "/etc/webconfig.properties.residential"
+#else
 #define WEBCFG_PROPERTIES_FILE 	    "/etc/webconfig.properties"
+#endif
+#else
+#ifdef _ONESTACK_PRODUCT_REQ_
+#define WEBCFG_PROPS_COMMERCIAL_FILE "/tmp/webconfig.properties.commercial"
+#define WEBCFG_PROPS_RESIDENTIAL_FILE "/tmp/webconfig.properties.residential"
 #else
 #define WEBCFG_PROPERTIES_FILE 	    "/tmp/webconfig.properties"
+#endif
 #endif
 
 /*----------------------------------------------------------------------------*/

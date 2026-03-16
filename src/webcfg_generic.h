@@ -70,6 +70,11 @@ int Get_Mqtt_Broker( char *pString);
 int Get_Mqtt_Port( char *pString);
 char* Get_Mqtt_ClientId();
 #endif
+
+#ifdef _ONESTACK_PRODUCT_REQ_
+char* getDeviceMode();
+#endif
+
 /**
  * @brief setValues interface sets the parameter value.
  *

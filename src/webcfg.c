@@ -126,7 +126,14 @@ void *WebConfigMultipartTask(void *status)
 	struct timespec ts;
 	Status = (unsigned long)status;
 
+#ifdef _ONESTACK_PRODUCT_REQ_
+	WebcfgDebug("OneStack build detected. Selecting WebConfig properties based on DeviceMode\n");
+    char *propFile = getWebcfgPropsFileBasedOnDeviceMode();
+    initWebcfgProperties(propFile);
+
+#else
 	initWebcfgProperties(WEBCFG_PROPERTIES_FILE);
+#endif
 
 	//start webconfig notification thread.
 	initWebConfigNotifyTask();
@@ -954,3 +961,40 @@ void JoinThread (pthread_t threadId)
 		WebcfgError("Error joining thread threadId\n");
 	}
 }
+
+#ifdef _ONESTACK_PRODUCT_REQ_
+char* getWebcfgPropsFileBasedOnDeviceMode(void)
+{
+    char *DeviceMode = NULL;
+    char *propFile = WEBCFG_PROPS_RESIDENTIAL_FILE;
+
+    DeviceMode = getDeviceMode();
+    if (DeviceMode == NULL)
+    {
+		setDeviceMode("residential");
+        WebcfgError("DeviceMode is NULL, defaulting to residential mode, loading %s\n", propFile);
+    }
+    else if (strcmp(DeviceMode, "business") == 0)
+    {
+		propFile = WEBCFG_PROPS_COMMERCIAL_FILE;
+		setDeviceMode(DeviceMode);
+		WebcfgInfo("DeviceMode is %s, loading %s\n", DeviceMode, propFile);        
+    }
+    else if (strcmp(DeviceMode, "residential") == 0)
+    {
+		setDeviceMode(DeviceMode);
+        WebcfgInfo("DeviceMode is %s, loading %s\n", DeviceMode, propFile);
+    }
+    else
+    {
+        setDeviceMode("residential");
+        WebcfgError("Invalid DeviceMode %s, defaulting to residential mode, loading %s\n", DeviceMode, propFile);
+    }
+
+    if (DeviceMode != NULL)
+    {
+        WEBCFG_FREE(DeviceMode);
+    }
+	return propFile;
+}
+#endif

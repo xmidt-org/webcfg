@@ -116,4 +116,7 @@ void set_cloud_forcesync_retry_needed(int value);
 int get_cloud_forcesync_retry_needed();
 void set_cloud_forcesync_retry_started(int value);
 int get_cloud_forcesync_retry_started();
+#ifdef _ONESTACK_PRODUCT_REQ_
+char* getWebcfgPropsFileBasedOnDeviceMode(void);
+#endif
 #endif
