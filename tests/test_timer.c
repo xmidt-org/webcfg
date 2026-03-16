@@ -29,12 +29,12 @@ void set_global_supplementarySync(int value)
 //mock function to change upgradestarttime for null and different values
 void setFirmwareUpgradeStartTime(char* startTime) 
 {
-    	firmwareUpgradeStartTime = startTime;
+    	firmwareUpgradeStartTime = strdup(startTime);
 }
 
 void setFirmwareUpgradeEndTime(char* endTime)
 {
-	firmwareUpgradeEndTime = endTime;
+	firmwareUpgradeEndTime = strdup(endTime);
 }
 
 char *getFirmwareUpgradeStartTime(void)

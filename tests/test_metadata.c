@@ -54,6 +54,13 @@ int writeToFile(char *file_path, char *data, size_t size)
 		return 0;
 	}
 }
+#ifdef _ONESTACK_PRODUCT_REQ_
+char* getWebcfgPropsFileBasedOnDeviceMode(void)
+{
+	char *propFile = WEBCFG_PROPS_RESIDENTIAL_FILE;
+	return propFile;
+}
+#endif
 /*----------------------------------------------------------------------------*/
 /*                             Test Functions                             */
 /*----------------------------------------------------------------------------*/
@@ -62,6 +69,21 @@ void test_initWebcfgProperties()
 {
 	char buf[512] = {'\0'};
 	snprintf(buf,sizeof(buf),"WEBCONFIG_SUPPORTED_DOCS_BIT=00000000000000000000000000000000|00000000000000000000000000000000");
+#ifdef _ONESTACK_PRODUCT_REQ_
+    char *propFile = getWebcfgPropsFileBasedOnDeviceMode();
+	int out = writeToFile(propFile, buf, strlen(buf));
+	CU_ASSERT_EQUAL(out, 1);
+	initWebcfgProperties(propFile);
+
+	snprintf(buf,sizeof(buf),"WEBCONFIG_DOC_SCHEMA_VERSION=1234-v0,2345-v0");
+	out = writeToFile(propFile, buf, strlen(buf));
+	CU_ASSERT_EQUAL(out, 1);
+	initWebcfgProperties(propFile);
+
+	snprintf(buf,sizeof(buf),"WEBCONFIG_SUBDOC_MAP=privatessid:1:true,homessid:2:true,radio:3:false");
+		writeToFile(propFile, buf, strlen(buf));
+		initWebcfgProperties(propFile);
+#else	
 	int out = writeToFile(WEBCFG_PROPERTIES_FILE, buf, strlen(buf));
 	CU_ASSERT_EQUAL(out, 1);
 	initWebcfgProperties(WEBCFG_PROPERTIES_FILE);
@@ -74,14 +96,24 @@ void test_initWebcfgProperties()
 	snprintf(buf,sizeof(buf),"WEBCONFIG_SUBDOC_MAP=privatessid:1:true,homessid:2:true,radio:3:false");
         writeToFile(WEBCFG_PROPERTIES_FILE, buf, strlen(buf));
         initWebcfgProperties(WEBCFG_PROPERTIES_FILE);
+#endif
 }
 
 void err_initWebcfgProperties()
 {
 	char command[128] = {'\0'};
+#ifdef _ONESTACK_PRODUCT_REQ_
+    char *propFile = getWebcfgPropsFileBasedOnDeviceMode();
+	sprintf(command,"rm -rf %s",propFile);
+	system(command);	
+    initWebcfgProperties(propFile);
+#else
 	sprintf(command,"rm -rf %s",WEBCFG_PROPERTIES_FILE);
 	system(command);
 	initWebcfgProperties(WEBCFG_PROPERTIES_FILE);
+#endif
+
+
 }
 
 void test_supportedDocs()
