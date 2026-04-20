@@ -1,0 +1,25 @@
+{
+  "_comment": "Component Build Configuration for Coverity/Native Builds",
+  "_version": "2.0",
+  "_description": "Defines dependencies and build settings for the native component",
+  "dependencies": {
+  },
+  "native_component": {
+    "name": "webcfg",
+    "pre_build_commands": [
+      {
+        "command": "chmod +x cov_docker_script/build_dependencies.sh"
+      },
+      {
+        "description": "Check Cmake version",
+        "command": "./cov_docker_script/build_dependencies.sh"
+      }
+    ],
+    "build": {
+      "type": "cmake",
+      "build_dir": "build",
+      "cmake_flags": "-DWEBCONFIG_BIN_SUPPORT:BOOL=true -DWAN_FAILOVER_SUPPORTED:BOOL=true",
+      "parallel_make" :  "false"
+    }
+  }
+}
