@@ -2,9 +2,9 @@ name: Build Webcfg Component in Native Environment
 
 on:
   push:
-    branches: [ master, 'sprint/**', 'release/**', develop ]
+    branches: [ master ]
   pull_request:
-    branches: [ master, 'sprint/**', 'release/**', topic/RDK*, develop ]
+    branches: [ master ]
 
 jobs:
   build-webcfg-on-pr:
