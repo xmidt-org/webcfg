@@ -6,15 +6,6 @@
   },
   "native_component": {
     "name": "webcfg",
-    "pre_build_commands": [
-      {
-        "command": "chmod +x cov_docker_script/build_dependencies.sh"
-      },
-      {
-        "description": "Check Cmake version",
-        "command": "./cov_docker_script/build_dependencies.sh"
-      }
-    ],
     "build": {
       "type": "cmake",
       "build_dir": "build",
